@@ -1,0 +1,5 @@
+errs/*
+outs/*
+sbatch/*
+jarrfiles/*
+examples/*
