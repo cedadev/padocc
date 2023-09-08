@@ -1,0 +1,16 @@
+asciitree==0.3.3
+entrypoints==0.4
+fasteners==0.18
+fsspec==2023.9.0
+kerchunk==0.2.0
+numcodecs==0.11.0
+numpy==1.25.2
+packaging==23.1
+pandas==2.1.0
+python-dateutil==2.8.2
+pytz==2023.3.post1
+six==1.16.0
+tzdata==2023.3
+ujson==5.8.0
+xarray==2023.8.0
+zarr==2.16.1
