@@ -27,8 +27,8 @@ Create parquet store for a specified dataset, using method depending on total ex
 #### 3a. Large Chunkset Tk value - Parallel (Batch) processing
  - Batch process to create parts        - batch_process/process_wrapper.py
  - Combine parts using copier script    - combine_refs.py
- - Correct metadata (shape, parameters) - meta_correct.py
- - Run time correction script if necessary - time_correct.py
+ - Correct metadata (shape, parameters) - correct_meta.py
+ - Run time correction script if necessary - correct_time.py
 
 #### 3b. Small Chunkset Tk value - Serial processing
 Run create parquet script - create_parq.py
