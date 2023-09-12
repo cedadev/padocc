@@ -1,17 +1,8 @@
 import json
-
-zm1 = '/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/test_parqs/parqs/esacci24_start/.zmetadata'
-zm2 = '/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/test_parqs/parqs/esacci24/.zmetadata'
-
-with open(zm1) as f:
-    refs1 = json.load(f)
-
-with open(zm2) as f:
-    refs2 = json.load(f)
-
-check_keys = ['shape','chunks','compressor']
+import sys
 
 def recursive_dict_check(d1, d2, superkey, depth):
+    check_keys = ['shape','chunks','compressor']
     if depth > 4:
         return ''
     returns = ''
@@ -31,4 +22,20 @@ def recursive_dict_check(d1, d2, superkey, depth):
                         req = True
     return returns, req
 
-response, req = recursive_dict_check(refs1, refs2, '',0)
+if __name__ == '__main__':
+    if len(sys.argv) < 3:
+        zm1 = '/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/test_parqs/parqs/esacci24_start/.zmetadata'
+        zm2 = '/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/test_parqs/parqs/esacci24/.zmetadata'
+    else:
+        zm1 = sys.argv[2]
+        zm2 = sys.argv[3]
+
+    with open(zm1) as f:
+        refs1 = json.load(f)
+
+    with open(zm2) as f:
+        refs2 = json.load(f)
+
+    response, req = recursive_dict_check(refs1, refs2, '',0)
+    if req:
+        print('start-end metadata run required')

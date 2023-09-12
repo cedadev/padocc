@@ -36,6 +36,10 @@ Create parquet store for a specified dataset, using method depending on total ex
 #### 3b. Small Chunkset Tk value - Serial processing
 Run create parquet script - create_parq.py
 
+#### 3c. Additions
+Edit parquet store in general where necessary:
+ - Edit file paths to add dap http links - add_dap.py 
+
 ## Post-Processing Phase
 
 ### 4. Test
