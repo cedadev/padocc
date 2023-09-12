@@ -2,7 +2,7 @@
 A repository for building a kerchunk infrastructure using existing tools, and a set of showcase notebooks to use on example data in this repository.
 
 Example Notebooks:
-https://mybinder.org/v2/gh/dwest77/kerchunk-builder.git/main?filepath=showcase/notebooks
+https://mybinder.org/v2/gh/dwest77a/kerchunk-builder.git/main?filepath=showcase/notebooks
 
 # Pipeline Phases
 
