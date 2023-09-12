@@ -13,7 +13,7 @@ Run kerchunk-scan tool (or similar) to build a test kerchunk file and determine 
 
 ### 2. Configure
 Determine manual/automatic configuration adjustments to computing for later phases.
-This section may need manual interaction initially, but with enough runs we can build profiles that fit different dataset types.
+This section may need manual interaction in8itially, but with enough runs we can build profiles that fit different dataset types.
 Config Information includes:
  - Metadata adjustments/corrections
  - Time dimension adjustments
