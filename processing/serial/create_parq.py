@@ -12,9 +12,11 @@ import os, sys
 # - Filelist: list of filepaths to use for creating parquet files
 # - Config file: contains parquet outdir, filelistdir, pqname, record_size
 
+# python create_parq.py OUTDIR FILELISTDIR pqname 
+
 # From config file
-OUTDIR = ''
-FILELISTDIR = ''
+OUTDIR = '/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/test_parqs/parqs'
+FILELISTDIR = '/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/test_parqs/filelists'
 
 def make_parquet(pqname, record_size):
     print(pqname)
@@ -46,10 +48,13 @@ def make_parquet(pqname, record_size):
     print('Written refs to df', pq)
 
 # From config file
-pqname = ''
+pqname = sys.argv[-1]
 record_size = 100
-try:
+#try:
+if True:
     if not os.path.isfile(f'{OUTDIR}/{pqname}/.zmetadata'):
         make_parquet(pqname, record_size)
-except:
-    print('Error recorded for', pqname)
+    else:
+        print('Zmetadata file already exists')
+#except:
+    #print('Error recorded for', pqname)
