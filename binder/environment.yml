@@ -19,12 +19,14 @@ dependencies:
   - cftime=1.6.2=py39h2ae25f5_1
   - charset-normalizer=3.2.0=pyhd8ed1ab_0
   - contourpy=1.0.5=py39hdb19cb5_0
+  - cramjam=2.6.2=py39h52d8a92_0
   - cycler=0.11.0=pyhd3eb1b0_0
   - cyrus-sasl=2.1.28=h52b45da_1
   - dbus=1.13.18=hb2f20db_0
   - entrypoints=0.4=py39h06a4308_0
   - expat=2.5.0=h6a678d5_0
   - fasteners=0.16.3=pyhd3eb1b0_0
+  - fastparquet=2023.4.0=py39ha9d4c09_0
   - fontconfig=2.14.1=hef1e5e3_0
   - fonttools=4.25.0=pyhd3eb1b0_0
   - freetype=2.12.1=h4a9f257_0
