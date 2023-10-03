@@ -1,2 +1,4 @@
 .ipynb_checkpoints
 build_venv/
+temp/
+testing/
