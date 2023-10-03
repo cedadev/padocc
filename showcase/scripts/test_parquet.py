@@ -9,8 +9,8 @@ import json
 
 import xarray as xr
 import os, sys
-
-pq = 'test_parqs/parqs/esacci25'
+#pq = '/home/users/dwest77/Documents/kerchunk_dev/parquet/dev/batch/gargant/batch0'
+pq = '../../test_parqs/parqs/esacci25'
 
 fs = fsspec.implementations.reference.ReferenceFileSystem(
     pq, 
@@ -23,6 +23,6 @@ ds = xr.open_dataset(
     engine="zarr",
     backend_kwargs={"consolidated": False, "decode_times": False}
 )
-
-ds['sea_ice_thickness'].mean(dim='time').plot()
-plt.savefig('ice_thickness.png')
+print(ds)
+#ds['chlor_a'].mean(dim='time').plot()
+#plt.savefig('chlor_a.png')

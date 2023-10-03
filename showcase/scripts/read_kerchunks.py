@@ -19,7 +19,7 @@ parquet = '-p' in sys.argv
 
 test_json = '/gws/nopw/j04/esacci_portal/kerchunk/kfiles/esacci4.json'
 #@profile
-def main():
+def main(fname):
     if parquet:
         t1 = datetime.now()
         fs = fsspec.implementations.reference.ReferenceFileSystem(
@@ -33,10 +33,8 @@ def main():
         print(parquet, (datetime.now()-t1).total_seconds())
     else:
         t1 = datetime.now()
-        mapper = fsspec.get_mapper('reference://', fo='cache')
+        mapper = fsspec.get_mapper('reference://', fo=fname)
         ds = xr.open_zarr(mapper)
-        ds['chlor_a'][:,2059:2284, 4219:4444].mean(dim='time').plot()
-        plt.savefig('img/kerc.png')
-        print(parquet, (datetime.now()-t1).total_seconds())
-main()
+       
+main(sys.argv[1])
 #print(ds['var1'])
