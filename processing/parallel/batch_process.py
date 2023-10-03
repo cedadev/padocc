@@ -10,12 +10,18 @@ import json
 import xarray as xr
 import os, sys
 
+VERBOSE = True
+
+def vprint(msg):
+    if VERBOSE:
+        print('[INFO]', msg)
+
 tasks = sys.argv[-1]
 id = sys.argv[-2]
-DEV = '/home/users/dwest77/Documents/kerchunk_dev/parquet/dev'
-PATH = '/home/users/dwest77/Documents/kerchunk_dev/parquet/dev/batch/esacci9'
-pq = f'{PATH}/batch30-{id}'
-with open(f'{DEV}/filelists/test9.txt') as f:
+DEV = '/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/'
+PATH = '/gws/nopw/j04/esacci_portal/kerchunk/parq/ocean_daily_all_parts'
+pq = f'{PATH}/batch{id}'
+with open(f'{DEV}/test_parqs/filelists/gargant.txt') as f:
     files = [r.split('\n')[0] for r in f.readlines()]
 
 fcount = len(files)
@@ -30,16 +36,18 @@ except:
 
 single_ref_sets = []
 for url in subset:
-    print('[INFO]', url)
+    vprint(url)
     single_ref_sets.append(hdf.SingleHdf5ToZarr(url, inline_threshold=-1).translate())
-    
+vprint('Kerchunked all files')
 out = LazyReferenceMapper.create(100, pq, fs = fsspec.filesystem("file"))
-
+vprint('Created Lazy Reference Mapper')
 out_dict = combine.MultiZarrToZarr(
     single_ref_sets,
     remote_protocol="file",
     concat_dims=["time"],
     out=out).translate()
+vprint('Written to Parquet Store')
 
 out.flush()
+vprint('Completed Flush')
 

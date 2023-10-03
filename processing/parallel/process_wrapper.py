@@ -4,7 +4,9 @@ import sys
 from getopt import getopt
 import numpy as np
 
-PATH = '/home/users/dwest77/Documents/kerchunk_dev/parquet/dev/batch/esacci9'
+BASE = '/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder'
+
+PATH = '/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/temp/ocean-daily-all'
 
 dirs = [
     f'{PATH}/outs',
@@ -15,7 +17,9 @@ dirs = [
 
 def mkfiles(p):
     if not os.path.isdir(p):
-	    os.makedirs(p)
+        os.makedirs(p)
+    else:
+        os.system(f'rm -rf {p}/*')
 
 for d in dirs:
     mkfiles(d)
@@ -26,11 +30,11 @@ SBATCH = """#!/bin/bash
 #SBATCH --job-name={}
 
 #SBATCH --time={}
-#SBATCH --time-min=2:00
+#SBATCH --time-min=10:00
 #SBATCH --mem=2G
 
-#SBATCH -o outs/{}
-#SBATCH -e errs/{}
+#SBATCH -o {}
+#SBATCH -e {}
 {}
 
 module add jaspy
@@ -39,16 +43,26 @@ python {} {}
 """
 
 def format_sbatch(jobname, time, outs, errs, dependency, venvpath, script, cmdargs):
-    return SBATCH.format(jobname, time, outs, errs, dependency, venvpath, script, cmdargs)
+    outs = f'{PATH}/outs/{outs}'
+    errs = f'{PATH}/errs/{errs}'
+    return SBATCH.format(
+         jobname, 
+         time, 
+         outs, 
+         errs, 
+         dependency, 
+         venvpath, 
+         script, 
+         cmdargs)
 
-with open(f'{PATH}/../../filelists/test9.txt') as f:
+with open(f'{BASE}/test_parqs/filelists/gargant.txt') as f:
     files = [r.split('\n')[0] for r in f.readlines()]
 
-fcount = len(files)/4
+fcount = 160 #len(files)/4
 
-VENVPATH = '/home/users/dwest77/venvs/kvenv/bin/activate'
-script = f'{PATH}/../../batch_parq.py'
-cmdargs = '$SLURM_ARRAY_TASK_ID $SLURM_ARRAY_TASK_COUNT'
+VENVPATH = '/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/build_venv/bin/activate'
+script = f'{BASE}/processing/parallel/batch_process.py'
+cmdargs = '$SLURM_ARRAY_TASK_ID 1600'
 
 arrayjob = format_sbatch(
     'parq_%A_%a',
