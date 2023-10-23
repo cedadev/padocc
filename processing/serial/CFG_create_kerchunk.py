@@ -10,7 +10,8 @@ def rundecode(cfgs):
     cfgs - list of command inputs depending on user input to this program
     """
     flags = {
-        '-w':'workdir'
+        '-w':'workdir',
+        '-r':'refresh'
     }
     kwargs = {}
     for x in range(0,int(len(cfgs)),2):
@@ -24,28 +25,34 @@ def rundecode(cfgs):
 
 class Indexer:
 
-    def __init__(self, proj_code, workdir=WORKDIR, issave_meta=False):
+    def __init__(self, proj_code, cfg=None, detail=None, workdir=WORKDIR, issave_meta=False, refresh=''):
         self.workdir   = workdir
+
+        if os.getenv('KERCHUNK_DIR'):
+            workdir = os.getenv('KERCHUNK_DIR')
+
         self.proj_code = proj_code
 
         self.issave_meta = issave_meta
-        self.updates, self.removals = False, False
+        self.updates, self.removals, self.load_refs = False, False, False
 
         cfg_file = f'{workdir}/in_progress/{proj_code}/base-cfg.json'
-        if os.path.isfile(cfg_file):
-            with open(cfg_file) as f:
-                cfg = json.load(f)
-        else:
-            print(f'Error: cfg file missing or not provided - {cfg_file}')
-            return None
+        if not cfg:
+            if os.path.isfile(cfg_file):
+                with open(cfg_file) as f:
+                    cfg = json.load(f)
+            else:
+                print(f'Error: cfg file missing or not provided - {cfg_file}')
+                return None
         
         detail_file = f'{workdir}/in_progress/{proj_code}/detail-cfg.json'
-        if os.path.isfile(detail_file):
-            with open(detail_file) as f:
-                detail = json.load(f)
-        else:
-            print(f'Error: cfg file missing or not provided - {detail_file}')
-            return None
+        if not detail:
+            if os.path.isfile(detail_file):
+                with open(detail_file) as f:
+                    detail = json.load(f)
+            else:
+                print(f'Error: cfg file missing or not provided - {detail_file}')
+                return None
         
         self.proj_dir = cfg['proj_dir']
 
@@ -59,14 +66,16 @@ class Indexer:
         else:
             self.use_json = True
 
-        if self.use_json:
-            self.outfile = f'{self.proj_dir}/kerchunk-1a.json'
-        else:
-            self.outstore = f'{self.proj_dir}/kerchunk-1a.parq'
-            self.record_size = 100 # Default
+        self.outfile = f'{self.proj_dir}/kerchunk-1a.json'
+        self.outstore = f'{self.proj_dir}/kerchunk-1a.parq'
+        self.record_size = 167 # Default
 
         self.filelist = f'{self.proj_dir}/allfiles.txt'
+
         self.cache    = f'{self.proj_dir}/cache/'
+        if refresh == '' and os.path.isfile(f'{self.cache}/temp_zattrs.json'):
+            # Load data instead of create from scratch
+            self.load_refs = True
         if not os.path.isdir(self.cache):
             os.makedirs(self.cache)
 
@@ -82,6 +91,8 @@ class Indexer:
         print('Opening files')
         with open(self.filelist) as f:
             self.listfiles = [r.strip() for r in f.readlines()]
+
+        self.limiter = len(self.listfiles)
 
     def hdf5_to_zarr(self, nfile, **kwargs):
         from kerchunk.hdf import SingleHdf5ToZarr
@@ -102,20 +113,25 @@ class Indexer:
 
     def concat_data(self, refs, zattrs):
         if self.use_json:
-            self.data_to_parq(refs, zattrs)
-        else:
             self.data_to_json(refs, zattrs)
+        else:
+            self.data_to_parq(refs)
 
-    def data_to_parq(self, refs, zattrs):
+    def data_to_parq(self, refs):
         from kerchunk.combine import MultiZarrToZarr
         from fsspec.implementations.reference import LazyReferenceMapper
         import fsspec
 
+        print('Writing to parq')
+        if not os.path.isdir(self.outstore):
+            os.makedirs(self.outstore)
         out = LazyReferenceMapper.create(self.record_size, self.outstore, fs = fsspec.filesystem("file"), **self.pre_kwargs)
 
         out_dict = MultiZarrToZarr(
             refs,
             out=out,
+            remote_protocol='file',
+            concat_dims=['time'],
             **self.combine_kwargs
         ).translate()
         
@@ -125,8 +141,10 @@ class Indexer:
         from kerchunk.combine import MultiZarrToZarr
 
         # Already have default options saved to class variables
-        mzz = MultiZarrToZarr(refs, **self.combine_kwargs)
+        mzz = MultiZarrToZarr(refs, concat_dims=['time'], **self.combine_kwargs).translate()
         # Override global attributes
+
+        # Needs but must be fixed
         mzz['refs']['.zattrs'] = json.dumps(zattrs)
         with open(self.outfile,'w') as f:
             f.write(json.dumps(mzz))
@@ -251,29 +269,52 @@ class Indexer:
 
         return zarr_content
     
-    def create_refs(self):
+    def get_kerchunk_data(self):
         refs = []
         allzattrs = []
-        for x, nfile in enumerate(self.listfiles):
+        for x, nfile in enumerate(self.listfiles[:self.limiter]):
             print(f'Creating refs: {x+1}/{len(self.listfiles)}')
             zarr_content = self.safe_create(nfile, **self.create_kwargs)
             if zarr_content:
                 allzattrs.append(zarr_content['refs']['.zattrs'])
                 refs.append(zarr_content)
+        return allzattrs, refs
+    
+    def load_kdata(self):
+        refs = []
+        for x, nfile in enumerate(self.listfiles[:self.limiter]):
+            print(f'Loading refs: {x+1}/{len(self.listfiles)}')
+            cache_ref = f'{self.cache}/{x}.json'
+            with open(cache_ref) as f:
+                refs.append(json.load(f))
 
-        # Concat dims
-        zattrs = self.correct_meta(allzattrs)
+        with open(f'{self.cache}/temp_zattrs.json') as f:
+            zattrs = json.load(f)
+        return zattrs, refs
+
+    def create_refs(self):
+        print('Creating refs')
+        if not self.load_refs:
+            allzattrs, refs = self.get_kerchunk_data()
+            zattrs = self.correct_meta(allzattrs)
+        else:
+            zattrs, refs = self.load_kdata()
+
         try:
             if self.success:
+                print('Metadata Success on correction')
                 self.concat_data(refs, zattrs)
                 if self.issave_meta:
                     self.save_meta(zattrs)
             else:
+                print('Issue with metadata')
                 self.save_meta(zattrs)
                 self.save_singles(refs)
-        except:
-            print('Something went wrong')
-            self.save_singles(refs, zattrs)
+        except TypeError as err:
+            print(err)
+            raise
+            #print('Something went wrong')
+            #self.save_singles(refs)
 
 if __name__ == '__main__':
     proj_code = sys.argv[1]

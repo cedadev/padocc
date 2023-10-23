@@ -62,25 +62,39 @@ def main(files, proj_dir, proj_code):
     vprint('Assessment for ' + proj_code)
     success = False
     count = 0
-    while not success:
+    cpf = []
+    volms = []
+    while not success or len(cpf) < 5:
+        print(f'Attempting file {count+1} (min 5, max 100)')
+        # Add random file selector here
         try:
             volume, chunks_per_file, success = get_internals(files[count])
+            cpf.append(chunks_per_file)
+            volms.append(volume)
+            print(f' > Data saved for file {count+1}')
         except:
             if count >= 100:
                 success = True
+        if len(cpf) >= 5:
+            success = True
         count += 1
     if count > 100:
         print('Filecount Exceeded: No valid files in first 100 tried')
         return None
-    details = {
-        'data_represented': str(volume), 
-        'chunks_per_file': str(chunks_per_file),
-        'num_files': str(len(files)),
-        'total_chunks': str(chunks_per_file * len(files)),
-        'addition': f'{(chunks_per_file * len(files) * 100)/os.stat(files[count]).st_size:.3f}',
-        'type': 'kerchunk'}
     
-    if volume * len(files) > 500e6:
+    avg_cpf = sum(cpf)/len(cpf)
+    avg_vol = sum(volms)/len(volms)
+    details = {
+        'data_represented': f'{avg_vol*len(files):.1f}', 
+        'chunks_per_file': f'{avg_cpf:.1f}',
+        'num_files': str(len(files)),
+        'total_chunks': str(avg_cpf * len(files)),
+        'addition': f'{(avg_cpf * len(files) * 100)/os.stat(files[count]).st_size:.3f}',
+        'type': 'JSON'}
+    
+    c2m = 1.67e-4 # Memory for each chunk in kerchunk in MB
+
+    if avg_cpf * len(files) * c2m > 500e6:
         details['type':'parq']
 
     with open(f'{proj_dir}/detail-cfg.json','w') as f:
@@ -145,7 +159,10 @@ if __name__ == '__main__':
                     flags[known_flags[x]] = sys.argv[x+1]
         except IndexError:
             # No Flags
-            flags = []
+            flags = {}
+
+        if os.getenv('KERCHUNK_DIR'):
+            flags['workdir'] = os.getenv('KERCHUNK_DIR')
 
         setup_main(proj_code, **flags)
 
