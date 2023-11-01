@@ -1,2 +1,0 @@
-/neodc/esacci/sea_ice/data/sea_ice_thickness/L3C/envisat/v2.0/SH/2002/ESACCI-SEAICE-L3C-SITHICK-RA2_ENVISAT-SH50KMEASE2-200206-fv2.0.nc
-/neodc/esacci/sea_ice/data/sea_ice_thickness/L3C/envisat/v2.0/SH/2012/ESACCI-SEAICE-L3C-SITHICK-RA2_ENVISAT-SH50KMEASE2-201203-fv2.0.nc
