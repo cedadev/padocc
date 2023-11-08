@@ -10,7 +10,9 @@ def rundecode(cfgs):
     cfgs - list of command inputs depending on user input to this program
     """
     flags = {
-        '-w':'workdir'
+        '-w': 'workdir',
+        '-i': 'groupid',
+        '-g': 'groupdir'
     }
     kwargs = {}
     for x in range(0,int(len(cfgs)),2):
@@ -47,8 +49,15 @@ def setup_compute(proj_code, workdir=None, **kwargs):
     else:
         pass
 
+def get_proj_code(groupdir, pid, groupid):
+    with open(f'{groupdir}/{groupid}/proj_codes.txt') as f:
+        proj_code = f.readlines()[int(pid)].strip()
+    return proj_code
+
 if __name__ == '__main__':
     proj_code = sys.argv[1]
     kwargs = rundecode(sys.argv[2:])
+    if 'groupid' in kwargs:
+        proj_code = get_proj_code(kwargs['groupdir'], proj_code, kwargs['groupid'])
 
     setup_compute(proj_code, **kwargs)
