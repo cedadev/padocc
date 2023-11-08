@@ -18,6 +18,7 @@ import numpy as np
 # Quick open a netcdf file
 
 WORKDIR = '/gws/nopw/j04/esacci_portal/kerchunk/pipeline'
+GROUPDIR = ''
 
 VERBOSE = True
 
@@ -141,8 +142,16 @@ def setup_main(proj_code, workdir=WORKDIR):
 # Assume deal with the first file in a directory
 
 known_flags = {
-    '-w': 'workdir'
+    '-w': 'workdir',
+    '-i': 'groupid',
+    '-g': 'groupdir'
 }
+
+def get_proj_code(groupdir, pid, groupid):
+    with open(f'{groupdir}/{groupid}/proj_codes.txt') as f:
+        proj_code = f.readlines()[int(pid)].strip()
+    return proj_code
+
 
 if __name__ == '__main__':
     proj_code = None
@@ -160,6 +169,9 @@ if __name__ == '__main__':
         except IndexError:
             # No Flags
             flags = {}
+
+        if 'group' in flags:
+            proj_code = get_proj_code(flags['groupdir'], proj_code, flags['groupid'])
 
         if os.getenv('KERCHUNK_DIR'):
             flags['workdir'] = os.getenv('KERCHUNK_DIR')
