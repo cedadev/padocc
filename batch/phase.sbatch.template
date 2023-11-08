@@ -1,0 +1,15 @@
+#!/bin/bash
+#SBATCH --partition=short-serial-4hr
+#SBATCH --account=short4hr
+#SBATCH --job-name={}
+
+#SBATCH --time={}
+#SBATCH --time-min=10:00
+#SBATCH --mem=2G
+
+#SBATCH -o {}
+#SBATCH -e {}
+
+module add jaspy
+source {}
+python {} $SLURM_ARRAY_TASK_ID -i {} -g {}
