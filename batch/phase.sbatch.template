@@ -4,12 +4,11 @@
 #SBATCH --job-name={}
 
 #SBATCH --time={}
-#SBATCH --time-min=10:00
 #SBATCH --mem=2G
 
 #SBATCH -o {}
 #SBATCH -e {}
 
 module add jaspy
-source {}
+source {}/bin/activate
 python {} $SLURM_ARRAY_TASK_ID -i {} -g {}
