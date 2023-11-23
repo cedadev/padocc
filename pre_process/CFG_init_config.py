@@ -34,6 +34,7 @@ def init_config(workdir):
         workdir = os.getenv('KERCHUNK_DIR')
 
     print('Working dir currently set to',workdir)
+    print('NOTE: Workdir should not include "in_progress" in the path.')
     override_wd = input('Do you wish to override? (y/n) ')
     if override_wd == 'y':
         workdir = input('Enter custom working dir path: ')
