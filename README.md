@@ -8,7 +8,24 @@ https://mybinder.org/v2/gh/cedadev/kerchunk-builder.git/main?filepath=showcase/n
 
 # Pipeline Phases
 
-## Pre-processing Phase
+All pipeline phases are now run using either of the two following scripts:
+
+## single_run.py for an individual dataset
+Required Options for All Phases (in order):
+ - phase     : pipeline phase to be conducted
+ - proj_code : identifier for the given dataset
+ - `-w <workdir>` or from environment variable.
+
+Extra Requirements by phase:
+```
+-d datasets.csv # Init
+```   
+
+### 1. Init
+Initialise and configure for running the pipeline for one or more datasets:
+ - Need some form of input file:
+   - A properly formatted CSV with the fields ()
+   - A set of patterns from which to build the CSV above.
 
 ### 1. Scan
 Run kerchunk-scan tool (or similar) to build a test kerchunk file and determine parameters:
