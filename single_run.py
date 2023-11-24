@@ -38,6 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('phase', type=str, help='Phase of the pipeline to initiate')
     parser.add_argument('proj_code',type=str, help='Project identifier code')
     parser.add_argument('-w',dest='workdir', help='Working directory for pipeline')
+    parser.add_argument('-g',dest='groupID', help='Group identifier label')
     args = parser.parse_args()
     main(args)
 

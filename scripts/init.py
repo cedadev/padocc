@@ -1,6 +1,5 @@
 import os
 import json
-import argparse
 
 def get_updates():
     inp = None
@@ -21,6 +20,28 @@ def get_removals():
     return valsarr
 
 def init_config(args):
+    if hasattr(args,'input'):
+        load_from_input_file(args)
+    else:
+        get_input(args)
+
+def load_from_input_file(args):
+    if os.path.isfile(args.input):
+        with open(args.input) as f:
+            refs = json.load(f)
+
+        proj_dir = refs['proj_dir']
+        if not os.path.isdir(proj_dir):
+            os.makedirs(proj_dir)
+        if not os.path.isfile(f'{proj_dir}/base-cfg.json'):
+            os.system(f'cp {args.input} {proj_dir}/base-cfg.json')
+    else:
+        print(f'Error: Input file {args.input} does not exist')
+        return None
+
+def get_input(args):
+
+    # Get basic inputs
     proj_code = input('Project Code: ')
     pattern   = input('Wildcard Pattern: (leave blank if not applicable) ')
     if pattern == '':
@@ -29,26 +50,37 @@ def init_config(args):
     else:
         filelist  = None
 
-    if os.getenv('KERCHUNK_DIR'):
-        workdir = os.getenv('KERCHUNK_DIR')
+    if os.getenv('WORKDIR'):
+        workdir = os.getenv('WORKDIR')
 
-    print('Working dir currently set to',workdir)
-    print('NOTE: Workdir should not include "in_progress" in the path.')
-    override_wd = input('Do you wish to override? (y/n) ')
-    if override_wd == 'y':
-        workdir = input('Enter custom working dir path: ')
+    if args.workdir and args.workdir != workdir:
+        print('Environment workdir does not match provided address')
+        print('ENV:',workdir)
+        print('ARG:',args.workdir)
+        choice = 'Choose to keep the ENV value or overwrite with the ARG value: (E/A) ':
+        if choice == 'E':
+            pass
+        elif choice == 'A':
+            os.environ['WORKDIR'] = args.workdir
+            workdir = args.workdir
+        else:
+            print('Invalid input, exiting')
+            return None
 
     proj_dir = f'{workdir}/in_progress/{proj_code}'
     if os.path.isdir(proj_dir):
-        print('Error: Directory already exists -',proj_dir)
-        return None
+        if args.forceful:
+            pass
+        else:
+            print('Error: Directory already exists -',proj_dir)
+            return None
     else:
         os.makedirs(proj_dir)
 
     config = {
         'proj_code': proj_code,
-        'workdir': workdir,
-        'proj_dir':proj_dir
+        'workdir'  : workdir,
+        'proj_dir' : proj_dir
     }
     do_updates = input('Do you wish to add overrides to metadata values? (y/n): ')
     if do_updates == 'y':
@@ -66,5 +98,4 @@ def init_config(args):
     print(f'Written cfg file at {proj_dir}/base-cfg.json')
 
 if __name__ == '__main__':
-    print('Kerchunk Pipeline Config Initialiser')
-    init_config(workdir)
+    print('Kerchunk Pipeline Config Initialiser - run using master scripts')
