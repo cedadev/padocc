@@ -1,7 +1,6 @@
 import os
 import json
-
-workdir = '/gws/nopw/j04/esacci_portal/kerchunk/pipeline'
+import argparse
 
 def get_updates():
     inp = None
@@ -21,7 +20,7 @@ def get_removals():
             valsarr.append(inp)
     return valsarr
 
-def init_config(workdir):
+def init_config(args):
     proj_code = input('Project Code: ')
     pattern   = input('Wildcard Pattern: (leave blank if not applicable) ')
     if pattern == '':
