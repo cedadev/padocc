@@ -11,4 +11,4 @@
 
 module add jaspy
 source {}/bin/activate
-python {} $SLURM_ARRAY_TASK_ID -i {} -g {}
+python {} {} $SLURM_ARRAY_TASK_ID -i {} -g {}
