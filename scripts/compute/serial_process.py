@@ -3,56 +3,41 @@ import os
 import json
 import sys
 
-WORKDIR = '/gws/nopw/j04/esacci_portal/kerchunk/pipeline'
+WORKDIR = None
 
-def rundecode(cfgs):
-    """
-    cfgs - list of command inputs depending on user input to this program
-    """
-    flags = {
-        '-w':'workdir',
-        '-r':'refresh'
-    }
-    kwargs = {}
-    for x in range(0,int(len(cfgs)),2):
-        try:
-            flag = flags[cfgs[x]]
-            kwargs[flag] = cfgs[x+1]
-        except KeyError:
-            print('Unrecognised cmdarg:',cfgs[x:x+1])
-
-    return kwargs
+def output(msg,verb=None, mode=None, log=None, pref=0):
+    prefixes = ['INFO','ERR']
+    prefix = prefixes[pref]
+    if verb:
+        if mode == 'std':
+            print(f'>> {prefix}: {msg}')
+        else:
+            log += f'{prefix}: {msg}\n'
+    return log
 
 class Indexer:
 
-    def __init__(self, proj_code, cfg=None, detail=None, workdir=WORKDIR, issave_meta=False, refresh=''):
+    def __init__(self, proj_code, cfg=None, detail=None, workdir=WORKDIR, issave_meta=False, refresh='', forceful=False, verb=False, mode=None):
         self.workdir   = workdir
-
-        if os.getenv('KERCHUNK_DIR'):
-            workdir = os.getenv('KERCHUNK_DIR')
 
         self.proj_code = proj_code
 
         self.issave_meta = issave_meta
         self.updates, self.removals, self.load_refs = False, False, False
 
-        cfg_file = f'{workdir}/in_progress/{proj_code}/base-cfg.json'
-        if not cfg:
-            if os.path.isfile(cfg_file):
-                with open(cfg_file) as f:
-                    cfg = json.load(f)
-            else:
-                print(f'Error: cfg file missing or not provided - {cfg_file}')
-                return None
-        
-        detail_file = f'{workdir}/in_progress/{proj_code}/detail-cfg.json'
-        if not detail:
-            if os.path.isfile(detail_file):
-                with open(detail_file) as f:
-                    detail = json.load(f)
-            else:
-                print(f'Error: cfg file missing or not provided - {detail_file}')
-                return None
+        self.verb = verb
+        self.mode = mode
+        if mode != 'std':
+            self.log = ''
+        else:
+            self.log = None
+
+        self.log = output('Loading config information', verb=self.verb, mode=self.mode, log=self.log)
+        with open(cfg) as f:
+            self.cfg = json.load(f)
+
+        with open(detail) as f:
+            detail = json.load(f)
         
         self.proj_dir = cfg['proj_dir']
 
@@ -86,9 +71,9 @@ class Indexer:
         self.pre_kwargs     = {}
 
         self.get_files()
+        self.log = output('Finished all setup steps', verb=self.verb, mode=self.mode, log=self.log)
 
     def get_files(self):
-        print('Opening files')
         with open(self.filelist) as f:
             self.listfiles = [r.strip() for r in f.readlines()]
 
@@ -109,7 +94,8 @@ class Indexer:
             return None
         
     def tiff_to_zarr(self, tfile, **kwargs):
-        return None
+        self.log = output('Tiff conversion not yet implemented - aborting', verb=self.verb, mode=self.mode, log=self.log, pref=1)
+        raise
 
     def concat_data(self, refs, zattrs):
         if self.use_json:
@@ -122,7 +108,8 @@ class Indexer:
         from fsspec.implementations.reference import LazyReferenceMapper
         import fsspec
 
-        print('Writing to parq')
+        self.log = output('Starting parquet-write process', verb=self.verb, mode=self.mode, log=self.log)
+
         if not os.path.isdir(self.outstore):
             os.makedirs(self.outstore)
         out = LazyReferenceMapper.create(self.record_size, self.outstore, fs = fsspec.filesystem("file"), **self.pre_kwargs)
@@ -136,9 +123,12 @@ class Indexer:
         ).translate()
         
         out.flush()
+        self.log = output('Written to parquet store', verb=self.verb, mode=self.mode, log=self.log)
 
     def data_to_json(self, refs, zattrs):
         from kerchunk.combine import MultiZarrToZarr
+
+        self.log = output('Starting JSON-write process', verb=self.verb, mode=self.mode, log=self.log)
 
         # Already have default options saved to class variables
         mzz = MultiZarrToZarr(refs, concat_dims=['time'], **self.combine_kwargs).translate()
@@ -149,11 +139,15 @@ class Indexer:
         with open(self.outfile,'w') as f:
             f.write(json.dumps(mzz))
 
+        self.log = output('Written to JSON file', verb=self.verb, mode=self.mode, log=self.log)
+
     def correct_meta(self, allzattrs):
         # General function for correcting metadata
         # - Combine all existing metadata in standard way
         # - Add updates and remove removals specified by configuration
+        self.log = output('Starting metadata corrections', verb=self.verb, mode=self.mode, log=self.log)
         zattrs = self.combine_meta(allzattrs)
+        self.log = output('Applying config info on updates and removals', verb=self.verb, mode=self.mode, log=self.log)
 
         if self.updates:
             for update in self.updates.keys():
@@ -163,12 +157,15 @@ class Indexer:
             for key in zattrs:
                 if key not in self.removals:
                     new_zattrs[key] = zattrs[key]
+        self.log = output('Finished metadata corrections', verb=self.verb, mode=self.mode, log=self.log)
         return zattrs
-
+        
     def combine_meta(self, allzattrs):
         # Collect attributes from all files, 
         # determine which are always equal, which have differences
         base = json.loads(allzattrs[0])
+
+        self.log = output('Correcting time attributes', verb=self.verb, mode=self.mode, log=self.log)
         # Sort out time metadata here
         times = {}
         all_values = {}
@@ -194,6 +191,7 @@ class Indexer:
                         nonequal[attr] = False
 
         base = {**base, **self.adjust_time_meta(times)}
+        self.log = output('Comparing nonequal keys', verb=self.verb, mode=self.mode, log=self.log)
 
         for attr in nonequal.keys():
             if len(set(all_values[attr])) == len(self.listfiles):
@@ -229,17 +227,20 @@ class Indexer:
                     combined[k] = list(set(times[k]))
 
         duration = '' # Need to compare start/end
+        self.log = output('Finished time corrections', verb=self.verb, mode=self.mode, log=self.log)
         return combined
 
     def save_meta(self,zattrs):
         with open(f'{self.cache}/temp_zattrs.json','w') as f:
             f.write(json.dumps(zattrs))
+        self.log = output('Saved global attribute cache', verb=self.verb, mode=self.mode, log=self.log)
 
     def save_singles(self, refs):
         for x, r in enumerate(refs):
             cache_ref = f'{self.cache}/{x}.json'
             with open(cache_ref,'w') as f:
                 f.write(json.dumps(r))
+        self.log = output('Saved metadata cache', verb=self.verb, mode=self.mode, log=self.log)
         # All file content saved for later reconcatenation
 
     def safe_create(self, nfile, **kwargs):
@@ -293,7 +294,7 @@ class Indexer:
         return zattrs, refs
 
     def create_refs(self):
-        print('Creating refs')
+        self.log = output('Starting conversion', verb=self.verb, mode=self.mode, log=self.log)
         if not self.load_refs:
             allzattrs, refs = self.get_kerchunk_data()
             zattrs = self.correct_meta(allzattrs)
@@ -302,22 +303,18 @@ class Indexer:
 
         try:
             if self.success:
-                print('Metadata Success on correction')
+                self.log = output('Single conversions complete, starting concatenation', verb=self.verb, mode=self.mode, log=self.log)
                 self.concat_data(refs, zattrs)
                 if self.issave_meta:
                     self.save_meta(zattrs)
             else:
-                print('Issue with metadata')
+                self.log = output('Issue with conversion unspecified - aborting process', verb=self.verb, mode=self.mode, log=self.log, pref=1)
                 self.save_meta(zattrs)
                 self.save_singles(refs)
         except TypeError as err:
             print(err)
             raise
-            #print('Something went wrong')
-            #self.save_singles(refs)
 
 if __name__ == '__main__':
-    proj_code = sys.argv[1]
-    kwargs = rundecode(sys.argv[2:])
-    Indexer(proj_code, **kwargs).create_refs()
+    print('Serial Processor for Kerchunk Pipeline - run with single_run.py')
     
