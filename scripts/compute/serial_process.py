@@ -4,26 +4,33 @@ import json
 import sys
 
 WORKDIR = None
+CONCAT_MSG = 'See individual files for more details'
 
-def output(msg,verb=None, mode=None, log=None, pref=0):
+def output(msg,verb=True, mode=None, log=None, pref=0):
     prefixes = ['INFO','ERR']
     prefix = prefixes[pref]
     if verb:
-        if mode == 'std':
-            print(f'>> {prefix}: {msg}')
-        else:
+        if mode == 'log':
             log += f'{prefix}: {msg}\n'
+        else:
+            print(f'>> {prefix}: {msg}')
     return log
 
 class Indexer:
 
-    def __init__(self, proj_code, cfg=None, detail=None, workdir=WORKDIR, issave_meta=False, refresh='', forceful=False, verb=False, mode=None):
+    def __init__(self, 
+                 proj_code, 
+                 cfg_file=None, detail_file=None, workdir=WORKDIR, 
+                 issave_meta=False, refresh='', forceful=False, 
+                 verb=False, mode=None, version_no=1,
+                 concat_msg=CONCAT_MSG):
         self.workdir   = workdir
-
         self.proj_code = proj_code
 
         self.issave_meta = issave_meta
         self.updates, self.removals, self.load_refs = False, False, False
+
+        self.version_no = version_no
 
         self.verb = verb
         self.mode = mode
@@ -33,10 +40,10 @@ class Indexer:
             self.log = None
 
         self.log = output('Loading config information', verb=self.verb, mode=self.mode, log=self.log)
-        with open(cfg) as f:
-            self.cfg = json.load(f)
+        with open(cfg_file) as f:
+            cfg = json.load(f)
 
-        with open(detail) as f:
+        with open(detail_file) as f:
             detail = json.load(f)
         
         self.proj_dir = cfg['proj_dir']
@@ -51,8 +58,8 @@ class Indexer:
         else:
             self.use_json = True
 
-        self.outfile = f'{self.proj_dir}/kerchunk-1a.json'
-        self.outstore = f'{self.proj_dir}/kerchunk-1a.parq'
+        self.outfile = f'{self.proj_dir}/kerchunk-{version_no}a.json'
+        self.outstore = f'{self.proj_dir}/kerchunk-{version_no}a.parq'
         self.record_size = 167 # Default
 
         self.filelist = f'{self.proj_dir}/allfiles.txt'
@@ -94,7 +101,7 @@ class Indexer:
             return None
         
     def tiff_to_zarr(self, tfile, **kwargs):
-        self.log = output('Tiff conversion not yet implemented - aborting', verb=self.verb, mode=self.mode, log=self.log, pref=1)
+        self.log = output('Tiff conversion not yet implemented - aborting', mode=self.mode, log=self.log, pref=1)
         raise
 
     def concat_data(self, refs, zattrs):
@@ -125,6 +132,14 @@ class Indexer:
         out.flush()
         self.log = output('Written to parquet store', verb=self.verb, mode=self.mode, log=self.log)
 
+    def add_kerchunk_history(self, attrs):
+        # Get current time
+        # Format for different uses
+        attrs['history'] += 'Kerchunk file created on '
+        attrs['kerchunk_revision'] = self.version_no
+        attrs['kerchunk_creation_date'] = ''
+        return attrs
+
     def data_to_json(self, refs, zattrs):
         from kerchunk.combine import MultiZarrToZarr
 
@@ -135,7 +150,9 @@ class Indexer:
         # Override global attributes
 
         # Needs but must be fixed
+        zattrs = self.add_kerchunk_history(zattrs)
         mzz['refs']['.zattrs'] = json.dumps(zattrs)
+
         with open(self.outfile,'w') as f:
             f.write(json.dumps(mzz))
 
@@ -194,12 +211,10 @@ class Indexer:
         self.log = output('Comparing nonequal keys', verb=self.verb, mode=self.mode, log=self.log)
 
         for attr in nonequal.keys():
-            if len(set(all_values[attr])) == len(self.listfiles):
-                base[attr] = 'See individual files for details'
-            elif len(set(all_values[attr])) == 1:
+            if len(set(all_values[attr])) == 1:
                 base[attr] = all_values[attr][0]
             else:
-                base[attr] = list(set(all_values[attr]))
+                base[attr] = self.concat_msg
         if len(nonequal.keys()) > 0:
             self.success = False
         return base
@@ -274,7 +289,7 @@ class Indexer:
         refs = []
         allzattrs = []
         for x, nfile in enumerate(self.listfiles[:self.limiter]):
-            print(f'Creating refs: {x+1}/{len(self.listfiles)}')
+            self.log = output(f'Creating refs: {x+1}/{len(self.listfiles)}', verb=self.verb, mode=self.mode, log=self.log)
             zarr_content = self.safe_create(nfile, **self.create_kwargs)
             if zarr_content:
                 allzattrs.append(zarr_content['refs']['.zattrs'])
@@ -284,11 +299,12 @@ class Indexer:
     def load_kdata(self):
         refs = []
         for x, nfile in enumerate(self.listfiles[:self.limiter]):
-            print(f'Loading refs: {x+1}/{len(self.listfiles)}')
+            self.log = output(f'Loading refs: {x+1}/{len(self.listfiles)}', verb=self.verb, mode=self.mode, log=self.log)
             cache_ref = f'{self.cache}/{x}.json'
             with open(cache_ref) as f:
                 refs.append(json.load(f))
 
+        self.log = output(f'Loading attributes: {x+1}/{len(self.listfiles)}', verb=self.verb, mode=self.mode, log=self.log)
         with open(f'{self.cache}/temp_zattrs.json') as f:
             zattrs = json.load(f)
         return zattrs, refs
@@ -300,6 +316,7 @@ class Indexer:
             zattrs = self.correct_meta(allzattrs)
         else:
             zattrs, refs = self.load_kdata()
+            zattrs = self.correct_meta(zattrs)
 
         try:
             if self.success:
@@ -308,7 +325,7 @@ class Indexer:
                 if self.issave_meta:
                     self.save_meta(zattrs)
             else:
-                self.log = output('Issue with conversion unspecified - aborting process', verb=self.verb, mode=self.mode, log=self.log, pref=1)
+                self.log = output('Issue with conversion unspecified - aborting process', mode=self.mode, log=self.log, pref=1)
                 self.save_meta(zattrs)
                 self.save_singles(refs)
         except TypeError as err:
