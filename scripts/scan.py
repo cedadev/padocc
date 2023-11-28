@@ -15,12 +15,7 @@ import json
 
 import numpy as np
 
-# Quick open a netcdf file
-
-WORKDIR = '/gws/nopw/j04/esacci_portal/kerchunk/pipeline'
-GROUPDIR = ''
-
-VERBOSE = True
+VERBOSE = False
 
 def vprint(msg):
     if VERBOSE:
@@ -132,8 +127,8 @@ def main(files, proj_dir, proj_code):
         f.write(json.dumps(details))
     vprint(f'Written config info to {proj_code}/detail-cfg.json')
 
-def setup_main(proj_code, workdir=WORKDIR, forceful=False, **kwargs):
-    cfg_file = f'{workdir}/in_progress/{proj_code}/base-cfg.json'
+def setup_main(args):
+    cfg_file = f'{args.proj_dir}/base-cfg.json'
     if os.path.isfile(cfg_file):
         with open(cfg_file) as f:
             cfg = json.load(f)
@@ -159,61 +154,31 @@ def setup_main(proj_code, workdir=WORKDIR, forceful=False, **kwargs):
     if not os.path.isfile(filelist):
         print('Error: No filelist detected - ',filelist)
         return None
-    
-    base_eval = '-b' in flags
-    raw = '-r' in flags
 
     with open(filelist) as f:
         files = [r.strip() for r in f.readlines()]
         numfiles = len(files)
-    if not os.path.isfile(f'{proj_dir}/detail-cfg.json') or forceful:
+    if not os.path.isfile(f'{proj_dir}/detail-cfg.json') or args.forceful:
         main(files, proj_dir, proj_code)
     else:
         print('Skipped scanning - detailed config already exists')
 
 # Assume deal with the first file in a directory
 
-known_flags = {
-    '-w': 'workdir',
-    '-i': 'groupid',
-    '-g': 'groupdir',
-    '-f': 'forceful'
-}
-
-def get_proj_code(groupdir, pid, groupid):
-    with open(f'{groupdir}/{groupid}/proj_codes.txt') as f:
+def get_proj_code(groupdir, pid):
+    with open(f'{groupdir}/proj_codes.txt') as f:
         proj_code = f.readlines()[int(pid)].strip()
     return proj_code
 
 
-if __name__ == '__main__':
-    proj_code = None
-    try:
-        proj_code = sys.argv[1]
-    except:
-        print('Error: No project code given - exiting')
-    print('Initialising Scan', proj_code)
-    if proj_code:
-        flags = {}
-        try:
-            for x in range(2, len(sys.argv[2:])+2):
-                if sys.argv[x] in known_flags:
-                    flags[known_flags[sys.argv[x]]] = sys.argv[x+1]
-        except IndexError:
-            # No Flags
-            flags = {}
-        print('> Identified Flags')
-        if 'groupid' in flags:
-            proj_code = get_proj_code(flags['groupdir'], proj_code, flags['groupid'])
-            flags["workdir"] = f'{flags["workdir"]}/in_progress/{flags["groupid"]}'
+def scan_files(args):
 
-        if os.getenv('KERCHUNK_DIR'):
-            flags['workdir'] = os.getenv('KERCHUNK_DIR')
+    print('Initialising Scan', args.proj_code)
 
-        if os.getenv('WORKDIR'):
-            flags['workdir'] = os.getenv('WORKDIR')
+    if args.groupID:
+        if not args.groupdir:
+            args.groupdir = f'{args.workdir}/groups/{args.groupID}'
+        args.proj_code = get_proj_code(args.groupdir, proj_code)
+        args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
 
-        print('> Scanning',proj_code)
-        setup_main(proj_code, **flags)
-
-    
+    setup_main(args)

@@ -20,10 +20,14 @@ def get_removals():
     return valsarr
 
 def init_config(args):
-    if hasattr(args,'input'):
-        load_from_input_file(args)
+    if hasattr(args, 'groupID'):
+        # initialise group
+        # csv to set of dirs
     else:
-        get_input(args)
+        if hasattr(args,'input'):
+            load_from_input_file(args)
+        else:
+            get_input(args)
 
 def load_from_input_file(args):
     if os.path.isfile(args.input):
