@@ -133,11 +133,19 @@ class Indexer:
         self.log = output('Written to parquet store', verb=self.verb, mode=self.mode, log=self.log)
 
     def add_kerchunk_history(self, attrs):
+        from datetime import datetime
         # Get current time
         # Format for different uses
-        attrs['history'] += 'Kerchunk file created on '
+        now = datetime.now()
+        hist = attrs['history'].split('\n')
+        if 'Kerchunk' in hist[-1]:
+            hist[-1] = 'Kerchunk file updated on ' + now.strftime("%D")
+        else:
+            hist.append('Kerchunk file created on ' + now.strftime("%D"))
+        attrs['history'] = '\n'.join(hist)
+        
         attrs['kerchunk_revision'] = self.version_no
-        attrs['kerchunk_creation_date'] = ''
+        attrs['kerchunk_creation_date'] = now.strftime("%d%m%yT%H%M%S")
         return attrs
 
     def data_to_json(self, refs, zattrs):
