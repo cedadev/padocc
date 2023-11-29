@@ -1,6 +1,15 @@
 import os
 import json
 
+config = {
+    'proj_code': None,
+    'workdir': None,
+    'proj_dir':None,
+    'pattern': None,
+    'update': None,
+    'remove': None
+}
+
 def get_updates():
     inp = None
     valsdict = {}
@@ -19,15 +28,8 @@ def get_removals():
             valsarr.append(inp)
     return valsarr
 
-def init_config(args):
-    if hasattr(args, 'groupID'):
-        # initialise group
-        # csv to set of dirs
-    else:
-        if hasattr(args,'input'):
-            load_from_input_file(args)
-        else:
-            get_input(args)
+def get_proj_code(path, prefix=''):
+    return path.replace(prefix,'').replace('/','_')
 
 def load_from_input_file(args):
     if os.path.isfile(args.input):
@@ -42,6 +44,83 @@ def load_from_input_file(args):
     else:
         print(f'Error: Input file {args.input} does not exist')
         return None
+
+def text_file_to_csv(args):
+
+    if not os.path.isdir(args.workdir):
+        os.path.makedirs(args.workdir)
+    if args.groupdir and not os.path.isdir(args.groupdir):
+        os.path.makedirs(args.groupdir)
+
+    new_inputfile = f'{args.groupdir}/filelists/{args.group}.txt'
+    prefix = '' # Remove from path for proj_code
+    os.system(f'cp {args.input} {new_inputfile}')
+
+    with open(new_inputfile) as f:
+        datasets = [r.strip() for r in f.readlines()]
+    records = ''
+    for ds in datasets:
+        proj_code = get_proj_code(ds, prefix=prefix)
+        proj_dir  = f'{args.workdir}/in_progress/{args.group}/{proj_code}'
+        pattern   = f'{os.path.realpath(ds)}/*.nc'
+        records  += f'{proj_code},{args.workdir},{proj_dir},{pattern},,\n'
+
+    with open(f'{args.groupdir}/datasets.csv','w') as f:
+        f.write(records)
+    
+    # Output completed csv setup part
+
+def make_dirs(args):
+    # Open csv and gather data
+    with open(f'{args.groupdir}/datasets.csv') as f:
+        datasets = {r.strip().split(',')[0]:r.strip().split(',')[1:] for r in f.readlines()[:]}
+
+    # Configure for each dataset
+    params = list(config.keys())
+    proj_codes = list(datasets.keys())
+    for dsk in proj_codes:
+        ds = datasets[dsk]
+        cfg = dict(config)
+        cfg[params[0]] = dsk
+        for x, p in enumerate(params[1:]):
+            cfg[p] = ds[x]
+
+        # Save config file
+        if not os.path.isdir(cfg['proj_dir']):
+            os.makedirs(cfg['proj_dir'])
+    
+            with open(f'{cfg["proj_dir"]}/base-cfg.json','w') as f:
+                f.write(json.dumps(cfg))
+        
+        else:
+            print(f'{cfg["proj_code"]} already exists - skipping')
+
+    print(f'Exported {len(proj_codes)} dataset config files')
+
+    with open(f'{args.groupdir}/proj_codes_1.txt','w') as f:
+        f.write('\n'.join(proj_codes))
+
+    print('Written as group ID:',args.groupID)
+
+def init_config(args):
+    if hasattr(args, 'groupID'):
+        if not hasattr(args,'input'):
+            # Output message
+            return None
+        
+        if '.txt' in args.input:
+            text_file_to_csv(args) # Includes creating csv
+        elif '.csv' in args.input:
+            new_csv = f'{args.groupdir}/datasets.csv'
+            os.system(f'cp {args.input} {new_csv}')
+
+        make_dirs(args)
+
+    else:
+        if hasattr(args,'input'):
+            load_from_input_file(args)
+        else:
+            get_input(args)
 
 def get_input(args):
 
