@@ -1,5 +1,11 @@
+
+__author__    = "Daniel Westwood"
+__contact__   = "daniel.westwood@stfc.ac.uk"
+__copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
+
 import os
 import json
+import logging
 
 config = {
     'proj_code': None,
@@ -10,7 +16,32 @@ config = {
     'remove': None
 }
 
-def get_updates():
+levels = [
+    logging.ERROR,
+    logging.WARN,
+    logging.INFO,
+    logging.DEBUG
+]
+
+def init_logger(verbose, mode, name):
+    """Logger object init and configure with formatting"""
+    verbose = min(verbose, len(levels-1))
+
+    logger = logging.getLogger(name)
+    logger.setLevel(levels[verbose])
+
+    ch = logging.StreamHandler()
+    ch.setLevel(levels[verbose])
+
+    formatter = logging.Formatter('%(levelname)s [%(name)s]: %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    return logger
+
+def get_updates(logger):
+    """Get key-value pairs for updating in final metadata"""
+    logger.debug('Getting update key-pairs')
     inp = None
     valsdict = {}
     while inp != 'exit':
@@ -20,7 +51,9 @@ def get_updates():
             valsdict[inp] = val
     return valsdict
 
-def get_removals():
+def get_removals(logger):
+    """Get attribute names to remove in final metadata"""
+    logger.debug('Getting removals')
     valsarr = []
     while inp != 'exit':
         inp = input('Attribute: ("exit" to escape):')
@@ -31,7 +64,9 @@ def get_removals():
 def get_proj_code(path, prefix=''):
     return path.replace(prefix,'').replace('/','_')
 
-def load_from_input_file(args):
+def load_from_input_file(args, logger):
+    """Configure project directory and base config from input file"""
+    logger.debug('Ingesting input config file')
     if os.path.isfile(args.input):
         with open(args.input) as f:
             refs = json.load(f)
@@ -42,10 +77,12 @@ def load_from_input_file(args):
         if not os.path.isfile(f'{proj_dir}/base-cfg.json'):
             os.system(f'cp {args.input} {proj_dir}/base-cfg.json')
     else:
-        print(f'Error: Input file {args.input} does not exist')
+        logger.error(f'Input file {args.input} does not exist')
         return None
 
-def text_file_to_csv(args):
+def text_file_to_csv(args, logger):
+    """Convert text file list of patterns to a csv for a set of projects"""
+    logger.debug('Converting text file to csv')
 
     if not os.path.isdir(args.workdir):
         os.path.makedirs(args.workdir)
@@ -58,6 +95,7 @@ def text_file_to_csv(args):
 
     with open(new_inputfile) as f:
         datasets = [r.strip() for r in f.readlines()]
+
     records = ''
     for ds in datasets:
         proj_code = get_proj_code(ds, prefix=prefix)
@@ -70,18 +108,23 @@ def text_file_to_csv(args):
     
     # Output completed csv setup part
 
-def make_dirs(args):
+def make_dirs(args, logger):
+    """Set up directory structure for working directory"""
+    logger.debug('Creating project directories')
+
     # Open csv and gather data
     with open(f'{args.groupdir}/datasets.csv') as f:
         datasets = {r.strip().split(',')[0]:r.strip().split(',')[1:] for r in f.readlines()[:]}
 
-    # Configure for each dataset
-    params = list(config.keys())
+    # Map dataset parameters from csv to config JSON
+    params     = list(config.keys())
     proj_codes = list(datasets.keys())
-    for dsk in proj_codes:
-        ds = datasets[dsk]
+    for dskey in proj_codes:
         cfg = dict(config)
-        cfg[params[0]] = dsk
+        ds  = datasets[dskey]
+
+        cfg[params[0]] = dskey # Set project code
+        # Set all other parameters
         for x, p in enumerate(params[1:]):
             cfg[p] = ds[x]
 
@@ -93,38 +136,63 @@ def make_dirs(args):
                 f.write(json.dumps(cfg))
         
         else:
-            print(f'{cfg["proj_code"]} already exists - skipping')
+            logger.warn(f'{cfg["proj_code"]} already exists - skipping')
 
-    print(f'Exported {len(proj_codes)} dataset config files')
+    logger.info(f'Exported {len(proj_codes)} dataset config files')
 
     with open(f'{args.groupdir}/proj_codes_1.txt','w') as f:
         f.write('\n'.join(proj_codes))
 
-    print('Written as group ID:',args.groupID)
+    logger.info(f'Written as group ID:{args.groupID}')
 
 def init_config(args):
+    """Main configuration script, load configurations from input sources"""
+
+    logger = init_logger(args.verbose, args.mode, 'init')
+
+    groupID = None
     if hasattr(args, 'groupID'):
+        groupID = getattr(args,'groupID')
+
+    if groupID:
+        logger.debug('Starting group initialisation')
         if not hasattr(args,'input'):
-            # Output message
+            logger.error('Group run requires input file in csv or txt format')
             return None
         
         if '.txt' in args.input:
-            text_file_to_csv(args) # Includes creating csv
+            text_file_to_csv(args, logger) # Includes creating csv
         elif '.csv' in args.input:
             new_csv = f'{args.groupdir}/datasets.csv'
             os.system(f'cp {args.input} {new_csv}')
 
-        make_dirs(args)
+        make_dirs(args, logger)
 
     else:
-        if hasattr(args,'input'):
-            load_from_input_file(args)
-        else:
-            get_input(args)
+        logger.debug('Starting single project initialisation')
 
-def get_input(args):
+        if hasattr(args,'input'):
+            load_from_input_file(args, logger)
+        else:
+            try:
+                get_input(args, logger)
+            except KeyboardInterrupt:
+                logger.info('Aborting user input process and exiting')
+                return None
+            except Exception as e:
+                logger.error(f'User Input Error - {e}')
+                return None
+
+def get_input(args, logger):
+    """Get command-line inputs for specific project configuration"""
 
     # Get basic inputs
+    logger.debug('Getting user inputs for new project')
+
+    if os.getenv('SLURM_JOB_ID'):
+        logger.error('Cannot run input script as Slurm job - aborting')
+        return None
+
     proj_code = input('Project Code: ')
     pattern   = input('Wildcard Pattern: (leave blank if not applicable) ')
     if pattern == '':
@@ -140,7 +208,7 @@ def get_input(args):
         print('Environment workdir does not match provided address')
         print('ENV:',workdir)
         print('ARG:',args.workdir)
-        choice = 'Choose to keep the ENV value or overwrite with the ARG value: (E/A) ':
+        choice = input('Choose to keep the ENV value or overwrite with the ARG value: (E/A) :')
         if choice == 'E':
             pass
         elif choice == 'A':
