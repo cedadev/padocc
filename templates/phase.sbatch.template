@@ -15,4 +15,4 @@ source {}/bin/activate
 export WORKDIR={}
 export GROUPDIR={}
 
-python {} {} $SLURM_ARRAY_TASK_ID -G {}
+python {} {} $SLURM_ARRAY_TASK_ID -G {} -t {}
