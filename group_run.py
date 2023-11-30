@@ -13,9 +13,9 @@ def output(msg,verb=True, mode=None, log=None, pref=0):
             print(f'> {prefix}: {msg}')
     return log
 
-def get_group_len(workdir, group):
+def get_group_len(workdir, group, repeat_id=1):
     # Implement parallel reads from single 'group' file
-    with open(f'{workdir}/groups/filelists/{group}.txt') as f:
+    with open(f'{workdir}/groups/{group}/proj_codes_{repeat_id}.txt') as f:
         group_len = len(list(f.readlines()))
     return group_len
 
@@ -42,6 +42,13 @@ def main(args):
     phase   = args.phase
     group   = args.group
 
+    # init not parallelised
+    if phase == 'init':
+        import single_run
+        output('Running init steps as serial process', verb=args.verbose)
+        single_run.main(args)
+        return None
+
     WORKDIR  = get_attribute('WORKDIR', args, 'workdir')
     if not WORKDIR:
         output('WORKDIR missing or undefined', verb=args.verbose)
@@ -57,7 +64,7 @@ def main(args):
     GROUPDIR = f'{WORKDIR}/groups/{group}'
 
     # Establish some group parameters
-    group_len          = get_group_len(WORKDIR, group)
+    group_len          = get_group_len(WORKDIR, group, repeat_id = args.repeat_id)
     group_phase_sbatch = f'{GROUPDIR}/sbatch/{phase}.sbatch'
     master_script      = f'{SRCDIR}/single_run.py'
     template           = 'templates/phase.sbatch.template'
@@ -83,12 +90,15 @@ def main(args):
         VENV,
         WORKDIR,
         GROUPDIR,
-        master_script, phase, group
+        master_script, phase, group, times[phase]
     )
     if args.forceful:
         sb += ' -f'
     if args.verbose:
         sb += ' -v'
+
+    if args.repeat_id:
+        sb += f' -r {args.repeat_id}'
 
     with open(group_phase_sbatch,'w') as f:
         f.write(sb)
@@ -106,6 +116,7 @@ if __name__ == '__main__':
     parser.add_argument('-e',dest='venvpath', help='Path to virtual (e)nvironment (excludes /bin/activate)')
     parser.add_argument('-f',dest='forceful', action='store_true', help='Force overwrite of steps if previously done')
     parser.add_argument('-v',dest='verbose' , action='store_true', help='Print helpful statements while running')
+    parser.add_argument('-r',dest='repeat_id', default='1', help='Repeat id (1 if first time running, <phase>_<repeat> otherwise)')
     args = parser.parse_args()
 
     main(args)
