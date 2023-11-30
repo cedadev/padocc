@@ -5,6 +5,10 @@
 
 # Calculate total number of chunks and output
 
+__author__    = "Daniel Westwood"
+__contact__   = "daniel.westwood@stfc.ac.uk"
+__copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
+
 from kerchunk.hdf import SingleHdf5ToZarr
 from kerchunk.netCDF3 import NetCDF3ToZarr
 import os, sys
@@ -12,16 +16,37 @@ from datetime import datetime
 import glob
 import math
 import json
+import logging
 
 import numpy as np
 
-VERBOSE = False
+levels = [
+    logging.ERROR,
+    logging.WARN,
+    logging.INFO,
+    logging.DEBUG
+]
 
-def vprint(msg):
-    if VERBOSE:
-        print(msg)
+def init_logger(verbose, mode, name):
+    """Logger object init and configure with formatting"""
+    verbose = min(verbose, len(levels-1))
 
-def format_float(value, sfs):
+    logger = logging.getLogger(name)
+    logger.setLevel(levels[verbose])
+
+    ch = logging.StreamHandler()
+    ch.setLevel(levels[verbose])
+
+    formatter = logging.Formatter('%(levelname)s [%(name)s]: %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    return logger
+
+def format_float(value, logger):
+    """Format byte-value with proper units"""
+    logger.debug(f'Formatting value {value} in bytes')
+
     unit_index = -1
     units = ['K','M','G','T','P']
     while value > 1000:
@@ -29,64 +54,105 @@ def format_float(value, sfs):
         unit_index += 1
     return f'{value:.2f} {units[unit_index]}B'
 
-def get_refs(nfile):
-    vprint(nfile)
+def map_to_kerchunk(nfile, logger):
+    """Perform Kerchunk reading on specific file"""
+    logger.info(f'Running Kerchunk reader for {nfile}')
+
     try:
-        vprint('Using HDF5 reader')
+        logger.debug(f'Using HDF5 reader for {nfile}')
         tdict = SingleHdf5ToZarr(nfile, inline_threshold=1).translate()
         return tdict['refs']
     except OSError:
-        vprint('Switching to NetCDF3 reader')
+        logger.debug(f'Switching to NetCDF3 reader for {nfile}')
         try:
             tdict = NetCDF3ToZarr(nfile, inline_threshold=1).translate()
             return tdict['refs']
-        except:
+        except Exception as e:
+            logger.warn(f'Kerchunk mapping failed for {nfile}')
             return False
 
-def get_internals(testfile):
-    refs = get_refs(testfile)
+def get_internals(testfile, logger):
+    """Map to kerchunk data and perform calculations on test netcdf file."""
+    refs = map_to_kerchunk(testfile, logger)
+    if not refs:
+        return None
+    logger.info(f'Starting summation process for {testfile}')
+
+    # Perform summations, extract chunk attributes
     sizes = []
     vars = {}
     chunks = 0
     for chunkkey in refs.keys():
-        try:
-            sizes.append(int(refs[chunkkey][2]))
-            chunks += 1
-            vars[chunkkey.split('/')[0]] = 1
-        except:
-            pass
+        if len(refs[chunkkey]) >= 2:
+            try:
+                sizes.append(int(refs[chunkkey][2]))
+                chunks += 1
+                vars[chunkkey.split('/')[0]] = 1
+            except ValueError:
+                pass
     return np.sum(sizes), chunks, sorted(list(vars.keys()))
 
-def make_filelist(pattern, proj_dir):
+def make_filelist(pattern, proj_dir, logger):
+    """Create list of files associated with this project"""
+    logger.debug(f'Making list of files for project {proj_dir.split("/")[-1]}')
+
     if os.path.isdir(proj_dir):
         os.system(f'ls {pattern} > {proj_dir}/allfiles.txt')
     else:
-        print(f'Error: Project Directory not located - {proj_dir}')
+        logger.error(f'Project Directory not located - {proj_dir}')
 
 def eval_sizes(files):
+    """Get a list of file sizes on disk from a list of filepaths"""
     return [os.stat(files[count]).st_size for count in range(len(files))]
 
-def main(files, proj_dir, proj_code):
-    vprint('Assessment for ' + proj_code)
-    success, escape, vs, is_varwarn, is_skipwarn = False, False, None, False, False
+def get_seconds(time_allowed):
+    """Convert time in MM:SS to seconds"""
+    if not time_allowed:
+        return 10000000000
+    mins, secs = time_allowed.split(':')
+    return int(secs) + 60*int(mins)
+
+def main(files, proj_dir, proj_code, logger, time_allowed=None):
+    """Main process handler for scanning phase"""
+    logger.debug(f'Assessment for {proj_code}')
+
+    # Set up conditions, skip for small file count < 5
+    success, escape, is_varwarn, is_skipwarn = False, False, False, False
+    cpf, volms = [],[]
+    trial_files = 5
+    if len(files) < 5:
+        details = {'skipped':True}
+        with open(f'{proj_dir}/detail-cfg.json','w') as f:
+            f.write(json.dumps(details))
+        print(f'Skipped scanning - {proj_code}/detail-cfg.json blank file created')
+        return None
+    
+    # Perform scans for sample (max 5) files
     count = 0
-    cpf = []
-    volms = []
-    while not escape and len(cpf) < 5:
-        print(f'Attempting file {count+1} (min 5, max 100)')
+    vs = None
+    while not escape and len(cpf) < trial_files:
+        logger.debug(f'Attempting file {count+1} (min 5, max 100)')
         # Add random file selector here
         try:
+            # Measure time and ensure job will not overrun if it can be prevented.
+            t1 = datetime.now()
             volume, chunks_per_file, vars = get_internals(files[count])
+            t2 = (datetime.now() - t1).total_seconds()
+            if count == 0 and t2 > get_seconds(time_allowed)/trial_files:
+                logger.error(f'Time estimate exceeds allowed time for job - {t2}')
+                escape = True
+
             cpf.append(chunks_per_file)
             volms.append(volume)
+
             if not vs:
                 vs = vars
             if vars != vs:
-                print('Warning: Variables differ between files')
+                logger.warn('Variables differ between files')
                 is_varwarn = True
-            print(f' > Data saved for file {count+1}')
-        except:
-            print(f'Skipped file {count} for unspecified issue')
+            logger.info(f'Data saved for file {count+1}')
+        except Exception as e:
+            logger.warn(f'Skipped file {count} - {e}')
             is_skipwarn = True
         if count >= 100:
             escape = True
@@ -128,6 +194,9 @@ def main(files, proj_dir, proj_code):
     vprint(f'Written config info to {proj_code}/detail-cfg.json')
 
 def setup_main(args):
+
+    logger = init_logger(args.verbose, args.mode, 'scan')
+
     cfg_file = f'{args.proj_dir}/base-cfg.json'
     if os.path.isfile(cfg_file):
         with open(cfg_file) as f:
@@ -159,7 +228,7 @@ def setup_main(args):
         files = [r.strip() for r in f.readlines()]
         numfiles = len(files)
     if not os.path.isfile(f'{proj_dir}/detail-cfg.json') or args.forceful:
-        main(files, proj_dir, proj_code)
+        main(files, proj_dir, proj_code, args.time_allowed)
     else:
         print('Skipped scanning - detailed config already exists')
 
@@ -178,7 +247,7 @@ def scan_files(args):
     if args.groupID:
         if not args.groupdir:
             args.groupdir = f'{args.workdir}/groups/{args.groupID}'
-        args.proj_code = get_proj_code(args.groupdir, proj_code)
+        args.proj_code = get_proj_code(args.groupdir, args.proj_code)
         args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
 
     setup_main(args)
