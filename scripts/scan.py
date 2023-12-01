@@ -112,7 +112,7 @@ def get_seconds(time_allowed):
     mins, secs = time_allowed.split(':')
     return int(secs) + 60*int(mins)
 
-def main(files, proj_dir, proj_code, logger, time_allowed=None):
+def scan_dataset(files, proj_dir, proj_code, logger, time_allowed=None):
     """Main process handler for scanning phase"""
     logger.debug(f'Assessment for {proj_code}')
 
@@ -124,12 +124,12 @@ def main(files, proj_dir, proj_code, logger, time_allowed=None):
         details = {'skipped':True}
         with open(f'{proj_dir}/detail-cfg.json','w') as f:
             f.write(json.dumps(details))
-        print(f'Skipped scanning - {proj_code}/detail-cfg.json blank file created')
+        logger.info(f'Skipped scanning - {proj_code}/detail-cfg.json blank file created')
         return None
     
     # Perform scans for sample (max 5) files
     count = 0
-    vs = None
+    num_vars = None
     while not escape and len(cpf) < trial_files:
         logger.debug(f'Attempting file {count+1} (min 5, max 100)')
         # Add random file selector here
@@ -145,9 +145,9 @@ def main(files, proj_dir, proj_code, logger, time_allowed=None):
             cpf.append(chunks_per_file)
             volms.append(volume)
 
-            if not vs:
-                vs = vars
-            if vars != vs:
+            if not num_vars:
+                num_vars = vars
+            if vars != num_vars:
                 logger.warn('Variables differ between files')
                 is_varwarn = True
             logger.info(f'Data saved for file {count+1}')
@@ -158,7 +158,9 @@ def main(files, proj_dir, proj_code, logger, time_allowed=None):
             escape = True
         count += 1
     if count > 100:
-        print('Filecount Exceeded: No valid files in first 100 tried')
+        logger.error('Filecount Exceeded: No valid files in first 100 tried')
+
+    logger.debug('Scan complete, writing output file')
     
     avg_cpf = sum(cpf)/len(cpf)
     avg_vol = sum(volms)/len(volms)
@@ -191,24 +193,26 @@ def main(files, proj_dir, proj_code, logger, time_allowed=None):
     with open(f'{proj_dir}/detail-cfg.json','w') as f:
         # Replace with dumping dictionary
         f.write(json.dumps(details))
-    vprint(f'Written config info to {proj_code}/detail-cfg.json')
+    logger.info(f'Written output file {proj_code}/detail-cfg.json')
 
-def setup_main(args):
+def scan_config(args):
+    """Configure scanning and access main section"""
 
     logger = init_logger(args.verbose, args.mode, 'scan')
+    logger.debug(f'Setting up scanning process')
 
     cfg_file = f'{args.proj_dir}/base-cfg.json'
     if os.path.isfile(cfg_file):
         with open(cfg_file) as f:
             cfg = json.load(f)
     else:
-        print(f'Error: cfg file missing or not provided - {cfg_file}')
+        logger.error(f'cfg file missing or not provided - {cfg_file}')
         return None
 
     proj_code = cfg['proj_code']
     workdir   = cfg['workdir']
     proj_dir  = cfg['proj_dir']
-    print(proj_code, workdir, proj_dir)
+    logger.debug(f'Extracted attributes: {proj_code}, {workdir}, {proj_dir}')
 
     try:
         pattern   = cfg['pattern']
@@ -221,33 +225,16 @@ def setup_main(args):
         make_filelist(pattern, proj_dir)
     
     if not os.path.isfile(filelist):
-        print('Error: No filelist detected - ',filelist)
+        logger.error(f'No filelist detected - {filelist}')
         return None
 
     with open(filelist) as f:
         files = [r.strip() for r in f.readlines()]
         numfiles = len(files)
     if not os.path.isfile(f'{proj_dir}/detail-cfg.json') or args.forceful:
-        main(files, proj_dir, proj_code, args.time_allowed)
+        scan_dataset(files, proj_dir, proj_code, args.time_allowed)
     else:
-        print('Skipped scanning - detailed config already exists')
+        logger.warn(f'Skipped scanning {proj_code} - detailed config already exists')
 
-# Assume deal with the first file in a directory
-
-def get_proj_code(groupdir, pid):
-    with open(f'{groupdir}/proj_codes.txt') as f:
-        proj_code = f.readlines()[int(pid)].strip()
-    return proj_code
-
-
-def scan_files(args):
-
-    print('Initialising Scan', args.proj_code)
-
-    if args.groupID:
-        if not args.groupdir:
-            args.groupdir = f'{args.workdir}/groups/{args.groupID}'
-        args.proj_code = get_proj_code(args.groupdir, args.proj_code)
-        args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
-
-    setup_main(args)
+if __name__ == '__main__':
+    print('Kerchunk Pipeline Config Scanner - run using master scripts')
