@@ -1,3 +1,7 @@
+__author__    = "Daniel Westwood"
+__contact__   = "daniel.westwood@stfc.ac.uk"
+__copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
+
 import os
 import xarray as xr
 import json
@@ -7,49 +11,66 @@ import fsspec
 import random
 import numpy as np
 import glob
+import logging
 
 # Pick a specific variable
 # Find number of dimensions
 # Start in the middle
 # Get bigger until we have a box that has non nan values
 
-def vprint(msg,verb=False):
-    if verb:
-        print(msg)
+levels = [
+    logging.ERROR,
+    logging.WARN,
+    logging.INFO,
+    logging.DEBUG
+]
 
-def compare_xk(xbox, kbox, faillog, vname, step='', verb=False):
-    vprint('Starting xk comparison',verb=verb)
-    rtol = np.abs(np.nanmean(kbox))/20
+def init_logger(verbose, mode, name):
+    """Logger object init and configure with formatting"""
+    verbose = min(verbose, len(levels-1))
+
+    logger = logging.getLogger(name)
+    logger.setLevel(levels[verbose])
+
+    ch = logging.StreamHandler()
+    ch.setLevel(levels[verbose])
+
+    formatter = logging.Formatter('%(levelname)s [%(name)s]: %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    return logger
+
+def compare_xk(vname, netbox, kerchunk_box, logger):
+    """Compare a NetCDF-derived ND array to a Kerchunk-derived one"""
+    logger.debug('Starting xk comparison')
+
+    tolerance = np.abs(np.nanmean(kerchunk_box))/1000
     # Tolerance 0.1% of mean value for xarray set
-    failed = False
-    closeness = np.isclose(xbox, kbox, rtol=rtol, equal_nan=True)
-    if closeness[closeness == False].size > 0:
-        vprint(' > Failed elementwise comparison XXX',verb=verb)
-        faillog.append(f'ElementwiseFail: {vname} - {step}')
-        failed = True
-    if np.abs(np.nanmax(kbox) - np.nanmax(xbox)) > rtol:
-        vprint(' > Failed maximum comparison XXX',verb=verb)
-        faillog.append(f'MaxFail: {vname} - {step}')
-        failed = True
-    if np.abs(np.nanmin(kbox) - np.nanmin(xbox)) > rtol:
-        vprint(' > Failed minimum comparison XXX',verb=verb)
-        faillog.append(f'MinFail: {vname} - {step}')
-        failed = True
-    if np.abs(np.nanmean(kbox) - np.nanmean(xbox)) > rtol:
-        vprint(' > Failed mean comparison XXX',verb=verb)
-        faillog.append(f'MeanFail: {vname} - {step}')
-        failed = True
-    if not failed:
-        vprint('Passed all growbox tests',verb=verb)
-    return (not failed), faillog 
 
-def find_dimensions(dimlen, depth):
+    closeness = np.isclose(netbox, kerchunk_box, rtol=tolerance, equal_nan=True)
+    if closeness[closeness == False].size > 0:
+        logger.warn(f'Failed elementwise comparison for {vname}')
+        return False
+    if np.abs(np.nanmax(kerchunk_box) - np.nanmax(netbox)) > tolerance:
+        logger.warn(f'Failed maximum comparison for {vname}')
+        return False
+    if np.abs(np.nanmin(kerchunk_box) - np.nanmin(netbox)) > tolerance:
+        logger.warn(f'Failed minimum comparison for {vname}')
+        return False
+    if np.abs(np.nanmean(kerchunk_box) - np.nanmean(netbox)) > tolerance:
+        logger.warn(f'Failed mean comparison for {vname}')
+        return False
+    return True
+
+def find_dimensions(dimlen, divisions):
+    """Determine index of slice end position given length of dimension and fraction to assess"""
     # Round down then add 1
-    slicemax = int(dimlen/depth)+1
+    slicemax = int(dimlen/divisions)+1
     return slicemax
 
 def squeeze_dims(variable):
-    # Correct 1-size dimensions:
+    """Remove 1-length dimensions from datasets - removes need for comparison if 1-length not present"""
     concat_axes = []
     for x, d in enumerate(variable.shape):
         if d == 1:
@@ -58,31 +79,40 @@ def squeeze_dims(variable):
         variable = variable.squeeze(axis=dim)
     return variable
 
-def get_vslice(shape, dtypes, lengths, depth):
+def get_vslice(shape, dtypes, lengths, divisions, logger):
+    """Assemble dataset slice given the shape of the array and dimensions involved"""
+    logger.debug(f'Getting slice at division level {divisions}')
+
     vslice = []
     for x, dim in enumerate(shape):
         if np.issubdtype(dtypes[x], np.datetime64):
-            vslice.append(slice(0,find_dimensions(lengths[x],depth)))
+            vslice.append(slice(0,find_dimensions(lengths[x],divisions)))
         elif dim == 1:
             vslice.append(slice(0,1))
         else:
-            vslice.append(slice(0,find_dimensions(dim,depth)))
+            vslice.append(slice(0,find_dimensions(dim,divisions)))
     return vslice
 
-def test_growbox(xvariable, kvariable, vname, depth, faillog, verb=False):
-    # Run growing-box test for specified variable from xarray and kerchunk datasets
-    #if depth % 10 == 0:
-        #vprint(depth, verb=verb)
+def test_growbox(xvariable, kvariable, vname, divisions, logger):
+    """Run growing-box test for specified variable from xarray and kerchunk datasets"""
+    logger.debug(f'Starting growbox for {vname}')
+
+    if divisions % 10 == 0:
+        logger.debug(f'Attempting growbox for {divisions} divisions')
+
+    # Squeeze (remove 1-length) dimensions if variable datasets have size greater than 1
+    # If only one dimension present, dataset cannot be squeezed further.
     if xvariable.size > 1 and kvariable.size > 1:
         xvariable = squeeze_dims(xvariable)
         kvariable = squeeze_dims(kvariable)
 
+    # Get variable slice for this set of divisions (smallest is 3 divisions, otherwise use whole selection 1 division)
     vslice = []
-    if depth != 2:
+    if divisions > 1:
         shape = xvariable.shape
         dtypes  = [xvariable[xvariable.dims[x]].dtype for x in range(len(xvariable.shape))]
-        lengths = [len(xvariable[xvariable.dims[x]]) for x in range(len(xvariable.shape))]
-        vslice = get_vslice(shape, dtypes, lengths, depth)
+        lengths = [len(xvariable[xvariable.dims[x]])  for x in range(len(xvariable.shape))]
+        vslice = get_vslice(shape, dtypes, lengths, divisions)
 
         xbox = xvariable[tuple(vslice)]
         kbox = kvariable[tuple(vslice)]
@@ -94,108 +124,121 @@ def test_growbox(xvariable, kvariable, vname, depth, faillog, verb=False):
         kb = np.array(kbox)
         isnan = np.all(kb!=kb)
     except TypeError as err:
-        faillog.append(f'TypeError:{err} - nan conversion')
+        logger.error(f'NaN conversion - {err}')
         isnan = True
     except KeyError as err:
-        faillog.append(f'KeyError:{err} - check versions')
+        logger.error(f'{err} - check versions')
         isnan = True
     if kbox.size > 1 and not isnan:
         # Evaluate kerchunk vs xarray and stop here
-        vprint(f' > Found non-nan values with box-size: {int(kbox.size)}',verb=verb)
-        return compare_xk(xbox, kbox, faillog, vname, verb=verb)
+        logger.debug(f'Found non-nan values with box-size: {int(kbox.size)}')
+        return compare_xk(vname, xbox, kbox, vname, logger)
     else:
-        if depth > 2:
-            return test_growbox(xvariable, kvariable, vname, int(depth/2), faillog, verb=verb)
+        if divisions > 2:
+            # Recursive search for increasing size (decreasing divisions)
+            return test_growbox(xvariable, kvariable, vname, int(divisions/2), logger)
         else:
-            print(f' > Failed to find non-NaN slice (depth: {depth}, var: {vname})')
-            return 'soft-fail', faillog
+            logger.warn(f'Failed to find non-NaN slice (divisions: {divisions}, var: {vname})')
+            return 422 # Unprocessable Entity
 
-def test_single_time(xobj, kobj, faillog, step='', verb=False):
-    # Test all variables
+def test_single_file(index, xobj, kobj, logger):
+    """Run all tests for a single file"""
+    logger.debug(f'Running tests for {index}')
     vars = []
     for v in list(xobj.variables):
         if 'time' not in str(v) and str(xobj[v].dtype) in ['float32','int32','int64','float64']:
             vars.append(v)
 
-    # Determine number of attempts to make - now testing all variables
+    # Attempt testing on all non-time variables
     attempts = len(vars)
-
-    totalpass = True
-    softfail = True
     sizes = []
-    print()
-    print(' . Starting generic metadata tests .')
+    logger.info('Starting generic metadata tests')
     for v in vars:
         if v not in list(kobj.variables):
-            vprint(f'Test Failed: Variable missing from kerchunk dataset: {v}',verb=verb)
-            faillog.append(f'VariableMissing: {v} - {step}')
-            totalpass = False
+            logger.error(f'Variable missing from kerchunk dataset: {v}')
+            return False
         else:
             xshape = xobj[v].shape
             kshape = kobj[v].shape
             k1shape = kshape[1:]
             if xshape != kshape and xshape != k1shape:
-                vprint(f'Test Failed: Kerchunk/Xarray shape mismatch for: {v} - ({xobj[v].shape}, {kobj[v].shape})',verb=verb)
-                faillog.append(f'ShapeMismatch: {v} - ({xobj[v].shape}, {kobj[v].shape}) - {step}')
-                totalpass = False
+                logger.error(f'Test Failed: Kerchunk/Xarray shape mismatch for: {v} - ({xobj[v].shape}, {kobj[v].shape})')
+                return False
         sizes.append(xobj[v].size)
-    if totalpass:
-        print('All generic tests have passed, proceeding\n')
-    else:
-        print('One or more generic tests failed - aborting\n')
-        return None, None, faillog
-    
-    # Make depth such that initial box has ~1000 items
+    logger.info('All generic tests have passed, proceeding')
+
+    # Make divisions such that initial box has ~1000 items
     defaults = np.array(sizes)/10000
     defaults[defaults < 100] = 100
-    print(f' . Starting growbox method ({attempts} variables).')
-    tried_vars = []
+    logger.info(f'Starting growbox method ({attempts} variables)')
+
+    # Make testing attempts
+    success = True
     for index in range(attempts):
+
         if int(index/attempts) % 10:
-            print(f' > {int((index/attempts)/10)}%')
-        var =  vars[index]
-        tried_times = 0
-        while var in tried_vars and tried_times < 100 and len(tried_vars) < len(vars):
-            var =  vars[random.randint(0,len(vars))]
-            tried_times += 1
-        tried_vars.append(var)
+            logger.debug(f' > {int((index/attempts)/10)}%')
 
-        vprint(f'\nTesting grow-box method for {var}',verb=verb)
-        status, faillog = test_growbox(xobj[var],kobj[var], var, int(defaults[index]), faillog, verb=verb) 
-        if status == 'soft-fail':
-            vprint(f' > Grow-box failed softly for {var}',verb=verb)
-            softfail = True
+        var = vars[index]
+
+        logger.info(f'Testing grow-box method for {var}')
+        status = test_growbox(xobj[var],kobj[var], var, int(defaults[index]), logger) 
+        if status == 422:
+            logger.info(f'Grow-box failed softly for {var}')
+            success = status 
         elif status:
-            vprint(f' > Grow-box method passed for {var}',verb=verb)
+            logger.info(f'Grow-box method passed for {var}')
         else:
-            vprint(f' > Grow-box method failed for {var} XXX',verb=verb)
-            totalpass = False
-    if totalpass:
-        print('Growbox tests have passed, proceeding\n')
-    else:
-        print('One or more growbox tests failed - aborting\n')
-    return totalpass, softfail, faillog
+            logger.error(f'Grow-box method failed for {var}')
+            return False
+        
+    return success
 
-def get_select_files(testpattern):
-    xfiles = glob.glob(testpattern)
+def get_select_files(proj_dir):
+    """Open document containing paths to all NetCDF files, make selections"""
+    with open(f'{proj_dir}/allfiles.txt') as f:
+        xfiles = [r.strip() for r in f.readlines()]
+
     # Open 3 random files in turn
     numfiles = int(len(xfiles)/1000)
     if numfiles < 3:
         numfiles = 3
     if numfiles > len(xfiles):
         numfiles = len(xfiles)
+        fileset = xfiles
 
-    return xfiles, numfiles
-
-def open_kerchunk(kfile, isparq=False):
-    if isparq:
-        kobj = None
     else:
+        indexes= []
+        for f in range(numfiles):
+            testindex = random.randint(0,numfiles)
+            while testindex in indexes:
+                testindex = random.randint(0,numfiles)
+            indexes.append(testindex)
+
+    return indexes, [xfiles[n] for n in indexes]
+
+def open_kerchunk(kfile, logger, isparq=False):
+    """Open kerchunk file from JSON/parquet formats"""
+    if isparq:
+        logger.debug('Opening Kerchunk Parquet store')
+        from fsspec.implementations.reference import ReferenceFileSystem
+        fs = ReferenceFileSystem(
+            kfile, 
+            remote_protocol='file', 
+            target_protocol="file", 
+            lazy=True)
+        return xr.open_dataset(
+            fs.get_mapper(), 
+            engine="zarr",
+            backend_kwargs={"consolidated": False, "decode_times": False}
+        )
+    else:
+        logger.debug('Opening Kerchunk JSON file')
         mapper  = fsspec.get_mapper('reference://',fo=kfile, target_options={"compression":None})
-        kobj    = xr.open_zarr(mapper, consolidated=False)
-    return kobj
+        return xr.open_zarr(mapper, consolidated=False)
 
 def pick_index(nfiles, indexes):
+    """Pick index of new netcdf file randomly, try 100 times"""
     index = random.randint(0,nfiles)
     count = 0
     while index in indexes and count < 100:
@@ -204,117 +247,70 @@ def pick_index(nfiles, indexes):
     indexes.append(index)
     return indexes
 
-def run_tests(testpattern, proj_code, workdir,verb=False, mem_override=False):
-    kfile   = f'{workdir}/{proj_code}.json'
-    if not os.path.isfile(kfile):
-        print('no such file',kfile)
-        return False
+def get_kerchunk_file(args, logger):
+    """Gets the name of the latest kerchunk file for this project code"""
+    files = glob.glob(args.proj_dir)
+    kfiles = []
+    for f in files:
+        if 'kerchunk' in f:
+            kfiles.append(f)
+    if kfiles == []:
+        return None
+    kf = sorted(kfiles)[-1]
+    logger.info(f'Selected {kf} from {len(kfiles)} available')
+    return os.path.join(args.proj_dir, kf) # Latest version
 
-    print('Starting tests for',proj_code)
-    print()
-    if type(testpattern) == list:
-        xfiles = testpattern
-        numfiles = len(xfiles)
-    else:
-        xfiles, numfiles = get_select_files(testpattern)
-    indexes = []
+def validate_dataset(args):
+    """Perform validation steps for specific dataset defined here"""
 
-    selection = int(len(xfiles)/100)
-    if selection < 10:
-        selection = 10
+    # Missing the kerchunk file name - given in config file or worked out?
 
-    vprint(f'Opening kerchunk dataset',verb=verb)
+    logger = init_logger(args.verbose, args.mode,'validate')
+
+    logger.info(f'Starting tests for {args.proj_code}')
+    indexes, xfiles = get_select_files(args.proj_dir)
+
+    logger.info(f'Opening kerchunk dataset')
+
+    kfile = get_kerchunk_file(args, logger)
+    if not kfile:
+        logger.error(f'No Kerchunk file located at {args.proj_dir} - exiting')
+        return None
+    
     kobj = open_kerchunk(kfile)
-
     totalpass = True
-    faillog = []
 
-    for step in range(selection):
-        print(f'Running tests for file {step+1}/{selection}')
-        indexes = pick_index(len(xfiles)-1, indexes)
-        index   = indexes[-1]
-        xfile = xfiles[index]
-
-        vprint(f'Opening xarray object {step+1}/{selection}',verb=verb)
+    for step in range(len(indexes)):
+        logger.info(f'Running tests for selected file: {indexes[step]} ({step+1}/{len(indexes)}')
+        xfile = xfiles[step]
 
         # Memory Size Check
-        if os.path.getsize(xfile) > 4e9 and not mem_override: # 3GB file
-            print('Memory Exception warning - ensure you have 12GB or more dedicated to this task')
-            faillog.append(f'MemException: {os.path.getsize(xfile)}, file {index}')
-            return False, False, faillog
+        logger.debug('Checking memory size of expected netcdf file')
+        if os.path.getsize(xfile) > 4e9 and not args.forceful: # 3GB file
+            logger.error('Memory Exception - ensure you have 12GB or more dedicated to this task')
+            return False
 
         # Temporal Aquisition Check
+        logger.debug('Checking temporal selection is possible')
         xobj = xr.open_dataset(xfile)
         try:
             ksel = kobj.sel(time=xobj.time)
-        except:
+        except Exception as err:
             try:
-                ksel = kobj.isel(time=index)
-            except:
-                vprint('Temporal Selection Error: Unable to select time')
-                faillog.append(f'TemporalError: file {index}')
-                return False, False, faillog
+                ksel = kobj.isel(time=indexes[step])
+            except Exception as err:
+                logger.error(f'Temporal Selection Error: {err}')
+                return False
 
         # Proceed with testing
-        testpass, softfail, faillog = test_single_time(xobj, ksel, faillog, step=index, verb=verb)
-        if not testpass:
-            vprint(f'Testing failed for {step+1}', verb=verb)
-        totalpass = totalpass and testpass
-    
-    if totalpass:
-        print()
-        print('All tests passed for',proj_code)
-    return totalpass, softfail, faillog
-
-mem_override = ('-f' in sys.argv)
-verb         = ('-v' in sys.argv)
-nosave       = ('-n' in sys.argv)
-
-if ('-s' in sys.argv):
-    
-    code     = sys.argv[1]
-    vprint('Opening filelist to extract files')
-    with open(sys.argv[2]) as f:
-        filelist = [r.replace('\n','') for r in f.readlines()]
-
-    workdir  = sys.argv[3]
-
-    pf, soft, log = run_tests(filelist, code, workdir, verb=verb, mem_override=mem_override)
-
-    if not pf:
-        fname = f'{code}_FAIL.txt'
-    else:
-        if soft:
-            fname = f'{code}_SPASS.txt'
+        logger.debug('Proceeding with validation checks')
+        status = test_single_file(step, xobj, ksel, logger)
+        if status == 422:
+            logger.info(f'Testing failed softly for {step+1}')
+            totalpass = status
+        elif status:
+            logger.info(f'Testing passed for {step+1}')
         else:
-            fname = f'{code}_PASS.txt'
-    if not nosave:
-        with open(f'{workdir}/{fname}','w') as f:
-            f.write('\n'.join(log))
-
-else:
-    id = sys.argv[1]
-    workdir = '/gws/nopw/j04/esacci_portal/kerchunk/kfiles_1.1'
-    tempdir = '/gws/nopw/j04/esacci_portal/kerchunk/temp'
-
-    with open(f'{tempdir}/configs/{id}.txt') as f:
-        content = [r.replace('\n','') for r in f.readlines()]
-    pattern  = content[0].split(',')[0]
-    code     = f'{content[0].split(",")[1]}-{content[0].split(",")[2]}'
-
-    if not os.path.isfile(f'{tempdir}/flags/{code}_PASS.txt') and not os.path.isfile(f'{tempdir}/flags/{code}_SPASS.txt'):
-        if os.path.isfile(f'{tempdir}/flags/{code}_FAIL.txt'):
-            os.remove(f'{tempdir}/flags/{code}_FAIL.txt')
-        pf, soft, log = run_tests(pattern, code, workdir, verb=verb, mem_override=mem_override)
-        if not pf:
-            fname = f'{code}_FAIL.txt'
-        else:
-            if soft:
-                fname = f'{code}_SPASS.txt'
-            else:
-                fname = f'{code}_PASS.txt'
-        if not nosave:
-            with open(f'{tempdir}/flags/{fname}','w') as f:
-                f.write('\n'.join(log))
-    else:
-        print('Pass/Softpass detected - skipping')
+            logger.error(f'Testing failed for {step+1}')
+            return False
+    return totalpass
