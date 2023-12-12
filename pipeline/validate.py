@@ -27,7 +27,7 @@ levels = [
 
 def init_logger(verbose, mode, name):
     """Logger object init and configure with formatting"""
-    verbose = min(verbose, len(levels-1))
+    verbose = min(verbose, len(levels)-1)
 
     logger = logging.getLogger(name)
     logger.setLevel(levels[verbose])
@@ -47,21 +47,22 @@ def compare_xk(vname, netbox, kerchunk_box, logger):
 
     tolerance = np.abs(np.nanmean(kerchunk_box))/1000
     # Tolerance 0.1% of mean value for xarray set
-
+    testpass = True
     closeness = np.isclose(netbox, kerchunk_box, rtol=tolerance, equal_nan=True)
     if closeness[closeness == False].size > 0:
         logger.warn(f'Failed elementwise comparison for {vname}')
-        return False
+        logger.error(netbox, kerchunk_box)
+        testpass = False
     if np.abs(np.nanmax(kerchunk_box) - np.nanmax(netbox)) > tolerance:
         logger.warn(f'Failed maximum comparison for {vname}')
-        return False
+        testpass = False
     if np.abs(np.nanmin(kerchunk_box) - np.nanmin(netbox)) > tolerance:
         logger.warn(f'Failed minimum comparison for {vname}')
-        return False
+        testpass = False
     if np.abs(np.nanmean(kerchunk_box) - np.nanmean(netbox)) > tolerance:
         logger.warn(f'Failed mean comparison for {vname}')
-        return False
-    return True
+        testpass = False
+    return testpass
 
 def find_dimensions(dimlen, divisions):
     """Determine index of slice end position given length of dimension and fraction to assess"""
@@ -112,7 +113,7 @@ def test_growbox(xvariable, kvariable, vname, divisions, logger):
         shape = xvariable.shape
         dtypes  = [xvariable[xvariable.dims[x]].dtype for x in range(len(xvariable.shape))]
         lengths = [len(xvariable[xvariable.dims[x]])  for x in range(len(xvariable.shape))]
-        vslice = get_vslice(shape, dtypes, lengths, divisions)
+        vslice = get_vslice(shape, dtypes, lengths, divisions, logger)
 
         xbox = xvariable[tuple(vslice)]
         kbox = kvariable[tuple(vslice)]
@@ -132,7 +133,7 @@ def test_growbox(xvariable, kvariable, vname, divisions, logger):
     if kbox.size > 1 and not isnan:
         # Evaluate kerchunk vs xarray and stop here
         logger.debug(f'Found non-nan values with box-size: {int(kbox.size)}')
-        return compare_xk(vname, xbox, kbox, vname, logger)
+        return compare_xk(vname, xbox, kbox, logger)
     else:
         if divisions > 2:
             # Recursive search for increasing size (decreasing divisions)
@@ -203,19 +204,19 @@ def get_select_files(proj_dir):
     numfiles = int(len(xfiles)/1000)
     if numfiles < 3:
         numfiles = 3
+
     if numfiles > len(xfiles):
         numfiles = len(xfiles)
-        fileset = xfiles
-
+        indexes = [i for i in range(len(xfiles))]
     else:
-        indexes= []
+        indexes = []
         for f in range(numfiles):
             testindex = random.randint(0,numfiles)
             while testindex in indexes:
                 testindex = random.randint(0,numfiles)
             indexes.append(testindex)
 
-    return indexes, [xfiles[n] for n in indexes]
+    return indexes, xfiles
 
 def open_kerchunk(kfile, logger, isparq=False):
     """Open kerchunk file from JSON/parquet formats"""
@@ -249,7 +250,7 @@ def pick_index(nfiles, indexes):
 
 def get_kerchunk_file(args, logger):
     """Gets the name of the latest kerchunk file for this project code"""
-    files = glob.glob(args.proj_dir)
+    files = os.listdir(args.proj_dir) # Get filename only
     kfiles = []
     for f in files:
         if 'kerchunk' in f:
@@ -260,57 +261,90 @@ def get_kerchunk_file(args, logger):
     logger.info(f'Selected {kf} from {len(kfiles)} available')
     return os.path.join(args.proj_dir, kf) # Latest version
 
+def time_slice(kobject, timestamp, indexstamp, logger):
+    try:
+        ksel = kobject.sel(time=timestamp)
+        assert ksel.time.size == 1
+        return ksel
+    except Exception as err:
+        try:
+            ksel = kobject.isel(time=indexstamp)
+            assert ksel.time.size == 1
+            return ksel
+        except Exception as err:
+            logger.warn(f'Temporal Selection Error: {err}')
+            return False
+
 def validate_dataset(args):
     """Perform validation steps for specific dataset defined here"""
-
-    # Missing the kerchunk file name - given in config file or worked out?
-
     logger = init_logger(args.verbose, args.mode,'validate')
-
     logger.info(f'Starting tests for {args.proj_code}')
+
     indexes, xfiles = get_select_files(args.proj_dir)
 
     logger.info(f'Opening kerchunk dataset')
-
     kfile = get_kerchunk_file(args, logger)
     if not kfile:
         logger.error(f'No Kerchunk file located at {args.proj_dir} - exiting')
         return None
-    
-    kobj = open_kerchunk(kfile)
+    kobj = open_kerchunk(kfile, logger)
+
     totalpass = True
+    possible_selection = True
 
-    for step in range(len(indexes)):
-        logger.info(f'Running tests for selected file: {indexes[step]} ({step+1}/{len(indexes)}')
-        xfile = xfiles[step]
+    if possible_selection:
+        for step in range(len(indexes)):
 
-        # Memory Size Check
-        logger.debug('Checking memory size of expected netcdf file')
-        if os.path.getsize(xfile) > 4e9 and not args.forceful: # 3GB file
-            logger.error('Memory Exception - ensure you have 12GB or more dedicated to this task')
-            return False
+            logger.info(f'Running tests for selected file: {indexes[step]} ({step+1}/{len(indexes)})')
+            xfile = xfiles[step]
 
-        # Temporal Aquisition Check
-        logger.debug('Checking temporal selection is possible')
-        xobj = xr.open_dataset(xfile)
-        try:
-            ksel = kobj.sel(time=xobj.time)
-        except Exception as err:
-            try:
-                ksel = kobj.isel(time=indexes[step])
-            except Exception as err:
-                logger.error(f'Temporal Selection Error: {err}')
+            # Memory Size Check
+            logger.debug('Checking memory size of expected netcdf file')
+            if os.path.getsize(xfile) > 4e9 and not args.forceful: # 3GB file
+                logger.error('Memory Exception - ensure you have 12GB or more dedicated to this task')
                 return False
 
-        # Proceed with testing
-        logger.debug('Proceeding with validation checks')
-        status = test_single_file(step, xobj, ksel, logger)
-        if status == 422:
-            logger.info(f'Testing failed softly for {step+1}')
-            totalpass = status
-        elif status:
-            logger.info(f'Testing passed for {step+1}')
-        else:
-            logger.error(f'Testing failed for {step+1}')
-            return False
-    return totalpass
+            # Temporal Aquisition Check
+            logger.debug('Checking temporal selection is possible')
+            xobj = xr.open_dataset(xfile)
+            if xobj.time.size > 1:
+                try:
+                    xsel = xobj.isel(time=indexes[step])
+                    assert xsel.time.size == 1
+                    timestamp = xsel.time
+                except AssertionError:
+                    # Unable to do temporal selection, must take all sections as average
+                    timestamp = None
+            else:
+                xsel = xobj
+            
+            if timestamp:
+                ksel = time_slice(kobj, timestamp, indexes[step], )
+            try:
+                ksel = kobj.sel(time=xobj.time)
+                assert ksel.time.size == 1
+            except Exception as err:
+                try:
+                    ksel = kobj.isel(time=indexes[step])
+                    assert ksel.time.size == 1
+                except Exception as err:
+                    logger.error(f'Temporal Selection Error: {err}')
+                    return False
+                
+            print(ksel.time.shape, xobj.time.shape)
+
+            # Proceed with testing
+            logger.debug('Proceeding with validation checks')
+            status = test_single_file(step, xobj, ksel, logger)
+            if status == 422:
+                logger.info(f'Testing failed softly for {step+1}')
+                totalpass = status
+            elif status:
+                logger.info(f'Testing passed for {step+1}')
+            else:
+                logger.error(f'Testing failed for {step+1}')
+                return False
+        return totalpass
+
+if __name__ == "__main__":
+    print('Validation Process for Kerchunk Pipeline - run with single_run.py')

@@ -2,28 +2,46 @@
 import os
 import json
 import sys
+import logging
 
 WORKDIR = None
 CONCAT_MSG = 'See individual files for more details'
 
-def output(msg,verb=True, mode=None, log=None, pref=0):
-    prefixes = ['INFO','ERR']
-    prefix = prefixes[pref]
-    if verb:
-        if mode == 'log':
-            log += f'{prefix}: {msg}\n'
-        else:
-            print(f'>> {prefix}: {msg}')
-    return log
+levels = [
+    logging.WARN,
+    logging.INFO,
+    logging.DEBUG
+]
+
+def init_logger(verbose, mode, name):
+    """Logger object init and configure with formatting"""
+    verbose = min(verbose, len(levels)-1)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(levels[verbose])
+
+    ch = logging.StreamHandler()
+    ch.setLevel(levels[verbose])
+
+    formatter = logging.Formatter('%(levelname)s [%(name)s]: %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    return logger
 
 class Indexer:
-
     def __init__(self, 
                  proj_code, 
                  cfg_file=None, detail_file=None, workdir=WORKDIR, 
                  issave_meta=False, refresh='', forceful=False, 
-                 verb=False, mode=None, version_no=1,
+                 verb=0, mode=None, version_no=1,
                  concat_msg=CONCAT_MSG):
+        """Initialise indexer for this dataset, set all variables and prepare for computation"""
+
+        self.logger = init_logger(verb, mode, 'compute-serial')
+
+        self.logger.debug('Starting variable definitions')
+
         self.workdir   = workdir
         self.proj_code = proj_code
 
@@ -39,7 +57,7 @@ class Indexer:
         else:
             self.log = None
 
-        self.log = output('Loading config information', verb=self.verb, mode=self.mode, log=self.log)
+        self.logger.debug('Loading config information')
         with open(cfg_file) as f:
             cfg = json.load(f)
 
@@ -58,8 +76,8 @@ class Indexer:
         else:
             self.use_json = True
 
-        self.outfile = f'{self.proj_dir}/kerchunk-{version_no}a.json'
-        self.outstore = f'{self.proj_dir}/kerchunk-{version_no}a.parq'
+        self.outfile     = f'{self.proj_dir}/kerchunk-{version_no}a.json'
+        self.outstore    = f'{self.proj_dir}/kerchunk-{version_no}a.parq'
         self.record_size = 167 # Default
 
         self.filelist = f'{self.proj_dir}/allfiles.txt'
@@ -68,6 +86,8 @@ class Indexer:
         if refresh == '' and os.path.isfile(f'{self.cache}/temp_zattrs.json'):
             # Load data instead of create from scratch
             self.load_refs = True
+            self.logger.debug('Found cached data from previous run, loading cache')
+
         if not os.path.isdir(self.cache):
             os.makedirs(self.cache)
 
@@ -78,48 +98,60 @@ class Indexer:
         self.pre_kwargs     = {}
 
         self.get_files()
-        self.log = output('Finished all setup steps', verb=self.verb, mode=self.mode, log=self.log)
+        self.logger.info('Finished all setup steps')
 
     def get_files(self):
+        """Get the list of files from the filelist for this dataset"""
         with open(self.filelist) as f:
             self.listfiles = [r.strip() for r in f.readlines()]
-
         self.limiter = len(self.listfiles)
 
     def hdf5_to_zarr(self, nfile, **kwargs):
+        """Converter for HDF5 type files"""
         from kerchunk.hdf import SingleHdf5ToZarr
         try:
             return SingleHdf5ToZarr(nfile, **kwargs).translate()
-        except:
+        except Exception as err:
+            self.logger.error(f'Issue with dataset {nfile} - {err}')
+            self.success = False
             return None
 
     def ncf3_to_zarr(self, nfile, **kwargs):
+        """Converter for NetCDF3 type files"""
         from kerchunk.netCDF3 import NetCDF3ToZarr
         try:
             return NetCDF3ToZarr(nfile, **kwargs).translate()
-        except:
+        except Exception as err:
+            self.logger.error(f'Issue with dataset {nfile} - {err}')
+            self.success = False
             return None
         
     def tiff_to_zarr(self, tfile, **kwargs):
-        self.log = output('Tiff conversion not yet implemented - aborting', mode=self.mode, log=self.log, pref=1)
-        raise
+        """Converter for Tiff type files"""
+        self.logger.error('Tiff conversion not yet implemented - aborting')
+        self.success = False
+        return None
 
     def concat_data(self, refs, zattrs):
+        """Concatenation of ref data for different kerchunk schemes"""
         if self.use_json:
+            self.logger.info('Concatenating to JSON format Kerchunk file')
             self.data_to_json(refs, zattrs)
         else:
+            self.logger.info('Concatenating to Parquet format Kerchunk store')
             self.data_to_parq(refs)
 
     def data_to_parq(self, refs):
+        """Concatenating to Parquet format Kerchunk store"""
         from kerchunk.combine import MultiZarrToZarr
+        from fsspec import filesystem
         from fsspec.implementations.reference import LazyReferenceMapper
-        import fsspec
 
-        self.log = output('Starting parquet-write process', verb=self.verb, mode=self.mode, log=self.log)
+        self.logger.info('Starting parquet-write process')
 
         if not os.path.isdir(self.outstore):
             os.makedirs(self.outstore)
-        out = LazyReferenceMapper.create(self.record_size, self.outstore, fs = fsspec.filesystem("file"), **self.pre_kwargs)
+        out = LazyReferenceMapper.create(self.record_size, self.outstore, fs = filesystem("file"), **self.pre_kwargs)
 
         out_dict = MultiZarrToZarr(
             refs,
@@ -130,28 +162,13 @@ class Indexer:
         ).translate()
         
         out.flush()
-        self.log = output('Written to parquet store', verb=self.verb, mode=self.mode, log=self.log)
-
-    def add_kerchunk_history(self, attrs):
-        from datetime import datetime
-        # Get current time
-        # Format for different uses
-        now = datetime.now()
-        hist = attrs['history'].split('\n')
-        if 'Kerchunk' in hist[-1]:
-            hist[-1] = 'Kerchunk file updated on ' + now.strftime("%D")
-        else:
-            hist.append('Kerchunk file created on ' + now.strftime("%D"))
-        attrs['history'] = '\n'.join(hist)
-        
-        attrs['kerchunk_revision'] = self.version_no
-        attrs['kerchunk_creation_date'] = now.strftime("%d%m%yT%H%M%S")
-        return attrs
+        self.logger.info('Written to parquet store')
 
     def data_to_json(self, refs, zattrs):
+        """Concatenating to JSON format Kerchunk file"""
         from kerchunk.combine import MultiZarrToZarr
 
-        self.log = output('Starting JSON-write process', verb=self.verb, mode=self.mode, log=self.log)
+        self.logger.info('Starting JSON-write process')
 
         # Already have default options saved to class variables
         mzz = MultiZarrToZarr(refs, concat_dims=['time'], **self.combine_kwargs).translate()
@@ -164,15 +181,39 @@ class Indexer:
         with open(self.outfile,'w') as f:
             f.write(json.dumps(mzz))
 
-        self.log = output('Written to JSON file', verb=self.verb, mode=self.mode, log=self.log)
+        self.logger.info('Written to JSON file')
 
-    def correct_meta(self, allzattrs):
+    def add_kerchunk_history(self, attrs):
+        """Add kerchunk variables to the metadata for this dataset"""
+
+        from datetime import datetime
+
+        # Get current time
+        # Format for different uses
+        now = datetime.now()
+        hist = attrs['history'].split('\n')
+
+        if 'Kerchunk' in hist[-1]:
+            hist[-1] = 'Kerchunk file updated on ' + now.strftime("%D")
+        else:
+            hist.append('Kerchunk file created on ' + now.strftime("%D"))
+        attrs['history'] = '\n'.join(hist)
+        
+        attrs['kerchunk_revision'] = self.version_no
+        attrs['kerchunk_creation_date'] = now.strftime("%d%m%yT%H%M%S")
+        return attrs
+
+    def correct_metadata(self, allzattrs):
         # General function for correcting metadata
         # - Combine all existing metadata in standard way
         # - Add updates and remove removals specified by configuration
-        self.log = output('Starting metadata corrections', verb=self.verb, mode=self.mode, log=self.log)
-        zattrs = self.combine_meta(allzattrs)
-        self.log = output('Applying config info on updates and removals', verb=self.verb, mode=self.mode, log=self.log)
+
+        self.logger.info('Starting metadata corrections')
+        if type(allzattrs) == list:
+            zattrs = self.clean_attr_array(allzattrs)
+        else:
+            zattrs = self.clean_attrs(allzattrs)
+        self.logger.debug('Applying config info on updates and removals')
 
         if self.updates:
             for update in self.updates.keys():
@@ -182,15 +223,16 @@ class Indexer:
             for key in zattrs:
                 if key not in self.removals:
                     new_zattrs[key] = zattrs[key]
-        self.log = output('Finished metadata corrections', verb=self.verb, mode=self.mode, log=self.log)
+
+        self.logger.info('Finished metadata corrections')
         return zattrs
         
-    def combine_meta(self, allzattrs):
+    def clean_attr_array(self, allzattrs):
         # Collect attributes from all files, 
         # determine which are always equal, which have differences
         base = json.loads(allzattrs[0])
 
-        self.log = output('Correcting time attributes', verb=self.verb, mode=self.mode, log=self.log)
+        self.logger.info('Correcting time attributes')
         # Sort out time metadata here
         times = {}
         all_values = {}
@@ -215,8 +257,8 @@ class Indexer:
                     if base[attr] != zattrs[attr]:
                         nonequal[attr] = False
 
-        base = {**base, **self.adjust_time_meta(times)}
-        self.log = output('Comparing nonequal keys', verb=self.verb, mode=self.mode, log=self.log)
+        base = {**base, **self.check_time_attributes(times)}
+        self.logger.debug('Comparing similar keys')
 
         for attr in nonequal.keys():
             if len(set(all_values[attr])) == 1:
@@ -225,9 +267,14 @@ class Indexer:
                 base[attr] = self.concat_msg
         if len(nonequal.keys()) > 0:
             self.success = False
+
+        self.logger.info('Finished checking similar keys')
         return base
 
-    def adjust_time_meta(self, times):
+    def clean_attrs(self, zattrs):
+        pass
+
+    def check_time_attributes(self, times):
         # Takes dict of time attributes with lists of values
         # Sort time arrays
         # Assume time_coverage_start, time_coverage_end, duration (2 or 3 variables)
@@ -250,23 +297,27 @@ class Indexer:
                     combined[k] = list(set(times[k]))
 
         duration = '' # Need to compare start/end
-        self.log = output('Finished time corrections', verb=self.verb, mode=self.mode, log=self.log)
+        self.logger.info('Finished time corrections')
         return combined
 
-    def save_meta(self,zattrs):
+    def save_metadata(self,zattrs):
+        """Cache metadata global attributes in a temporary file"""
         with open(f'{self.cache}/temp_zattrs.json','w') as f:
             f.write(json.dumps(zattrs))
-        self.log = output('Saved global attribute cache', verb=self.verb, mode=self.mode, log=self.log)
+        self.logger.debug('Saved global attribute cache')
 
-    def save_singles(self, refs):
+    def save_cache(self, refs, zattrs):
+        """Cache reference data in temporary json reference files"""
         for x, r in enumerate(refs):
             cache_ref = f'{self.cache}/{x}.json'
             with open(cache_ref,'w') as f:
                 f.write(json.dumps(r))
-        self.log = output('Saved metadata cache', verb=self.verb, mode=self.mode, log=self.log)
+        self.save_metadata(zattrs)
+        self.logger.debug('Saved metadata cache')
         # All file content saved for later reconcatenation
 
     def safe_create(self, nfile, **kwargs):
+        """Safe creation allows for known issues and tries multiple drivers"""
         drivers = {
             'hdf5':self.hdf5_to_zarr,
             'ncf3':self.ncf3_to_zarr,
@@ -297,7 +348,7 @@ class Indexer:
         refs = []
         allzattrs = []
         for x, nfile in enumerate(self.listfiles[:self.limiter]):
-            self.log = output(f'Creating refs: {x+1}/{len(self.listfiles)}', verb=self.verb, mode=self.mode, log=self.log)
+            self.logger.debug(f'Creating refs: {x+1}/{len(self.listfiles)}')
             zarr_content = self.safe_create(nfile, **self.create_kwargs)
             if zarr_content:
                 allzattrs.append(zarr_content['refs']['.zattrs'])
@@ -307,38 +358,37 @@ class Indexer:
     def load_kdata(self):
         refs = []
         for x, nfile in enumerate(self.listfiles[:self.limiter]):
-            self.log = output(f'Loading refs: {x+1}/{len(self.listfiles)}', verb=self.verb, mode=self.mode, log=self.log)
+            self.logger.debug(f'Loading refs: {x+1}/{len(self.listfiles)}')
             cache_ref = f'{self.cache}/{x}.json'
             with open(cache_ref) as f:
                 refs.append(json.load(f))
 
-        self.log = output(f'Loading attributes: {x+1}/{len(self.listfiles)}', verb=self.verb, mode=self.mode, log=self.log)
+        self.logger.debug(f'Loading attributes: {x+1}/{len(self.listfiles)}')
         with open(f'{self.cache}/temp_zattrs.json') as f:
             zattrs = json.load(f)
         return zattrs, refs
 
     def create_refs(self):
-        self.log = output('Starting conversion', verb=self.verb, mode=self.mode, log=self.log)
+        self.logger.info('Starting computation')
         if not self.load_refs:
             allzattrs, refs = self.get_kerchunk_data()
-            zattrs = self.correct_meta(allzattrs)
+            zattrs = self.correct_metadata(allzattrs)
         else:
             zattrs, refs = self.load_kdata()
-            zattrs = self.correct_meta(zattrs)
+            zattrs = self.correct_metadata(zattrs)
 
         try:
             if self.success:
-                self.log = output('Single conversions complete, starting concatenation', verb=self.verb, mode=self.mode, log=self.log)
+                self.logger.info('Single conversions complete, starting concatenation')
                 self.concat_data(refs, zattrs)
                 if self.issave_meta:
                     self.save_meta(zattrs)
             else:
-                self.log = output('Issue with conversion unspecified - aborting process', mode=self.mode, log=self.log, pref=1)
-                self.save_meta(zattrs)
-                self.save_singles(refs)
+                self.logger.info('Issue with conversion unspecified - aborting process')
+                self.save_cache(refs, zattrs)
         except TypeError as err:
-            print(err)
-            raise
+            self.logger.error(f'Detected fatal error - {err}')
+            raise err
 
 if __name__ == '__main__':
     print('Serial Processor for Kerchunk Pipeline - run with single_run.py')
