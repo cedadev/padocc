@@ -127,7 +127,12 @@ def main(args):
         f.write(sb)
 
     # Submit job array for this group in this phase
-    print(f'sbatch --array=0-{group_len} {group_phase_sbatch}')
+    if args.dryrun:
+        logger.info('DRYRUN: sbatch command: ')
+        print(f'sbatch --array=0-{group_len} {group_phase_sbatch}')
+    else:
+        os.system(f'sbatch --array=0-{group_len} {group_phase_sbatch}')
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')
@@ -153,7 +158,7 @@ if __name__ == '__main__':
     parser.add_argument('-f',dest='forceful', action='store_true', help='Force overwrite of steps if previously done')
 
     parser.add_argument('-v','--verbose',dest='verbose' , action='count', default=0, help='Print helpful statements while running')
-
+    parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
 
     args = parser.parse_args()
 
