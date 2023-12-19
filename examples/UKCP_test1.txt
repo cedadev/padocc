@@ -1,0 +1,2 @@
+/badc/ukcp18/data/land-rcm/uk/12km/rcp85/01/tasmax/day/v20190731/*.nc
+/badc/ukcp18/data/land-rcm/uk/12km/rcp85/01/tasmin/day/v20190731/*.nc
