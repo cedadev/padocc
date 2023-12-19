@@ -10,7 +10,6 @@ import json
 import logging
 
 levels = [
-    logging.ERROR,
     logging.WARN,
     logging.INFO,
     logging.DEBUG
@@ -18,7 +17,7 @@ levels = [
 
 def init_logger(verbose, mode, name):
     """Logger object init and configure with formatting"""
-    verbose = min(verbose, len(levels-1))
+    verbose = min(verbose, len(levels)-1)
 
     logger = logging.getLogger(name)
     logger.setLevel(levels[verbose])
@@ -32,28 +31,21 @@ def init_logger(verbose, mode, name):
 
     return logger
 
-def output(msg,verb=True, mode=None, log=None, pref=0):
-    prefixes = ['INFO','ERR']
-    prefix = prefixes[pref]
-    if verb:
-        if mode == 'log':
-            log += f'{prefix}: {msg}\n'
-        else:
-            print(f'> {prefix}: {msg}')
-    return log
-
 def run_init(args, logger):
-    from scripts.init import init_config
+    """Start initialisation for single dataset"""
+    from pipeline.init import init_config
     logger.info('Starting init process')
-    init_config(args)
+    return init_config(args)
 
 def run_scan(args, logger):
-    from scripts.scan import setup_main
+    """Start scanning process for individual dataset"""
+    from pipeline.scan import scan_config
     logger.info('Starting scan process')
-    setup_main(args)
+    return scan_config(args)
 
 def run_compute(args, logger):
-    from scripts.compute.serial_process import Indexer
+    """Setup computation parameters for individual dataset"""
+    from pipeline.compute.serial_process import Indexer
 
     logger.info(f'Starting computation step for {args.proj_code}')
 
@@ -88,7 +80,7 @@ def run_compute(args, logger):
 
     if complete and not escape:
 
-        Indexer(args.proj_code, cfg_file=cfg_file, detail_file=detail_file, 
+        return Indexer(args.proj_code, cfg_file=cfg_file, detail_file=detail_file, 
                 workdir=args.workdir, issave_meta=False, forceful=args.forceful,
                 verb=args.verbose, mode=args.mode,
                 version_no=version_no, concat_msg=concat_msg).create_refs()
@@ -96,13 +88,21 @@ def run_compute(args, logger):
         logger.error('Output file already exists and there is no plan to overwrite')
         return None
 
+def run_validation(args, logger):
+    """Start validation of single dataset"""
+    from pipeline.validate import validate_dataset
+    logger.info('Starting validation process')
+    return validate_dataset(args)
+
 drivers = {
     'init':run_init,
     'scan':run_scan,
-    'compute': run_compute
+    'compute': run_compute,
+    'validate': run_validation
 }
 
 def get_proj_code(groupdir, pid, repeat_id, subset=0, id=0):
+    """Get the correct code given a slurm id from a group of project codes"""
     with open(f'{groupdir}/proj_codes_{repeat_id}.txt') as f:
         proj_code = f.readlines()[int(pid)*subset + id].strip()
     return proj_code
@@ -117,11 +117,15 @@ def get_attribute(env, args, var, logger):
         return None
     
 def main(args):
-
+    """Main function for single run processing"""
     logger = init_logger(args.verbose, args.mode, 'main')
 
     args.workdir  = get_attribute('WORKDIR', args, 'workdir', logger)
     args.groupdir = get_attribute('GROUPDIR', args, 'groupdir', logger)
+
+    logger.debug('Pipeline variables:')
+    logger.debug(f'WORKDIR : {args.workdir}')
+    logger.debug(f'GROUPDIR: {args.groupdir}')
 
     if not args.workdir:
         logger.error('No working directory given as input or from environment')
@@ -131,9 +135,18 @@ def main(args):
         logger.error('Workdir provided is not writable')
         return None
 
+    logger.debug('Passed initial writability checks')
+
     for id in range(args.subset):
 
         if args.groupID:
+
+            # Avoid stray groupdir definition in environment variables
+            cmd_groupdir = f'{args.workdir}/groups/{args.groupID}'
+            if cmd_groupdir != args.groupdir:
+                logger.warning(f'Overriding environment-defined groupdir value with: {cmd_groupdir}')
+                args.groupdir = cmd_groupdir
+
             subset_id = args.proj_code
             args.proj_code = get_proj_code(args.groupdir, subset_id, args.repeat_id, subset=args.subset, id=id)
             args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
@@ -141,12 +154,18 @@ def main(args):
             args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
 
         if args.phase in drivers:
-            try:
-                drivers[args.phase](args, logger)
-            except Exception as e:
-                logger.error(f'issue with proj_code "{args.proj_code}" - {e}')
+            logger.debug('Pipeline variables (reconfigured):')
+            logger.debug(f'WORKDIR : {args.workdir}')
+            logger.debug(f'GROUPDIR: {args.groupdir}')
+            logger.debug('Using attributes:')
+            logger.debug(f'proj_code: {args.proj_code}')
+            logger.debug(f'proj_dir : {args.proj_dir}')
+            drivers[args.phase](args, logger)
         else:
             logger.error(f'"{args.phase}" not recognised, please select from {list(drivers.keys())}')
+    logger.info('Pipeline phase execution finished')
+    print('Success')
+    return True
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a pipeline step for a single dataset')
@@ -158,17 +177,22 @@ if __name__ == '__main__':
     parser.add_argument('-G','--groupID',   dest='groupID',      help='Group identifier label')
     parser.add_argument('-p','--proj_dir',    dest='proj_dir',      help='Project directory for pipeline')
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
-    parser.add_argument('-m','--mode',        dest='mode',          help='Print or record information (log or std)')
+    parser.add_argument('-m','--mode',        dest='mode', default=None, help='Print or record information (log or std)')
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
+    parser.add_argument('-b','--bypass-errs', dest='bypass', action='store_true', help='Bypass all error messages - skip failed jobs')
 
     parser.add_argument('-s','--subset',    dest='subset',    default=1,   type=int, help='Size of subset within group')
     parser.add_argument('-r','--repeat_id', dest='repeat_id', default='1', help='Repeat id (1 if first time running, <phase>_<repeat> otherwise)')
 
-    parser.add_argument('-f',dest='forceful', action='store_true', help='Force overwrite of steps if previously done')
+    parser.add_argument('-f', dest='forceful', action='store_true', help='Force overwrite of steps if previously done')
 
-    parser.add_argument('-v','--verbose',dest='verbose' , action='count', default=0, help='Print helpful statements while running')
+    parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Print helpful statements while running')
+    parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
 
     args = parser.parse_args()
-    main(args)
+
+    success = main(args)
+    if not success:
+        raise
 
     
