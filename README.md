@@ -25,7 +25,7 @@ Sets all environment variables, if a shell script is already present with the co
  - KVENV: (Required for parallel) - Path to virtual environment.
 All of the above can be passed as flags to each script, or set as environment variables before processing.
 
-## 1 Running the Pipeline - Examples
+## 1. Running the Pipeline - Examples
 
 ### 1.1 Single running of an isolated dataset
 `python single_run.py scan a11x34 -vfbd`
@@ -69,7 +69,7 @@ This command differs only with the level of verboseness, with this many 'v's we 
 This final step will submit all datasets for validation, which includes copying the final output file to the `/complete` directory within the workdir set as an environment variable.
 
 
-## 2 Pipeline Phases in detail
+## 2. Pipeline Phases in detail
 
 ### 2.1 Init
 Initialise and configure for running the pipeline for any number of datasets in parallel.
@@ -87,38 +87,22 @@ Run kerchunk-scan tool (or similar) to build a test kerchunk file and determine 
  - average chunk size (Tc)
  - total expected kerchunk size (Tk)
 
-### 2.3 Configure
-Determine manual/automatic configuration adjustments to computing for later phases.
-This section may need manual interaction in8itially, but with enough runs we can build profiles that fit different dataset types.
-Config Information includes:
- - Metadata adjustments/corrections
- - Time dimension adjustments
- - Record size calculation
-
-### 2.4 Compute
+### 2.3 Compute
 Create parquet store for a specified dataset, using method depending on total expected kerchunk size (Tk)
 
-#### 2.4.1 Large Chunkset Tk value - Parallel (Batch) processing
+#### 2.3.1 Create Kerchunk JSON dataset
+
+#### 2.3.2 Large Chunkset Tk value - Parallel (Batch) processing
  - Batch process to create parts        - batch_process/process_wrapper.py
  - Combine parts using copier script    - combine_refs.py
  - Correct metadata (shape, parameters) - correct_meta.py
  - Run time correction script if necessary - correct_time.py
 
-#### 2.4.2 Small Chunkset Tk value - Serial processing
+#### 2.3.3 Small Chunkset Tk value - Serial processing
 Run create parquet script - create_parq.py
+Not currently supported
 
-#### 2.4.3 Additions
-Edit parquet store in general where necessary:
- - Edit file paths to add dap http links - add_dap.py 
-
-## Post-Processing Phase
-
-### 4. Test
+### 3. Validate
 Run a series of tests on parquet store usage:
  - Ensure small plot success with no errors
  - Ensure large plot (dask gateway) success with no errors or killed job.
-
-### 5. Catalog
-Update catalog system with addition of new parquet store:
- - pystac client
- - intake catalog
