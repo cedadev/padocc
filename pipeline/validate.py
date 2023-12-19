@@ -19,7 +19,6 @@ import logging
 # Get bigger until we have a box that has non nan values
 
 levels = [
-    logging.ERROR,
     logging.WARN,
     logging.INFO,
     logging.DEBUG
@@ -55,12 +54,15 @@ def compare_xk(vname, netbox, kerchunk_box, logger):
         testpass = False
     if np.abs(np.nanmax(kerchunk_box) - np.nanmax(netbox)) > tolerance:
         logger.warn(f'Failed maximum comparison for {vname}')
+        logger.debug('K ' + str(np.nanmax(kerchunk_box)) + ' N ' + str(np.nanmax(netbox)))
         testpass = False
     if np.abs(np.nanmin(kerchunk_box) - np.nanmin(netbox)) > tolerance:
         logger.warn(f'Failed minimum comparison for {vname}')
+        logger.debug('K ' + str(np.nanmin(kerchunk_box)) + ' N ' + str(np.nanmin(netbox)))
         testpass = False
     if np.abs(np.nanmean(kerchunk_box) - np.nanmean(netbox)) > tolerance:
         logger.warn(f'Failed mean comparison for {vname}')
+        logger.debug('K ' + str(np.nanmean(kerchunk_box)) + ' N ' + str(np.nanmean(netbox)))
         testpass = False
     return testpass
 
@@ -142,18 +144,19 @@ def test_growbox(xvariable, kvariable, vname, divisions, logger):
             logger.warn(f'Failed to find non-NaN slice (divisions: {divisions}, var: {vname})')
             return 422 # Unprocessable Entity
 
-def test_single_file(index, xobj, kobj, logger):
+def test_single_timestep(index, xobj, kobj, logger, vars=None):
     """Run all tests for a single file"""
     logger.debug(f'Running tests for {index}')
-    vars = []
-    for v in list(xobj.variables):
-        if 'time' not in str(v) and str(xobj[v].dtype) in ['float32','int32','int64','float64']:
-            vars.append(v)
+    if not vars:
+        vars = []
+        for v in list(xobj.variables):
+            if 'time' not in str(v) and str(xobj[v].dtype) in ['float32','int32','int64','float64']:
+                vars.append(v)
 
     # Attempt testing on all non-time variables
     attempts = len(vars)
     sizes = []
-    logger.info('Starting generic metadata tests')
+    logger.debug('Starting generic metadata tests')
     for v in vars:
         if v not in list(kobj.variables):
             logger.error(f'Variable missing from kerchunk dataset: {v}')
@@ -166,12 +169,12 @@ def test_single_file(index, xobj, kobj, logger):
                 logger.error(f'Test Failed: Kerchunk/Xarray shape mismatch for: {v} - ({xobj[v].shape}, {kobj[v].shape})')
                 return False
         sizes.append(xobj[v].size)
-    logger.info('All generic tests have passed, proceeding')
+    logger.debug('All generic tests have passed, proceeding')
 
     # Make divisions such that initial box has ~1000 items
     defaults = np.array(sizes)/10000
     defaults[defaults < 100] = 100
-    logger.info(f'Starting growbox method ({attempts} variables)')
+    logger.debug(f'Starting growbox method ({attempts} variables)')
 
     # Make testing attempts
     success = True
@@ -182,24 +185,26 @@ def test_single_file(index, xobj, kobj, logger):
 
         var = vars[index]
 
-        logger.info(f'Testing grow-box method for {var}')
+        logger.debug(f'Testing grow-box method for {var}')
         status = test_growbox(xobj[var],kobj[var], var, int(defaults[index]), logger) 
         if status == 422:
-            logger.info(f'Grow-box failed softly for {var}')
+            logger.debug(f'Grow-box failed softly for {var}')
             success = status 
         elif status:
-            logger.info(f'Grow-box method passed for {var}')
+            logger.debug(f'Grow-box method passed for {var}')
         else:
             logger.error(f'Grow-box method failed for {var}')
             return False
         
     return success
 
-def get_select_files(proj_dir):
+def get_select_files(proj_dir, logger):
     """Open document containing paths to all NetCDF files, make selections"""
+    logger.debug('Identifying files to validate')
     with open(f'{proj_dir}/allfiles.txt') as f:
         xfiles = [r.strip() for r in f.readlines()]
 
+    logger.debug(f'Found {len(xfiles)} files - filtering')
     # Open 3 random files in turn
     numfiles = int(len(xfiles)/1000)
     if numfiles < 3:
@@ -215,6 +220,8 @@ def get_select_files(proj_dir):
             while testindex in indexes:
                 testindex = random.randint(0,numfiles)
             indexes.append(testindex)
+
+    logger.debug(f'Filtered fileset to a list of {len(indexes)} files')
 
     return indexes, xfiles
 
@@ -261,27 +268,142 @@ def get_kerchunk_file(args, logger):
     logger.info(f'Selected {kf} from {len(kfiles)} available')
     return os.path.join(args.proj_dir, kf) # Latest version
 
-def time_slice(kobject, timestamp, indexstamp, logger):
+def select_kerchunk(args, kobject, timestamp, indexstamp, rawsize, logger):
+    logger.debug(f'Kerchunk object total time stamps: {kobject.time.size}')
+    if kobject.time.size != rawsize:
+        if args.bypass:
+            logger.warning('Time Size discontinuity at base level - bypassed')
+        else:
+            logger.error('Time Size discontinuity at base level')
+            logger.error(f'K {kobject.time.size} N {rawsize}')
+            logger.error('Check Kerchunk file includes all files if these two values are wildly different')
+            raise ValueError
     try:
         ksel = kobject.sel(time=timestamp)
         assert ksel.time.size == 1
+        logger.debug('Kerchunk timestamp selection was successful')
         return ksel
     except Exception as err:
         try:
             ksel = kobject.isel(time=indexstamp)
             assert ksel.time.size == 1
-            return ksel
+            logger.debug('Kerchunk timestamp selection unsuccessful - switched to index selection')
+            return ksel, rawsize
         except Exception as err:
             logger.warn(f'Temporal Selection Error: {err}')
+            return False, rawsize
+
+def select_all(args, xfiles, i, logger):
+    try:
+        xobj = xr.open_mfdataset(xfiles)
+        if xobj.time.size > 1:
+            xobj = xobj.isel(time=i)
+        assert xobj.time.size == 1
+        xobjs = [xobj]
+        return xobjs
+    except AssertionError:
+        logger.error('Time selection error: complete time series failed to select')
+        return []
+    except Exception as err:
+        if args.bypass:
+            logger.error(f'Unexpected error - {err}')
+            return []
+        else:
+            raise err
+
+def select_netcdfs(args, logger):
+    """Returns a single xarray object with one timestep:
+       - Select a single file and a single timestep from that file
+       - Verify that a single timestep can be selected
+         - If yes, return this xarray object
+         - If no, select all files and select a single timestep from that.
+       - In all cases, returns a list of xarray objects
+    """
+    logger.debug('Performing temporal selections')
+    indexes, xfiles = get_select_files(args.proj_dir, logger)
+
+    xobjs = []
+    many = len(indexes)
+    for one, i in enumerate(indexes):
+
+        # Memory Size Check
+        logger.debug(f'Checking memory size of expected netcdf file for index {i} ({one+1}/{many})')
+        if os.path.getsize(xfiles[i]) > 4e9 and not args.forceful: # 3GB file
+            logger.error('Memory Exception - ensure you have 12GB or more dedicated to this task')
             return False
+
+        try:
+            xobj = xr.open_dataset(xfiles[i])
+
+            rawsize = len(xfiles)*xobj.time.size
+            # Currently inoperable - time selection not accurate with 2-dimensional timesteps
+            if xobj.time.size > 1:
+                logger.debug(f'Multiple time indexes selected for index {i} - {xobj.time.size} total')
+                xobj = xobj.isel(time=0)
+
+            assert xobj.time.size == 1
+            xobjs.append(xobj)
+            logger.debug(f'Added file index {i} time index 0')
+        except Exception as err:
+            if err != AssertionError:
+                logger.warning(f'Unexpected time selection error - {err}')
+            print(xfiles)
+            xobjs = select_all(args, xfiles, i, logger)
+
+    if len(xobjs) == 0:
+        logger.error('No valid timestep objects identified - exiting')
+    return xobjs, indexes, rawsize
+
+def perform_validations(xobj, kobj, step, total, totalpass, logger):
+    # Proceed with testing
+    logger.debug('Proceeding with validation checks')
+    status = test_single_timestep(step, xobj, kobj, logger)
+    if status == 422:
+        logger.debug(f'Testing failed softly for {step+1} of {total}')
+        totalpass = status
+    elif status:
+        logger.debug(f'Testing passed for {step+1} of {total}')
+    else:
+        logger.error(f'Testing failed for {step+1} of {total}')
+        totalpass = False
+    return totalpass
+
+def run_successful(args, kfile, logger):
+    """Move kerchunk-1a.json file to complete directory with proper name"""
+    # in_progress/<groupID>/<proj_code>/kerchunk_1a.json
+    # complete/<groupID>/<proj_code.json
+
+    if args.groupID:
+        complete_dir = f'{args.workdir}/complete/{args.groupID}'
+    else:
+        complete_dir = f'{args.workdir}/complete/single_runs'
+
+    if not os.path.isdir(complete_dir):
+        os.makedirs(complete_dir)
+
+    # Open config file to get correct version
+
+    newfile = f'{complete_dir}/{args.proj_code}-kr1.0.json'
+    if args.dryrun:
+        logger.info(f'DRYRUN: mv {kfile} {newfile}')
+    else:
+        os.system(f'mv {kfile} {newfile}')
+        os.system(f'touch {kfile}.complete')
 
 def validate_dataset(args):
     """Perform validation steps for specific dataset defined here"""
     logger = init_logger(args.verbose, args.mode,'validate')
     logger.info(f'Starting tests for {args.proj_code}')
 
-    indexes, xfiles = get_select_files(args.proj_dir)
+    ## Identify xarray objects and select random indexes with timesteps
+    xobjs, indexes, rawsize = select_netcdfs(args, logger)
+    if len(xobjs) > 0:
+        logger.info(f'Identified {len(xobjs)} valid timesteps for validation')
+    else:
+        logger.error('No valid timesteps found - suggest examination of input files')
+        return None
 
+    ## Open kerchunk file
     logger.info(f'Opening kerchunk dataset')
     kfile = get_kerchunk_file(args, logger)
     if not kfile:
@@ -289,62 +411,29 @@ def validate_dataset(args):
         return None
     kobj = open_kerchunk(kfile, logger)
 
+    ## Set up loop variables
     totalpass = True
-    possible_selection = True
+    total     = len(xobjs)
 
-    if possible_selection:
-        for step in range(len(indexes)):
+    for step, xobj in enumerate(xobjs):
+        logger.info(f'Running tests for selected file: {indexes[step]} ({step+1}/{len(indexes)})')
 
-            logger.info(f'Running tests for selected file: {indexes[step]} ({step+1}/{len(indexes)})')
-            xfile = xfiles[step]
+        timestamp = xobj.time
+        timeindex = indexes[step]
+        ksel = select_kerchunk(args, kobj, timestamp, timeindex, rawsize, logger)
+        totalpass = perform_validations(xobj, ksel, step, total, totalpass, logger)
 
-            # Memory Size Check
-            logger.debug('Checking memory size of expected netcdf file')
-            if os.path.getsize(xfile) > 4e9 and not args.forceful: # 3GB file
-                logger.error('Memory Exception - ensure you have 12GB or more dedicated to this task')
-                return False
-
-            # Temporal Aquisition Check
-            logger.debug('Checking temporal selection is possible')
-            xobj = xr.open_dataset(xfile)
-            if xobj.time.size > 1:
-                try:
-                    xsel = xobj.isel(time=indexes[step])
-                    assert xsel.time.size == 1
-                    timestamp = xsel.time
-                except AssertionError:
-                    # Unable to do temporal selection, must take all sections as average
-                    timestamp = None
-            else:
-                xsel = xobj
-            
-            if timestamp:
-                ksel = time_slice(kobj, timestamp, indexes[step], )
-            try:
-                ksel = kobj.sel(time=xobj.time)
-                assert ksel.time.size == 1
-            except Exception as err:
-                try:
-                    ksel = kobj.isel(time=indexes[step])
-                    assert ksel.time.size == 1
-                except Exception as err:
-                    logger.error(f'Temporal Selection Error: {err}')
-                    return False
-                
-            print(ksel.time.shape, xobj.time.shape)
-
-            # Proceed with testing
-            logger.debug('Proceeding with validation checks')
-            status = test_single_file(step, xobj, ksel, logger)
-            if status == 422:
-                logger.info(f'Testing failed softly for {step+1}')
-                totalpass = status
-            elif status:
-                logger.info(f'Testing passed for {step+1}')
-            else:
-                logger.error(f'Testing failed for {step+1}')
-                return False
-        return totalpass
+    if totalpass == 422:
+        logger.info('Tests passed softly - specific variables have not been verified due to lack of values')
+        if args.bypass:
+            run_successful(args, kfile, logger)
+        else:
+            logger.info('Final step not performed - completed dataset will only be created with bypass flag')
+    elif totalpass:
+        logger.info('All tests passed successfully')
+        run_successful(args, kfile, logger)
+    else:
+        logger.info('One or more tasks failed for this dataset')
 
 if __name__ == "__main__":
     print('Validation Process for Kerchunk Pipeline - run with single_run.py')
