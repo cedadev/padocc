@@ -65,7 +65,6 @@ def get_proj_code(path, prefix=''):
         parts = parts[:-2]
     return '_'.join(parts)
     
-
 def make_filelist(pattern, proj_dir, logger):
     """Create list of files associated with this project"""
     logger.debug(f'Making list of files for project {proj_dir.split("/")[-1]}')
@@ -146,7 +145,7 @@ def text_file_to_csv(args, logger, prefix=None):
                 if 'latest' in pattern:
                     pattern = pattern.replace('latest', os.readlink(pattern))
 
-                records  += f'{proj_code},{args.workdir},{proj_dir},{pattern},,\n'
+                records  += f'{proj_code},{pattern},,\n'
                 logger.debug(f'Added entry and created fileset for {index+1}/{len(datasets)}')
         if args.dryrun:
             logger.debug(f'DRYRUN: Skip creating csv file {args.groupdir}/datasets.csv')    
@@ -171,28 +170,32 @@ def make_dirs(args, logger):
     params     = list(config.keys())
     proj_codes = list(datasets.keys())
 
-    if proj_codes[0] == 'Project Code':
+    if proj_codes[0] == 'proj_code':
         proj_codes = proj_codes[1:]
     
     for index, proj_code in enumerate(proj_codes):
         cfg_values = dict(config)      # Ensure no linking
         ds_values  = datasets[proj_code]
+        pattern    = ds_values[0]
 
         logger.info(f'Creating directories/filelists for {index+1}/{len(proj_codes)}')
 
         cfg_values[params[0]] = proj_code
         # Set all other parameters
-        if len(params) == len(ds_values):
+        if len(params) == len(ds_values)+1:
             for x, p in enumerate(params[1:]):
                 cfg_values[p] = ds_values[x]
         else:
             logger.warning(f'Project code {index}:{proj_code} from {args.groupID} does not have correct number of fields.')
-            logger.warning(f'Fields specified must be {list(params.keys())}')
+            logger.warning(f'Fields specified must be {params}, not {ds_values}')
 
         if 'latest' in pattern:
             pattern = pattern.replace('latest', os.readlink(pattern))
 
-        proj_dir = cfg_values['proj_dir']
+        if args.groupID:
+            proj_dir = f'{args.groupdir}/{proj_code}'
+        else:
+            proj_dir = f'{args.workdir}/in_progress/{proj_code}'
 
         # Save config file
         if not os.path.isdir(proj_dir):
@@ -255,6 +258,9 @@ def init_config(args):
         elif '.csv' in args.input:
             logger.debug('Ingesting csv file')
             new_csv = f'{args.groupdir}/datasets.csv'
+            if not os.path.isdir(args.groupdir):
+                os.makedirs(args.groupdir)
+
             os.system(f'cp {args.input} {new_csv}')
         make_dirs(args, logger)
 
