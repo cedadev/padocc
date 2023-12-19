@@ -55,11 +55,18 @@ def find_redos(phase, workdir, groupID, check, ignore=[]):
     if phase == 'validate':
         checkdir = f'{args.workdir}/complete/{args.groupID}/'
     redo_pcodes = []
+    complete = []
     for pcode in proj_codes:
         check_file = checkdir + pcode + check
-        if (not glob.glob(check_file)) and (pcode not in ignore):
-            redo_pcodes.append(pcode)
-    return redo_pcodes
+        if pcode not in ignore:
+            if glob.glob(check_file):
+                if phase == 'validate':
+                    complete.append(pcode)
+                else:
+                    pass
+            else:
+                redo_pcodes.append(pcode)
+    return redo_pcodes, complete
 
 def main(args):
     # Assemble directory
@@ -77,8 +84,10 @@ def main(args):
         logger.info(f'Discovering dataset progress within group {args.groupID}')
         redo_pcodes = []
         for index, phase in enumerate(phases):
-            redo_pcodes = find_redos(phase, args.workdir, args.groupID, checks[index], ignore=redo_pcodes)
+            redo_pcodes, completes = find_redos(phase, args.workdir, args.groupID, checks[index], ignore=redo_pcodes)
             logger.info(f'{phase}: {len(redo_pcodes)} datasets')
+            if completes:
+                logger.info(f'Complete: {len(completes)} datasets')
             if phase == args.phase:
                 break
     

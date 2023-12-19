@@ -2,7 +2,7 @@ import os
 import sys
 import argparse
 
-def check_errs(path):
+def check_errs(path, showtype=None):
     errs = {'None':0}
     for efile in os.listdir(path):
         if os.path.isfile(os.path.join(path, efile)):
@@ -17,6 +17,12 @@ def check_errs(path):
                     errs[key] += 1
                 else:
                     errs[key] = 1
+                if key == showtype:
+                    print(efile)
+                    print()
+                    for line in q:
+                        print(line)
+                    x=input()
             else:
                 errs['None'] += 1
 
@@ -57,13 +63,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run a pipeline step for a single dataset')
     parser.add_argument('groupID',type=str, help='Group identifier code')
     parser.add_argument('jobID',type=str, help='Identifier of job to inspect')
+
+    parser.add_argument('-e','--error',    dest='showtype',      help='Display a specific error in more detail')
     args = parser.parse_args()
 
     path = f'/gws/nopw/j04/cmip6_prep_vol1/kerchunk-pipeline/groups/{args.groupID}/errs/{args.jobID}/'
     print(f'Checking errs/outs for {args.groupID} ID: {args.jobID}')
 
     print('Errors: ')
-    check_errs(path)
+    check_errs(path, showtype=args.showtype)
     print('')
     print('Outputs:')
     check_outs(path)
