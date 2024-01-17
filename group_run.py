@@ -119,6 +119,8 @@ def main(args):
         sb += ' -v'
     if args.bypass:
         sb += ' -b'
+    if args.quality:
+        sb += ' -Q'
 
     if args.repeat_id:
         sb += f' -r {args.repeat_id}'
@@ -159,6 +161,8 @@ if __name__ == '__main__':
 
     parser.add_argument('-v','--verbose',dest='verbose' , action='count', default=0, help='Print helpful statements while running')
     parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
+
+    parser.add_argument('-Q','--quality', dest='quality', action='store_true', help='Quality assured checks - thorough run')
 
     args = parser.parse_args()
 
