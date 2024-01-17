@@ -9,6 +9,13 @@ import os
 import json
 import logging
 
+class MissingVariableError(Exception):
+    def __init__(self, type='$', verbose=0):
+        self.message = f'Missing variable: {type}'
+        super().__init__(self.message)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+
 levels = [
     logging.WARN,
     logging.INFO,
@@ -81,9 +88,9 @@ def run_compute(args, logger):
     if complete and not escape:
 
         return Indexer(args.proj_code, cfg_file=cfg_file, detail_file=detail_file, 
-                workdir=args.workdir, issave_meta=False, forceful=args.forceful,
+                workdir=args.workdir, issave_meta=True, thorough=args.quality, forceful=args.forceful,
                 verb=args.verbose, mode=args.mode,
-                version_no=version_no, concat_msg=concat_msg).create_refs()
+                version_no=version_no, concat_msg=concat_msg, bypass=args.bypass).create_refs()
     else:
         logger.error('Output file already exists and there is no plan to overwrite')
         return None
@@ -118,6 +125,7 @@ def get_attribute(env, args, var, logger):
     
 def main(args):
     """Main function for single run processing"""
+
     logger = init_logger(args.verbose, args.mode, 'main')
 
     args.workdir  = get_attribute('WORKDIR', args, 'workdir', logger)
@@ -129,11 +137,11 @@ def main(args):
 
     if not args.workdir:
         logger.error('No working directory given as input or from environment')
-        return None
+        raise MissingVariableError(type='$WORKDIR')
     
     if not os.access(args.workdir, os.W_OK):
         logger.error('Workdir provided is not writable')
-        return None
+        raise IOError('Workdir not read/writable')
 
     logger.debug('Passed initial writability checks')
 
@@ -189,10 +197,12 @@ if __name__ == '__main__':
     parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Print helpful statements while running')
     parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
 
+    parser.add_argument('-Q','--quality', dest='quality', action='store_true', help='Quality assured checks - thorough run')
+
     args = parser.parse_args()
 
     success = main(args)
     if not success:
-        raise
+        raise Exception
 
     

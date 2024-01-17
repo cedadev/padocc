@@ -26,6 +26,20 @@ levels = [
     logging.DEBUG
 ]
 
+class FilecapExceededError(Exception):
+    def __init__(self, nfiles=0, verbose=0):
+        self.message = f'Filecap exceeded: {nfiles} files attempted'
+        super().__init__(self.message)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+
+class ExpectTimeoutError(Exception):
+    def __init__(self, required=0, current='', verbose=0):
+        self.message = f'Scan requires minimum {required} - current {current}'
+        super().__init__(self.message)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+
 def init_logger(verbose, mode, name):
     """Logger object init and configure with formatting"""
     verbose = min(verbose, len(levels)-1)
@@ -66,33 +80,36 @@ def map_to_kerchunk(args, nfile, ctype, logger):
     logger.info(f'Running Kerchunk reader for {nfile}')
     from pipeline.compute.serial_process import Converter
 
-    quickConvert = Converter(logger, args)
+    quickConvert = Converter(logger, bypass_errs=args.bypass)
 
     kwargs = {}
     supported_extensions = ['ncf3','hdf5','tif']
 
     logger.debug(f'Attempting conversion for 1 {ctype} extension')
-
+    t1 = datetime.now()
     tdict = quickConvert.convert_to_zarr(nfile, ctype, **kwargs)
+    t_len = (datetime.now()-t1).total_seconds()
     ext_index = 0
     while not tdict and ext_index < len(supported_extensions)-1:
         # Try the other ones
         extension = supported_extensions[ext_index]
         logger.debug(f'Attempting conversion for {extension} extension')
         if extension != ctype:
+            t1 = datetime.now()
             tdict = quickConvert.convert_to_zarr(nfile, extension, **kwargs)
+            t_len = (datetime.now()-t1).total_seconds()
         ext_index += 1
     
     if not tdict:
         logger.error('Scanning failed for all drivers, file type is not Kerchunkable')
-        return None, None
+        return None, None, None
     else:
         logger.info(f'Scan successful with {ctype} driver')
-        return tdict['refs'], ctype
+        return tdict['refs'], ctype, t_len
 
 def get_internals(args, testfile, ctype, logger):
     """Map to kerchunk data and perform calculations on test netcdf file."""
-    refs,ctype = map_to_kerchunk(args, testfile, ctype, logger)
+    refs, ctype, time = map_to_kerchunk(args, testfile, ctype, logger)
     if not refs:
         return None, None, None
     logger.info(f'Starting summation process for {testfile}')
@@ -109,7 +126,7 @@ def get_internals(args, testfile, ctype, logger):
                 vars[chunkkey.split('/')[0]] = 1
             except ValueError:
                 pass
-    return np.sum(sizes), chunks, sorted(list(vars.keys())), ctype
+    return np.sum(sizes), chunks, sorted(list(vars.keys())), ctype, time
 
 def eval_sizes(files):
     """Get a list of file sizes on disk from a list of filepaths"""
@@ -122,7 +139,14 @@ def get_seconds(time_allowed):
     mins, secs = time_allowed.split(':')
     return int(secs) + 60*int(mins)
 
-def perform_safe_calculations(std_vars, cpf, volms, files, logger):
+def format_seconds(seconds):
+    """Convert time in seconds to MM:SS"""
+    mins = int(seconds/60) + 1
+    if mins < 10:
+        mins = f'0{mins}'
+    return f'{mins}:00'
+
+def perform_safe_calculations(std_vars, cpf, volms, files, times, logger):
     kchunk_const = 167 # Bytes per Kerchunk ref (standard/typical)
     if std_vars:
         num_vars = len(std_vars)
@@ -165,8 +189,12 @@ def perform_safe_calculations(std_vars, cpf, volms, files, logger):
     else:
         addition = None
 
+    if files and len(times) > 0:
+        estm_time = int(np.mean(times)*len(files))
+    else:
+        estm_time = 0
 
-    return avg_cpf, num_vars, avg_chunk, spatial_res, data_represented, num_files, total_chunks, addition
+    return avg_cpf, num_vars, avg_chunk, spatial_res, data_represented, num_files, total_chunks, addition, estm_time
 
 def scan_dataset(args, files, proj_dir, proj_code, logger):
     """Main process handler for scanning phase"""
@@ -174,7 +202,7 @@ def scan_dataset(args, files, proj_dir, proj_code, logger):
 
     # Set up conditions, skip for small file count < 5
     escape, is_varwarn, is_skipwarn = False, False, False
-    cpf, volms = [],[]
+    cpf, volms, times = [],[],[]
     trial_files = 5
     if len(files) < 5:
         details = {'skipped':True}
@@ -185,11 +213,14 @@ def scan_dataset(args, files, proj_dir, proj_code, logger):
                 f.write(json.dumps(details))
             logger.info(f'Skipped scanning - {proj_code}/detail-cfg.json blank file created')
         return None
+    else:
+        logger.info(f'Identified {len(files)} files for scanning')
     
     # Perform scans for sample (max 5) files
     count    = 0
     std_vars = None
     ctypes   = []
+    filecap = min(100,len(files))
     while not escape and len(cpf) < trial_files:
         logger.info(f'Attempting scan for file {count+1} (min 5, max 100)')
         # Add random file selector here
@@ -202,16 +233,14 @@ def scan_dataset(args, files, proj_dir, proj_code, logger):
 
         try:
             # Measure time and ensure job will not overrun if it can be prevented.
-            t1 = datetime.now()
-            volume, chunks_per_file, vars, ctype = get_internals(args, scanfile, extension, logger)
-            t2 = (datetime.now() - t1).total_seconds()
-            if count == 0 and t2 > get_seconds(args.time_allowed)/trial_files:
-                logger.error(f'Time estimate exceeds allowed time for job - {t2}')
-                escape = True
+            volume, chunks_per_file, vars, ctype, time = get_internals(args, scanfile, extension, logger)
+            if count == 0 and time > get_seconds(args.time_allowed)/trial_files:
+                raise ExpectTimeoutError(required=format_seconds(time*5), current=args.time_allowed)
 
             cpf.append(chunks_per_file)
             volms.append(volume)
             ctypes.append(ctype)
+            times.append(time)
 
             if not std_vars:
                 std_vars = vars
@@ -219,22 +248,24 @@ def scan_dataset(args, files, proj_dir, proj_code, logger):
                 logger.warning('Variables differ between files')
                 is_varwarn = True
             logger.info(f'Data saved for file {count+1}')
+        except ExpectTimeoutError as err:
+            raise err
         except Exception as e:
             if args.bypass:
                 logger.warning(f'Skipped file {count} - {e}')
                 is_skipwarn = True
             else:
                 raise e
-        if count >= 100:
-            escape = True
         count += 1
-    if count > 100:
-        logger.error('Filecount Exceeded: No valid files in first 100 tried')
+        if count >= filecap:
+            escape = True
+    if escape:
+        raise FilecapExceededError(filecap)
 
     logger.info('Scan complete, compiling outputs')
     (avg_cpf, num_vars, avg_chunk, 
      spatial_res, data_represented, num_files, 
-     total_chunks, addition) = perform_safe_calculations(std_vars, cpf, volms, files, logger)
+     total_chunks, addition, estm_time) = perform_safe_calculations(std_vars, cpf, volms, files, times, logger)
     
     details = {
         'data_represented' : format_float(data_represented, logger), 
@@ -243,6 +274,7 @@ def scan_dataset(args, files, proj_dir, proj_code, logger):
         'total_chunks'     : safe_format(total_chunks,'{value:.2f}'),
         'estm_chunksize'   : format_float(avg_chunk,logger),
         'estm_spatial_res' : safe_format(spatial_res,'{value:.2f}') + ' deg',
+        'estm_time'        : format_seconds(estm_time),
         'variable_count'   : num_vars,
         'addition'         : safe_format(addition,'{value:.3f}') + ' %',
         'var_err'          : is_varwarn,
