@@ -37,9 +37,10 @@ def init_logger(verbose, mode, name):
     return logger
 
 class Converter:
-    def __init__(self, logger):
+    def __init__(self, logger, bypass_errs=False):
         self.logger = logger
         self.success = True
+        self.bypass_errs = bypass_errs
 
     def convert_to_zarr(self, nfile, ctype, **kwargs):
         try:
@@ -53,8 +54,10 @@ class Converter:
                 self.logger.debug(f'Extension {ctype} not valid')
                 return None
         except Exception as err:
-            self.logger.debug(f'Dataset {nfile} failed using {ctype} driver - {err}')
-            return None
+            if self.bypass_errs:
+                pass
+            else:
+                raise err
 
     def hdf5_to_zarr(self, nfile, **kwargs):
         """Converter for HDF5 type files"""
@@ -76,12 +79,12 @@ class Indexer(Converter):
     def __init__(self, 
                  proj_code, 
                  cfg_file=None, detail_file=None, workdir=WORKDIR, 
-                 issave_meta=False, refresh='', forceful=False, 
+                 issave_meta=False, thorough=False, forceful=False, 
                  verb=0, mode=None, version_no=1,
-                 concat_msg=CONCAT_MSG):
+                 concat_msg=CONCAT_MSG, bypass=False):
         """Initialise indexer for this dataset, set all variables and prepare for computation"""
         logger = init_logger(verb, mode, 'compute-serial')
-        super().__init__(logger)
+        super().__init__(logger, bypass_errs=bypass)
 
         self.logger.debug('Starting variable definitions')
 
@@ -128,16 +131,19 @@ class Indexer(Converter):
         self.filelist = f'{self.proj_dir}/allfiles.txt'
 
         self.cache    = f'{self.proj_dir}/cache/'
-        if refresh == '' and os.path.isfile(f'{self.cache}/temp_zattrs.json'):
+        if os.path.isfile(f'{self.cache}/temp_zattrs.json') and not thorough:
             # Load data instead of create from scratch
             self.load_refs = True
             self.logger.debug('Found cached data from previous run, loading cache')
+        
 
         if not os.path.isdir(self.cache):
-            os.makedirs(self.cache)
+            os.makedirs(self.cache) 
+        if thorough:
+            os.system(f'rm -rf {self.cache}/*')
 
-        self.combine_kwargs = {}
-        self.create_kwargs  = {}
+        self.combine_kwargs = {'concat_dims':'time', 'coo_map':{'time':'cf:time'}}
+        self.create_kwargs  = {'inline_threshold':1000}
         self.pre_kwargs     = {}
 
         self.set_filelist()
@@ -228,16 +234,17 @@ class Indexer(Converter):
         self.logger.debug('Starting JSON-write process')
 
         # Already have default options saved to class variables
-        mzz = MultiZarrToZarr(refs, concat_dims=['time'], **self.combine_kwargs).translate()
-        # Override global attributes
-
-        # Needs but must be fixed
-        if zattrs:
-            zattrs = self.add_kerchunk_history(zattrs)
+        if len(refs) > 1:
+            mzz = MultiZarrToZarr(refs, **self.combine_kwargs).translate()
+            if zattrs:
+                zattrs = self.add_kerchunk_history(zattrs)
+            else:
+                self.logger.debug(zattrs)
+                raise ValueError
+            mzz['refs']['.zattrs'] = json.dumps(zattrs)
         else:
-            self.logger.debug(zattrs)
-            raise ValueError
-        mzz['refs']['.zattrs'] = json.dumps(zattrs)
+            mzz = refs[0]
+        # Override global attributes
         mzz['refs'] = self.add_download_link(mzz['refs'])
 
         with open(self.outfile,'w') as f:
@@ -363,13 +370,14 @@ class Indexer(Converter):
     def try_all_drivers(self, nfile, **kwargs):
         """Safe creation allows for known issues and tries multiple drivers"""
 
+        extension = False
+
         if '.' in nfile:
             ctype = f'.{nfile.split(".")[-1]}'
         else:
             ctype = '.nc'
 
         supported_extensions = ['ncf3','hdf5','tif']
-        ctype=''
 
         self.logger.debug(f'Attempting conversion for 1 {ctype} extension')
 
@@ -382,12 +390,15 @@ class Indexer(Converter):
             if extension != ctype:
                 tdict = self.convert_to_zarr(nfile, extension, **kwargs)
             ext_index += 1
-        
+
         if not tdict:
             self.logger.error('Scanning failed for all drivers, file type is not Kerchunkable')
             raise KerchunkDriverFatalError
         else:
-            self.logger.info(f'Scan successful with {ctype} driver')
+            if extension:
+                self.logger.debug(f'Scan successful with {extension} driver')
+            else:
+                self.logger.debug(f'Scan successful with {ctype} driver')
             return tdict
     
     def convert_to_kerchunk(self):
@@ -431,7 +442,7 @@ class Indexer(Converter):
                 self.logger.info('Single conversions complete, starting concatenation')
                 self.combine_and_save(refs, zattrs)
                 if self.issave_meta:
-                    self.save_meta(zattrs)
+                    self.save_cache(refs, zattrs)
             else:
                 self.logger.info('Issue with conversion unspecified - aborting process')
                 self.save_cache(refs, zattrs)
