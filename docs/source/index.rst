@@ -8,12 +8,33 @@ Welcome to kerchunk-builder's documentation!
 
 **kerchunk-builder** is a Python package for creating sets of Kerchunk files from an archive of NetCDF/HDF/Tiff files. The pipeline makes it easy to create multiple Kerchunk files for different datasets in parallel with validation steps to ensure the outputs are correct.
 
+The pipeline consists of four central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. This is not part of the code-base of the pipeline currently but could be added in a future update.
+
+**Init (Initialisation) Phase**
+
+Some stuff here about Initialisation
+
+**Scan Phase**
+
+Scanning things
+
+**Compute Phase**
+
+Computing in serial
+
+**Validation Phase**
+
+Validate files
+
+**Next Steps**
+
+Ingest/Catalog files
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   Pipeline Overview <pipeline-overview>
-   Execution <execution>
+   Running the Pipeline <execution>
    Worked Examples <examples>
    Assessor Tool Overview <assess-overview>
 
