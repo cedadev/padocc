@@ -37,8 +37,16 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="assessor.html">Assessor Tool</a></li>
-<li class="toctree-l1"><a class="reference internal" href="serial-process.html">Serial Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution.html">Execution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="init.html">Init Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scan.html">Scan Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compute.html">Compute Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="assess.html">Assess Source</a></li>
 </ul>
 
         </div>
@@ -70,13 +78,17 @@
 <div class="genindex-jumpbox">
  <a href="#A"><strong>A</strong></a>
  | <a href="#C"><strong>C</strong></a>
+ | <a href="#E"><strong>E</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#K"><strong>K</strong></a>
+ | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
  | <a href="#P"><strong>P</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
  
 </div>
@@ -87,7 +99,7 @@
     assess
 
       <ul>
-        <li><a href="assessor.html#module-assess">module</a>
+        <li><a href="assess.html#module-assess">module</a>, <a href="assessor.html#module-assess">[1]</a>
 </li>
       </ul></li>
   </ul></td>
@@ -101,11 +113,42 @@
   </ul></td>
 </tr></table>
 
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="execution.html#single_run.ExpectTimeoutError">ExpectTimeoutError</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="assessor.html#assess.get_attribute">get_attribute() (in module assess)</a>
+      <li><a href="assess.html#assess.get_attribute">get_attribute() (in module assess)</a>, <a href="assessor.html#assess.get_attribute">[1]</a>
+
+      <ul>
+        <li><a href="execution.html#group_run.get_attribute">(in module group_run)</a>
 </li>
+      </ul></li>
+      <li><a href="execution.html#group_run.get_group_len">get_group_len() (in module group_run)</a>
+</li>
+      <li><a href="init.html#pipeline.init.get_input">get_input() (in module pipeline.init)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="execution.html#single_run.get_proj_code">get_proj_code() (in module single_run)</a>
+</li>
+      <li><a href="init.html#pipeline.init.get_removals">get_removals() (in module pipeline.init)</a>
+</li>
+      <li><a href="init.html#pipeline.init.get_updates">get_updates() (in module pipeline.init)</a>
+</li>
+      <li>
+    group_run
+
+      <ul>
+        <li><a href="execution.html#module-group_run">module</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -120,10 +163,18 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="assessor.html#assess.init_logger">init_logger() (in module assess)</a>
+      <li><a href="init.html#pipeline.init.init_config">init_config() (in module pipeline.init)</a>
+</li>
+      <li><a href="assess.html#assess.init_logger">init_logger() (in module assess)</a>, <a href="assessor.html#assess.init_logger">[1]</a>
 
       <ul>
+        <li><a href="execution.html#group_run.init_logger">(in module group_run)</a>
+</li>
         <li><a href="serial-process.html#pipeline.compute.serial_process.init_logger">(in module pipeline.compute.serial_process)</a>
+</li>
+        <li><a href="init.html#pipeline.init.init_logger">(in module pipeline.init)</a>
+</li>
+        <li><a href="execution.html#single_run.init_logger">(in module single_run)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -137,16 +188,44 @@
   </ul></td>
 </tr></table>
 
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="init.html#pipeline.init.load_from_input_file">load_from_input_file() (in module pipeline.init)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="execution.html#group_run.main">main() (in module group_run)</a>
+
+      <ul>
+        <li><a href="execution.html#single_run.main">(in module single_run)</a>
+</li>
+      </ul></li>
+      <li><a href="init.html#pipeline.init.make_dirs">make_dirs() (in module pipeline.init)</a>
+</li>
+      <li><a href="init.html#pipeline.init.make_filelist">make_filelist() (in module pipeline.init)</a>
+</li>
+      <li><a href="execution.html#single_run.MissingVariableError">MissingVariableError</a>
+</li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     module
 
       <ul>
-        <li><a href="assessor.html#module-assess">assess</a>
+        <li><a href="assess.html#module-assess">assess</a>, <a href="assessor.html#module-assess">[1]</a>
+</li>
+        <li><a href="execution.html#module-group_run">group_run</a>
 </li>
         <li><a href="serial-process.html#module-pipeline.compute.serial_process">pipeline.compute.serial_process</a>
+</li>
+        <li><a href="init.html#module-pipeline.init">pipeline.init</a>
+</li>
+        <li><a href="execution.html#module-single_run">single_run</a>
 </li>
       </ul></li>
   </ul></td>
@@ -171,10 +250,54 @@
 </li>
       </ul></li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    pipeline.init
+
+      <ul>
+        <li><a href="init.html#module-pipeline.init">module</a>
+</li>
+      </ul></li>
+      <li><a href="execution.html#single_run.ProjectCodeError">ProjectCodeError</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="execution.html#single_run.run_compute">run_compute() (in module single_run)</a>
+</li>
+      <li><a href="execution.html#single_run.run_init">run_init() (in module single_run)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="execution.html#single_run.run_scan">run_scan() (in module single_run)</a>
+</li>
+      <li><a href="execution.html#single_run.run_validation">run_validation() (in module single_run)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    single_run
+
+      <ul>
+        <li><a href="execution.html#module-single_run">module</a>
+</li>
+      </ul></li>
+  </ul></td>
 </tr></table>
 
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="init.html#pipeline.init.text_file_to_csv">text_file_to_csv() (in module pipeline.init)</a>
+</li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="serial-process.html#pipeline.compute.serial_process.Converter.tiff_to_zarr">tiff_to_zarr() (pipeline.compute.serial_process.Converter method)</a>
 </li>

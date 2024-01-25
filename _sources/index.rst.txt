@@ -12,8 +12,20 @@ Welcome to kerchunk-builder's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   Assessor Tool <assessor>
-   Serial Process <serial-process>
+   Pipeline Overview <pipeline-overview>
+   Execution <execution>
+   Worked Examples <examples>
+   Assessor Tool Overview <assess-overview>
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Advanced:
+
+   Init Source <init>
+   Scan Source <scan>
+   Compute Source <compute>
+   Validate Source <validate>
+   Assess Source <assess>
 
 
 
