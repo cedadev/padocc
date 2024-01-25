@@ -20,7 +20,8 @@ release = 'v1.1'
 
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary'
+    'sphinx.ext.autosummary',
+    'sphinxarg.ext'
 ]
 
 templates_path = ['_templates']

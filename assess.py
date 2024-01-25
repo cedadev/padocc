@@ -9,8 +9,6 @@ levels = [
     logging.INFO,
     logging.DEBUG
 ]
-"""
-"""
 
 # Hints for errors
 HINTS = {
@@ -30,12 +28,12 @@ def format_str(string, length):
         string += ' '
     return string[:length]
 
-def init_logger(verbose, mode, name):
+def init_logger(verbose: int, mode: int, name: str):
     """Logger object init and configure with formatting
 
     Parameters
     ----------
-    verbose : (int)
+    verbose : int
         Display level can range from 0-2 for WARNING, INFO and DEBUG.
 
     mode : int
@@ -44,7 +42,11 @@ def init_logger(verbose, mode, name):
     name : str
         Name of master script from which logger is defined.
     
-    :return: Logging-type object"""
+    Returns
+    -------
+    logging.Logger
+    """
+
     verbose = min(verbose, len(levels)-1)
 
     logger = logging.getLogger(name)
@@ -59,7 +61,30 @@ def init_logger(verbose, mode, name):
 
     return logger
 
-def find_redos(phase, workdir, groupID, check, ignore=[]):
+def find_codes(phase: str, workdir: str, groupID: str, check: str, ignore=[]):
+    """Find project codes for datasets that failed at various stages of the pipeline
+    
+    Checks 'in-progress' and 'complete' directories for datasets and config files to determine progress of all datasets.
+    
+    Parameters
+    ----------
+    phase : str
+        Check config and output files corresponding to a pipeline phase.
+    workdir : str
+        Path to current working directory of the pipeline.
+    groupID : str
+        Check pipeline for a specific group ID.
+    check : str
+        File type or specific file required for this phase to be considered complete
+    ignore : list (str-like)
+
+    Returns
+    -------
+    redo_pcodes : list (str-like)
+        List of project codes to re-run for this phase.
+    complete : list (str-like)
+        List of project codes considered to be complete for the whole pipeline
+       """
     checkdir = f'{workdir}/in_progress/{groupID}/'
     proj_codes = os.listdir(checkdir)
 
@@ -81,20 +106,22 @@ def find_redos(phase, workdir, groupID, check, ignore=[]):
                 redo_pcodes.append(pcode)
     return redo_pcodes, complete
 
-def get_code_from_val(path, code):
+def get_code_from_val(path: str, index: str):
+    """Takes some index value from command line and fetches the corresponding project code"""
     path = path.split('*')[0]
     if os.path.isfile(f'{path}proj_codes.txt'):
         with open(f'{path}proj_codes.txt') as f:
             try:
-                code = f.readlines()[int(code)]
+                code = f.readlines()[int(index)]
             except IndexError:
-                print('code',code)
+                print('code',index)
                 code = 'N/A'
     else:
         code = 'N/A'
     return code
 
-def extract_keys(filepath, logger, savetype=None, examine=None):
+def extract_keys(filepath: str, logger, savetype=None, examine=None):
+    """Extract keys from error/output files, collect into groups and examine a particular type if required."""
     keys       = {}
     savedcodes = []
     total      = 0
@@ -134,8 +161,8 @@ def extract_keys(filepath, logger, savetype=None, examine=None):
                         raise Exception
     return savedcodes, keys, total
 
-def check_errs(path, logger, savetype=None, examine=None):
-
+def check_errs(path: str, logger, savetype=None, examine=None):
+    """Check error files and summarise results"""
     savedcodes, errs, total = extract_keys(path, logger, savetype=savetype, examine=examine)
     
     # Summarise results
@@ -149,7 +176,7 @@ def check_errs(path, logger, savetype=None, examine=None):
 
     return savedcodes
 
-def get_attribute(env, args, var):
+def get_attribute(env: str, args, var: str):
     """Assemble environment variable or take from passed argument."""
     if os.getenv(env):
         return os.getenv(env)
@@ -159,7 +186,8 @@ def get_attribute(env, args, var):
         print(f'Error: Missing attribute {var}')
         return None
     
-def save_sel(codes, groupdir, label, logger):
+def save_sel(codes: list, groupdir: str, label: str, logger):
+    """Save selection of codes to a file with a given repeat label"""
     if len(codes) > 1:
         codeset = ''.join([code[1] for code in codes])
         with open(f'{groupdir}/proj_codes_{label}.txt','w') as f:
@@ -169,7 +197,8 @@ def save_sel(codes, groupdir, label, logger):
     else:
         logger.info('No codes identified, no files written')
 
-def show_options(option, groupdir, operation, logger):
+def show_options(option: str, groupdir: str, operation: str, logger):
+    """Display current"""
     if option == 'jobids':
         logger.info('Detecting IDs from previous runs:')
         if operation == 'outputs':
@@ -185,7 +214,7 @@ def show_options(option, groupdir, operation, logger):
                 pcode = 'main'
             logger.info(f'{format_str(pcode,20)} - {l}')
 
-def cleanup(cleantype, groupdir, logger):
+def cleanup(cleantype: str, groupdir: str, logger):
     if cleantype == 'proj_codes':
         projset = glob.glob(f'{groupdir}/proj_codes_*')
         for p in projset:
@@ -206,7 +235,7 @@ def progress_check(args, logger):
         logger.info(f'Discovering dataset progress within group {args.groupID}')
         redo_pcodes = []
         for index, phase in enumerate(phases):
-            redo_pcodes, completes = find_redos(phase, args.workdir, args.groupID, checks[index], ignore=redo_pcodes)
+            redo_pcodes, completes = find_codes(phase, args.workdir, args.groupID, checks[index], ignore=redo_pcodes)
             logger.info(f'{phase}: {len(redo_pcodes)} datasets')
             if completes:
                 logger.info(f'complete: {len(completes)} datasets')
@@ -282,7 +311,7 @@ def assess_main(args):
 
     if args.operation in operations:
         operations[args.operation](args, logger)
-        
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run a pipeline step for a single dataset')
     parser.add_argument('groupID',type=str, help='Group identifier code')
