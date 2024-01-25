@@ -9,6 +9,8 @@ levels = [
     logging.INFO,
     logging.DEBUG
 ]
+"""
+"""
 
 # Hints for errors
 HINTS = {
@@ -29,7 +31,12 @@ def format_str(string, length):
     return string[:length]
 
 def init_logger(verbose, mode, name):
-    """Logger object init and configure with formatting"""
+    """Logger object init and configure with formatting
+    :param verbose: Display level can range from 0-2 for WARNING, INFO and DEBUG.
+    :param mode: Unused mode for saving data.
+    :param name: Name of master script from which logger is defined.
+    
+    :return: Logging-type object"""
     verbose = min(verbose, len(levels)-1)
 
     logger = logging.getLogger(name)
