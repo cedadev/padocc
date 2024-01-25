@@ -103,15 +103,19 @@ def main(args):
     with open(template) as f:
         sbatch = '\n'.join([r.strip() for r in f.readlines()])
 
+    time = times[phase]
+    if args.time_allowed:
+        time = args.time_allowed
+
     sb = sbatch.format(
         f'{group}_{phase}_array',             # Job name
-        times[phase],                         # Time
-        f'{GROUPDIR}/outs/%A/%a.out', # Outs
-        f'{GROUPDIR}/errs/%A/%a.err', # Errs
+        time,                                 # Time
+        f'{GROUPDIR}/outs/%A_{phase}/%a.out', # Outs
+        f'{GROUPDIR}/errs/%A_{phase}/%a.err', # Errs
         VENV,
         WORKDIR,
         GROUPDIR,
-        master_script, phase, group, times[phase]
+        master_script, phase, group, time
     )
     if args.forceful:
         sb += ' -f'
@@ -131,9 +135,9 @@ def main(args):
     # Submit job array for this group in this phase
     if args.dryrun:
         logger.info('DRYRUN: sbatch command: ')
-        print(f'sbatch --array=0-{group_len} {group_phase_sbatch}')
+        print(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
     else:
-        os.system(f'sbatch --array=0-{group_len} {group_phase_sbatch}')
+        os.system(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
 
 
 if __name__ == '__main__':
@@ -149,7 +153,7 @@ if __name__ == '__main__':
     parser.add_argument('-p','--proj_dir',    dest='proj_dir',      help='Project directory for pipeline')
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
     parser.add_argument('-m','--mode',        dest='mode', default=None, help='Print or record information (log or std)')
-    parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
+    parser.add_argument('-t','--time-allowed',dest='time_allowed', default=None, help='Time limit for this job')
     parser.add_argument('-b','--bypass-errs', dest='bypass', action='store_true', help='Bypass all error messages - skip failed jobs')
     
     parser.add_argument('-i', '--input', dest='input', help='input file (for init phase)')
