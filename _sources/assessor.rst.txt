@@ -1,8 +1,6 @@
 Assessor Tool
 =============
 
-.. autosummary:: assess
+.. automodule:: assess
     :members:
     
-    .. autofunction:: assess.get_attribute
-        :members:
