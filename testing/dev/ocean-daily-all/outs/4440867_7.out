@@ -1,9 +1,0 @@
-[INFO] /neodc/esacci/ocean_colour/data/v6.0-release/geographic/netcdf/all_products/daily/v6.0/1997/ESACCI-OC-L3S-OC_PRODUCTS-MERGED-1D_DAILY_4km_GEO_PML_OCx_QAA-19971023-fv6.0.nc
-[INFO] /neodc/esacci/ocean_colour/data/v6.0-release/geographic/netcdf/all_products/daily/v6.0/1997/ESACCI-OC-L3S-OC_PRODUCTS-MERGED-1D_DAILY_4km_GEO_PML_OCx_QAA-19971024-fv6.0.nc
-[INFO] /neodc/esacci/ocean_colour/data/v6.0-release/geographic/netcdf/all_products/daily/v6.0/1997/ESACCI-OC-L3S-OC_PRODUCTS-MERGED-1D_DAILY_4km_GEO_PML_OCx_QAA-19971025-fv6.0.nc
-[INFO] /neodc/esacci/ocean_colour/data/v6.0-release/geographic/netcdf/all_products/daily/v6.0/1997/ESACCI-OC-L3S-OC_PRODUCTS-MERGED-1D_DAILY_4km_GEO_PML_OCx_QAA-19971026-fv6.0.nc
-[INFO] /neodc/esacci/ocean_colour/data/v6.0-release/geographic/netcdf/all_products/daily/v6.0/1997/ESACCI-OC-L3S-OC_PRODUCTS-MERGED-1D_DAILY_4km_GEO_PML_OCx_QAA-19971027-fv6.0.nc
-[INFO] Kerchunked all files
-[INFO] Created Lazy Reference Mapper
-[INFO] Written to Parquet Store
-[INFO] Completed Flush
