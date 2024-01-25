@@ -16,6 +16,20 @@ class MissingVariableError(Exception):
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
 
+class ExpectTimeoutError(Exception):
+    def __init__(self, required=0, current='', verbose=0):
+        self.message = f'Scan requires minimum {required} - current {current}'
+        super().__init__(self.message)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+
+class ProjectCodeError(Exception):
+    def __init__(self, verbose=0):
+        self.message = f'Project Code Extraction Failed'
+        super().__init__(self.message)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+
 levels = [
     logging.WARN,
     logging.INFO,
@@ -110,8 +124,11 @@ drivers = {
 
 def get_proj_code(groupdir, pid, repeat_id, subset=0, id=0):
     """Get the correct code given a slurm id from a group of project codes"""
-    with open(f'{groupdir}/proj_codes_{repeat_id}.txt') as f:
-        proj_code = f.readlines()[int(pid)*subset + id].strip()
+    try:
+        with open(f'{groupdir}/proj_codes_{repeat_id}.txt') as f:
+            proj_code = f.readlines()[int(pid)*subset + id].strip()
+    except:
+        raise ProjectCodeError
     return proj_code
 
 def get_attribute(env, args, var, logger):
@@ -146,31 +163,49 @@ def main(args):
     logger.debug('Passed initial writability checks')
 
     for id in range(args.subset):
+        print()
+        logger.info(f'Starting process for {id+1}/{args.subset}')
+        try:
+            if args.groupID:
 
-        if args.groupID:
+                # Avoid stray groupdir definition in environment variables
+                cmd_groupdir = f'{args.workdir}/groups/{args.groupID}'
+                if cmd_groupdir != args.groupdir:
+                    logger.warning(f'Overriding environment-defined groupdir value with: {cmd_groupdir}')
+                    args.groupdir = cmd_groupdir
 
-            # Avoid stray groupdir definition in environment variables
-            cmd_groupdir = f'{args.workdir}/groups/{args.groupID}'
-            if cmd_groupdir != args.groupdir:
-                logger.warning(f'Overriding environment-defined groupdir value with: {cmd_groupdir}')
-                args.groupdir = cmd_groupdir
+                subset_id = args.proj_code
+                args.proj_code = get_proj_code(args.groupdir, subset_id, args.repeat_id, subset=args.subset, id=id)
+                args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
 
-            subset_id = args.proj_code
-            args.proj_code = get_proj_code(args.groupdir, subset_id, args.repeat_id, subset=args.subset, id=id)
-            args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
-        else:
-            args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
+                # Get ID from within a job?
+                if os.getenv('SLURM_ARRAY_JOB_ID'):
+                    jobid = os.getenv('SLURM_ARRAY_JOB_ID')
+                    errs_dir = f'{args.workdir}/groups/{args.groupID}/errs'
+                    if not os.path.isdir(f'{errs_dir}/{jobid}_{args.phase}'):
+                        os.makedirs(f'{errs_dir}/{jobid}_{args.phase}')
 
-        if args.phase in drivers:
-            logger.debug('Pipeline variables (reconfigured):')
-            logger.debug(f'WORKDIR : {args.workdir}')
-            logger.debug(f'GROUPDIR: {args.groupdir}')
-            logger.debug('Using attributes:')
-            logger.debug(f'proj_code: {args.proj_code}')
-            logger.debug(f'proj_dir : {args.proj_dir}')
-            drivers[args.phase](args, logger)
-        else:
-            logger.error(f'"{args.phase}" not recognised, please select from {list(drivers.keys())}')
+                    proj_code_file = f'{args.workdir}/groups/{args.groupID}/proj_codes_{subset_id}.txt'
+
+                    if not os.path.isfile(f'{errs_dir}/{jobid}_{args.phase}/proj_codes.txt'):
+                        os.system(f'cp {proj_code_file} {errs_dir}/{jobid}_{args.phase}/proj_codes.txt')
+
+            else:
+                args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
+
+            if args.phase in drivers:
+                logger.debug('Pipeline variables (reconfigured):')
+                logger.debug(f'WORKDIR : {args.workdir}')
+                logger.debug(f'GROUPDIR: {args.groupdir}')
+                logger.debug('Using attributes:')
+                logger.debug(f'proj_code: {args.proj_code}')
+                logger.debug(f'proj_dir : {args.proj_dir}')
+                drivers[args.phase](args, logger)
+            else:
+                logger.error(f'"{args.phase}" not recognised, please select from {list(drivers.keys())}')
+        except Exception as err:
+            # Capture all errors - any error handled here is fatal
+            raise err
     logger.info('Pipeline phase execution finished')
     print('Success')
     return True
