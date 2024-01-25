@@ -45,8 +45,7 @@ Running for a group of datasets
 
 Run all multi-dataset group processes within the pipeline using the `group_run.py` script.
 
-```
-usage: group_run.py [-h] [-s SOURCE] [-e VENVPATH] [-w WORKDIR] [-g GROUPDIR] [-p PROJ_DIR] [-n NEW_VERSION] [-m MODE] [-t TIME_ALLOWED] [-b] [-i INPUT] [-S SUBSET] [-r REPEAT_ID] [-f] [-v] [-d] [-Q] phase groupID
+`usage: group_run.py [-h] [-s SOURCE] [-e VENVPATH] [-w WORKDIR] [-g GROUPDIR] [-p PROJ_DIR] [-n NEW_VERSION] [-m MODE] [-t TIME_ALLOWED] [-b] [-i INPUT] [-S SUBSET] [-r REPEAT_ID] [-f] [-v] [-d] [-Q] phase groupID`
 
 positional arguments:
   phase                 Phase of the pipeline to initiate
@@ -78,4 +77,3 @@ options:
   -v, --verbose         Print helpful statements while running
   -d, --dryrun          Perform dry-run (i.e no new files/dirs created)
   -Q, --quality         Quality assured checks - thorough run
-```
