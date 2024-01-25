@@ -6,6 +6,10 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../../'))
+
 project = 'Kerchunk Pipeline'
 copyright = '2024, Daniel Westwood'
 author = 'Daniel Westwood'
@@ -30,7 +34,3 @@ html_theme = 'alabaster'
 html_static_path = ['_static']
 
 html_logo = 'ceda.png'
-html_theme_options = {
-    'logo_only':True,
-    'display_version':False
-}
