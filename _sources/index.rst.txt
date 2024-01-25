@@ -11,8 +11,9 @@ Welcome to kerchunk-builder's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-   
+
    Assessor Tool <assessor>
+   Serial Process <serial-process>
 
 
 
