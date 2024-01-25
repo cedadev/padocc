@@ -1,0 +1,8 @@
+{
+    "proj_code": "20200810_ODIM_ng_radar_rainrate_composite_1km_UK",
+    "workdir": "/home/users/dwest77/temp_netcdf/",
+    "proj_dir": "/home/users/dwest77/temp_netcdf/in_progress/20200810_ODIM_ng_radar_rainrate_composite_1km_UK",
+    "pattern": "/home/users/dwest77/temp_netcdf/*.h5",
+    "update": "",
+    "remove": ""
+}
