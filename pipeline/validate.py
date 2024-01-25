@@ -18,7 +18,7 @@ import math
 
 class ChunkDataError(Exception):
     def __init__(self, verbose=0):
-        self.message = f'Decoding resulted in overflow - received chunk data contains junk'
+        self.message = f'Decoding resulted in overflow - received chunk data contains junk (attempted 3 times)'
         super().__init__(self.message)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
@@ -211,10 +211,17 @@ def open_kerchunk(kfile, logger, isparq=False):
         logger.debug('Opening Kerchunk JSON file')
         mapper  = fsspec.get_mapper('reference://',fo=kfile, target_options={"compression":None})
         # Need a safe repeat here
-        try:
-            return xr.open_zarr(mapper, consolidated=False, decode_times=True)
-        except OverflowError:
+        ds = None
+        attempts = 0
+        while attempts < 3 and not ds:
+            attempts += 1
+            try:
+                ds = xr.open_zarr(mapper, consolidated=False, decode_times=True)
+            except OverflowError:
+                ds = None  
+        if not ds:
             raise ChunkDataError
+        return ds
 
 def open_netcdfs(args, logger, thorough=False):
     """Returns a single xarray object with one timestep:
@@ -419,8 +426,8 @@ def validate_timestep(args, xobj, kobj, step, nfiles, logger):
         raise VariableMismatchError(missing=missing)
     else:
         logger.info(f'Passed Variable tests')
+        print()
         for xv in xvars:
-            print()
             validate_shapes(xobj, kobj, step, nfiles, xv, logger)
             logger.info(f'{xv} : Passed Shape test')
         logger.info(f'Passed all Shape tests')
@@ -471,6 +478,8 @@ def validate_dataset(args):
 
     ## Open kerchunk file
     kobj = locate_kerchunk(args, logger)
+    if not kobj:
+        raise MissingKerchunkError
 
     ## Set up loop variables
     fullset   = False
@@ -497,6 +506,7 @@ def validate_dataset(args):
     
     
     logger.info('All tests passed successfully')
+    print()
     run_successful(args, logger)
 
 if __name__ == "__main__":

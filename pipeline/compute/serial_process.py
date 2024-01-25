@@ -142,7 +142,7 @@ class Indexer(Converter):
         if thorough:
             os.system(f'rm -rf {self.cache}/*')
 
-        self.combine_kwargs = {'concat_dims':'time', 'coo_map':{'time':'cf:time'}}
+        self.combine_kwargs = {'concat_dims':['time']} # Always try time initially
         self.create_kwargs  = {'inline_threshold':1000}
         self.pre_kwargs     = {}
 
@@ -235,6 +235,7 @@ class Indexer(Converter):
 
         # Already have default options saved to class variables
         if len(refs) > 1:
+            self.logger.debug('Concatenating refs using MultiZarrToZarr')
             mzz = MultiZarrToZarr(refs, **self.combine_kwargs).translate()
             if zattrs:
                 zattrs = self.add_kerchunk_history(zattrs)
@@ -243,6 +244,7 @@ class Indexer(Converter):
                 raise ValueError
             mzz['refs']['.zattrs'] = json.dumps(zattrs)
         else:
+            self.logger.debug('Found single ref to save')
             mzz = refs[0]
         # Override global attributes
         mzz['refs'] = self.add_download_link(mzz['refs'])
