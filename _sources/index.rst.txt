@@ -10,6 +10,9 @@ Welcome to kerchunk-builder's documentation!
 
 The pipeline consists of four central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. This is not part of the code-base of the pipeline currently but could be added in a future update.
 
+.. image:: _images/pipeline.png
+   :alt: Stages of the Kerchunk Pipeline
+
 **Init (Initialisation) Phase**
 
 Some stuff here about Initialisation
