@@ -1,0 +1,3 @@
+proj_code,pattern/filename, updates, removals
+land-rcm_uk_12km_rcp85_01_tasmax_day_v20190731,/badc/ukcp18/data/land-rcm/uk/12km/rcp85/01/tasmax/day/v20190731/*.nc,,
+land-rcm_uk_12km_rcp85_01_tasmin_day_v20190731,/badc/ukcp18/data/land-rcm/uk/12km/rcp85/01/tasmin/day/v20190731/*.nc,,
