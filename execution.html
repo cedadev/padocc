@@ -85,14 +85,129 @@
 <h1>Running the Pipeline<a class="headerlink" href="#running-the-pipeline" title="Permalink to this headline"></a></h1>
 <div class="section" id="running-for-a-single-dataset">
 <h2>Running for a single dataset<a class="headerlink" href="#running-for-a-single-dataset" title="Permalink to this headline"></a></h2>
-<p>::
+<p>Run all single-dataset processes with the <cite>single-run.py</cite> script.
+<a href="#id1"><span class="problematic" id="id2">``</span></a>`
 usage: single_run.py [-h] [-w WORKDIR] [-g GROUPDIR] [-G GROUPID] [-p PROJ_DIR] [-n NEW_VERSION] [-m MODE] [-t TIME_ALLOWED] [-b] [-s SUBSET] [-r REPEAT_ID] [-f] [-v] [-d] [-Q] phase proj_code</p>
-<p>Required Parameters:
-:phase: Pipeline phase to execute
-:proj_code: Project code or ID for this dataset execution</p>
+<dl>
+<dt>positional arguments:</dt><dd><p>phase                 Phase of the pipeline to initiate
+proj_code             Project identifier code</p>
+</dd>
+<dt>options:</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
+<dd><p>show this help message and exit</p>
+</dd>
+<dt><kbd><span class="option">-w <var>WORKDIR</var></span>, <span class="option">--workdir <var>WORKDIR</var></span></kbd></dt>
+<dd><p>Working directory for pipeline</p>
+</dd>
+<dt><kbd><span class="option">-g <var>GROUPDIR</var></span>, <span class="option">--groupdir <var>GROUPDIR</var></span></kbd></dt>
+<dd><p>Group directory for pipeline</p>
+</dd>
+<dt><kbd><span class="option">-G <var>GROUPID</var></span>, <span class="option">--groupID <var>GROUPID</var></span></kbd></dt>
+<dd><p>Group identifier label</p>
+</dd>
+<dt><kbd><span class="option">-p <var>PROJ_DIR</var></span>, <span class="option">--proj_dir <var>PROJ_DIR</var></span></kbd></dt>
+<dd><p>Project directory for pipeline</p>
+</dd>
+<dt><kbd><span class="option">-n <var>NEW_VERSION</var></span>, <span class="option">--new_version <var>NEW_VERSION</var></span></kbd></dt>
+<dd><p>If present, create a new version</p>
+</dd>
+<dt><kbd><span class="option">-m <var>MODE</var></span>, <span class="option">--mode <var>MODE</var></span></kbd></dt>
+<dd><p>Print or record information (log or std)</p>
+</dd>
+<dt><kbd><span class="option">-t <var>TIME_ALLOWED</var></span>, <span class="option">--time-allowed <var>TIME_ALLOWED</var></span></kbd></dt>
+<dd><p>Time limit for this job</p>
+</dd>
+<dt><kbd><span class="option">-b</span>, <span class="option">--bypass-errs</span></kbd></dt>
+<dd><p>Bypass all error messages - skip failed jobs</p>
+</dd>
+<dt><kbd><span class="option">-s <var>SUBSET</var></span>, <span class="option">--subset <var>SUBSET</var></span></kbd></dt>
+<dd><p>Size of subset within group</p>
+</dd>
+<dt><kbd><span class="option">-r <var>REPEAT_ID</var></span>, <span class="option">--repeat_id <var>REPEAT_ID</var></span></kbd></dt>
+<dd><p>Repeat id (1 if first time running, &lt;phase&gt;_&lt;repeat&gt; otherwise)</p>
+</dd>
+<dt><kbd><span class="option">-f</span></kbd></dt>
+<dd><p>Force overwrite of steps if previously done</p>
+</dd>
+<dt><kbd><span class="option">-v</span>, <span class="option">--verbose</span></kbd></dt>
+<dd><p>Print helpful statements while running</p>
+</dd>
+<dt><kbd><span class="option">-d</span>, <span class="option">--dryrun</span></kbd></dt>
+<dd><p>Perform dry-run (i.e no new files/dirs created)</p>
+</dd>
+<dt><kbd><span class="option">-Q</span>, <span class="option">--quality</span></kbd></dt>
+<dd><p>Quality assured checks - thorough run</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p><a href="#id3"><span class="problematic" id="id4">``</span></a><a href="#id5"><span class="problematic" id="id6">`</span></a></p>
 </div>
 <div class="section" id="running-for-a-group-of-datasets">
 <h2>Running for a group of datasets<a class="headerlink" href="#running-for-a-group-of-datasets" title="Permalink to this headline"></a></h2>
+<p>Run all multi-dataset group processes within the pipeline using the <cite>group_run.py</cite> script.</p>
+<p><a href="#id7"><span class="problematic" id="id8">``</span></a>`
+usage: group_run.py [-h] [-s SOURCE] [-e VENVPATH] [-w WORKDIR] [-g GROUPDIR] [-p PROJ_DIR] [-n NEW_VERSION] [-m MODE] [-t TIME_ALLOWED] [-b] [-i INPUT] [-S SUBSET] [-r REPEAT_ID] [-f] [-v] [-d] [-Q] phase groupID</p>
+<dl>
+<dt>positional arguments:</dt><dd><p>phase                 Phase of the pipeline to initiate
+groupID               Group identifier code</p>
+</dd>
+<dt>options:</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
+<dd><p>show this help message and exit</p>
+</dd>
+<dt><kbd><span class="option">-s <var>SOURCE</var></span></kbd></dt>
+<dd><p>Path to directory containing master scripts (this one)</p>
+</dd>
+<dt><kbd><span class="option">-e <var>VENVPATH</var></span></kbd></dt>
+<dd><p>Path to virtual (e)nvironment (excludes /bin/activate)</p>
+</dd>
+<dt><kbd><span class="option">-w <var>WORKDIR</var></span>, <span class="option">--workdir <var>WORKDIR</var></span></kbd></dt>
+<dd><p>Working directory for pipeline</p>
+</dd>
+<dt><kbd><span class="option">-g <var>GROUPDIR</var></span>, <span class="option">--groupdir <var>GROUPDIR</var></span></kbd></dt>
+<dd><p>Group directory for pipeline</p>
+</dd>
+<dt><kbd><span class="option">-p <var>PROJ_DIR</var></span>, <span class="option">--proj_dir <var>PROJ_DIR</var></span></kbd></dt>
+<dd><p>Project directory for pipeline</p>
+</dd>
+<dt><kbd><span class="option">-n <var>NEW_VERSION</var></span>, <span class="option">--new_version <var>NEW_VERSION</var></span></kbd></dt>
+<dd><p>If present, create a new version</p>
+</dd>
+<dt><kbd><span class="option">-m <var>MODE</var></span>, <span class="option">--mode <var>MODE</var></span></kbd></dt>
+<dd><p>Print or record information (log or std)</p>
+</dd>
+<dt><kbd><span class="option">-t <var>TIME_ALLOWED</var></span>, <span class="option">--time-allowed <var>TIME_ALLOWED</var></span></kbd></dt>
+<dd><p>Time limit for this job</p>
+</dd>
+<dt><kbd><span class="option">-b</span>, <span class="option">--bypass-errs</span></kbd></dt>
+<dd><p>Bypass all error messages - skip failed jobs</p>
+</dd>
+<dt><kbd><span class="option">-i <var>INPUT</var></span>, <span class="option">--input <var>INPUT</var></span></kbd></dt>
+<dd><p>input file (for init phase)</p>
+</dd>
+<dt><kbd><span class="option">-S <var>SUBSET</var></span>, <span class="option">--subset <var>SUBSET</var></span></kbd></dt>
+<dd><p>Size of subset within group</p>
+</dd>
+<dt><kbd><span class="option">-r <var>REPEAT_ID</var></span>, <span class="option">--repeat_id <var>REPEAT_ID</var></span></kbd></dt>
+<dd><p>Repeat id (1 if first time running, &lt;phase&gt;_&lt;repeat&gt; otherwise)</p>
+</dd>
+<dt><kbd><span class="option">-f</span></kbd></dt>
+<dd><p>Force overwrite of steps if previously done</p>
+</dd>
+<dt><kbd><span class="option">-v</span>, <span class="option">--verbose</span></kbd></dt>
+<dd><p>Print helpful statements while running</p>
+</dd>
+<dt><kbd><span class="option">-d</span>, <span class="option">--dryrun</span></kbd></dt>
+<dd><p>Perform dry-run (i.e no new files/dirs created)</p>
+</dd>
+<dt><kbd><span class="option">-Q</span>, <span class="option">--quality</span></kbd></dt>
+<dd><p>Quality assured checks - thorough run</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p><a href="#id9"><span class="problematic" id="id10">``</span></a><a href="#id11"><span class="problematic" id="id12">`</span></a></p>
 </div>
 </div>
 
