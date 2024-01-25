@@ -1,8 +1,13 @@
-Initialisation Module
+Compute Module
+====================
+
+================
+Serial Processor
 ================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Processors:
+.. automodule:: pipeline.compute.serial_process
+    :members:
 
-   Serial Process <serial-process>
+    .. autoclass:: Converter
+        :members:
+        

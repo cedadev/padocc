@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Initialisation Module &mdash; Kerchunk Pipeline v1.1 documentation</title>
+  <title>Compute Module &mdash; Kerchunk Pipeline v1.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -17,7 +17,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Serial Processor" href="serial-process.html" />
+    <link rel="next" title="Validation Module" href="validate.html" />
     <link rel="prev" title="Scanner Module" href="scan.html" /> 
 </head>
 
@@ -48,7 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="init.html">Init Source</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scan.html">Scan Source</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Compute Source</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="serial-process.html">Serial Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-pipeline.compute.serial_process">Serial Processor</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="validate.html">Validate Source</a></li>
@@ -70,7 +70,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Initialisation Module</li>
+      <li>Compute Module</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/compute.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -80,13 +80,44 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="initialisation-module">
-<h1>Initialisation Module<a class="headerlink" href="#initialisation-module" title="Permalink to this headline"></a></h1>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Processors:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="serial-process.html">Serial Process</a></li>
-</ul>
+  <div class="section" id="compute-module">
+<h1>Compute Module<a class="headerlink" href="#compute-module" title="Permalink to this headline"></a></h1>
+<div class="section" id="module-pipeline.compute.serial_process">
+<span id="serial-processor"></span><h2>Serial Processor<a class="headerlink" href="#module-pipeline.compute.serial_process" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Converter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.compute.serial_process.</span></span><span class="sig-name descname"><span class="pre">Converter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass_errs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Converter" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Converter.hdf5_to_zarr">
+<span class="sig-name descname"><span class="pre">hdf5_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Converter.hdf5_to_zarr" title="Permalink to this definition"></a></dt>
+<dd><p>Converter for HDF5 type files</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Converter.ncf3_to_zarr">
+<span class="sig-name descname"><span class="pre">ncf3_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Converter.ncf3_to_zarr" title="Permalink to this definition"></a></dt>
+<dd><p>Converter for NetCDF3 type files</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Converter.tiff_to_zarr">
+<span class="sig-name descname"><span class="pre">tiff_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tfile</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Converter.tiff_to_zarr" title="Permalink to this definition"></a></dt>
+<dd><p>Converter for Tiff type files</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.KerchunkDriverFatalError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.compute.serial_process.</span></span><span class="sig-name descname"><span class="pre">KerchunkDriverFatalError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'All</span> <span class="pre">drivers</span> <span class="pre">failed</span> <span class="pre">when</span> <span class="pre">performing</span> <span class="pre">conversion'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.KerchunkDriverFatalError" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.init_logger">
+<span class="sig-prename descclassname"><span class="pre">pipeline.compute.serial_process.</span></span><span class="sig-name descname"><span class="pre">init_logger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.init_logger" title="Permalink to this definition"></a></dt>
+<dd><p>Logger object init and configure with formatting</p>
+</dd></dl>
+
 </div>
 </div>
 
@@ -95,7 +126,7 @@
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="scan.html" class="btn btn-neutral float-left" title="Scanner Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="serial-process.html" class="btn btn-neutral float-right" title="Serial Processor" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="validate.html" class="btn btn-neutral float-right" title="Validation Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
