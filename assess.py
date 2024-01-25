@@ -10,6 +10,7 @@ levels = [
     logging.DEBUG
 ]
 
+# Hints for errors
 HINTS = {
     'TrueShapeValidationError': "Kerchunk array shape doesn't match netcdf - missing timesteps or write issue?",
     'slurmstepd': "Ran out of time in job",
