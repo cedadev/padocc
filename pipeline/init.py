@@ -69,7 +69,9 @@ def make_filelist(pattern, proj_dir, logger):
     """Create list of files associated with this project"""
     logger.debug(f'Making list of files for project {proj_dir.split("/")[-1]}')
 
-    if os.path.isdir(proj_dir):
+    if pattern.endswith('.txt'):
+        os.system(f'cp {pattern} {proj_dir}/allfiles.txt')
+    elif os.path.isdir(proj_dir):
         os.system(f'ls {pattern} > {proj_dir}/allfiles.txt')
     else:
         logger.error(f'Project Directory not located - {proj_dir}')
