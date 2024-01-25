@@ -1,6 +1,8 @@
 Assessor Tool
 =============
 
-.. automodule:: assess
+.. autosummary:: assess
     :members:
-    :undoc-members:
+    
+    .. autofunction:: assess.get_attribute
+        :members:
