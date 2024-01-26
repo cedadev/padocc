@@ -17,17 +17,15 @@ import math
 from pipeline.errors import *
 from pipeline.logs import init_logger
 
+## 1. Array Selection Tools
 
-
-## 2. Array Selection Tools
-
-def find_dimensions(dimlen, divisions):
+def find_dimensions(dimlen: int, divisions: int):
     """Determine index of slice end position given length of dimension and fraction to assess"""
     # Round down then add 1
     slicemax = int(dimlen/divisions)+1
     return slicemax
 
-def get_vslice(shape, dtypes, lengths, divisions, logger):
+def get_vslice(shape: list, dtypes: list, lengths: list, divisions: list, logger):
     """Assemble dataset slice given the shape of the array and dimensions involved"""
 
     vslice = []
@@ -41,9 +39,9 @@ def get_vslice(shape, dtypes, lengths, divisions, logger):
     logger.debug(f'Slice {vslice}')
     return vslice
 
-## 3. File Selection Tools
+## 2. File Selection Tools
 
-def get_netcdf_list(proj_dir, logger, thorough=False):
+def get_netcdf_list(proj_dir: str, logger, thorough=False):
     """Open document containing paths to all NetCDF files, make selections"""
     with open(f'{proj_dir}/allfiles.txt') as f:
         xfiles = [r.strip() for r in f.readlines()]
@@ -74,7 +72,7 @@ def get_netcdf_list(proj_dir, logger, thorough=False):
 
     return indexes, xfiles
 
-def pick_index(nfiles, indexes):
+def pick_index(nfiles: list, indexes: list):
     """Pick index of new netcdf file randomly, try 100 times"""
     index = random.randint(0,nfiles)
     count = 0
@@ -108,7 +106,7 @@ def locate_kerchunk(args, logger, get_str=False):
     else:
         return open_kerchunk(kfile, logger)
 
-def open_kerchunk(kfile, logger, isparq=False):
+def open_kerchunk(kfile: str, logger, isparq=False):
     """Open kerchunk file from JSON/parquet formats"""
     if isparq:
         logger.debug('Opening Kerchunk Parquet store')
@@ -168,7 +166,7 @@ def open_netcdfs(args, logger, thorough=False):
         raise NoValidTimeSlicesError(message='Kerchunk', verbose=args.verbose)
     return xobjs, indexes, len(xfiles)
 
-## 4. Validation Testing
+## 3. Validation Testing
 
 def match_timestamp(kobject, xobject, logger):
     """Match timestamp of xarray object to kerchunk object
@@ -194,7 +192,7 @@ def match_timestamp(kobject, xobject, logger):
         logger.debug('Skipped timestamp selection as xobject has no time')
         return kobject, xobject
 
-def compare_data(vname, netbox, kerchunk_box, logger, bypass=False):
+def compare_data(vname: str, netbox, kerchunk_box, logger, bypass=False):
     """Compare a NetCDF-derived ND array to a Kerchunk-derived one
      - Takes a netbox array of n-dimensions and an equally sized kerchunk_box array
      - Tests for elementwise equality within selection.
@@ -246,7 +244,7 @@ def compare_data(vname, netbox, kerchunk_box, logger, bypass=False):
         else:
             raise err
 
-def validate_shapes(xobj, kobj, step, nfiles, xv, logger):
+def validate_shapes(xobj, kobj, step: int, nfiles: list, xv: str, logger):
     """Ensure shapes are equivalent across Kerchunk/NetCDF per variable
      - Accounts for the number of files opened vs how many files in total."""
     xshape = list(xobj[xv].shape)
@@ -266,7 +264,7 @@ def validate_shapes(xobj, kobj, step, nfiles, xv, logger):
         logger.warning(f'Kerchunk/NetCDF mismatch for variable {xv} with shapes - K {kshape} vs N {xshape}')
         raise ShapeMismatchError(var=xv, first=kshape, second=xshape)
 
-def validate_selection(args, xvariable, kvariable, vname, divs, currentdiv, logger):
+def validate_selection(args, xvariable, kvariable, vname: str, divs: int, currentdiv: int, logger):
     """Validate this data selection in xvariable/kvariable objects
       - Recursive function tests a growing selection of data until one is found with real data
       - Repeats with exponentially increasing box size (divisions of all data dimensions)
@@ -322,7 +320,7 @@ def validate_selection(args, xvariable, kvariable, vname, divs, currentdiv, logg
             if not args.bypass:
                 raise SoftfailBypassError
 
-def validate_data(args, xobj, kobj, xv, step, logger):
+def validate_data(args, xobj, kobj, xv: str, step: int, logger):
     """Run growing selection test for specified variable from xarray and kerchunk datasets"""
     logger.info(f'{xv} : Starting growbox data tests for {step}')
 
@@ -331,7 +329,7 @@ def validate_data(args, xobj, kobj, xv, step, logger):
     # Attempt 128 divisions within selection - 128, 64, 32, 16, 8, 4, 2, 1
     return validate_selection(args, xvariable, kvariable, xv, 128, 128, logger)
 
-def validate_timestep(args, xobj, kobj, step, nfiles, logger):
+def validate_timestep(args, xobj, kobj, step: int, nfiles: list, logger):
     """Run all tests for a single file which may or may not equate to 1 timestep"""
 
     # Run Variable and Shape validation
@@ -377,7 +375,8 @@ def run_successful(args, logger):
         os.system(f'touch {kfile}.complete')
 
 def run_backtrack():
-    pass
+    """Not currently implemented"""
+    raise NotImplementedError
 
 def validate_dataset(args):
     """Perform validation steps for specific dataset defined here
