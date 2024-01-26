@@ -2,29 +2,8 @@ import sys
 import json
 import os
 import argparse
-import logging
 
-levels = [
-    logging.WARN,
-    logging.INFO,
-    logging.DEBUG
-]
-
-def init_logger(verbose, mode, name):
-    """Logger object init and configure with formatting"""
-    verbose = min(verbose, len(levels)-1)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(levels[verbose])
-
-    ch = logging.StreamHandler()
-    ch.setLevel(levels[verbose])
-
-    formatter = logging.Formatter('%(levelname)s [%(name)s]: %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-
-    return logger
+from pipeline.logs import init_logger
 
 def get_group_len(workdir, group, repeat_id=1):
     """Implement parallel reads from single 'group' file"""
@@ -138,7 +117,6 @@ def main(args):
         print(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
     else:
         os.system(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')

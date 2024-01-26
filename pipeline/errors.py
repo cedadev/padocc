@@ -1,3 +1,42 @@
+__author__    = "Daniel Westwood"
+__contact__   = "daniel.westwood@stfc.ac.uk"
+__copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
+
+class MissingVariableError(Exception):
+    def __init__(self, type='$', verbose=0):
+        self.message = f'Missing variable: {type}'
+        super().__init__(self.message)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+
+class ExpectTimeoutError(Exception):
+    def __init__(self, required=0, current='', verbose=0):
+        self.message = f'Scan requires minimum {required} - current {current}'
+        super().__init__(self.message)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+
+class ProjectCodeError(Exception):
+    def __init__(self, verbose=0):
+        self.message = f'Project Code Extraction Failed'
+        super().__init__(self.message)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+
+class FilecapExceededError(Exception):
+    def __init__(self, nfiles=0, verbose=0):
+        self.message = f'Filecap exceeded: {nfiles} files attempted'
+        super().__init__(self.message)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+
+class ExpectTimeoutError(Exception):
+    def __init__(self, required=0, current='', verbose=0):
+        self.message = f'Scan requires minimum {required} - current {current}'
+        super().__init__(self.message)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+
 class ChunkDataError(Exception):
     def __init__(self, verbose=0):
         self.message = f'Decoding resulted in overflow - received chunk data contains junk (attempted 3 times)'

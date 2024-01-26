@@ -1,4 +1,6 @@
 import logging
+import os
+from pipeline.errors import MissingVariableError
 
 levels = [
     logging.WARN,
@@ -21,3 +23,15 @@ def init_logger(verbose, mode, name):
     logger.addHandler(ch)
 
     return logger
+
+def get_attribute(env: str, args, var: str):
+    """Assemble environment variable or take from passed argument.
+    
+    Finds value of variable from Environment or ParseArgs object, or reports failure
+    """
+    if os.getenv(env):
+        return os.getenv(env)
+    elif hasattr(args, var):
+        return getattr(args, var)
+    else:
+        raise MissingVariableError(type=f'${var}')

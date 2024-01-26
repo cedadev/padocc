@@ -9,48 +9,8 @@ import os
 import json
 import logging
 
-class MissingVariableError(Exception):
-    def __init__(self, type='$', verbose=0):
-        self.message = f'Missing variable: {type}'
-        super().__init__(self.message)
-        if verbose < 1:
-            self.__class__.__module__ = 'builtins'
-
-class ExpectTimeoutError(Exception):
-    def __init__(self, required=0, current='', verbose=0):
-        self.message = f'Scan requires minimum {required} - current {current}'
-        super().__init__(self.message)
-        if verbose < 1:
-            self.__class__.__module__ = 'builtins'
-
-class ProjectCodeError(Exception):
-    def __init__(self, verbose=0):
-        self.message = f'Project Code Extraction Failed'
-        super().__init__(self.message)
-        if verbose < 1:
-            self.__class__.__module__ = 'builtins'
-
-levels = [
-    logging.WARN,
-    logging.INFO,
-    logging.DEBUG
-]
-
-def init_logger(verbose, mode, name):
-    """Logger object init and configure with formatting"""
-    verbose = min(verbose, len(levels)-1)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(levels[verbose])
-
-    ch = logging.StreamHandler()
-    ch.setLevel(levels[verbose])
-
-    formatter = logging.Formatter('%(levelname)s [%(name)s]: %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-
-    return logger
+from pipeline.logs import init_logger, get_attribute
+from pipeline.errors import ProjectCodeError, MissingVariableError
 
 def run_init(args, logger):
     """Start initialisation for single dataset"""
@@ -131,15 +91,6 @@ def get_proj_code(groupdir, pid, repeat_id, subset=0, id=0):
         raise ProjectCodeError
     return proj_code
 
-def get_attribute(env, args, var, logger):
-    if os.getenv(env):
-        return os.getenv(env)
-    elif hasattr(args, var):
-        return getattr(args, var)
-    else:
-        logger.error(f'Missing attribute {var}')
-        return None
-    
 def main(args):
     """Main function for single run processing"""
 
