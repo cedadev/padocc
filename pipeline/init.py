@@ -8,34 +8,14 @@ import json
 import logging
 import glob
 
+from pipeline.logs import init_logger
+
 config = {
     'proj_code': None,
     'pattern': None,
     'update': None,
     'remove': None
 }
-
-levels = [
-    logging.WARN,
-    logging.INFO,
-    logging.DEBUG
-]
-
-def init_logger(verbose, mode, name):
-    """Logger object init and configure with formatting"""
-    verbose = min(verbose, len(levels)-1)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(levels[verbose])
-
-    ch = logging.StreamHandler()
-    ch.setLevel(levels[verbose])
-
-    formatter = logging.Formatter('%(levelname)s [%(name)s]: %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-
-    return logger
 
 def get_updates(logger):
     """Get key-value pairs for updating in final metadata"""
@@ -59,13 +39,13 @@ def get_removals(logger):
             valsarr.append(inp)
     return valsarr
 
-def get_proj_code(path, prefix=''):
+def get_proj_code(path: str, prefix=''):
     parts = path.replace(prefix,'').replace('/','_').split('_')
     if '*.' in parts[-1]:
         parts = parts[:-2]
     return '_'.join(parts)
     
-def make_filelist(pattern, proj_dir, logger):
+def make_filelist(pattern: str, proj_dir: str, logger):
     """Create list of files associated with this project"""
     logger.debug(f'Making list of files for project {proj_dir.split("/")[-1]}')
 
