@@ -13,50 +13,14 @@ from kerchunk.hdf import SingleHdf5ToZarr
 from kerchunk.netCDF3 import NetCDF3ToZarr
 import os, sys
 from datetime import datetime
-import glob
 import math
 import json
-import logging
-
 import numpy as np
 
-levels = [
-    logging.WARN,
-    logging.INFO,
-    logging.DEBUG
-]
+from pipeline.logs import *
+from pipeline.errors import ExpectTimeoutError, FilecapExceededError
 
-class FilecapExceededError(Exception):
-    def __init__(self, nfiles=0, verbose=0):
-        self.message = f'Filecap exceeded: {nfiles} files attempted'
-        super().__init__(self.message)
-        if verbose < 1:
-            self.__class__.__module__ = 'builtins'
-
-class ExpectTimeoutError(Exception):
-    def __init__(self, required=0, current='', verbose=0):
-        self.message = f'Scan requires minimum {required} - current {current}'
-        super().__init__(self.message)
-        if verbose < 1:
-            self.__class__.__module__ = 'builtins'
-
-def init_logger(verbose, mode, name):
-    """Logger object init and configure with formatting"""
-    verbose = min(verbose, len(levels)-1)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(levels[verbose])
-
-    ch = logging.StreamHandler()
-    ch.setLevel(levels[verbose])
-
-    formatter = logging.Formatter('%(levelname)s [%(name)s]: %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-
-    return logger
-
-def format_float(value, logger):
+def format_float(value: int, logger):
     """Format byte-value with proper units"""
     logger.debug(f'Formatting value {value} in bytes')
     if value:
@@ -69,13 +33,14 @@ def format_float(value, logger):
     else:
         return None
 
-def safe_format(value, fstring):
+def safe_format(value: int, fstring: str):
+    """Attempt to format a string given some fstring template."""
     try:
         return fstring.format(value=value)
     except:
         return ''
 
-def map_to_kerchunk(args, nfile, ctype, logger):
+def map_to_kerchunk(args, nfile: str, ctype: str, logger):
     """Perform Kerchunk reading on specific file"""
     logger.info(f'Running Kerchunk reader for {nfile}')
     from pipeline.compute.serial_process import Converter
@@ -107,7 +72,7 @@ def map_to_kerchunk(args, nfile, ctype, logger):
         logger.info(f'Scan successful with {ctype} driver')
         return tdict['refs'], ctype, t_len
 
-def get_internals(args, testfile, ctype, logger):
+def get_internals(args, testfile: str, ctype: str, logger):
     """Map to kerchunk data and perform calculations on test netcdf file."""
     refs, ctype, time = map_to_kerchunk(args, testfile, ctype, logger)
     if not refs:
@@ -128,25 +93,26 @@ def get_internals(args, testfile, ctype, logger):
                 pass
     return np.sum(sizes), chunks, sorted(list(vars.keys())), ctype, time
 
-def eval_sizes(files):
+def eval_sizes(files: list):
     """Get a list of file sizes on disk from a list of filepaths"""
     return [os.stat(files[count]).st_size for count in range(len(files))]
 
-def get_seconds(time_allowed):
+def get_seconds(time_allowed: str):
     """Convert time in MM:SS to seconds"""
     if not time_allowed:
         return 10000000000
     mins, secs = time_allowed.split(':')
     return int(secs) + 60*int(mins)
 
-def format_seconds(seconds):
+def format_seconds(seconds: int):
     """Convert time in seconds to MM:SS"""
     mins = int(seconds/60) + 1
     if mins < 10:
         mins = f'0{mins}'
     return f'{mins}:00'
 
-def perform_safe_calculations(std_vars, cpf, volms, files, times, logger):
+def perform_safe_calculations(std_vars: list, cpf: list, volms: list, files: list, times: list, logger):
+    """Perform all calculations safely to mitigate errors that come through during data collation."""
     kchunk_const = 167 # Bytes per Kerchunk ref (standard/typical)
     if std_vars:
         num_vars = len(std_vars)
@@ -196,7 +162,7 @@ def perform_safe_calculations(std_vars, cpf, volms, files, times, logger):
 
     return avg_cpf, num_vars, avg_chunk, spatial_res, data_represented, num_files, total_chunks, addition, estm_time
 
-def scan_dataset(args, files, proj_dir, proj_code, logger):
+def scan_dataset(args, files: list, proj_dir: str, proj_code: str, logger):
     """Main process handler for scanning phase"""
     logger.debug(f'Assessment for {proj_code}')
 
