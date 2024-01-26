@@ -156,43 +156,6 @@ def extract_keys(filepath: str, logger, savetype=None, examine=None):
                         raise Exception
     return savedcodes, keys, len(listfiles)
 
-def check_errs(path: str, logger, savetype=None, examine=None):
-    """Check error files and summarise results
-    
-    Extract savedcodes and total number of errors from each type given a specific path.
-
-    Parameters
-    ----------
-    path : str
-        String path to the error/output files
-    logger : Logging.object
-        Logger object for warning/info/debug messages.
-    savetype : str or bool
-        Error code to compare to error files and save matching codes to savedcodes array.
-    examine : bool
-        Boolean switch for halting if matching code is found.
-
-    Returns
-    -------
-    savedcodes : list
-        List of tuples for each file which abides by the savetype. Stored values in each tuple are:
-         - efile (str) : Path to error/output file
-         - code (str)  : Project code of error file
-         - log (str)   : Full error log for this project code
-    """
-    savedcodes, errs, total = extract_keys(path, logger, savetype=savetype, examine=examine)
-    
-    # Summarise results
-    logger.info(f'Found {total} error files:')
-    for key in errs.keys():
-        if errs[key] > 0:
-            known_hint = 'Unknown'
-            if key in HINTS:
-                known_hint = HINTS[key]
-            print(f'{key}: {errs[key]}    - ({known_hint})')
-
-    return savedcodes
-
 def get_attribute(env: str, args, var: str):
     """Assemble environment variable or take from passed argument.
     
@@ -206,7 +169,10 @@ def get_attribute(env: str, args, var: str):
         raise MissingVariableError(type='$WORKDIR')
     
 def save_sel(codes: list, groupdir: str, label: str, logger):
-    """Save selection of codes to a file with a given repeat label"""
+    """Save selection of codes to a file with a given repeat label. 
+    
+    Requires a groupdir (directory belonging to a group), list of codes and a label for the new file.
+    """
     if len(codes) > 1:
         codeset = ''.join([code[1] for code in codes])
         with open(f'{groupdir}/proj_codes_{label}.txt','w') as f:
@@ -217,7 +183,9 @@ def save_sel(codes: list, groupdir: str, label: str, logger):
         logger.info('No codes identified, no files written')
 
 def show_options(option: str, groupdir: str, operation: str, logger):
-    """Display current"""
+    """Use OS tools to list contents of relevant directories to see all jobids or labels.
+    
+    List output or error directories (one per job id), or list all proj_codes text files."""
     if option == 'jobids':
         logger.info('Detecting IDs from previous runs:')
         if operation == 'outputs':
@@ -234,6 +202,7 @@ def show_options(option: str, groupdir: str, operation: str, logger):
             logger.info(f'{format_str(pcode,20)} - {l}')
 
 def cleanup(cleantype: str, groupdir: str, logger):
+    """Remove older versions of project code files, error or output logs. Clear directories."""
     if cleantype == 'proj_codes':
         projset = glob.glob(f'{groupdir}/proj_codes_*')
         for p in projset:
@@ -247,6 +216,9 @@ def cleanup(cleantype: str, groupdir: str, logger):
         pass
 
 def progress_check(args, logger):
+    """Check general progress of pipeline for a specific group.
+    
+    Lists progress up to the provided phase, options to save all project codes stuck at a specific phase to a repeat_id for later use."""
     if args.phase not in phases:
         logger.error(f'Phase not accepted here - {args.phase}')
         return None
@@ -281,6 +253,10 @@ def progress_check(args, logger):
         print(f'Written {len(redo_pcodes)} pcodes, repeat label: {args.repeat_label}')
 
 def error_check(args, logger):
+    """Check error files and summarise results
+    
+    Extract savedcodes and total number of errors from each type given a specific path, save selection of codes for later use if required.
+    """
     job_path = f'{args.workdir}/groups/{args.groupID}/errs/{args.jobID}'
     logger.info(f'Checking error files for {args.groupID} ID: {args.jobID}')
 
@@ -303,6 +279,7 @@ def error_check(args, logger):
         pass
 
 def output_check(args, logger):
+    """Not implemented output log checker"""
     job_path = f'{args.workdir}/groups/{args.groupID}/errs/{args.jobID}'
     logger.info(f'Checking output files for {args.groupID} ID: {args.jobID}')
     raise NotImplementedError
@@ -314,6 +291,7 @@ operations = {
 }
 
 def assess_main(args):
+    """Main assessment function, different tools diverge from here."""
 
     logger = init_logger(args.verbose, args.mode, 'assessor')
 
