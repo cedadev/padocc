@@ -1,14 +1,9 @@
 import os
-import sys
 import argparse
 import glob
-import logging
 
-levels = [
-    logging.WARN,
-    logging.INFO,
-    logging.DEBUG
-]
+from pipeline.logs import init_logger
+from pipeline.errors import MissingVariableError
 
 # Hints for errors
 HINTS = {
@@ -23,43 +18,11 @@ HINTS = {
 phases = ['scan', 'compute', 'validate']
 checks = ['/detail-cfg.json','/*kerchunk*','/*.complete']
 
-def format_str(string, length):
+def format_str(string: str, length: int):
+    """Simple function to format a string to a correct length"""
     while len(string) < length:
         string += ' '
     return string[:length]
-
-def init_logger(verbose: int, mode: int, name: str):
-    """Logger object init and configure with formatting
-
-    Parameters
-    ----------
-    verbose : int
-        Display level can range from 0-2 for WARNING, INFO and DEBUG.
-
-    mode : int
-        Unused mode for saving data.
-
-    name : str
-        Name of master script from which logger is defined.
-    
-    Returns
-    -------
-    logging.Logger
-    """
-
-    verbose = min(verbose, len(levels)-1)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(levels[verbose])
-
-    ch = logging.StreamHandler()
-    ch.setLevel(levels[verbose])
-
-    formatter = logging.Formatter('%(levelname)s [%(name)s]: %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-
-    return logger
 
 def find_codes(phase: str, workdir: str, groupID: str, check: str, ignore=[]):
     """Find project codes for datasets that failed at various stages of the pipeline
@@ -107,10 +70,18 @@ def find_codes(phase: str, workdir: str, groupID: str, check: str, ignore=[]):
     return redo_pcodes, complete
 
 def get_code_from_val(path: str, index: str):
-    """Takes some index value from command line and fetches the corresponding project code"""
+    """Takes some index value from command line and fetches the corresponding project code.
+    
+    Project codes stored in proj_codes.txt under each job id.
+
+    Returns
+    -------
+    proj_code : str
+        Project code that matches the provided index
+    """
     path = path.split('*')[0]
-    if os.path.isfile(f'{path}proj_codes.txt'):
-        with open(f'{path}proj_codes.txt') as f:
+    if os.path.isfile(f'{path}/proj_codes.txt'):
+        with open(f'{path}/proj_codes.txt') as f:
             try:
                 code = f.readlines()[int(index)]
             except IndexError:
@@ -121,16 +92,39 @@ def get_code_from_val(path: str, index: str):
     return code
 
 def extract_keys(filepath: str, logger, savetype=None, examine=None):
-    """Extract keys from error/output files, collect into groups and examine a particular type if required."""
+    """Extract keys from error/output files, collect into groups and examine a particular type if required.
+    
+    Parameters
+    ----------
+    filepath : str
+        String path to the error/output files
+    logger : Logging.object
+        Logger object for warning/info/debug messages.
+    savetype : str or bool
+        Error code to compare to error files and save matching codes to savedcodes array.
+    examine : bool
+        Boolean switch for halting if matching code is found.
+
+    Returns
+    -------
+    savedcodes : list
+        List of tuples for each file which abides by the savetype. Stored values in each tuple are:
+         - efile (str) : Path to error/output file
+         - code (str)  : Project code of error file
+         - log (str)   : Full error log for this project code
+    keys : dict
+        Dictionary of number of occurrences across all error logs of specific error codes.
+    total : int
+        Total number of error files found under the path provided. 
+    """
     keys       = {}
     savedcodes = []
-    total      = 0
     listfiles  = glob.glob(filepath)
+    total      = len(listfiles)
     logger.info(f'Found {len(listfiles)} files to assess')
 
     for efile in listfiles:
         logger.debug(f'Starting {efile}')
-        total += 1
         with open(os.path.join(filepath, efile)) as f:
             log = [r.strip() for r in f.readlines()]
         logger.debug(f'Opened {efile}')
@@ -150,7 +144,8 @@ def extract_keys(filepath: str, logger, savetype=None, examine=None):
             # Select specific errors to examine
             if key == savetype:
                 ecode = efile.split('/')[-1].split('.')[0]
-                code = get_code_from_val(filepath, ecode)
+                path = filepath[:-1]
+                code = get_code_from_val(path, ecode)
                 savedcodes.append((efile, code, log))
                 if examine:
                     print(f'{efile} - {code}')
@@ -159,14 +154,36 @@ def extract_keys(filepath: str, logger, savetype=None, examine=None):
                     x=input()
                     if x == 'E':
                         raise Exception
-    return savedcodes, keys, total
+    return savedcodes, keys, len(listfiles)
 
 def check_errs(path: str, logger, savetype=None, examine=None):
-    """Check error files and summarise results"""
+    """Check error files and summarise results
+    
+    Extract savedcodes and total number of errors from each type given a specific path.
+
+    Parameters
+    ----------
+    path : str
+        String path to the error/output files
+    logger : Logging.object
+        Logger object for warning/info/debug messages.
+    savetype : str or bool
+        Error code to compare to error files and save matching codes to savedcodes array.
+    examine : bool
+        Boolean switch for halting if matching code is found.
+
+    Returns
+    -------
+    savedcodes : list
+        List of tuples for each file which abides by the savetype. Stored values in each tuple are:
+         - efile (str) : Path to error/output file
+         - code (str)  : Project code of error file
+         - log (str)   : Full error log for this project code
+    """
     savedcodes, errs, total = extract_keys(path, logger, savetype=savetype, examine=examine)
     
     # Summarise results
-    print(f'Found {total} error files:')
+    logger.info(f'Found {total} error files:')
     for key in errs.keys():
         if errs[key] > 0:
             known_hint = 'Unknown'
@@ -177,14 +194,16 @@ def check_errs(path: str, logger, savetype=None, examine=None):
     return savedcodes
 
 def get_attribute(env: str, args, var: str):
-    """Assemble environment variable or take from passed argument."""
+    """Assemble environment variable or take from passed argument.
+    
+    Finds value of variable from Environment or ParseArgs object, or reports failure
+    """
     if os.getenv(env):
         return os.getenv(env)
     elif hasattr(args, var):
         return getattr(args, var)
     else:
-        print(f'Error: Missing attribute {var}')
-        return None
+        raise MissingVariableError(type='$WORKDIR')
     
 def save_sel(codes: list, groupdir: str, label: str, logger):
     """Save selection of codes to a file with a given repeat label"""
@@ -315,7 +334,7 @@ def assess_main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run a pipeline step for a single dataset')
     parser.add_argument('groupID',type=str, help='Group identifier code')
-    parser.add_argument('operation',type=str, help='Operation to perform', choices=['progress','errors','outputs'])
+    parser.add_argument('operation',type=str, help='Operation to perform - choose from `progress`,`errors`,`outputs`.')
 
 
     parser.add_argument('-j','--jobid', dest='jobID', help='Identifier of job to inspect')
