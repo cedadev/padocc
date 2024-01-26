@@ -2,7 +2,7 @@ import os
 import argparse
 import glob
 
-from pipeline.logs import init_logger
+from pipeline.logs import init_logger, get_attribute
 from pipeline.errors import MissingVariableError
 
 # Hints for errors
@@ -156,18 +156,6 @@ def extract_keys(filepath: str, logger, savetype=None, examine=None):
                         raise Exception
     return savedcodes, keys, len(listfiles)
 
-def get_attribute(env: str, args, var: str):
-    """Assemble environment variable or take from passed argument.
-    
-    Finds value of variable from Environment or ParseArgs object, or reports failure
-    """
-    if os.getenv(env):
-        return os.getenv(env)
-    elif hasattr(args, var):
-        return getattr(args, var)
-    else:
-        raise MissingVariableError(type='$WORKDIR')
-    
 def save_sel(codes: list, groupdir: str, label: str, logger):
     """Save selection of codes to a file with a given repeat label. 
     

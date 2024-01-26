@@ -4,3 +4,4 @@ temp/
 testing/
 *__pycache__*
 docs/build/
+build/
