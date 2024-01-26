@@ -40,6 +40,7 @@ def get_removals(logger):
     return valsarr
 
 def get_proj_code(path: str, prefix=''):
+    """Determine project code from path (prefix removed), appropriate for CMIP6"""
     parts = path.replace(prefix,'').replace('/','_').split('_')
     if '*.' in parts[-1]:
         parts = parts[:-2]
