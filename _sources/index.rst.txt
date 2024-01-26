@@ -40,6 +40,7 @@ Ingest/Catalog files
    Running the Pipeline <execution>
    Worked Examples <examples>
    Assessor Tool Overview <assess-overview>
+   Error Codes <errors>
 
 .. toctree::
    :maxdepth: 2

@@ -41,6 +41,7 @@
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Running the Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Worked Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Advanced:</span></p>
 <ul>
@@ -95,6 +96,7 @@
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
+ | <a href="#V"><strong>V</strong></a>
  
 </div>
 <h2 id="A">A</h2>
@@ -117,10 +119,12 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="assess.html#assess.cleanup">cleanup() (in module assess)</a>
+      <li><a href="errors.html#pipeline.errors.ChunkDataError">ChunkDataError</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="assess.html#assess.cleanup">cleanup() (in module assess)</a>
+</li>
       <li><a href="compute.html#pipeline.compute.serial_process.Converter">Converter (class in pipeline.compute.serial_process)</a>
 </li>
   </ul></td>
@@ -133,6 +137,8 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="errors.html#pipeline.errors.ExpectTimeoutError">ExpectTimeoutError</a>
+</li>
       <li><a href="assess.html#assess.extract_keys">extract_keys() (in module assess)</a>
 </li>
   </ul></td>
@@ -141,10 +147,12 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="assess.html#assess.find_codes">find_codes() (in module assess)</a>
+      <li><a href="errors.html#pipeline.errors.FilecapExceededError">FilecapExceededError</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="assess.html#assess.find_codes">find_codes() (in module assess)</a>
+</li>
       <li><a href="assess.html#assess.format_str">format_str() (in module assess)</a>
 </li>
   </ul></td>
@@ -232,6 +240,12 @@
 </li>
       <li><a href="init.html#pipeline.init.make_filelist">make_filelist() (in module pipeline.init)</a>
 </li>
+      <li><a href="errors.html#pipeline.errors.MissingKerchunkError">MissingKerchunkError</a>
+</li>
+      <li><a href="errors.html#pipeline.errors.MissingVariableError">MissingVariableError</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     module
 
@@ -241,6 +255,8 @@
         <li><a href="execution-source.html#module-group_run">group_run</a>
 </li>
         <li><a href="compute.html#module-pipeline.compute.serial_process">pipeline.compute.serial_process</a>
+</li>
+        <li><a href="errors.html#module-pipeline.errors">pipeline.errors</a>
 </li>
         <li><a href="init.html#module-pipeline.init">pipeline.init</a>
 </li>
@@ -254,6 +270,12 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="compute.html#pipeline.compute.serial_process.Converter.ncf3_to_zarr">ncf3_to_zarr() (pipeline.compute.serial_process.Converter method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="errors.html#pipeline.errors.NoOverwriteError">NoOverwriteError</a>
+</li>
+      <li><a href="errors.html#pipeline.errors.NoValidTimeSlicesError">NoValidTimeSlicesError</a>
 </li>
   </ul></td>
 </tr></table>
@@ -276,6 +298,13 @@
         <li><a href="compute.html#module-pipeline.compute.serial_process">module</a>
 </li>
       </ul></li>
+      <li>
+    pipeline.errors
+
+      <ul>
+        <li><a href="errors.html#module-pipeline.errors">module</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li>
@@ -286,6 +315,8 @@
 </li>
       </ul></li>
       <li><a href="assess.html#assess.progress_check">progress_check() (in module assess)</a>
+</li>
+      <li><a href="errors.html#pipeline.errors.ProjectCodeError">ProjectCodeError</a>
 </li>
   </ul></td>
 </tr></table>
@@ -311,6 +342,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="assess.html#assess.save_sel">save_sel() (in module assess)</a>
 </li>
+      <li><a href="errors.html#pipeline.errors.ShapeMismatchError">ShapeMismatchError</a>
+</li>
       <li><a href="assess.html#assess.show_options">show_options() (in module assess)</a>
 </li>
   </ul></td>
@@ -322,6 +355,8 @@
         <li><a href="execution-source.html#module-single_run">module</a>
 </li>
       </ul></li>
+      <li><a href="errors.html#pipeline.errors.SoftfailBypassError">SoftfailBypassError</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -333,6 +368,20 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="compute.html#pipeline.compute.serial_process.Converter.tiff_to_zarr">tiff_to_zarr() (pipeline.compute.serial_process.Converter method)</a>
+</li>
+      <li><a href="errors.html#pipeline.errors.TrueShapeValidationError">TrueShapeValidationError</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="errors.html#pipeline.errors.ValidationError">ValidationError</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="errors.html#pipeline.errors.VariableMismatchError">VariableMismatchError</a>
 </li>
   </ul></td>
 </tr></table>
