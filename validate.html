@@ -79,8 +79,121 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="validation-module">
-<h1>Validation Module<a class="headerlink" href="#validation-module" title="Permalink to this headline"></a></h1>
+  <div class="section" id="module-pipeline.validate">
+<span id="validation-module"></span><h1>Validation Module<a class="headerlink" href="#module-pipeline.validate" title="Permalink to this headline"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.compare_data">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">compare_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">netbox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kerchunk_box</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.compare_data" title="Permalink to this definition"></a></dt>
+<dd><p>Compare a NetCDF-derived ND array to a Kerchunk-derived one
+- Takes a netbox array of n-dimensions and an equally sized kerchunk_box array
+- Tests for elementwise equality within selection.
+- If possible, tests max/mean/min calculations for the selection to ensure cached values are the same.</p>
+<ul class="simple">
+<li><p>Expect TypeErrors from summations which are bypassed.</p></li>
+<li><p>Other errors will exit the run.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.find_dimensions">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">find_dimensions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dimlen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">divisions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.find_dimensions" title="Permalink to this definition"></a></dt>
+<dd><p>Determine index of slice end position given length of dimension and fraction to assess</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.get_netcdf_list">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">get_netcdf_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.get_netcdf_list" title="Permalink to this definition"></a></dt>
+<dd><p>Open document containing paths to all NetCDF files, make selections</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.get_vslice">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">get_vslice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtypes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lengths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">divisions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.get_vslice" title="Permalink to this definition"></a></dt>
+<dd><p>Assemble dataset slice given the shape of the array and dimensions involved</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.locate_kerchunk">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">locate_kerchunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">get_str</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.locate_kerchunk" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the name of the latest kerchunk file for this project code</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.match_timestamp">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">match_timestamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kobject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xobject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.match_timestamp" title="Permalink to this definition"></a></dt>
+<dd><p>Match timestamp of xarray object to kerchunk object
+- Returns temporally matching kerchunk and xarray objects</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.open_kerchunk">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">open_kerchunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isparq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.open_kerchunk" title="Permalink to this definition"></a></dt>
+<dd><p>Open kerchunk file from JSON/parquet formats</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.open_netcdfs">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">open_netcdfs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.open_netcdfs" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a single xarray object with one timestep:
+1. Select a single file and a single timestep from that file
+2. Verify that a single timestep can be selected (Yes: return this xarray object, No: select all files and select a single timestep from that)
+3. In all cases, returns a list of xarray objects</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.pick_index">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">pick_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indexes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.pick_index" title="Permalink to this definition"></a></dt>
+<dd><p>Pick index of new netcdf file randomly, try 100 times</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.run_backtrack">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">run_backtrack</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.run_backtrack" title="Permalink to this definition"></a></dt>
+<dd><p>Not currently implemented</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.run_successful">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">run_successful</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.run_successful" title="Permalink to this definition"></a></dt>
+<dd><p>Move kerchunk-1a.json file to complete directory with proper name</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.validate_data">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_data" title="Permalink to this definition"></a></dt>
+<dd><p>Run growing selection test for specified variable from xarray and kerchunk datasets</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.validate_dataset">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_dataset" title="Permalink to this definition"></a></dt>
+<dd><p>Perform validation steps for specific dataset defined here
+- Determine the number of NetCDF files in total
+- Run validation for a minimum subset of those files</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.validate_selection">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xvariable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kvariable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">divs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">currentdiv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_selection" title="Permalink to this definition"></a></dt>
+<dd><p>Validate this data selection in xvariable/kvariable objects
+- Recursive function tests a growing selection of data until one is found with real data
+- Repeats with exponentially increasing box size (divisions of all data dimensions)
+- Will halt at 1 division which equates to testing all data</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.validate_shapes">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_shapes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_shapes" title="Permalink to this definition"></a></dt>
+<dd><p>Ensure shapes are equivalent across Kerchunk/NetCDF per variable
+- Accounts for the number of files opened vs how many files in total.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.validate_timestep">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_timestep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_timestep" title="Permalink to this definition"></a></dt>
+<dd><p>Run all tests for a single file which may or may not equate to 1 timestep</p>
+</dd></dl>
+
 </div>
 
 
