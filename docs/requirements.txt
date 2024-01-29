@@ -1,4 +1,4 @@
 sphinx==4.4.0
 sphinx_rtd_theme==1.0.0
 kerchunk==0.2.0
-xarray==2023.8.0
+xarray==2023.1.0
