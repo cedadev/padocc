@@ -139,9 +139,9 @@ def open_kerchunk(kfile: str, logger, isparq=False):
 
 def open_netcdfs(args, logger, thorough=False):
     """Returns a single xarray object with one timestep:
-    1. Select a single file and a single timestep from that file
-    2. Verify that a single timestep can be selected (Yes: return this xarray object, No: select all files and select a single timestep from that)
-    3. In all cases, returns a list of xarray objects
+     - Select a single file and a single timestep from that file
+     - Verify that a single timestep can be selected (Yes: return this xarray object, No: select all files and select a single timestep from that)
+     - In all cases, returns a list of xarray objects.
     """
     logger.debug('Performing temporal selections')
     indexes, xfiles = get_netcdf_list(args.proj_dir, logger, thorough=thorough)
