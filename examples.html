@@ -41,7 +41,14 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Running the Pipeline</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Worked Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Worked Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#example-group-of-ukcp-datasets">2. Example Group of UKCP Datasets</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#initialising-the-pipeline">1. Initialising the Pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#scan-the-datasets">2. Scan the datasets</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
 </ul>
@@ -81,6 +88,52 @@
              
   <div class="section" id="worked-examples">
 <h1>Worked Examples<a class="headerlink" href="#worked-examples" title="Permalink to this headline"></a></h1>
+<div class="section" id="example-group-of-ukcp-datasets">
+<h2>2. Example Group of UKCP Datasets<a class="headerlink" href="#example-group-of-ukcp-datasets" title="Permalink to this headline"></a></h2>
+<p>Consider a set of 180 UKCP datasets for which we want to create some Kerchunk files.</p>
+<dl class="simple">
+<dt>This set of datasets all have the following properties:</dt><dd><ul class="simple">
+<li><p>sub_collection: land-rcm</p></li>
+<li><p>domain: uk</p></li>
+<li><p>resolution: 12km</p></li>
+<li><p>scenario: rcp85</p></li>
+</ul>
+</dd>
+</dl>
+<p>Which is reflected in the path to the NetCDF files:
+<cite>/badc/ukcp18/data/land-rcm/uk/12km/rcp85/</cite></p>
+<dl class="simple">
+<dt>Below this directory we have directories for __ensemble_member__, __variable_id__, __frequency__ and __version__. For this example we will be using:</dt><dd><ul class="simple">
+<li><p>frequency: day</p></li>
+<li><p>version: v20190731</p></li>
+<li><p>ensemble_member(s) [x12]: 01, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 15</p></li>
+<li><p>variable_id(s) [x15]: clt, hurs, huss, pr, prsn, psl, rls, rss, sfcWind, snw, tas, tasmax, tasmin, uas, vas</p></li>
+</ul>
+</dd>
+</dl>
+<p>Hence there will be 12x15 = 180 Kerchunk datasets at the end of this process.</p>
+<div class="section" id="initialising-the-pipeline">
+<h3>1. Initialising the Pipeline<a class="headerlink" href="#initialising-the-pipeline" title="Permalink to this headline"></a></h3>
+<p>The easiest way to set up the pipeline for running this group is to create a CSV-type file with the details below for each dataset:
+<cite>project_code, pattern, updates*, removals*</cite></p>
+<p>Updates and Removals can be ignored (left blank) unless a specific metadata change is known and required.</p>
+<p>E.g
+<cite>UKCP18_land-rcm_12km_rcp85_01_clt_day_v20190731, /badc/ukcp18/data/land-rcm/uk/12km/rcp85/01/clt/day/v20190731/*, ,</cite>
+For all 180 datasets in this group. A method of pattern matching and extracting the key information from the path to add to the project code should be used if possible.</p>
+<p>To initialise the pipeline with this input CSV file:
+<cite>python group_run.py init UKCP_12km_day -i /path/to/csvfile.csv</cite></p>
+</div>
+<div class="section" id="scan-the-datasets">
+<h3>2. Scan the datasets<a class="headerlink" href="#scan-the-datasets" title="Permalink to this headline"></a></h3>
+<p><cite>python group_run.py scan UKCP_12km_day</cite></p>
+<dl class="simple">
+<dt>Parameters that may be necessary at this point:</dt><dd><ul class="simple">
+<li><p>time flag: If scan jobs fail for <cite>slurmstepd</cite> errors, use the time flag to change the job time allotment: (<cite>-t 30:00</cite> for 30 mins)</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+</div>
 </div>
 
 
