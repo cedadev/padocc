@@ -235,7 +235,7 @@ def init_config(args):
         
         if '.txt' in args.input:
             logger.debug('Converting text file to csv')
-            status = text_file_to_csv(args, logger) # Includes creating csv
+            status = text_file_to_csv(args, logger, prefix=None) # Includes creating csv
             if not status:
                 return None
         elif '.csv' in args.input:
