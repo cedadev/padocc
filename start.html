@@ -84,7 +84,20 @@
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline"></a></h1>
 <p>Note: Ensure you have local modules enabled such that you have python 3.x installed in your local environment.</p>
 <p>Step 1 is to create a virtual environment and install the necessary packages with pip.</p>
+<dl class="simple">
+<dt>::</dt><dd><p>python -m venv name_of_venv;
+source name_of_venv/bin/activate;
+pip install -r requirements.txt;</p>
+</dd>
+</dl>
 <p>Step 2: create a config file to set necessary environment variables. (Suggested to place these in a local <cite>templates/</cite> folder as this will be ignored by git). Eg:</p>
+<dl class="simple">
+<dt>::</dt><dd><p>export WORKDIR=/gws/nopw/j04/cmip6_prep_vol1/kerchunk-pipeline;
+export GROUPDIR=/gws/nopw/j04/cmip6_prep_vol1/kerchunk-pipeline/groups/CMIP6_rel1_6233;
+export SRCDIR=/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder;
+export KVENV=/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/build_venv;</p>
+</dd>
+</dl>
 <p>Now you should be set up to run the pipeline properly. For any of the pipeline scripts, running <code class="docutils literal notranslate"><span class="pre">`python</span> <span class="pre">&lt;script&gt;.py</span> <span class="pre">-h</span> <span class="pre">#</span> <span class="pre">or</span> <span class="pre">--help`</span></code> will bring up a list of options to use for that script as well as the required parameters.</p>
 </div>
 
