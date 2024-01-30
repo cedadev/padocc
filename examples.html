@@ -43,10 +43,7 @@
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Running the Pipeline</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Worked Examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#example-group-of-ukcp-datasets">2. Example Group of UKCP Datasets</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#initialising-the-pipeline">1. Initialising the Pipeline</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#e-g">E.g</a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="#initialising-the-pipeline">1. Initialising the Pipeline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#scan-the-datasets">2. Scan the datasets</a></li>
 </ul>
 </li>
@@ -119,17 +116,24 @@
 <h3>1. Initialising the Pipeline<a class="headerlink" href="#initialising-the-pipeline" title="Permalink to this headline"></a></h3>
 <p>The easiest way to set up the pipeline for running this group is to create a CSV-type file with the details below for each dataset:
 <code class="docutils literal notranslate"><span class="pre">`project_code,</span> <span class="pre">pattern,</span> <span class="pre">updates*,</span> <span class="pre">removals*`</span></code></p>
-<p>Updates and Removals can be ignored (left blank) unless a specific metadata change is known and required.</p>
-<div class="section" id="e-g">
-<h4>E.g<a class="headerlink" href="#e-g" title="Permalink to this headline"></a></h4>
-<p>UKCP18_land-rcm_12km_rcp85_01_clt_day_v20190731, /badc/ukcp18/data/land-rcm/uk/12km/rcp85/01/clt/day/v20190731/<a href="#id1"><span class="problematic" id="id2">*</span></a>, ,
-<a href="#id3"><span class="problematic" id="id4">``</span></a><a href="#id5"><span class="problematic" id="id6">`</span></a></p>
+<p>Updates and Removals can be ignored (left blank) unless a specific metadata change is known and required.
+If this is the case, these two can be set as paths to different JSON files which contain the relevant information in the proper format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="c1"># my_updates.json</span>
+    <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;new_id_value&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;history&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;new_history_value&gt;</span>
+<span class="p">}</span>
+<span class="p">{</span> <span class="c1"># my_removals.json</span>
+    <span class="s1">&#39;version_no&#39;</span><span class="p">:</span> <span class="kc">True</span> <span class="c1"># Value is irrelevant, only matters that this attribute is present</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>E.g
+<code class="docutils literal notranslate"><span class="pre">`UKCP18_land-rcm_12km_rcp85_01_clt_day_v20190731,</span> <span class="pre">/badc/ukcp18/data/land-rcm/uk/12km/rcp85/01/clt/day/v20190731/*,</span> <span class="pre">,`</span></code></p>
 <p>For all 180 datasets in this group. A method of pattern matching and extracting the key information from the path to add to the project code should be used if possible.</p>
 <p>To initialise the pipeline with this input CSV file:</p>
 <p><code class="docutils literal notranslate"><span class="pre">`</span>
 <span class="pre">python</span> <span class="pre">group_run.py</span> <span class="pre">init</span> <span class="pre">UKCP_12km_day</span> <span class="pre">-i</span> <span class="pre">/path/to/csvfile.csv</span>
 <span class="pre">`</span></code></p>
-</div>
 </div>
 <div class="section" id="scan-the-datasets">
 <h3>2. Scan the datasets<a class="headerlink" href="#scan-the-datasets" title="Permalink to this headline"></a></h3>
