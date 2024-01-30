@@ -161,6 +161,11 @@ def make_dirs(args, logger):
         ds_values  = datasets[proj_code]
         pattern    = ds_values[0]
 
+        if len(ds_values) > 1:
+            updates = ds_values[1]
+        if len(ds_values) > 2:
+            removals = ds_values[2]
+
         logger.info(f'Creating directories/filelists for {index+1}/{len(proj_codes)}')
 
         cfg_values[params[0]] = proj_code
@@ -171,6 +176,16 @@ def make_dirs(args, logger):
         else:
             logger.warning(f'Project code {index}:{proj_code} from {args.groupID} does not have correct number of fields.')
             logger.warning(f'Fields specified must be {params}, not {ds_values}')
+
+        if os.path.isfile(updates):
+            with open(updates) as f:
+                upds = json.load(f)
+            cfg_values['update'] = upds
+
+        if os.path.isfile(removals):
+            with open(removals) as f:
+                rems = json.load(f)
+            cfg_values['remove'] = rems
 
         if 'latest' in pattern:
             pattern = pattern.replace('latest', os.readlink(pattern))

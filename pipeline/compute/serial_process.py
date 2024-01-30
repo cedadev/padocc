@@ -276,10 +276,10 @@ class Indexer(Converter):
                     new_zattrs[key] = zattrs[key]
 
         self.logger.debug('Finished metadata corrections')
-        if not zattrs:
+        if not new_zattrs:
             self.logger.error('Lost zattrs at correction phase')
             raise ValueError
-        return zattrs
+        return new_zattrs
         
     def clean_attr_array(self, allzattrs):
         # Collect attributes from all files, 
