@@ -2,6 +2,7 @@
 build_venv/
 temp/
 testing/
+templates/
 *__pycache__*
 docs/build/
 build/

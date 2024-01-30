@@ -37,6 +37,7 @@ Ingest/Catalog files
    :maxdepth: 2
    :caption: Contents:
 
+   Getting Started <start>
    Running the Pipeline <execution>
    Worked Examples <examples>
    Assessor Tool Overview <assess-overview>
