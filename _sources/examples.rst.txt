@@ -37,12 +37,14 @@ If this is the case, these two can be set as paths to different JSON files which
         'history': '<new_history_value>
     }
     { # my_removals.json
-        'version_no': True # Value is irrelevant, only matters that this attribute is present
+        'version_no': True # Value is irrelevant, only matters that this attribute is present.
     }
 ::
 
 E.g
-```UKCP18_land-rcm_12km_rcp85_01_clt_day_v20190731, /badc/ukcp18/data/land-rcm/uk/12km/rcp85/01/clt/day/v20190731/*, ,```
+::
+UKCP18_land-rcm_12km_rcp85_01_clt_day_v20190731, /badc/ukcp18/data/land-rcm/uk/12km/rcp85/01/clt/day/v20190731/*, path/to/updates.json, path/to/removals.json
+::
 
 For all 180 datasets in this group. A method of pattern matching and extracting the key information from the path to add to the project code should be used if possible.
 
