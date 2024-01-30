@@ -67,7 +67,7 @@ def main(args):
     group_len          = get_group_len(WORKDIR, group, repeat_id = args.repeat_id)
     group_phase_sbatch = f'{GROUPDIR}/sbatch/{phase}.sbatch'
     master_script      = f'{SRCDIR}/single_run.py'
-    template           = 'templates/phase.sbatch.template'
+    template           = 'extensions/templates/phase.sbatch.template'
 
 
     # Make Directories
@@ -85,12 +85,16 @@ def main(args):
     time = times[phase]
     if args.time_allowed:
         time = args.time_allowed
+        
+    label = phase
+    if args.repeat_id:
+        label = args.repeat_id
 
     sb = sbatch.format(
         f'{group}_{phase}_array',             # Job name
         time,                                 # Time
-        f'{GROUPDIR}/outs/%A_{phase}/%a.out', # Outs
-        f'{GROUPDIR}/errs/%A_{phase}/%a.err', # Errs
+        f'{GROUPDIR}/outs/%A_{label}/%a.out', # Outs
+        f'{GROUPDIR}/errs/%A_{label}/%a.err', # Errs
         VENV,
         WORKDIR,
         GROUPDIR,

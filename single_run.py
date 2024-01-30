@@ -10,7 +10,7 @@ import json
 import logging
 
 from pipeline.logs import init_logger, get_attribute
-from pipeline.errors import ProjectCodeError, MissingVariableError
+from pipeline.errors import ProjectCodeError, MissingVariableError, BlacklistProjectCode
 
 def run_init(args, logger):
     """Start initialisation for single dataset"""
@@ -82,7 +82,7 @@ drivers = {
     'validate': run_validation
 }
 
-def get_proj_code(groupdir, pid, repeat_id, subset=0, id=0):
+def get_proj_code(groupdir: str, pid, repeat_id, subset=0, id=0):
     """Get the correct code given a slurm id from a group of project codes"""
     try:
         with open(f'{groupdir}/proj_codes_{repeat_id}.txt') as f:
@@ -91,13 +91,22 @@ def get_proj_code(groupdir, pid, repeat_id, subset=0, id=0):
         raise ProjectCodeError
     return proj_code
 
+def blacklisted(proj_code: str, groupdir: str):
+    blackfile = f'{groupdir}/blacklist_codes.txt'
+    with open(blackfile) as f:
+        blackcodes = f.readlines()
+    for code in blackcodes:
+        if proj_code in code:
+            return True
+    return False
+
 def main(args):
     """Main function for single run processing"""
 
     logger = init_logger(args.verbose, args.mode, 'main')
 
-    args.workdir  = get_attribute('WORKDIR', args, 'workdir', logger)
-    args.groupdir = get_attribute('GROUPDIR', args, 'groupdir', logger)
+    args.workdir  = get_attribute('WORKDIR', args, 'workdir')
+    args.groupdir = get_attribute('GROUPDIR', args, 'groupdir')
 
     logger.debug('Pipeline variables:')
     logger.debug(f'WORKDIR : {args.workdir}')
@@ -133,16 +142,19 @@ def main(args):
                 if os.getenv('SLURM_ARRAY_JOB_ID'):
                     jobid = os.getenv('SLURM_ARRAY_JOB_ID')
                     errs_dir = f'{args.workdir}/groups/{args.groupID}/errs'
-                    if not os.path.isdir(f'{errs_dir}/{jobid}_{args.phase}'):
-                        os.makedirs(f'{errs_dir}/{jobid}_{args.phase}')
+                    if not os.path.isdir(f'{errs_dir}/{jobid}_{args.repeat_id}'):
+                        os.makedirs(f'{errs_dir}/{jobid}_{args.repeat_id}')
 
                     proj_code_file = f'{args.workdir}/groups/{args.groupID}/proj_codes_{subset_id}.txt'
 
-                    if not os.path.isfile(f'{errs_dir}/{jobid}_{args.phase}/proj_codes.txt'):
-                        os.system(f'cp {proj_code_file} {errs_dir}/{jobid}_{args.phase}/proj_codes.txt')
+                    if not os.path.isfile(f'{errs_dir}/{jobid}_{args.repeat_id}/proj_codes.txt'):
+                        os.system(f'cp {proj_code_file} {errs_dir}/{jobid}_{args.repeat_id}/proj_codes.txt')
 
             else:
                 args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
+
+            if blacklisted(args.proj_code, args.groupdir):
+                raise BlacklistProjectCode
 
             if args.phase in drivers:
                 logger.debug('Pipeline variables (reconfigured):')
