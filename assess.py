@@ -69,7 +69,7 @@ def find_codes(phase: str, workdir: str, groupID: str, check: str, ignore=[]):
                 redo_pcodes.append(pcode)
     return redo_pcodes, complete
 
-def get_code_from_val(path: str, index: str):
+def get_code_from_val(path: str, index: str, filename='proj_codes'):
     """Takes some index value from command line and fetches the corresponding project code.
     
     Project codes stored in proj_codes.txt under each job id.
@@ -80,10 +80,10 @@ def get_code_from_val(path: str, index: str):
         Project code that matches the provided index
     """
     path = path.split('*')[0]
-    if os.path.isfile(f'{path}/proj_codes.txt'):
-        with open(f'{path}/proj_codes.txt') as f:
+    if os.path.isfile(f'{path}/{filename}.txt'):
+        with open(f'{path}/{filename}.txt') as f:
             try:
-                code = f.readlines()[int(index)]
+                code = f.readlines()[int(index)].strip()
             except IndexError:
                 print('code',index)
                 code = 'N/A'
@@ -91,7 +91,10 @@ def get_code_from_val(path: str, index: str):
         code = 'N/A'
     return code
 
-def extract_keys(filepath: str, logger, savetype=None, examine=None):
+def get_rerun_command(phase: str, ecode: str, groupID: str, repeat_id: str):
+    print(f'python single_run.py {phase} {ecode} -G {groupID} -r {repeat_id} -vvv -d')
+
+def extract_keys(filepath: str, logger, savetype=None, examine=None, phase=None, groupID=None, repeat_id=None):
     """Extract keys from error/output files, collect into groups and examine a particular type if required.
     
     Parameters
@@ -144,13 +147,15 @@ def extract_keys(filepath: str, logger, savetype=None, examine=None):
             # Select specific errors to examine
             if key == savetype:
                 ecode = efile.split('/')[-1].split('.')[0]
-                path = filepath[:-1]
+                path = '/'.join(filepath.split('/')[:-1]) + '/'
                 code = get_code_from_val(path, ecode)
                 savedcodes.append((efile, code, log))
                 if examine:
-                    print(f'{efile} - {code}')
                     print()
                     print('\n'.join(log))
+                    print(f'{efile} - {code}')
+                    print('Rerun suggested command:    ',end='')
+                    get_rerun_command(phase, ecode, groupID, repeat_id)
                     x=input()
                     if x == 'E':
                         raise Exception
@@ -191,7 +196,7 @@ def show_options(option: str, groupdir: str, operation: str, logger):
 
 def cleanup(cleantype: str, groupdir: str, logger):
     """Remove older versions of project code files, error or output logs. Clear directories."""
-    if cleantype == 'proj_codes':
+    if cleantype == 'labels':
         projset = glob.glob(f'{groupdir}/proj_codes_*')
         for p in projset:
             if 'proj_codes_1' not in p:
@@ -248,7 +253,10 @@ def error_check(args, logger):
     job_path = f'{args.workdir}/groups/{args.groupID}/errs/{args.jobID}'
     logger.info(f'Checking error files for {args.groupID} ID: {args.jobID}')
 
-    savedcodes, errs, total = extract_keys(f'{job_path}/*.err', logger, savetype=args.inspect, examine=args.examine)
+    savedcodes, errs, total = extract_keys(f'{job_path}/*.err', logger, 
+                                           savetype=args.inspect, examine=args.examine,
+                                           phase=args.phase, groupID=args.groupID, 
+                                           repeat_id='_'.join(args.jobID.split('_')[1:]))
     
     # Summarise results
     print(f'Found {total} error files:')
@@ -272,10 +280,38 @@ def output_check(args, logger):
     logger.info(f'Checking output files for {args.groupID} ID: {args.jobID}')
     raise NotImplementedError
 
+def add_to_blacklist(args, logger):
+    blackfile = f'{args.workdir}/groups/{args.groupID}/blacklist_codes.txt'
+
+    path = f'{args.workdir}/groups/{args.groupID}'
+    logger.debug(f'Looking in proj_codes_{args.repeat_label}')
+    proj_code_black = get_code_from_val(path, args.blacklist, f'proj_codes_{args.repeat_label}')
+
+    add = True
+    if args.write:
+        with open(blackfile) as f:
+            blackcodes = f.readlines()
+        for code in blackcodes:
+            if proj_code_black in code:
+                add = False
+
+        if add:
+            with open(blackfile,'a') as f:
+                f.write(f'{proj_code_black}\n')
+            logger.info(f'Written {proj_code_black} to blacklist')
+        else:
+            logger.info(f'Skipped blacklisting {proj_code_black} - already on the list')
+    else:
+        logger.info(f'Skipped blacklisting {proj_code_black}')
+    # Find blacklist file if it exists
+    # Translate blacklist ID into project code if not already a code
+    # Add project code to the blacklist file
+
 operations = {
     'progress': progress_check,
     'errors': error_check,
-    'outputs': output_check
+    'outputs': output_check,
+    'blacklist': add_to_blacklist
 }
 
 def assess_main(args):
@@ -300,8 +336,10 @@ def assess_main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run a pipeline step for a single dataset')
     parser.add_argument('groupID',type=str, help='Group identifier code')
-    parser.add_argument('operation',type=str, help='Operation to perform - choose from `progress`,`errors`,`outputs`.')
+    parser.add_argument('operation',type=str, help='Operation to perform - choose from `progress`,`errors`,`outputs`, `blacklist`.')
 
+    parser.add_argument('-B','--blacklist', dest='blacklist', help='')
+    parser.add_argument('-R','--blacklist-reason', dest='reason', help='')
 
     parser.add_argument('-j','--jobid', dest='jobID', help='Identifier of job to inspect')
     parser.add_argument('-p','--phase', dest='phase', default='validate', help='Pipeline phase to inspect')
@@ -310,7 +348,7 @@ if __name__ == "__main__":
     parser.add_argument('-r','--repeat_label', dest='repeat_label', default=None, help='Save a selection of codes which failed on a given error - input a repeat id.')
     parser.add_argument('-i','--inspect', dest='inspect', help='Inspect error/output of a given type/label')
     parser.add_argument('-E','--examine', dest='examine', action='store_true', help='Examine log outputs individually.')
-    parser.add_argument('-c','--clean-up', dest='cleanup', default=None, help='Clean up group directory of errors/outputs/dataset lists', choices=['proj_codes','errors','outputs'])
+    parser.add_argument('-c','--clean-up', dest='cleanup', default=None, help='Clean up group directory of errors/outputs/labels')
 
 
     parser.add_argument('-w','--workdir',   dest='workdir',      help='Working directory for pipeline')
