@@ -185,7 +185,7 @@ def show_options(option: str, groupdir: str, operation: str, logger):
             os.system(f'ls {groupdir}/outs/')
         else:
             os.system(f'ls {groupdir}/errs/')
-    else:
+    elif option == 'labels':
         logger.info('Detecting labels from previous runs:')
         labels = glob.glob(f'{args.workdir}/groups/{args.groupID}/proj_codes*')
         for l in labels:
@@ -193,6 +193,8 @@ def show_options(option: str, groupdir: str, operation: str, logger):
             if pcode == '1':
                 pcode = 'main'
             logger.info(f'{format_str(pcode,20)} - {l}')
+    else:
+        logger.info(f'{option} not accepted - use "jobids" or "labels"')
 
 def cleanup(cleantype: str, groupdir: str, logger):
     """Remove older versions of project code files, error or output logs. Clear directories."""
@@ -343,7 +345,7 @@ if __name__ == "__main__":
 
     parser.add_argument('-j','--jobid', dest='jobID', help='Identifier of job to inspect')
     parser.add_argument('-p','--phase', dest='phase', default='validate', help='Pipeline phase to inspect')
-    parser.add_argument('-s','--show-opts', dest='show_opts', help='Show options for jobids, repeat label')
+    parser.add_argument('-s','--show-opts', dest='show_opts', help='Show options for jobids, labels')
 
     parser.add_argument('-r','--repeat_label', dest='repeat_label', default=None, help='Save a selection of codes which failed on a given error - input a repeat id.')
     parser.add_argument('-i','--inspect', dest='inspect', help='Inspect error/output of a given type/label')
