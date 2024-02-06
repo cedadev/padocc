@@ -64,7 +64,7 @@ def run_compute(args, logger):
         return Indexer(args.proj_code, cfg_file=cfg_file, detail_file=detail_file, 
                 workdir=args.workdir, issave_meta=True, thorough=args.quality, forceful=args.forceful,
                 verb=args.verbose, mode=args.mode,
-                version_no=version_no, concat_msg=concat_msg, bypass=args.bypass).create_refs()
+                version_no=version_no, concat_msg=concat_msg, bypass=args.bypass, groupID=args.groupID).create_refs()
     else:
         logger.error('Output file already exists and there is no plan to overwrite')
         return None
@@ -185,7 +185,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-w','--workdir',   dest='workdir',      help='Working directory for pipeline')
     parser.add_argument('-g','--groupdir',  dest='groupdir',     help='Group directory for pipeline')
-    parser.add_argument('-G','--groupID',   dest='groupID',      help='Group identifier label')
+    parser.add_argument('-G','--groupID',   dest='groupID', default=None, help='Group identifier label')
     parser.add_argument('-p','--proj_dir',    dest='proj_dir',      help='Project directory for pipeline')
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
     parser.add_argument('-m','--mode',        dest='mode', default=None, help='Print or record information (log or std)')
