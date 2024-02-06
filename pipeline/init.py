@@ -191,7 +191,7 @@ def make_dirs(args, logger):
             pattern = pattern.replace('latest', os.readlink(pattern))
 
         if args.groupID:
-            proj_dir = f'{args.groupdir}/{proj_code}'
+            proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{proj_code}'
         else:
             proj_dir = f'{args.workdir}/in_progress/{proj_code}'
 
