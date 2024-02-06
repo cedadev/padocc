@@ -91,14 +91,18 @@ def get_proj_code(groupdir: str, pid, repeat_id, subset=0, id=0):
         raise ProjectCodeError
     return proj_code
 
-def blacklisted(proj_code: str, groupdir: str):
+def blacklisted(proj_code: str, groupdir: str, logger):
     blackfile = f'{groupdir}/blacklist_codes.txt'
-    with open(blackfile) as f:
-        blackcodes = f.readlines()
-    for code in blackcodes:
-        if proj_code in code:
-            return True
-    return False
+    if os.path.isfile(blackfile):
+        with open(blackfile) as f:
+            blackcodes = f.readlines()
+        for code in blackcodes:
+            if proj_code in code:
+                return True
+        return False
+    else:
+        logger.debug('No blacklist file preset for this group')
+        return False
 
 def main(args):
     """Main function for single run processing"""
@@ -153,7 +157,7 @@ def main(args):
             else:
                 args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
 
-            if blacklisted(args.proj_code, args.groupdir):
+            if blacklisted(args.proj_code, args.groupdir, logger):
                 raise BlacklistProjectCode
 
             if args.phase in drivers:

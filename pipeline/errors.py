@@ -3,13 +3,16 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
 import json
+import os
 
 def upload_err(proj_code, groupdir, error):
-    with open(f'{groupdir}/ErrorSummary.json') as f:
-        summ = json.load(f)
-    summ[proj_code] = error
-    with open(f'{groupdir}/ErrorSummary.json','w') as f:
-        f.write(json.dumps(summ))
+    summ_file = f'{groupdir}/ErrorSummary.json'
+    if os.path.isfile(summ_file):
+        with open(summ_file) as f:
+            summ = json.load(f)
+        summ[proj_code] = error
+        with open(summ_file,'w') as f:
+            f.write(json.dumps(summ))
 
 class BlacklistProjectCode(Exception):
     def __init__(self, verbose=0, proj_code=None, groupdir=None):
