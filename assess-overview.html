@@ -43,7 +43,11 @@
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Running the Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Worked Examples</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Assessor Tool Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Assessor Tool Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overall-progress-of-the-pipeline">1. Overall Progress of the Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checking-errors">2. Checking errors</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Advanced:</span></p>
@@ -82,6 +86,38 @@
              
   <div class="section" id="assessor-tool">
 <h1>Assessor Tool<a class="headerlink" href="#assessor-tool" title="Permalink to this headline"></a></h1>
+<dl class="simple">
+<dt>The assessor script <code class="docutils literal notranslate"><span class="pre">`assess.py`</span></code> is an all-purpose pipeline checking tool which can be used to assess:</dt><dd><ul class="simple">
+<li><p>The current status of all datasets within a given group in the pipeline (which phase each dataset currently sits in)</p></li>
+<li><p>The errors/outputs associated with previous job runs.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="section" id="overall-progress-of-the-pipeline">
+<h2>1. Overall Progress of the Pipeline<a class="headerlink" href="#overall-progress-of-the-pipeline" title="Permalink to this headline"></a></h2>
+<p>To see the general status of the pipeline for a given group:
+::
+python assess.py &lt;group&gt; progress</p>
+<p>An example use case is to write out all datasets that require scanning to a new label (repeat_label):
+::
+python assess.py &lt;group&gt; progress -p scan -r &lt;label_for_scan_subgroup&gt; -W</p>
+<p>The last flag <code class="docutils literal notranslate"><span class="pre">`-W`</span></code> is required when writing an output file from this program, otherwise the program will dryrun and produce no files.</p>
+</div>
+<div class="section" id="checking-errors">
+<h2>2. Checking errors<a class="headerlink" href="#checking-errors" title="Permalink to this headline"></a></h2>
+<p>Check what repeat labels are available already using
+::
+python assess.py &lt;group&gt; errors -s labels</p>
+<p>Show what jobs have previously run
+::
+python assess.py &lt;group&gt; errors -s jobids</p>
+<p>For showing all errors from a previous job run
+::
+python assess.py &lt;group&gt; errors -j &lt;jobid&gt;</p>
+<p>For selecting a specific type of error to investigate (-i) and examine the full log for each example (-E)
+::
+python assess.py test errors -j &lt;jobid&gt; -i “type_of_error” -E</p>
+</div>
 </div>
 
 
