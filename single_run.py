@@ -137,9 +137,10 @@ def main(args):
                 if cmd_groupdir != args.groupdir:
                     logger.warning(f'Overriding environment-defined groupdir value with: {cmd_groupdir}')
                     args.groupdir = cmd_groupdir
+                    
+                proj_code = int(args.proj_code)
 
-                subset_id = args.subset
-                args.proj_code = get_proj_code(args.groupdir, subset_id, args.repeat_id, subset=args.subset, id=id)
+                args.proj_code = get_proj_code(args.groupdir, proj_code, args.repeat_id, subset=args.subset, id=id)
                 args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
 
                 # Get ID from within a job?
