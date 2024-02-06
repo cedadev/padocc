@@ -288,7 +288,12 @@ def scan_config(args):
     args.groupdir = get_attribute('GROUPDIR', args, 'groupdir')
 
     proj_code = args.proj_code
-    proj_dir  = f'{args.workdir}/in_progress/{proj_code}'
+
+    if args.groupID:
+        proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{proj_code}'
+    else:
+        proj_dir = f'{args.workdir}/in_progress/{proj_code}'
+
     logger.debug(f'Extracted attributes: {proj_code}, {args.workdir}, {proj_dir}')
 
     filelist = f'{proj_dir}/allfiles.txt'
