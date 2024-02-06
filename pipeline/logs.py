@@ -29,9 +29,9 @@ def get_attribute(env: str, args, var: str):
     
     Finds value of variable from Environment or ParseArgs object, or reports failure
     """
-    if os.getenv(env):
-        return os.getenv(env)
-    elif hasattr(args, var):
+    if hasattr(args, var):
         return getattr(args, var)
+    elif os.getenv(env):
+        return os.getenv(env)
     else:
         raise MissingVariableError(type=f'${var}')
