@@ -285,6 +285,8 @@ class Indexer(Converter):
             for key in zattrs:
                 if key not in self.removals:
                     new_zattrs[key] = zattrs[key]
+        else:
+            new_zattrs = zattrs # No removals required
 
         self.logger.debug('Finished metadata corrections')
         if not new_zattrs:
