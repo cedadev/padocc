@@ -118,9 +118,17 @@ class Indexer(Converter):
             self.proj_dir = f'{self.workdir}/in_progress/{self.proj_code}'
 
         if 'update' in cfg:
-            self.updates = cfg['update']
+            try:
+                self.updates = dict(cfg['update'])
+            except ValueError:
+                logger.warning('Updates attribute not read')
+                self.updates = {}
         if 'remove' in cfg:
-            self.removals = cfg['remove']
+            try:
+                self.removals = dict(cfg['remove'])
+            except ValueError:
+                logger.warning('Removal attribute not read')
+                self.removals = {}
 
         if 'type' in detail:
             self.use_json = (detail['type'] == 'JSON')
