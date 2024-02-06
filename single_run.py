@@ -86,7 +86,7 @@ def get_proj_code(groupdir: str, pid, repeat_id, subset=0, id=0):
     """Get the correct code given a slurm id from a group of project codes"""
     try:
         with open(f'{groupdir}/proj_codes_{repeat_id}.txt') as f:
-            proj_code = f.readlines()[int(pid)*subset + id].strip()
+            proj_code = f.readlines()[int(id)*subset + pid].strip()
     except:
         raise ProjectCodeError
     return proj_code
@@ -137,7 +137,7 @@ def main(args):
                 if cmd_groupdir != args.groupdir:
                     logger.warning(f'Overriding environment-defined groupdir value with: {cmd_groupdir}')
                     args.groupdir = cmd_groupdir
-                    
+
                 proj_code = int(args.proj_code)
 
                 args.proj_code = get_proj_code(args.groupdir, proj_code, args.repeat_id, subset=args.subset, id=id)
