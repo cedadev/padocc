@@ -81,7 +81,7 @@ class Indexer(Converter):
                  cfg_file=None, detail_file=None, workdir=WORKDIR, 
                  issave_meta=False, thorough=False, forceful=False, 
                  verb=0, mode=None, version_no=1,
-                 concat_msg=CONCAT_MSG, bypass=False):
+                 concat_msg=CONCAT_MSG, bypass=False, groupID=None):
         """Initialise indexer for this dataset, set all variables and prepare for computation"""
         logger = init_logger(verb, mode, 'compute-serial')
         super().__init__(logger, bypass_errs=bypass)
@@ -111,8 +111,11 @@ class Indexer(Converter):
 
         with open(detail_file) as f:
             detail = json.load(f)
-        
-        self.proj_dir = f'{self.workdir}/in_progress/{self.proj_code}'
+
+        if groupID:
+            self.proj_dir = f'{self.workdir}/in_progress/{groupID}/{self.proj_code}'
+        else:
+            self.proj_dir = f'{self.workdir}/in_progress/{self.proj_code}'
 
         if 'update' in cfg:
             self.updates = cfg['update']
