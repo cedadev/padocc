@@ -112,7 +112,7 @@ class Indexer(Converter):
         with open(detail_file) as f:
             detail = json.load(f)
         
-        self.proj_dir = cfg['proj_dir']
+        self.proj_dir = f'{self.workdir}/in_progress/{self.proj_code}'
 
         if 'update' in cfg:
             self.updates = cfg['update']
