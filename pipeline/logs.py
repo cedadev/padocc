@@ -29,7 +29,7 @@ def get_attribute(env: str, args, var: str):
     
     Finds value of variable from Environment or ParseArgs object, or reports failure
     """
-    if hasattr(args, var):
+    if getattr(args, var):
         return getattr(args, var)
     elif os.getenv(env):
         return os.getenv(env)
