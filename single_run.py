@@ -138,7 +138,7 @@ def main(args):
                     logger.warning(f'Overriding environment-defined groupdir value with: {cmd_groupdir}')
                     args.groupdir = cmd_groupdir
 
-                subset_id = args.proj_code
+                subset_id = args.subset
                 args.proj_code = get_proj_code(args.groupdir, subset_id, args.repeat_id, subset=args.subset, id=id)
                 args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
 
@@ -149,7 +149,7 @@ def main(args):
                     if not os.path.isdir(f'{errs_dir}/{jobid}_{args.repeat_id}'):
                         os.makedirs(f'{errs_dir}/{jobid}_{args.repeat_id}')
 
-                    proj_code_file = f'{args.workdir}/groups/{args.groupID}/proj_codes_{subset_id}.txt'
+                    proj_code_file = f'{args.workdir}/groups/{args.groupID}/proj_codes_{args.repeat_id}.txt'
 
                     if not os.path.isfile(f'{errs_dir}/{jobid}_{args.repeat_id}/proj_codes.txt'):
                         os.system(f'cp {proj_code_file} {errs_dir}/{jobid}_{args.repeat_id}/proj_codes.txt')
