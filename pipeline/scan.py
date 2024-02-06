@@ -283,11 +283,13 @@ def scan_config(args):
     else:
         logger.error(f'cfg file missing or not provided - {cfg_file}')
         return None
+    
+    args.workdir  = get_attribute('WORKDIR', args, 'workdir')
+    args.groupdir = get_attribute('GROUPDIR', args, 'groupdir')
 
-    proj_code = cfg['proj_code']
-    workdir   = cfg['workdir']
-    proj_dir  = cfg['proj_dir']
-    logger.debug(f'Extracted attributes: {proj_code}, {workdir}, {proj_dir}')
+    proj_code = args.proj_code
+    proj_dir  = f'{args.workdir}/in_progress/{proj_code}'
+    logger.debug(f'Extracted attributes: {proj_code}, {args.workdir}, {proj_dir}')
 
     filelist = f'{proj_dir}/allfiles.txt'
     
