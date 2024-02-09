@@ -6,6 +6,7 @@ attrs==23.1.0
 certifi==2023.7.22
 cftime==1.6.2
 charset-normalizer==3.3.0
+dask==2023.3.1
 entrypoints==0.4
 fasteners==0.19
 frozenlist==1.4.0
