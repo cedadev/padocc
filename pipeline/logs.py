@@ -8,6 +8,8 @@ levels = [
     logging.DEBUG
 ]
 
+SUFFIX_LIST = ['K','M','G']
+
 SUFFIXES = {
     'K': 1000,
     'M': 1000000,

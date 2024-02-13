@@ -15,7 +15,7 @@ import logging
 import math
 
 from pipeline.errors import *
-from pipeline.logs import init_logger, SUFFIXES
+from pipeline.logs import init_logger, SUFFIXES, SUFFIX_LIST
 
 ## 1. Array Selection Tools
 
@@ -166,24 +166,24 @@ def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file'):
 def mem_to_value(mem):
     """Convert a memory value i.e 2G into a value"""
     suffix = mem[-1]
-    return mem[:-1] * SUFFIXES[suffix]
+    return float(mem[:-1]) * SUFFIXES[suffix]
 
 def value_to_mem(value):
     suffix_index = -1
     while value > 1000:
         value = value/1000
         suffix_index += 1
-    return f'{value:.0f}{SUFFIXES[suffix_index]}'
+    return f'{value:.0f}{SUFFIX_LIST[suffix_index]}'
 
 def check_memory(nfiles, indexes, mem, logger):
     logger.info(f'Performing Memory Allowance check for {len(indexes)} files')
     memcap = mem_to_value(mem)
     nftotal = 0
     for index in indexes:
-        print(nfiles[index])
         nftotal += os.path.getsize(nfiles[index]) 
-    logger.debug(f'Determined memory requirement is {nftotal} - allocated {memcap * len(nfiles)}')
-    if nftotal > memcap * len(nfiles):
+
+    logger.debug(f'Determined memory requirement is {nftotal} - allocated {memcap}')
+    if nftotal > memcap:
         raise ExpectMemoryError(required=value_to_mem(nftotal), current=mem)
 
 def open_netcdfs(args, logger, thorough=False):
