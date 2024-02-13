@@ -90,15 +90,20 @@ def main(args):
     if args.repeat_id:
         label = args.repeat_id
 
+    mem = '2G'
+    if args.memory:
+        mem = args.memory
+
     sb = sbatch.format(
         f'{group}_{phase}_array',             # Job name
         time,                                 # Time
+        mem,                                  # Memory
         f'{GROUPDIR}/outs/%A_{label}/%a.out', # Outs
         f'{GROUPDIR}/errs/%A_{label}/%a.err', # Errs
         VENV,
         WORKDIR,
         GROUPDIR,
-        master_script, phase, group, time
+        master_script, phase, group, time, mem
     )
     if args.forceful:
         sb += ' -f'
@@ -108,6 +113,7 @@ def main(args):
         sb += ' -b'
     if args.quality:
         sb += ' -Q'
+
 
     if args.repeat_id:
         sb += f' -r {args.repeat_id}'
@@ -135,6 +141,7 @@ if __name__ == '__main__':
     parser.add_argument('-p','--proj_dir',    dest='proj_dir',      help='Project directory for pipeline')
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
     parser.add_argument('-m','--mode',        dest='mode', default=None, help='Print or record information (log or std)')
+    parser.add_argument('-M','--memory', dest='memory', default=None, help='Memory allocation for this job (i.e "2G" for 2GB)')
     parser.add_argument('-t','--time-allowed',dest='time_allowed', default=None, help='Time limit for this job')
     parser.add_argument('-b','--bypass-errs', dest='bypass', action='store_true', help='Bypass all error messages - skip failed jobs')
     
