@@ -8,6 +8,24 @@ levels = [
     logging.DEBUG
 ]
 
+SUFFIXES = {
+    'K': 1000,
+    'M': 1000000,
+    'G': 1000000000
+}
+
+class FalseLogger:
+    def __init__(self):
+        pass
+    def debug(self, message):
+        pass
+    def info(self, message):
+        pass
+    def warning(self, message):
+        pass
+    def error(self, message):
+        pass
+
 def init_logger(verbose, mode, name):
     """Logger object init and configure with formatting"""
     verbose = min(verbose, len(levels)-1)
@@ -34,4 +52,5 @@ def get_attribute(env: str, args, var: str):
     elif os.getenv(env):
         return os.getenv(env)
     else:
-        raise MissingVariableError(type=f'${var}')
+        print(var)
+        raise MissingVariableError(type=var)

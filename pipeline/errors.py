@@ -22,8 +22,8 @@ class KerchunkException(Exception):
         if proj_code and groupdir:
             self.save()
     def save(self):
-        upload_err(self.proj_code, self.groupdir, str(self))
-
+        upload_err(self.proj_code, self.groupdir, self.get_str())
+    
 class BlacklistProjectCode(KerchunkException):
     def __init__(self, verbose=0, proj_code=None, groupdir=None):
         """The project code you are trying to run for is on the list of project codes to ignore."""
@@ -31,7 +31,7 @@ class BlacklistProjectCode(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'BlacklistProjectCode'
 
 class MissingVariableError(KerchunkException):
@@ -41,7 +41,7 @@ class MissingVariableError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'MissingVariableError'
 
 class ExpectTimeoutError(KerchunkException):
@@ -51,7 +51,17 @@ class ExpectTimeoutError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
+        return 'ExpectTimeoutError'
+    
+class ExpectMemoryError(KerchunkException):
+    def __init__(self, required='', current='', verbose=0, proj_code=None, groupdir=None):
+        """The process is expected to run out of memory given size estimates."""
+        self.message = f'Scan requires minimum {required} - current {current}'
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
         return 'ExpectTimeoutError'
 
 class ProjectCodeError(KerchunkException):
@@ -61,7 +71,7 @@ class ProjectCodeError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'ProjectCodeError'
 
 class FilecapExceededError(KerchunkException):
@@ -71,7 +81,7 @@ class FilecapExceededError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'FilecapExceededError'
 
 class ChunkDataError(KerchunkException):
@@ -81,7 +91,7 @@ class ChunkDataError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'ChunkDataError'
 
 class NoValidTimeSlicesError(KerchunkException):
@@ -91,7 +101,7 @@ class NoValidTimeSlicesError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'NoValidTimeSlicesError'
 
 class VariableMismatchError(KerchunkException):
@@ -101,7 +111,7 @@ class VariableMismatchError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'VariableMismatchError'
 
 class ShapeMismatchError(KerchunkException):
@@ -111,7 +121,7 @@ class ShapeMismatchError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'ShapeMismatchError'
 
 class TrueShapeValidationError(KerchunkException):
@@ -121,7 +131,7 @@ class TrueShapeValidationError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'TrueShapeValidationError'
 
 class NoOverwriteError(KerchunkException):
@@ -131,7 +141,7 @@ class NoOverwriteError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'NoOverwriteError'
 
 class MissingKerchunkError(KerchunkException):
@@ -141,7 +151,7 @@ class MissingKerchunkError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'MissingKerchunkError'
 
 class ValidationError(KerchunkException):
@@ -151,7 +161,7 @@ class ValidationError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'ValidationError'
 
 class SoftfailBypassError(KerchunkException):
@@ -161,5 +171,15 @@ class SoftfailBypassError(KerchunkException):
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
-    def __str__(self):
+    def get_str(self):
         return 'SoftfailBypassError'
+    
+class ConcatenationError(KerchunkException):
+    def __init__(self, message="Variables could not be concatenated over time and are not duplicates - no known solution", verbose=0, proj_code=None, groupdir=None):
+        """Variables could not be concatenated over time and are not duplicates - no known solution"""
+        self.message = message
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'ConcatenationError'
