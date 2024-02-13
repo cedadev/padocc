@@ -128,7 +128,8 @@ def main(args):
 
     for id in range(args.subset):
         print()
-        logger.info(f'Starting process for {id+1}/{args.subset}')
+        if args.subset > 1:
+            logger.info(f'Starting process for {id+1}/{args.subset}')
         try:
             if args.groupID:
 
@@ -190,6 +191,7 @@ if __name__ == '__main__':
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
     parser.add_argument('-m','--mode',        dest='mode', default=None, help='Print or record information (log or std)')
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
+    parser.add_argument('-M','--memory', dest='memory', default='2G', help='Memory allocation for this job (i.e "2G" for 2GB)')
     parser.add_argument('-b','--bypass-errs', dest='bypass', action='store_true', help='Bypass all error messages - skip failed jobs')
 
     parser.add_argument('-s','--subset',    dest='subset',    default=1,   type=int, help='Size of subset within group')
