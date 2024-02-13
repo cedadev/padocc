@@ -4,6 +4,10 @@ import json
 import sys
 import logging
 from datetime import datetime
+import fsspec
+import xarray as xr
+
+from pipeline.logs import init_logger
 
 class KerchunkDriverFatalError(Exception):
 
@@ -14,31 +18,9 @@ class KerchunkDriverFatalError(Exception):
 WORKDIR = None
 CONCAT_MSG = 'See individual files for more details'
 
-levels = [
-    logging.WARN,
-    logging.INFO,
-    logging.DEBUG
-]
-
-def init_logger(verbose, mode, name):
-    """Logger object init and configure with formatting"""
-    verbose = min(verbose, len(levels)-1)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(levels[verbose])
-
-    ch = logging.StreamHandler()
-    ch.setLevel(levels[verbose])
-
-    formatter = logging.Formatter('%(levelname)s [%(name)s]: %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-
-    return logger
-
 class Converter:
-    def __init__(self, logger, bypass_errs=False):
-        self.logger = logger
+    def __init__(self, clogger, bypass_errs=False):
+        self.logger = clogger
         self.success = True
         self.bypass_errs = bypass_errs
 
@@ -83,8 +65,7 @@ class Indexer(Converter):
                  verb=0, mode=None, version_no=1,
                  concat_msg=CONCAT_MSG, bypass=False, groupID=None):
         """Initialise indexer for this dataset, set all variables and prepare for computation"""
-        logger = init_logger(verb, mode, 'compute-serial')
-        super().__init__(logger, bypass_errs=bypass)
+        super().__init__(init_logger(verb, mode, 'compute-serial'), bypass_errs=bypass)
 
         self.logger.debug('Starting variable definitions')
 
@@ -110,7 +91,7 @@ class Indexer(Converter):
             cfg = json.load(f)
 
         with open(detail_file) as f:
-            detail = json.load(f)
+            self.detail = json.load(f)
 
         if groupID:
             self.proj_dir = f'{self.workdir}/in_progress/{groupID}/{self.proj_code}'
@@ -121,17 +102,17 @@ class Indexer(Converter):
             try:
                 self.updates = dict(cfg['update'])
             except ValueError:
-                logger.warning('Updates attribute not read')
+                self.logger.warning('Updates attribute not read')
                 self.updates = {}
         if 'remove' in cfg:
             try:
                 self.removals = dict(cfg['remove'])
             except ValueError:
-                logger.warning('Removal attribute not read')
+                self.logger.warning('Removal attribute not read')
                 self.removals = {}
 
-        if 'type' in detail:
-            self.use_json = (detail['type'] == 'JSON')
+        if 'type' in self.detail:
+            self.use_json = (self.detail['type'] == 'JSON')
         else:
             self.use_json = True
 
@@ -205,9 +186,40 @@ class Indexer(Converter):
         attrs['kerchunk_revision'] = self.version_no
         attrs['kerchunk_creation_date'] = now.strftime("%d%m%yT%H%M%S")
         return attrs
+    
+    def check_identicals(self, refs):
+        from pipeline.validate import validate_data, open_kerchunk
+        from pipeline.errors import ValidationError, ConcatenationError
+        from pipeline.logs import FalseLogger
+        if 'identical_dims' in self.detail:
+            self.logger.info("Identified identical_dims for concatenation")
+            self.combine_kwargs['identical_dims'] = self.detail['identical_dims']
+        elif len(refs) == 1 or type(refs) == dict:
+            pass
+        else:
+            self.logger.info("Detecting identical_dims across time dimension")
+            identical_dims = []
+            ds_examples = []
+            for example in range(2):
+                ds_examples.append(open_kerchunk(refs[example], FalseLogger()))
+            for var in ds_examples[0].variables:
+                if 'time' not in ds_examples[0][var].dims:
+                    try:
+                        validate_data(ds_examples[0], ds_examples[1],
+                                      var, 0, self.logger, bypass=False)
+                        identical_dims.append(var)
+                    except ValidationError:
+                        raise ConcatenationError
+                    except:
+                        self.logger.warn('Unhandled exception in validation not bypassed')
+            self.logger.debug(f'Found {identical_dims} identical over time axis')
+            self.combine_kwargs['identical_dims'] = identical_dims
 
     def combine_and_save(self, refs, zattrs):
         """Concatenation of ref data for different kerchunk schemes"""
+        self.logger.info('Starting concatenation of refs')
+        self.check_identicals(refs)
+
         if self.use_json:
             self.logger.info('Concatenating to JSON format Kerchunk file')
             self.data_to_json(refs, zattrs)
@@ -215,7 +227,7 @@ class Indexer(Converter):
             self.logger.info('Concatenating to Parquet format Kerchunk store')
             self.data_to_parq(refs)
 
-    def data_to_parq(self, refs):
+    def data_to_parq(self, create_refs):
         """Concatenating to Parquet format Kerchunk store"""
         from kerchunk.combine import MultiZarrToZarr
         from fsspec import filesystem
@@ -247,7 +259,7 @@ class Indexer(Converter):
         # Already have default options saved to class variables
         if len(refs) > 1:
             self.logger.debug('Concatenating refs using MultiZarrToZarr')
-            mzz = MultiZarrToZarr(refs, **self.combine_kwargs).translate()
+            mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
             if zattrs:
                 zattrs = self.add_kerchunk_history(zattrs)
             else:
@@ -374,13 +386,17 @@ class Indexer(Converter):
 
     def save_cache(self, refs, zattrs):
         """Cache reference data in temporary json reference files"""
+        self.logger.info('Saving pre-concat cache')
         for x, r in enumerate(refs):
             cache_ref = f'{self.cache}/{x}.json'
             with open(cache_ref,'w') as f:
                 f.write(json.dumps(r))
         self.save_metadata(zattrs)
         self.logger.debug('Saved metadata cache')
-        # All file content saved for later reconcatenation
+        self.issave_meta = False
+        # Save is only valid prior to concatenation
+        # For a bizarre reason, the download link is applied to the whole cache on concatenation,
+        # So cache saving MUST occur BEFORE concatenation.
 
     def try_all_drivers(self, nfile, **kwargs):
         """Safe creation allows for known issues and tries multiple drivers"""
@@ -451,19 +467,14 @@ class Indexer(Converter):
         else:
             zattrs, refs = self.load_cache()
             zattrs = self.correct_metadata(zattrs)
-
         try:
-            if self.success:
-                self.logger.info('Single conversions complete, starting concatenation')
-                self.combine_and_save(refs, zattrs)
-                if self.issave_meta:
-                    self.save_cache(refs, zattrs)
-            else:
-                self.logger.info('Issue with conversion unspecified - aborting process')
+            if self.issave_meta:
                 self.save_cache(refs, zattrs)
-            return True
-        except TypeError as err:
-            self.logger.error(f'Detected fatal error - {err}')
+            if self.success:
+                self.combine_and_save(refs, zattrs)
+        except Exception as err:
+            if self.issave_meta:
+                self.save_cache(refs, zattrs)
             raise err
 
 if __name__ == '__main__':
