@@ -199,6 +199,7 @@ class Indexer(Converter):
         else:
             self.logger.info("Detecting identical_dims across time dimension")
             identical_dims = []
+            concat_dims = []
             ds_examples = []
             for example in range(2):
                 ds_examples.append(open_kerchunk(refs[example], FalseLogger()))
@@ -209,11 +210,13 @@ class Indexer(Converter):
                                       var, 0, self.logger, bypass=False)
                         identical_dims.append(var)
                     except ValidationError:
-                        raise ConcatenationError
+                        self.logger.warning(f'Non-identical variable: {var} - if this variable should be identical across the files, please rerun.')
+                        concat_dims.append(var)
                     except:
                         self.logger.warn('Unhandled exception in validation not bypassed')
             self.logger.debug(f'Found {identical_dims} identical over time axis')
             self.combine_kwargs['identical_dims'] = identical_dims
+            self.combine_kwargs['concat_dims'] += concat_dims
 
     def combine_and_save(self, refs, zattrs):
         """Concatenation of ref data for different kerchunk schemes"""

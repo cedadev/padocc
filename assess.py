@@ -2,6 +2,7 @@ import os
 import argparse
 import glob
 import json
+import sys
 
 from pipeline.logs import init_logger, get_attribute
 from pipeline.errors import MissingVariableError
@@ -96,6 +97,17 @@ def get_code_from_val(path: str, index: str, filename='proj_codes'):
 def get_rerun_command(phase: str, ecode: str, groupID: str, repeat_id: str):
     print(f'python single_run.py {phase} {ecode} -G {groupID} -r {repeat_id} -vvv -d')
 
+def examine_log(log: str, efile: str, code: str, ecode=None, phase=None, groupID=None, repeat_id=None):
+    print()
+    print('\n'.join(log))
+    print(f'{efile} - {code}')
+    print('Rerun suggested command:    ',end='')
+    if phase and ecode:
+        get_rerun_command(phase, ecode, groupID, repeat_id)
+    paused=input('Type "E" to exit assessment: ')
+    if paused == 'E':
+        sys.exit()
+
 def extract_keys(filepath: str, logger, savetype=None, examine=None, phase=None, groupID=None, repeat_id=None):
     """Extract keys from error/output files, collect into groups and examine a particular type if required.
     
@@ -122,7 +134,7 @@ def extract_keys(filepath: str, logger, savetype=None, examine=None, phase=None,
     total : int
         Total number of error files found under the path provided. 
     """
-    keys       = {}
+    keys       = {'Warning': 0}
     savedcodes = []
     listfiles  = glob.glob(filepath)
     total      = len(listfiles)
@@ -130,8 +142,14 @@ def extract_keys(filepath: str, logger, savetype=None, examine=None, phase=None,
 
     for efile in listfiles:
         logger.debug(f'Starting {efile}')
+        log = []
+        show_warn = False
         with open(os.path.join(filepath, efile)) as f:
-            log = [r.strip() for r in f.readlines()]
+            for r in f.readlines():
+                log.append(r.strip())
+                if 'WARNING' in r.strip():
+                    show_warn = (savetype == 'Warning')
+                    keys['Warning'] += 1
         logger.debug(f'Opened {efile}')
         # Extract Error type from Error file last line
         if len(log) > 0:
@@ -149,21 +167,19 @@ def extract_keys(filepath: str, logger, savetype=None, examine=None, phase=None,
                 keys[key] += 1
             else:
                 keys[key] = 1
-            # Select specific errors to examine
-            if key == savetype:
-                ecode = efile.split('/')[-1].split('.')[0]
-                path = '/'.join(filepath.split('/')[:-1]) + '/'
-                code = get_code_from_val(path, ecode)
+
+            matchtype = (key == savetype or (type(savetype) == list and key in savetype) or show_warn)
+
+            ecode = efile.split('/')[-1].split('.')[0]
+            path = '/'.join(filepath.split('/')[:-1]) + '/'
+            code = get_code_from_val(path, ecode)
+
+            if matchtype:
+                # Save matching types
                 savedcodes.append((efile, code, log))
                 if examine:
-                    print()
-                    print('\n'.join(log))
-                    print(f'{efile} - {code}')
-                    print('Rerun suggested command:    ',end='')
-                    get_rerun_command(phase, ecode, groupID, repeat_id)
-                    x=input()
-                    if x == 'E':
-                        raise Exception
+                    # Examine logs if matching types or warnings is on
+                    examine_log(log, efile, code, ecode=ecode, phase=phase, groupID=groupID, repeat_id=repeat_id)
     return savedcodes, keys, len(listfiles)
 
 def save_sel(codes: list, groupdir: str, label: str, logger):
@@ -171,8 +187,11 @@ def save_sel(codes: list, groupdir: str, label: str, logger):
     
     Requires a groupdir (directory belonging to a group), list of codes and a label for the new file.
     """
+    for c in codes[:10]:
+        print(c[1].strip())
+    x=input()
     if len(codes) > 1:
-        codeset = ''.join([code[1] for code in codes])
+        codeset = '\n'.join([code[1].strip() for code in codes])
         with open(f'{groupdir}/proj_codes_{label}.txt','w') as f:
             f.write(codeset)
 
@@ -272,11 +291,14 @@ def error_check(args, logger):
     # Summarise results
     print(f'Found {total} error files:')
     for key in errs.keys():
-        if errs[key] > 0:
+        if errs[key] > 0 and key != 'Warning':
             known_hint = 'Unknown'
             if key in HINTS:
                 known_hint = HINTS[key]
             print(f'{key}: {errs[key]}    - ({known_hint})')
+
+    print('')
+    print(f'Identified {errs["Warning"]} files with Warnings')
 
     if args.repeat_label and args.write:
         save_sel(savedcodes, args.groupdir, args.repeat_label, logger)
@@ -372,8 +394,6 @@ def retro_errors(args, logger):
 
     print('Retrospective Error Summary:')
     print(errs)
-    
-
 
 operations = {
     'progress': progress_check,
@@ -390,6 +410,8 @@ def assess_main(args):
 
     args.workdir  = get_attribute('WORKDIR', args, 'workdir')
     args.groupdir = f'{args.workdir}/groups/{args.groupID}'
+    if ',' in args.inspect:
+        args.inspect = args.inspect.split(',')
 
     if args.show_opts:
         show_options(args.show_opts, args.groupdir, args.operation, logger)
@@ -415,7 +437,7 @@ if __name__ == "__main__":
     parser.add_argument('-s','--show-opts', dest='show_opts', help='Show options for jobids, labels')
 
     parser.add_argument('-r','--repeat_label', dest='repeat_label', default=None, help='Save a selection of codes which failed on a given error - input a repeat id.')
-    parser.add_argument('-i','--inspect', dest='inspect', help='Inspect error/output of a given type/label')
+    parser.add_argument('-i','--inspect', dest='inspect', default='', help='Inspect error/output of a given type/label')
     parser.add_argument('-E','--examine', dest='examine', action='store_true', help='Examine log outputs individually.')
     parser.add_argument('-c','--clean-up', dest='cleanup', default=None, help='Clean up group directory of errors/outputs/labels')
 

@@ -200,12 +200,17 @@ def open_netcdfs(args, logger, thorough=False):
     xobjs = []
     many = len(indexes)
     if not thorough:
-        check_memory(xfiles, indexes, args.memory, logger)
-        logger.debug(f'Checking memory size ({many} files)')
+        if not args.bypass:
+            check_memory(xfiles, indexes, args.memory, logger)
+        else:
+            logger.warning('Memory checks bypassed')
         for one, i in enumerate(indexes):
             xobjs.append(xr.open_dataset(xfiles[i]))
     else:
-        check_memory(xfiles, [i for i in range(len(xfiles))], args.memory, logger)
+        if not args.bypass:
+            check_memory(xfiles, [i for i in range(len(xfiles))], args.memory, logger)
+        else:
+            logger.warning('Memory checks bypassed')
         xobjs = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim='time', data_vars='minimal')
         indexes = [i for i in range(len(xobjs))]
 
@@ -312,7 +317,7 @@ def validate_shapes(xobj, kobj, step: int, nfiles: list, xv: str, logger):
     logger.debug(f'{xv} : Comparing shapes {xshape} and {kshape} - {step}')
     
     if xshape != kshape:
-        logger.warning(f'Kerchunk/NetCDF mismatch for variable {xv} with shapes - K {kshape} vs N {xshape}')
+        logger.info(f'Kerchunk/NetCDF mismatch for variable {xv} with shapes - K {kshape} vs N {xshape}')
         raise ShapeMismatchError(var=xv, first=kshape, second=xshape)
 
 def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: int, logger, bypass=False):
