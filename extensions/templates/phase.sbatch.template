@@ -4,7 +4,7 @@
 #SBATCH --job-name={}
 
 #SBATCH --time={}
-#SBATCH --mem=2G
+#SBATCH --mem={}
 
 #SBATCH -o {}
 #SBATCH -e {}
@@ -15,4 +15,4 @@ source {}/bin/activate
 export WORKDIR={}
 export GROUPDIR={}
 
-python {} {} $SLURM_ARRAY_TASK_ID -G {} -t {}
+python {} {} $SLURM_ARRAY_TASK_ID -G {} -t {} -M {}
