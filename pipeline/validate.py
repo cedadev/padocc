@@ -15,7 +15,7 @@ import logging
 import math
 
 from pipeline.errors import *
-from pipeline.logs import init_logger, SUFFIXES, SUFFIX_LIST
+from pipeline.logs import init_logger, SUFFIXES, SUFFIX_LIST, BypassSwitch
 
 ## 1. Array Selection Tools
 
@@ -95,7 +95,16 @@ def locate_kerchunk(args, logger, get_str=False):
         else:
             pass
 
-    if check_complete:
+    if len(kfiles) > 0:
+        # Which kerchunk file from set of options
+        kf = sorted(kfiles)[0]
+        logger.info(f'Selected {kf} from {len(kfiles)} available')
+        kfile = os.path.join(args.proj_dir, kf)
+        if get_str:
+            return kfile, False
+        else:
+            return open_kerchunk(kfile, logger, remote_protocol='https'), False
+    elif check_complete:
         if not args.forceful:
             logger.error('File already exists and no override is set')
             raise NoOverwriteError
@@ -118,18 +127,10 @@ def locate_kerchunk(args, logger, get_str=False):
         else:
             return open_kerchunk(kfile, logger, remote_protocol='https'), True
     else:
-        if kfiles == []:
-            logger.error(f'No Kerchunk file located at {args.proj_dir} - exiting')
-            raise MissingKerchunkError
+        logger.error(f'No Kerchunk file located at {args.proj_dir} and no in-place validation indicated - exiting')
+        raise MissingKerchunkError
         
-        # Which kerchunk file from set of options
-        kf = sorted(kfiles)[0]
-        logger.info(f'Selected {kf} from {len(kfiles)} available')
-        kfile = os.path.join(args.proj_dir, kf)
-        if get_str:
-            return kfile, False
-        else:
-            return open_kerchunk(kfile, logger, remote_protocol='https'), False
+        
 
 def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file'):
     """Open kerchunk file from JSON/parquet formats"""
@@ -200,14 +201,14 @@ def open_netcdfs(args, logger, thorough=False):
     xobjs = []
     many = len(indexes)
     if not thorough:
-        if not args.bypass:
+        if not args.bypass.skip_memcheck:
             check_memory(xfiles, indexes, args.memory, logger)
         else:
             logger.warning('Memory checks bypassed')
         for one, i in enumerate(indexes):
             xobjs.append(xr.open_dataset(xfiles[i]))
     else:
-        if not args.bypass:
+        if not args.bypass.skip_memcheck:
             check_memory(xfiles, [i for i in range(len(xfiles))], args.memory, logger)
         else:
             logger.warning('Memory checks bypassed')
@@ -320,7 +321,7 @@ def validate_shapes(xobj, kobj, step: int, nfiles: list, xv: str, logger):
         logger.info(f'Kerchunk/NetCDF mismatch for variable {xv} with shapes - K {kshape} vs N {xshape}')
         raise ShapeMismatchError(var=xv, first=kshape, second=xshape)
 
-def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: int, logger, bypass=False):
+def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: int, logger, bypass=BypassSwitch()):
     """Validate this data selection in xvariable/kvariable objects
       - Recursive function tests a growing selection of data until one is found with real data
       - Repeats with exponentially increasing box size (divisions of all data dimensions)
@@ -355,7 +356,7 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
         kb = np.array(kbox)
         isnan = np.all(kb!=kb)
     except Exception as err:
-        if bypass:
+        if bypass.skip_boxfail:
             logger.warning(f'{err} - check versions')
             isnan = True
         else:
@@ -364,7 +365,7 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
     if kbox.size >= 1 and not isnan:
         # Evaluate kerchunk vs xarray and stop here
         logger.debug(f'Found non-NaN values with box-size: {int(kbox.size)}')
-        compare_data(vname, xbox, kbox, logger, bypass=bypass)
+        compare_data(vname, xbox, kbox, logger, bypass=bypass.skip_data_sum)
     else:
         logger.debug(f'Attempt {repeat} - slice is Null')
         if currentdiv >= 2:
@@ -372,10 +373,10 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
             validate_selection(xvariable, kvariable, vname, divs, int(currentdiv/2), logger, bypass=bypass)
         else:
             logger.warn(f'Failed to find non-NaN slice (tried: {int(math.log2(divs))}, var: {vname})')
-            if not bypass:
+            if not bypass.skip_softfail:
                 raise SoftfailBypassError
 
-def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=False):
+def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=BypassSwitch()):
     """Run growing selection test for specified variable from xarray and kerchunk datasets"""
     logger.info(f'{xv} : Starting growbox data tests for {step}')
 
@@ -480,7 +481,8 @@ def validate_dataset(args):
                 break
 
     if fullset:
-        logger.info(f"Attempting total validation: {len(indexes)}/{total}")
+        print()
+        logger.info(f"Attempting total validation")
         xobjs, indexes, nfiles = open_netcdfs(args, logger, thorough=True)
         try:
             validate_timestep(args, xobjs, kobj, 0, 1, logger)

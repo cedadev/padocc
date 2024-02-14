@@ -1,6 +1,10 @@
+__author__    = "Daniel Westwood"
+__contact__   = "daniel.westwood@stfc.ac.uk"
+__copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
+
 import logging
 import os
-from pipeline.errors import MissingVariableError
+from pipeline.errors import MissingVariableError, InvalidBypassError
 
 levels = [
     logging.WARN,
@@ -15,6 +19,24 @@ SUFFIXES = {
     'M': 1000000,
     'G': 1000000000
 }
+
+class BypassSwitch:
+    def __init__(self, switch='FDSC'):
+        if switch.startswith('+'):
+            switch = 'FDSC' + switch[1:]
+        self.switch = switch
+        if type(switch) == str:
+            switch = list(switch)
+        
+        self.skip_scanfile = ('F' in switch)
+        self.skip_driver   = ('D' in switch)
+        self.skip_boxfail  = ('B' in switch)
+        self.skip_softfail = ('S' in switch)
+        self.skip_data_sum = ('C' in switch)
+        self.skip_memcheck = ('M' in switch)
+
+    def __str__(self):
+        return self.switch
 
 class FalseLogger:
     def __init__(self):

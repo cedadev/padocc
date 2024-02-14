@@ -9,7 +9,7 @@ import os
 import json
 import logging
 
-from pipeline.logs import init_logger, get_attribute
+from pipeline.logs import init_logger, get_attribute, BypassSwitch
 from pipeline.errors import ProjectCodeError, MissingVariableError, BlacklistProjectCode
 
 def run_init(args, logger):
@@ -112,6 +112,8 @@ def main(args):
     args.workdir  = get_attribute('WORKDIR', args, 'workdir')
     args.groupdir = get_attribute('GROUPDIR', args, 'groupdir')
 
+    args.bypass = BypassSwitch(switch=args.bypass)
+
     logger.debug('Pipeline variables:')
     logger.debug(f'WORKDIR : {args.workdir}')
     logger.debug(f'GROUPDIR: {args.groupdir}')
@@ -192,7 +194,7 @@ if __name__ == '__main__':
     parser.add_argument('-m','--mode',        dest='mode', default=None, help='Print or record information (log or std)')
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
     parser.add_argument('-M','--memory', dest='memory', default='2G', help='Memory allocation for this job (i.e "2G" for 2GB)')
-    parser.add_argument('-b','--bypass-errs', dest='bypass', action='store_true', help='Bypass all error messages - skip failed jobs')
+    parser.add_argument('-b','--bypass-errs', dest='bypass', default='FDSC', help='Bypass all error messages - skip failed jobs')
 
     parser.add_argument('-s','--subset',    dest='subset',    default=1,   type=int, help='Size of subset within group')
     parser.add_argument('-r','--repeat_id', dest='repeat_id', default='1', help='Repeat id (1 if first time running, <phase>_<repeat> otherwise)')
