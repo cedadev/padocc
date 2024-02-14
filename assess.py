@@ -187,9 +187,6 @@ def save_sel(codes: list, groupdir: str, label: str, logger):
     
     Requires a groupdir (directory belonging to a group), list of codes and a label for the new file.
     """
-    for c in codes[:10]:
-        print(c[1].strip())
-    x=input()
     if len(codes) > 1:
         codeset = '\n'.join([code[1].strip() for code in codes])
         with open(f'{groupdir}/proj_codes_{label}.txt','w') as f:
