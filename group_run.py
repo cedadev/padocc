@@ -143,7 +143,7 @@ if __name__ == '__main__':
     parser.add_argument('-m','--mode',        dest='mode', default=None, help='Print or record information (log or std)')
     parser.add_argument('-M','--memory', dest='memory', default=None, help='Memory allocation for this job (i.e "2G" for 2GB)')
     parser.add_argument('-t','--time-allowed',dest='time_allowed', default=None, help='Time limit for this job')
-    parser.add_argument('-b','--bypass-errs', dest='bypass', action='store_true', help='Bypass all error messages - skip failed jobs')
+    parser.add_argument('-b','--bypass-errs', dest='bypass', default='FDSC', help='Bypass all error messages - skip failed jobs')
     
     parser.add_argument('-i', '--input', dest='input', help='input file (for init phase)')
 
