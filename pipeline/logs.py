@@ -4,7 +4,7 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
 import logging
 import os
-from pipeline.errors import MissingVariableError, InvalidBypassError
+from pipeline.errors import MissingVariableError
 
 levels = [
     logging.WARN,
