@@ -109,11 +109,10 @@ def main(args):
         sb += ' -f'
     if args.verbose:
         sb += ' -v'
-    if args.bypass:
-        sb += ' -b'
+    if args.bypass != 'FDSC':
+        sb += f' -b {args.bypass}'
     if args.quality:
         sb += ' -Q'
-
 
     if args.repeat_id:
         sb += f' -r {args.repeat_id}'

@@ -38,8 +38,8 @@ Ingest/Catalog files
    :caption: Contents:
 
    Getting Started <start>
-   Running the Pipeline <execution>
    Worked Examples <examples>
+   Pipeline control script flags <execution>
    Assessor Tool Overview <assess-overview>
    Error Codes <errors>
 
