@@ -49,8 +49,9 @@ def find_codes(phase: str, workdir: str, groupID: str, check: str, ignore=[]):
     redo_pcodes : list (str-like)
         List of project codes to re-run for this phase.
     complete : list (str-like)
-        List of project codes considered to be complete for the whole pipeline
-       """
+        List of project codes considered to be complete for the whole pipeline.
+
+    """
     checkdir = f'{workdir}/in_progress/{groupID}/'
     proj_codes = os.listdir(checkdir)
 
