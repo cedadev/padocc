@@ -50,7 +50,7 @@ def find_codes(phase: str, workdir: str, groupID: str, check: str, ignore=[]):
         List of project codes to re-run for this phase.
     complete : list (str-like)
         List of project codes considered to be complete for the whole pipeline
-       """
+    """
     checkdir = f'{workdir}/in_progress/{groupID}/'
     proj_codes = os.listdir(checkdir)
 
@@ -159,7 +159,10 @@ def extract_keys(filepath: str, logger, savetype=None, examine=None, phase=None,
                 key = log[-1][0]
 
             if '/var/spool/slurmd' in key:
-                key = 'SlurmError'
+                key = 'SlurmMemoryError'
+
+            if key == 'slurmstepd':
+                key = 'SlurmTimeoutError'
 
             logger.debug(f'Identified error type {key}')
             # Count error types
