@@ -185,17 +185,29 @@ def extract_keys(filepath: str, logger, savetype=None, examine=None, phase=None,
                     examine_log(log, efile, code, ecode=ecode, phase=phase, groupID=groupID, repeat_id=repeat_id)
     return savedcodes, keys, len(listfiles)
 
-def save_sel(codes: list, groupdir: str, label: str, logger):
+def save_sel(codes: list, groupdir: str, label: str, logger, overwrite=0):
     """Save selection of codes to a file with a given repeat label. 
     
     Requires a groupdir (directory belonging to a group), list of codes and a label for the new file.
     """
     if len(codes) > 1:
         codeset = '\n'.join([code[1].strip() for code in codes])
-        with open(f'{groupdir}/proj_codes_{label}.txt','w') as f:
-            f.write(codeset)
-
-        logger.info(f'Written {len(codes)} to proj_codes_{label}')
+        if os.path.isfile(f'{groupdir}/proj_codes_{label}.txt'):
+            if overwrite == 0:
+                logger.info(f'Skipped writing {len(codes)} to proj_codes_{label} - file exists and overwrite not set')
+            elif overwrite == 1:
+                logger.info(f'Adding {len(codes)} to existing proj_codes_{label}')
+                # Need check for duplicates here
+                with open(f'{groupdir}/proj_codes_{label}.txt','a') as f:
+                    f.write(codeset)
+            elif overwrite == 2:
+                logger.info(f'Overwriting with {len(codes)} in existing proj_codes_{label} file')
+                with open(f'{groupdir}/proj_codes_{label}.txt','w') as f:
+                    f.write(codeset)
+        else:
+            with open(f'{groupdir}/proj_codes_{label}.txt','w') as f:
+                f.write(codeset)
+            logger.info(f'Written {len(codes)} to proj_codes_{label}')
     else:
         logger.info('No codes identified, no files written')
 
@@ -301,7 +313,7 @@ def error_check(args, logger):
     print(f'Identified {errs["Warning"]} files with Warnings')
 
     if args.repeat_label and args.write:
-        save_sel(savedcodes, args.groupdir, args.repeat_label, logger)
+        save_sel(savedcodes, args.groupdir, args.repeat_label, logger, overwrite=args.overwrite)
     elif args.repeat_label:
         logger.info(f'Skipped writing {len(savedcodes)} to proj_codes_{args.repeat_label}')
     else:
@@ -441,6 +453,7 @@ if __name__ == "__main__":
     parser.add_argument('-E','--examine', dest='examine', action='store_true', help='Examine log outputs individually.')
     parser.add_argument('-c','--clean-up', dest='cleanup', default=None, help='Clean up group directory of errors/outputs/labels')
 
+    parser.add_argument('-O','--overwrite', dest='overwrite', action='count', help='Force overwrite of steps if previously done')
 
     parser.add_argument('-w','--workdir',   dest='workdir',      help='Working directory for pipeline')
     parser.add_argument('-g','--groupdir',  dest='groupdir',     help='Group directory for pipeline')
