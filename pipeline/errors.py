@@ -24,6 +24,16 @@ class KerchunkException(Exception):
     def save(self):
         upload_err(self.proj_code, self.groupdir, self.get_str())
     
+class KerchunkDriverFatalError(KerchunkException):
+
+    def __init__(self,verbose=0, proj_code=None, groupdir=None):
+        self.message = "All drivers failed when performing conversion"
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'MissingVariableError'
+
 class BlacklistProjectCode(KerchunkException):
     def __init__(self, verbose=0, proj_code=None, groupdir=None):
         """The project code you are trying to run for is on the list of project codes to ignore."""
