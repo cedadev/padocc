@@ -25,7 +25,7 @@ class KerchunkException(Exception):
         upload_err(self.proj_code, self.groupdir, self.get_str())
     
 class KerchunkDriverFatalError(KerchunkException):
-
+    """All known drivers failed when performing conversion - NetCDF3/HDF5/Tiff"""
     def __init__(self,verbose=0, proj_code=None, groupdir=None):
         self.message = "All drivers failed when performing conversion"
         super().__init__(proj_code, groupdir)
