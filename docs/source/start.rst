@@ -7,10 +7,10 @@ Getting Started
 
 Step 0: Git clone the repository
 --------------------------------
-The Kerchunk builder will soon be updated to version 1.0.1, which you can clone using:
+The Kerchunk builder has now been updated to version 1.0.2, which you can clone using:
 ::
 
-    git clone git@github.com:cedadev/kerchunk-builder.git --branch v1.0.1
+    git clone git@github.com:cedadev/kerchunk-builder.git --branch v1.0.2
 
 Step 1: Set up Virtual Environment
 ----------------------------------
