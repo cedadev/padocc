@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Running the Pipeline &mdash; Kerchunk Pipeline v1.1 documentation</title>
+  <title>Pipeline Flags &mdash; Kerchunk Pipeline v1.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -18,8 +18,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Worked Examples" href="examples.html" />
-    <link rel="prev" title="Getting Started" href="start.html" /> 
+    <link rel="next" title="Assessor Tool" href="assess-overview.html" />
+    <link rel="prev" title="Worked Examples" href="examples.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,24 +40,23 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Running the Pipeline</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#running-for-a-single-dataset">Running for a single dataset</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#running-for-a-group-of-datasets">Running for a group of datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Worked Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Pipeline Flags/Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#bypassswitch-options">BypassSwitch Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single-dataset-operation">Single Dataset Operation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#multi-dataset-group-operation">Multi-Dataset Group Operation</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Worked Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="init.html">Init Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="scan.html">Scan Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="compute.html">Compute Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="assess.html">Assess Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Execution Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline-source.html">Pipeline Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Script Source</a></li>
 </ul>
 
         </div>
@@ -74,7 +73,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Running the Pipeline</li>
+      <li>Pipeline Flags</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/execution.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -84,129 +83,136 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="running-the-pipeline">
-<h1>Running the Pipeline<a class="headerlink" href="#running-the-pipeline" title="Permalink to this headline"></a></h1>
-<div class="section" id="running-for-a-single-dataset">
-<h2>Running for a single dataset<a class="headerlink" href="#running-for-a-single-dataset" title="Permalink to this headline"></a></h2>
-<p>Run all single-dataset processes with the <code class="docutils literal notranslate"><span class="pre">`single-run.py`</span></code> script.</p>
-<p><code class="docutils literal notranslate"><span class="pre">`usage:</span> <span class="pre">single_run.py</span> <span class="pre">[-h]</span> <span class="pre">[-w</span> <span class="pre">WORKDIR]</span> <span class="pre">[-g</span> <span class="pre">GROUPDIR]</span> <span class="pre">[-G</span> <span class="pre">GROUPID]</span> <span class="pre">[-p</span> <span class="pre">PROJ_DIR]</span> <span class="pre">[-n</span> <span class="pre">NEW_VERSION]</span> <span class="pre">[-m</span> <span class="pre">MODE]</span> <span class="pre">[-t</span> <span class="pre">TIME_ALLOWED]</span> <span class="pre">[-b]</span> <span class="pre">[-s</span> <span class="pre">SUBSET]</span> <span class="pre">[-r</span> <span class="pre">REPEAT_ID]</span> <span class="pre">[-f]</span> <span class="pre">[-v]</span> <span class="pre">[-d]</span> <span class="pre">[-Q]</span> <span class="pre">phase</span> <span class="pre">proj_code`</span></code></p>
-<dl>
-<dt>positional arguments:</dt><dd><p>phase                 Phase of the pipeline to initiate
-proj_code             Project identifier code</p>
-</dd>
-<dt>options:</dt><dd><dl class="option-list">
-<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
-<dd><p>show this help message and exit</p>
-</dd>
-<dt><kbd><span class="option">-w <var>WORKDIR</var></span>, <span class="option">--workdir <var>WORKDIR</var></span></kbd></dt>
-<dd><p>Working directory for pipeline</p>
-</dd>
-<dt><kbd><span class="option">-g <var>GROUPDIR</var></span>, <span class="option">--groupdir <var>GROUPDIR</var></span></kbd></dt>
-<dd><p>Group directory for pipeline</p>
-</dd>
-<dt><kbd><span class="option">-G <var>GROUPID</var></span>, <span class="option">--groupID <var>GROUPID</var></span></kbd></dt>
-<dd><p>Group identifier label</p>
-</dd>
-<dt><kbd><span class="option">-p <var>PROJ_DIR</var></span>, <span class="option">--proj_dir <var>PROJ_DIR</var></span></kbd></dt>
-<dd><p>Project directory for pipeline</p>
-</dd>
-<dt><kbd><span class="option">-n <var>NEW_VERSION</var></span>, <span class="option">--new_version <var>NEW_VERSION</var></span></kbd></dt>
-<dd><p>If present, create a new version</p>
-</dd>
-<dt><kbd><span class="option">-m <var>MODE</var></span>, <span class="option">--mode <var>MODE</var></span></kbd></dt>
-<dd><p>Print or record information (log or std)</p>
-</dd>
-<dt><kbd><span class="option">-t <var>TIME_ALLOWED</var></span>, <span class="option">--time-allowed <var>TIME_ALLOWED</var></span></kbd></dt>
-<dd><p>Time limit for this job</p>
-</dd>
-<dt><kbd><span class="option">-b</span>, <span class="option">--bypass-errs</span></kbd></dt>
-<dd><p>Bypass all error messages - skip failed jobs</p>
-</dd>
-<dt><kbd><span class="option">-s <var>SUBSET</var></span>, <span class="option">--subset <var>SUBSET</var></span></kbd></dt>
-<dd><p>Size of subset within group</p>
-</dd>
-<dt><kbd><span class="option">-r <var>REPEAT_ID</var></span>, <span class="option">--repeat_id <var>REPEAT_ID</var></span></kbd></dt>
-<dd><p>Repeat id (1 if first time running, &lt;phase&gt;_&lt;repeat&gt; otherwise)</p>
-</dd>
-<dt><kbd><span class="option">-f</span></kbd></dt>
-<dd><p>Force overwrite of steps if previously done</p>
-</dd>
-<dt><kbd><span class="option">-v</span>, <span class="option">--verbose</span></kbd></dt>
-<dd><p>Print helpful statements while running</p>
-</dd>
-<dt><kbd><span class="option">-d</span>, <span class="option">--dryrun</span></kbd></dt>
-<dd><p>Perform dry-run (i.e no new files/dirs created)</p>
-</dd>
-<dt><kbd><span class="option">-Q</span>, <span class="option">--quality</span></kbd></dt>
-<dd><p>Quality assured checks - thorough run</p>
-</dd>
-</dl>
-</dd>
-</dl>
+  <div class="section" id="pipeline-flags">
+<h1>Pipeline Flags<a class="headerlink" href="#pipeline-flags" title="Permalink to this headline"></a></h1>
+<div class="section" id="bypassswitch-options">
+<h2>BypassSwitch Options<a class="headerlink" href="#bypassswitch-options" title="Permalink to this headline"></a></h2>
+<p>Certain non-fatal errors may be bypassed using the Bypass flag:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Format</span><span class="p">:</span> <span class="o">-</span><span class="n">b</span> <span class="s2">&quot;FBDSCM&quot;</span>
+
+<span class="n">Default</span><span class="p">:</span> <span class="s2">&quot;FDSC&quot;</span> <span class="c1"># Highlighted by a &#39;*&#39;</span>
+
+<span class="s2">&quot;F&quot;</span> <span class="o">-</span> <span class="o">*</span> <span class="n">Skip</span> <span class="n">individual</span> <span class="n">file</span> <span class="n">scanning</span> <span class="n">errors</span><span class="o">.</span>
+<span class="s2">&quot;D&quot;</span> <span class="o">-</span> <span class="o">*</span> <span class="n">Skip</span> <span class="n">driver</span> <span class="n">failures</span> <span class="o">-</span> <span class="n">Pipeline</span> <span class="n">tries</span> <span class="n">different</span> <span class="n">options</span> <span class="k">for</span> <span class="n">NetCDF</span> <span class="p">(</span><span class="n">default</span><span class="p">)</span>
+    <span class="o">-</span>   <span class="n">Only</span> <span class="n">need</span> <span class="n">to</span> <span class="n">turn</span> <span class="n">this</span> <span class="n">skip</span> <span class="n">off</span> <span class="k">if</span> <span class="nb">all</span> <span class="n">drivers</span> <span class="n">fail</span> <span class="p">(</span><span class="n">KerchunkFatalDriverError</span><span class="p">)</span>
+<span class="s2">&quot;B&quot;</span> <span class="o">-</span>   <span class="n">Skip</span> <span class="n">Box</span> <span class="n">compute</span> <span class="n">errors</span><span class="o">.</span>
+<span class="s2">&quot;S&quot;</span> <span class="o">-</span> <span class="o">*</span> <span class="n">Skip</span> <span class="n">Soft</span> <span class="n">fails</span> <span class="p">(</span><span class="n">NaN</span><span class="o">-</span><span class="n">only</span> <span class="n">boxes</span> <span class="ow">in</span> <span class="n">validation</span><span class="p">)</span> <span class="p">(</span><span class="n">default</span><span class="p">)</span>
+<span class="s2">&quot;C&quot;</span> <span class="o">-</span> <span class="o">*</span> <span class="n">Skip</span> <span class="n">calculation</span> <span class="p">(</span><span class="n">data</span> <span class="nb">sum</span><span class="p">)</span> <span class="n">errors</span> <span class="p">(</span><span class="n">time</span> <span class="n">array</span> <span class="n">typically</span> <span class="n">cannot</span> <span class="n">be</span> <span class="n">summed</span><span class="p">)</span> <span class="p">(</span><span class="n">default</span><span class="p">)</span>
+<span class="s2">&quot;M&quot;</span> <span class="o">-</span>   <span class="n">Skip</span> <span class="n">memory</span> <span class="n">checks</span> <span class="p">(</span><span class="n">validate</span><span class="o">/</span><span class="n">compute</span> <span class="n">aborts</span> <span class="k">if</span> <span class="n">utilisation</span> <span class="n">estimate</span> <span class="n">exceeds</span> <span class="n">cap</span><span class="p">)</span>
+</pre></div>
 </div>
-<div class="section" id="running-for-a-group-of-datasets">
-<h2>Running for a group of datasets<a class="headerlink" href="#running-for-a-group-of-datasets" title="Permalink to this headline"></a></h2>
+</div>
+<div class="section" id="single-dataset-operation">
+<h2>Single Dataset Operation<a class="headerlink" href="#single-dataset-operation" title="Permalink to this headline"></a></h2>
+<p>Run all single-dataset processes with the <code class="docutils literal notranslate"><span class="pre">`single-run.py`</span></code> script.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">single_run</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">Q</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">b</span> <span class="n">BYPASS</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">w</span> <span class="n">WORKDIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">g</span> <span class="n">GROUPDIR</span><span class="p">]</span>
+                     <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">PROJ_DIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">G</span> <span class="n">GROUPID</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">t</span> <span class="n">TIME_ALLOWED</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">M</span> <span class="n">MEMORY</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="n">SUBSET</span><span class="p">]</span>
+                     <span class="p">[</span><span class="o">-</span><span class="n">r</span> <span class="n">REPEAT_ID</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">n</span> <span class="n">NEW_VERSION</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">m</span> <span class="n">MODE</span><span class="p">]</span>
+                     <span class="n">phase</span> <span class="n">proj_code</span>
+
+<span class="n">Run</span> <span class="n">a</span> <span class="n">pipeline</span> <span class="n">step</span> <span class="k">for</span> <span class="n">a</span> <span class="n">single</span> <span class="n">dataset</span>
+
+<span class="n">positional</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="n">phase</span>                 <span class="n">Phase</span> <span class="n">of</span> <span class="n">the</span> <span class="n">pipeline</span> <span class="n">to</span> <span class="n">initiate</span>
+  <span class="n">proj_code</span>             <span class="n">Project</span> <span class="n">identifier</span> <span class="n">code</span>
+
+<span class="n">options</span><span class="p">:</span>
+  <span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>            <span class="n">show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span>
+
+  <span class="c1"># Action-based - standard flags</span>
+  <span class="o">-</span><span class="n">f</span><span class="p">,</span> <span class="o">--</span><span class="n">forceful</span>        <span class="n">Force</span> <span class="n">overwrite</span> <span class="n">of</span> <span class="n">steps</span> <span class="k">if</span> <span class="n">previously</span> <span class="n">done</span>
+  <span class="o">-</span><span class="n">v</span><span class="p">,</span> <span class="o">--</span><span class="n">verbose</span>         <span class="n">Print</span> <span class="n">helpful</span> <span class="n">statements</span> <span class="k">while</span> <span class="n">running</span>
+  <span class="o">-</span><span class="n">d</span><span class="p">,</span> <span class="o">--</span><span class="n">dryrun</span>          <span class="n">Perform</span> <span class="n">dry</span><span class="o">-</span><span class="n">run</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">e</span> <span class="n">no</span> <span class="n">new</span> <span class="n">files</span><span class="o">/</span><span class="n">dirs</span> <span class="n">created</span><span class="p">)</span>
+  <span class="o">-</span><span class="n">Q</span><span class="p">,</span> <span class="o">--</span><span class="n">quality</span>         <span class="n">Quality</span> <span class="n">assured</span> <span class="n">checks</span> <span class="o">-</span> <span class="n">thorough</span> <span class="n">run</span>
+  <span class="o">-</span><span class="n">b</span> <span class="n">BYPASS</span><span class="p">,</span> <span class="o">--</span><span class="n">bypass</span><span class="o">-</span><span class="n">errs</span> <span class="n">BYPASS</span>
+                        <span class="n">Bypass</span> <span class="n">switch</span> <span class="n">options</span><span class="p">:</span> <span class="n">See</span> <span class="n">Above</span>
+
+  <span class="c1"># Environment Variables</span>
+  <span class="o">-</span><span class="n">w</span> <span class="n">WORKDIR</span><span class="p">,</span> <span class="o">--</span><span class="n">workdir</span> <span class="n">WORKDIR</span>
+                        <span class="n">Working</span> <span class="n">directory</span> <span class="k">for</span> <span class="n">pipeline</span>
+  <span class="o">-</span><span class="n">g</span> <span class="n">GROUPDIR</span><span class="p">,</span> <span class="o">--</span><span class="n">groupdir</span> <span class="n">GROUPDIR</span>
+                        <span class="n">Group</span> <span class="n">directory</span> <span class="k">for</span> <span class="n">pipeline</span>
+  <span class="o">-</span><span class="n">p</span> <span class="n">PROJ_DIR</span><span class="p">,</span> <span class="o">--</span><span class="n">proj_dir</span> <span class="n">PROJ_DIR</span>
+                        <span class="n">Project</span> <span class="n">directory</span> <span class="k">for</span> <span class="n">pipeline</span>
+
+  <span class="c1"># Single-job within group</span>
+  <span class="o">-</span><span class="n">G</span> <span class="n">GROUPID</span><span class="p">,</span> <span class="o">--</span><span class="n">groupID</span> <span class="n">GROUPID</span>
+                        <span class="n">Group</span> <span class="n">identifier</span> <span class="n">label</span>
+  <span class="o">-</span><span class="n">t</span> <span class="n">TIME_ALLOWED</span><span class="p">,</span> <span class="o">--</span><span class="n">time</span><span class="o">-</span><span class="n">allowed</span> <span class="n">TIME_ALLOWED</span>
+                        <span class="n">Time</span> <span class="n">limit</span> <span class="k">for</span> <span class="n">this</span> <span class="n">job</span>
+  <span class="o">-</span><span class="n">M</span> <span class="n">MEMORY</span><span class="p">,</span> <span class="o">--</span><span class="n">memory</span> <span class="n">MEMORY</span>
+                        <span class="n">Memory</span> <span class="n">allocation</span> <span class="k">for</span> <span class="n">this</span> <span class="n">job</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">e</span> <span class="s2">&quot;2G&quot;</span> <span class="k">for</span> <span class="mi">2</span><span class="n">GB</span><span class="p">)</span>
+  <span class="o">-</span><span class="n">s</span> <span class="n">SUBSET</span><span class="p">,</span> <span class="o">--</span><span class="n">subset</span> <span class="n">SUBSET</span>
+                        <span class="n">Size</span> <span class="n">of</span> <span class="n">subset</span> <span class="n">within</span> <span class="n">group</span>
+  <span class="o">-</span><span class="n">r</span> <span class="n">REPEAT_ID</span><span class="p">,</span> <span class="o">--</span><span class="n">repeat_id</span> <span class="n">REPEAT_ID</span>
+                        <span class="n">Repeat</span> <span class="nb">id</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">first</span> <span class="n">time</span> <span class="n">running</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">phase</span><span class="o">&gt;</span><span class="n">_</span><span class="o">&lt;</span><span class="n">repeat</span><span class="o">&gt;</span> <span class="n">otherwise</span><span class="p">)</span>
+
+  <span class="c1"># Specialised</span>
+  <span class="o">-</span><span class="n">n</span> <span class="n">NEW_VERSION</span><span class="p">,</span> <span class="o">--</span><span class="n">new_version</span> <span class="n">NEW_VERSION</span>
+                        <span class="n">If</span> <span class="n">present</span><span class="p">,</span> <span class="n">create</span> <span class="n">a</span> <span class="n">new</span> <span class="n">version</span>
+  <span class="o">-</span><span class="n">m</span> <span class="n">MODE</span><span class="p">,</span> <span class="o">--</span><span class="n">mode</span> <span class="n">MODE</span>  <span class="n">Print</span> <span class="ow">or</span> <span class="n">record</span> <span class="n">information</span> <span class="p">(</span><span class="n">log</span> <span class="ow">or</span> <span class="n">std</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="multi-dataset-group-operation">
+<h2>Multi-Dataset Group Operation<a class="headerlink" href="#multi-dataset-group-operation" title="Permalink to this headline"></a></h2>
 <p>Run all multi-dataset group processes within the pipeline using the <code class="docutils literal notranslate"><span class="pre">`group_run.py`</span></code> script.</p>
-<p><code class="docutils literal notranslate"><span class="pre">`usage:</span> <span class="pre">group_run.py</span> <span class="pre">[-h]</span> <span class="pre">[-s</span> <span class="pre">SOURCE]</span> <span class="pre">[-e</span> <span class="pre">VENVPATH]</span> <span class="pre">[-w</span> <span class="pre">WORKDIR]</span> <span class="pre">[-g</span> <span class="pre">GROUPDIR]</span> <span class="pre">[-p</span> <span class="pre">PROJ_DIR]</span> <span class="pre">[-n</span> <span class="pre">NEW_VERSION]</span> <span class="pre">[-m</span> <span class="pre">MODE]</span> <span class="pre">[-t</span> <span class="pre">TIME_ALLOWED]</span> <span class="pre">[-b]</span> <span class="pre">[-i</span> <span class="pre">INPUT]</span> <span class="pre">[-S</span> <span class="pre">SUBSET]</span> <span class="pre">[-r</span> <span class="pre">REPEAT_ID]</span> <span class="pre">[-f]</span> <span class="pre">[-v]</span> <span class="pre">[-d]</span> <span class="pre">[-Q]</span> <span class="pre">phase</span> <span class="pre">groupID`</span></code></p>
-<dl>
-<dt>positional arguments:</dt><dd><p>phase                 Phase of the pipeline to initiate
-groupID               Group identifier code</p>
-</dd>
-<dt>options:</dt><dd><dl class="option-list">
-<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
-<dd><p>show this help message and exit</p>
-</dd>
-<dt><kbd><span class="option">-s <var>SOURCE</var></span></kbd></dt>
-<dd><p>Path to directory containing master scripts (this one)</p>
-</dd>
-<dt><kbd><span class="option">-e <var>VENVPATH</var></span></kbd></dt>
-<dd><p>Path to virtual (e)nvironment (excludes /bin/activate)</p>
-</dd>
-<dt><kbd><span class="option">-w <var>WORKDIR</var></span>, <span class="option">--workdir <var>WORKDIR</var></span></kbd></dt>
-<dd><p>Working directory for pipeline</p>
-</dd>
-<dt><kbd><span class="option">-g <var>GROUPDIR</var></span>, <span class="option">--groupdir <var>GROUPDIR</var></span></kbd></dt>
-<dd><p>Group directory for pipeline</p>
-</dd>
-<dt><kbd><span class="option">-p <var>PROJ_DIR</var></span>, <span class="option">--proj_dir <var>PROJ_DIR</var></span></kbd></dt>
-<dd><p>Project directory for pipeline</p>
-</dd>
-<dt><kbd><span class="option">-n <var>NEW_VERSION</var></span>, <span class="option">--new_version <var>NEW_VERSION</var></span></kbd></dt>
-<dd><p>If present, create a new version</p>
-</dd>
-<dt><kbd><span class="option">-m <var>MODE</var></span>, <span class="option">--mode <var>MODE</var></span></kbd></dt>
-<dd><p>Print or record information (log or std)</p>
-</dd>
-<dt><kbd><span class="option">-t <var>TIME_ALLOWED</var></span>, <span class="option">--time-allowed <var>TIME_ALLOWED</var></span></kbd></dt>
-<dd><p>Time limit for this job</p>
-</dd>
-<dt><kbd><span class="option">-b</span>, <span class="option">--bypass-errs</span></kbd></dt>
-<dd><p>Bypass all error messages - skip failed jobs</p>
-</dd>
-<dt><kbd><span class="option">-i <var>INPUT</var></span>, <span class="option">--input <var>INPUT</var></span></kbd></dt>
-<dd><p>input file (for init phase)</p>
-</dd>
-<dt><kbd><span class="option">-S <var>SUBSET</var></span>, <span class="option">--subset <var>SUBSET</var></span></kbd></dt>
-<dd><p>Size of subset within group</p>
-</dd>
-<dt><kbd><span class="option">-r <var>REPEAT_ID</var></span>, <span class="option">--repeat_id <var>REPEAT_ID</var></span></kbd></dt>
-<dd><p>Repeat id (1 if first time running, &lt;phase&gt;_&lt;repeat&gt; otherwise)</p>
-</dd>
-<dt><kbd><span class="option">-f</span></kbd></dt>
-<dd><p>Force overwrite of steps if previously done</p>
-</dd>
-<dt><kbd><span class="option">-v</span>, <span class="option">--verbose</span></kbd></dt>
-<dd><p>Print helpful statements while running</p>
-</dd>
-<dt><kbd><span class="option">-d</span>, <span class="option">--dryrun</span></kbd></dt>
-<dd><p>Perform dry-run (i.e no new files/dirs created)</p>
-</dd>
-<dt><kbd><span class="option">-Q</span>, <span class="option">--quality</span></kbd></dt>
-<dd><p>Quality assured checks - thorough run</p>
-</dd>
-</dl>
-</dd>
-</dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">group_run</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">S</span> <span class="n">SOURCE</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">e</span> <span class="n">VENVPATH</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">i</span> <span class="n">INPUT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">Q</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">b</span> <span class="n">BYPASS</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">w</span> <span class="n">WORKDIR</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">-</span><span class="n">g</span> <span class="n">GROUPDIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">PROJ_DIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">G</span> <span class="n">GROUPID</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">t</span> <span class="n">TIME_ALLOWED</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">M</span> <span class="n">MEMORY</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="n">SUBSET</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">-</span><span class="n">r</span> <span class="n">REPEAT_ID</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">n</span> <span class="n">NEW_VERSION</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">m</span> <span class="n">MODE</span><span class="p">]</span>
+                    <span class="n">phase</span> <span class="n">groupID</span>
+
+<span class="n">Run</span> <span class="n">a</span> <span class="n">pipeline</span> <span class="n">step</span> <span class="k">for</span> <span class="n">a</span> <span class="n">group</span> <span class="n">of</span> <span class="n">datasets</span>
+
+<span class="n">positional</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="n">phase</span>                 <span class="n">Phase</span> <span class="n">of</span> <span class="n">the</span> <span class="n">pipeline</span> <span class="n">to</span> <span class="n">initiate</span>
+  <span class="n">groupID</span>               <span class="n">Group</span> <span class="n">identifier</span> <span class="n">code</span>
+
+<span class="n">options</span><span class="p">:</span>
+  <span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>            <span class="n">show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span>
+
+  <span class="c1"># Group-run specific</span>
+  <span class="o">-</span><span class="n">S</span> <span class="n">SOURCE</span><span class="p">,</span> <span class="o">--</span><span class="n">source</span> <span class="n">SOURCE</span>
+                        <span class="n">Path</span> <span class="n">to</span> <span class="n">directory</span> <span class="n">containing</span> <span class="n">master</span> <span class="n">scripts</span> <span class="p">(</span><span class="n">this</span> <span class="n">one</span><span class="p">)</span>
+  <span class="o">-</span><span class="n">e</span> <span class="n">VENVPATH</span><span class="p">,</span> <span class="o">--</span><span class="n">environ</span> <span class="n">VENVPATH</span>
+                        <span class="n">Path</span> <span class="n">to</span> <span class="n">virtual</span> <span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="n">nvironment</span> <span class="p">(</span><span class="n">excludes</span> <span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span><span class="p">)</span>
+  <span class="o">-</span><span class="n">i</span> <span class="n">INPUT</span><span class="p">,</span> <span class="o">--</span><span class="nb">input</span> <span class="n">INPUT</span>
+                        <span class="nb">input</span> <span class="n">file</span> <span class="p">(</span><span class="k">for</span> <span class="n">init</span> <span class="n">phase</span><span class="p">)</span>
+
+  <span class="c1"># Action-based - standard flags</span>
+  <span class="o">-</span><span class="n">f</span><span class="p">,</span> <span class="o">--</span><span class="n">forceful</span>        <span class="n">Force</span> <span class="n">overwrite</span> <span class="n">of</span> <span class="n">steps</span> <span class="k">if</span> <span class="n">previously</span> <span class="n">done</span>
+  <span class="o">-</span><span class="n">v</span><span class="p">,</span> <span class="o">--</span><span class="n">verbose</span>         <span class="n">Print</span> <span class="n">helpful</span> <span class="n">statements</span> <span class="k">while</span> <span class="n">running</span>
+  <span class="o">-</span><span class="n">d</span><span class="p">,</span> <span class="o">--</span><span class="n">dryrun</span>          <span class="n">Perform</span> <span class="n">dry</span><span class="o">-</span><span class="n">run</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">e</span> <span class="n">no</span> <span class="n">new</span> <span class="n">files</span><span class="o">/</span><span class="n">dirs</span> <span class="n">created</span><span class="p">)</span>
+  <span class="o">-</span><span class="n">Q</span><span class="p">,</span> <span class="o">--</span><span class="n">quality</span>         <span class="n">Quality</span> <span class="n">assured</span> <span class="n">checks</span> <span class="o">-</span> <span class="n">thorough</span> <span class="n">run</span>
+  <span class="o">-</span><span class="n">b</span> <span class="n">BYPASS</span><span class="p">,</span> <span class="o">--</span><span class="n">bypass</span><span class="o">-</span><span class="n">errs</span> <span class="n">BYPASS</span>
+                        <span class="n">Bypass</span> <span class="n">switch</span> <span class="n">options</span><span class="p">:</span> <span class="n">See</span> <span class="n">Above</span>
+
+  <span class="c1"># Environment Variables</span>
+  <span class="o">-</span><span class="n">w</span> <span class="n">WORKDIR</span><span class="p">,</span> <span class="o">--</span><span class="n">workdir</span> <span class="n">WORKDIR</span>
+                        <span class="n">Working</span> <span class="n">directory</span> <span class="k">for</span> <span class="n">pipeline</span>
+  <span class="o">-</span><span class="n">g</span> <span class="n">GROUPDIR</span><span class="p">,</span> <span class="o">--</span><span class="n">groupdir</span> <span class="n">GROUPDIR</span>
+                        <span class="n">Group</span> <span class="n">directory</span> <span class="k">for</span> <span class="n">pipeline</span>
+  <span class="o">-</span><span class="n">p</span> <span class="n">PROJ_DIR</span><span class="p">,</span> <span class="o">--</span><span class="n">proj_dir</span> <span class="n">PROJ_DIR</span>
+                        <span class="n">Project</span> <span class="n">directory</span> <span class="k">for</span> <span class="n">pipeline</span>
+
+  <span class="c1"># Single-job within group</span>
+  <span class="o">-</span><span class="n">G</span> <span class="n">GROUPID</span><span class="p">,</span> <span class="o">--</span><span class="n">groupID</span> <span class="n">GROUPID</span>
+                        <span class="n">Group</span> <span class="n">identifier</span> <span class="n">label</span>
+  <span class="o">-</span><span class="n">t</span> <span class="n">TIME_ALLOWED</span><span class="p">,</span> <span class="o">--</span><span class="n">time</span><span class="o">-</span><span class="n">allowed</span> <span class="n">TIME_ALLOWED</span>
+                        <span class="n">Time</span> <span class="n">limit</span> <span class="k">for</span> <span class="n">this</span> <span class="n">job</span>
+  <span class="o">-</span><span class="n">M</span> <span class="n">MEMORY</span><span class="p">,</span> <span class="o">--</span><span class="n">memory</span> <span class="n">MEMORY</span>
+                        <span class="n">Memory</span> <span class="n">allocation</span> <span class="k">for</span> <span class="n">this</span> <span class="n">job</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">e</span> <span class="s2">&quot;2G&quot;</span> <span class="k">for</span> <span class="mi">2</span><span class="n">GB</span><span class="p">)</span>
+  <span class="o">-</span><span class="n">s</span> <span class="n">SUBSET</span><span class="p">,</span> <span class="o">--</span><span class="n">subset</span> <span class="n">SUBSET</span>
+                        <span class="n">Size</span> <span class="n">of</span> <span class="n">subset</span> <span class="n">within</span> <span class="n">group</span>
+  <span class="o">-</span><span class="n">r</span> <span class="n">REPEAT_ID</span><span class="p">,</span> <span class="o">--</span><span class="n">repeat_id</span> <span class="n">REPEAT_ID</span>
+                        <span class="n">Repeat</span> <span class="nb">id</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">first</span> <span class="n">time</span> <span class="n">running</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">phase</span><span class="o">&gt;</span><span class="n">_</span><span class="o">&lt;</span><span class="n">repeat</span><span class="o">&gt;</span> <span class="n">otherwise</span><span class="p">)</span>
+
+  <span class="c1"># Specialised</span>
+  <span class="o">-</span><span class="n">n</span> <span class="n">NEW_VERSION</span><span class="p">,</span> <span class="o">--</span><span class="n">new_version</span> <span class="n">NEW_VERSION</span>
+                        <span class="n">If</span> <span class="n">present</span><span class="p">,</span> <span class="n">create</span> <span class="n">a</span> <span class="n">new</span> <span class="n">version</span>
+  <span class="o">-</span><span class="n">m</span> <span class="n">MODE</span><span class="p">,</span> <span class="o">--</span><span class="n">mode</span> <span class="n">MODE</span>  <span class="n">Print</span> <span class="ow">or</span> <span class="n">record</span> <span class="n">information</span> <span class="p">(</span><span class="n">log</span> <span class="ow">or</span> <span class="n">std</span><span class="p">)</span>
+</pre></div>
+</div>
 </div>
 </div>
 
@@ -214,8 +220,8 @@ groupID               Group identifier code</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="start.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="examples.html" class="btn btn-neutral float-right" title="Worked Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="examples.html" class="btn btn-neutral float-left" title="Worked Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="assess-overview.html" class="btn btn-neutral float-right" title="Assessor Tool" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

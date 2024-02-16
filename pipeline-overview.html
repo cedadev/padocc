@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Python Module Index &mdash; Kerchunk Pipeline v1.1 documentation</title>
+  <title>Overview of Pipeline Phases &mdash; Kerchunk Pipeline v1.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -18,9 +18,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
- 
-
-
+    <link rel="next" title="Getting Started" href="start.html" />
+    <link rel="prev" title="Welcome to the Kerchunk Pipeline documentation!" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,8 +39,8 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Worked Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Pipeline Flags/Options</a></li>
@@ -69,8 +68,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Python Module Index</li>
+      <li>Overview of Pipeline Phases</li>
       <li class="wy-breadcrumbs-aside">
+            <a href="_sources/pipeline-overview.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -78,81 +78,50 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-
-   <h1>Python Module Index</h1>
-
-   <div class="modindex-jumpbox">
-   <a href="#cap-a"><strong>a</strong></a> | 
-   <a href="#cap-g"><strong>g</strong></a> | 
-   <a href="#cap-p"><strong>p</strong></a> | 
-   <a href="#cap-s"><strong>s</strong></a>
-   </div>
-
-   <table class="indextable modindextable">
-     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
-     <tr class="cap" id="cap-a"><td></td><td>
-       <strong>a</strong></td><td></td></tr>
-     <tr>
-       <td></td>
-       <td>
-       <a href="assess.html#module-assess"><code class="xref">assess</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
-     <tr class="cap" id="cap-g"><td></td><td>
-       <strong>g</strong></td><td></td></tr>
-     <tr>
-       <td></td>
-       <td>
-       <a href="execution-source.html#module-group_run"><code class="xref">group_run</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
-     <tr class="cap" id="cap-p"><td></td><td>
-       <strong>p</strong></td><td></td></tr>
-     <tr>
-       <td><img src="_static/minus.png" class="toggler"
-              id="toggle-1" style="display: none" alt="-" /></td>
-       <td>
-       <code class="xref">pipeline</code></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="pipeline-source.html#module-pipeline.compute.serial_process"><code class="xref">pipeline.compute.serial_process</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="errors.html#module-pipeline.errors"><code class="xref">pipeline.errors</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="pipeline-source.html#module-pipeline.init"><code class="xref">pipeline.init</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="pipeline-source.html#module-pipeline.scan"><code class="xref">pipeline.scan</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="pipeline-source.html#module-pipeline.validate"><code class="xref">pipeline.validate</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
-     <tr class="cap" id="cap-s"><td></td><td>
-       <strong>s</strong></td><td></td></tr>
-     <tr>
-       <td></td>
-       <td>
-       <a href="execution-source.html#module-single_run"><code class="xref">single_run</code></a></td><td>
-       <em></em></td></tr>
-   </table>
+  <div class="section" id="overview-of-pipeline-phases">
+<h1>Overview of Pipeline Phases<a class="headerlink" href="#overview-of-pipeline-phases" title="Permalink to this headline"></a></h1>
+<img alt="Stages of the Kerchunk Pipeline" src="_images/pipeline.png" />
+<p><strong>Init (Initialisation) Phase</strong></p>
+<p>The Kerchunk pipeline takes a CSV (or similar) input file and creates the necessary directories and config files for the pipeline to being running.</p>
+<p><strong>Scan Phase</strong></p>
+<p>Second phase of the pipeline involves scanning a subset of the NetCDF/HDF/Tiff files to determine certain parameters:</p>
+<ul class="simple">
+<li><p>Ensure NetCDF/HDF/Tiff files can be converted successfully using one of the available drivers:</p></li>
+<li><p>Calculate expected memory (for job allocation later.)</p></li>
+<li><p>Calculate estimated chunk sizes and other values.</p></li>
+<li><p>Determine file-type (JSON or Parquet) for final Kerchunk file.</p></li>
+<li><p>Identify Identical/Concat dims for use in <strong>Compute</strong> phase.</p></li>
+<li><p>Determine any other specific parameters for the dataset on creation and concatenation.</p></li>
+</ul>
+<p><strong>Compute Phase</strong></p>
+<p>Building the Kerchunk file for a dataset requires a multi*step process:</p>
+<ul class="simple">
+<li><p>Create Kerchunk references for each archive-type file.</p></li>
+<li><p>Save cache of references for each file prior to concatenation.</p></li>
+<li><p>Perform concatenation (abort if concatenation fails, can load cache on second attempt).</p></li>
+<li><p>Perform metadata corrections (based on updates and removals specified at the start)</p></li>
+<li><p>Add Kerchunk history global attributes (creation time, pipeline version etc.)</p></li>
+<li><p>Reconfigure each chunk for remote access (replace local path with <a class="reference external" href="https://">https://</a> download path)</p></li>
+</ul>
+<p><strong>Validation Phase</strong></p>
+<p>Kerchunk files must be validated against equivalent Xarray objects from the original NetCDF:</p>
+<ul class="simple">
+<li><p>Ensure all variables present in original files are present in Kerchunk (barring exceptions)</p></li>
+<li><p>Ensure array shapes are consistent across Kerchunk/NetCDF</p></li>
+<li><p>Ensure data representations are consistent (values in array subsets)</p></li>
+</ul>
+<p>Several options and switches can be configured for the validation step, see the BypassSwitch class.</p>
+<p><strong>Next Steps</strong></p>
+<p>Kerchunk files that have been validated are moved to a <code class="docutils literal notranslate"><span class="pre">complete</span></code> directory with the project code as the name, plus the kerchunk revision <cite>krX.X</cite>. These can then be linked to a catalog or ingested into the CEDA archive where appropriate.</p>
+</div>
 
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to the Kerchunk Pipeline documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="start.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

@@ -18,8 +18,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Assessor Tool" href="assess-overview.html" />
-    <link rel="prev" title="Running the Pipeline" href="execution.html" /> 
+    <link rel="next" title="Pipeline Flags" href="execution.html" />
+    <link rel="prev" title="Getting Started" href="start.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,8 +40,8 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution.html">Running the Pipeline</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Worked Examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#example-group-of-ukcp-datasets">2. Example Group of UKCP Datasets</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#initialising-the-pipeline">1. Initialising the Pipeline</a></li>
@@ -50,17 +50,15 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="execution.html">Pipeline Flags/Options</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="init.html">Init Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="scan.html">Scan Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="compute.html">Compute Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="assess.html">Assess Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Execution Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline-source.html">Pipeline Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Script Source</a></li>
 </ul>
 
         </div>
@@ -115,12 +113,14 @@
 <p>Hence there will be 12x15 = 180 Kerchunk datasets at the end of this process.</p>
 <div class="section" id="initialising-the-pipeline">
 <h3>1. Initialising the Pipeline<a class="headerlink" href="#initialising-the-pipeline" title="Permalink to this headline"></a></h3>
-<p>The easiest way to set up the pipeline for running this group is to create a CSV-type file with the details below for each dataset:
-<code class="docutils literal notranslate"><span class="pre">`project_code,</span> <span class="pre">pattern,</span> <span class="pre">updates*,</span> <span class="pre">removals*`</span></code></p>
+<p>The easiest way to set up the pipeline for running this group is to create a CSV-type file with the details below for each dataset:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">project_code</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">updates</span><span class="o">*</span><span class="p">,</span> <span class="n">removals</span><span class="o">*</span>
+</pre></div>
+</div>
 <p>Updates and Removals can be ignored (left blank) unless a specific metadata change is known and required.
 If this is the case, these two can be set as paths to different JSON files which contain the relevant information in the proper format:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="c1"># my_updates.json</span>
-    <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;new_id_value&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;new_id_value&gt;&#39;</span><span class="p">,</span>
     <span class="s1">&#39;history&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;new_history_value&gt;</span>
 <span class="p">}</span>
 <span class="p">{</span> <span class="c1"># my_removals.json</span>
@@ -129,22 +129,23 @@ If this is the case, these two can be set as paths to different JSON files which
 </pre></div>
 </div>
 <p>E.g</p>
-<dl class="simple">
-<dt>::</dt><dd><p>UKCP18_land-rcm_12km_rcp85_01_clt_day_v20190731, /badc/ukcp18/data/land-rcm/uk/12km/rcp85/01/clt/day/v20190731/<a href="#id1"><span class="problematic" id="id2">*</span></a>, path/to/updates.json, path/to/removals.json</p>
-</dd>
-</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">UKCP18_land</span><span class="o">-</span><span class="n">rcm_12km_rcp85_01_clt_day_v20190731</span><span class="p">,</span> <span class="o">/</span><span class="n">badc</span><span class="o">/</span><span class="n">ukcp18</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">land</span><span class="o">-</span><span class="n">rcm</span><span class="o">/</span><span class="n">uk</span><span class="o">/</span><span class="mi">12</span><span class="n">km</span><span class="o">/</span><span class="n">rcp85</span><span class="o">/</span><span class="mi">01</span><span class="o">/</span><span class="n">clt</span><span class="o">/</span><span class="n">day</span><span class="o">/</span><span class="n">v20190731</span><span class="o">/*</span><span class="p">,</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">updates</span><span class="o">.</span><span class="n">json</span><span class="p">,</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">removals</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
 <p>For all 180 datasets in this group. A method of pattern matching and extracting the key information from the path to add to the project code should be used if possible.</p>
 <p>To initialise the pipeline with this input CSV file:</p>
-<p><code class="docutils literal notranslate"><span class="pre">`</span>
-<span class="pre">python</span> <span class="pre">group_run.py</span> <span class="pre">init</span> <span class="pre">UKCP_12km_day</span> <span class="pre">-i</span> <span class="pre">/path/to/csvfile.csv</span>
-<span class="pre">`</span></code></p>
+<dl class="simple">
+<dt>::</dt><dd><p>python group_run.py init UKCP_12km_day -i /path/to/csvfile.csv</p>
+</dd>
+</dl>
 </div>
 <div class="section" id="scan-the-datasets">
 <h3>2. Scan the datasets<a class="headerlink" href="#scan-the-datasets" title="Permalink to this headline"></a></h3>
-<p><code class="docutils literal notranslate"><span class="pre">`python</span> <span class="pre">group_run.py</span> <span class="pre">scan</span> <span class="pre">UKCP_12km_day`</span></code></p>
 <dl class="simple">
+<dt>::</dt><dd><p>python group_run.py scan UKCP_12km_day</p>
+</dd>
 <dt>Parameters that may be necessary at this point:</dt><dd><ul class="simple">
-<li><p>time flag: If scan jobs fail for <code class="docutils literal notranslate"><span class="pre">`slurmstepd`</span></code> errors, use the time flag to change the job time allotment: (<code class="docutils literal notranslate"><span class="pre">`-t</span> <span class="pre">30:00`</span></code> for 30 mins)</p></li>
+<li><p>time flag: If scan jobs fail for <code class="docutils literal notranslate"><span class="pre">slurmstepd</span></code> errors, use the time flag to change the job time allotment: (<code class="docutils literal notranslate"><span class="pre">`-t</span> <span class="pre">30:00`</span></code> for 30 mins)</p></li>
 </ul>
 </dd>
 </dl>
@@ -156,8 +157,8 @@ If this is the case, these two can be set as paths to different JSON files which
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="execution.html" class="btn btn-neutral float-left" title="Running the Pipeline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="assess-overview.html" class="btn btn-neutral float-right" title="Assessor Tool" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="start.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="execution.html" class="btn btn-neutral float-right" title="Pipeline Flags" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

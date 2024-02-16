@@ -18,8 +18,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Running the Pipeline" href="execution.html" />
-    <link rel="prev" title="Welcome to the Kerchunk Pipeline documentation!" href="index.html" /> 
+    <link rel="next" title="Worked Examples" href="examples.html" />
+    <link rel="prev" title="Overview of Pipeline Phases" href="pipeline-overview.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,25 +40,28 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#step-0-git-clone-the-repository">Step 0: Git clone the repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#step-1-set-up-virtual-environment">Step 1: Set up Virtual Environment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#step-2-environment-configuration">Step 2: Environment configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-3-assembling-pipeline-inputs">Step 3: Assembling pipeline inputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-4-commands-to-run-the-pipeline">Step 4: Commands to run the pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-5-assess-pipeline-results">Step 5: Assess pipeline results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#general-progress">5.1 General progress</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#check-errors">5.2 Check errors</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="execution.html">Running the Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Worked Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution.html">Pipeline Flags/Options</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="init.html">Init Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="scan.html">Scan Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="compute.html">Compute Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="assess.html">Assess Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Execution Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline-source.html">Pipeline Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Script Source</a></li>
 </ul>
 
         </div>
@@ -87,7 +90,10 @@
              
   <div class="section" id="getting-started">
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline"></a></h1>
-<p>Note: Ensure you have local modules enabled such that you have python 3.x installed in your local environment.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Ensure you have local modules enabled such that you have python 3.x installed in your local environment.</p>
+</div>
 <div class="section" id="step-0-git-clone-the-repository">
 <h2>Step 0: Git clone the repository<a class="headerlink" href="#step-0-git-clone-the-repository" title="Permalink to this headline"></a></h2>
 <p>The Kerchunk builder will soon be updated to version 1.0.1, which you can clone using:</p>
@@ -98,18 +104,119 @@
 <div class="section" id="step-1-set-up-virtual-environment">
 <h2>Step 1: Set up Virtual Environment<a class="headerlink" href="#step-1-set-up-virtual-environment" title="Permalink to this headline"></a></h2>
 <p>Step 1 is to create a virtual environment and install the necessary packages with pip. This can be done inside the local repo you’ve cloned as <code class="docutils literal notranslate"><span class="pre">`local`</span></code> or <code class="docutils literal notranslate"><span class="pre">`build_venv`</span></code> which will be ignored by the repository, or you can create a venv elsewhere in your home directory i.e <code class="docutils literal notranslate"><span class="pre">`~/venvs/build_venv`</span></code></p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python -m venv name_of_venv;</span>
+<span class="go">source name_of_venv/bin/activate;</span>
+<span class="go">pip install -r requirements.txt;</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="step-2-environment-configuration">
 <h2>Step 2: Environment configuration<a class="headerlink" href="#step-2-environment-configuration" title="Permalink to this headline"></a></h2>
-<p>Create a config file to set necessary environment variables. (Suggested to place these in a local <cite>templates/</cite> folder as this will be ignored by git). Eg:
-.. code-block:: python</p>
-<blockquote>
-<div><p>export WORKDIR=/gws/nopw/j04/cmip6_prep_vol1/kerchunk-pipeline;
-export GROUPDIR=/gws/nopw/j04/cmip6_prep_vol1/kerchunk-pipeline/groups/CMIP6_rel1_6233;
-export SRCDIR=/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder;
-export KVENV=/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/build_venv;</p>
-</div></blockquote>
+<p>Create a config file to set necessary environment variables. (Suggested to place these in a local <cite>templates/</cite> folder as this will be ignored by git). Eg:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export WORKDIR  =/gws/nopw/j04/cmip6_prep_vol1/kerchunk-pipeline;</span>
+<span class="go">export GROUPDIR =/gws/nopw/j04/cmip6_prep_vol1/kerchunk-pipeline/groups/CMIP6_rel1_6233;</span>
+<span class="go">export SRCDIR   =/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder;</span>
+<span class="go">export KVENV    =/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/build_venv;</span>
+</pre></div>
+</div>
 <p>Now you should be set up to run the pipeline properly. For any of the pipeline scripts, running <code class="docutils literal notranslate"><span class="pre">`python</span> <span class="pre">&lt;script&gt;.py</span> <span class="pre">-h</span> <span class="pre">#</span> <span class="pre">or</span> <span class="pre">--help`</span></code> will bring up a list of options to use for that script as well as the required parameters.</p>
+</div>
+<div class="section" id="step-3-assembling-pipeline-inputs">
+<h2>Step 3: Assembling pipeline inputs<a class="headerlink" href="#step-3-assembling-pipeline-inputs" title="Permalink to this headline"></a></h2>
+<dl class="simple">
+<dt>In order to successfully run the pipeline you need the following input files:</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>An input csv file with an entry for each dataset with fields:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">project_code,</span> <span class="pre">pattern/filename,</span> <span class="pre">updates*,</span> <span class="pre">removals*</span></code></p></li>
+<li><p>If a pattern is not known or cannot be expressed, the path to a file containing a list of paths to all the NetCDF files can be used instead.</p></li>
+<li><p>updates and removals should be paths to json files which contain information on global metadata replacements. An example can be found below.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+<dt>It is also helpful to create a setup/config bash script to set all your environment variables which include:</dt><dd><ul class="simple">
+<li><p>WORKDIR: The working directory for the pipeline (where to store all the cache files)</p></li>
+<li><p>GROUPDIR: Subdirectory under the working directory for the particular group you are running. (This is not required but could make things easier)</p></li>
+<li><p>SRCDIR: Path to the kerchunk-builder repo where it has been cloned.</p></li>
+<li><p>KVENV: Path to a virtual environment for the pipeline.</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="step-4-commands-to-run-the-pipeline">
+<h2>Step 4: Commands to run the pipeline<a class="headerlink" href="#step-4-commands-to-run-the-pipeline" title="Permalink to this headline"></a></h2>
+<p>Some useful option/flags to add:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">v</span> <span class="c1"># Verbose</span>
+   <span class="c1">#  - add multiple v&#39;s for debug messages</span>
+<span class="o">-</span><span class="n">f</span> <span class="c1"># Forceful</span>
+   <span class="c1">#  - perform step even if output file already exists</span>
+<span class="o">-</span><span class="n">b</span> <span class="c1"># Bypass</span>
+   <span class="c1"># See bypass section in pipeline flags explained.</span>
+<span class="o">-</span><span class="n">Q</span> <span class="c1"># Quality</span>
+   <span class="c1">#  - thorough run - use to ignore cache files and perform checks on all netcdf files</span>
+<span class="o">-</span><span class="n">r</span> <span class="c1"># repeat_id</span>
+   <span class="c1">#  - default uses main (1), if you have created repeat_ids manually or with assess.py, specify here [omit &quot;proj_codes_&quot;]</span>
+<span class="o">-</span><span class="n">d</span> <span class="c1"># dryrun</span>
+   <span class="c1">#  - Skip creating any new files in this phase</span>
+</pre></div>
+</div>
+<p>The pipeline is run using the <code class="docutils literal notranslate"><span class="pre">single_run.py</span></code> or <code class="docutils literal notranslate"><span class="pre">group_run.py</span></code> scripts as a command-line interface (CLI) tool.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 4.1 Initialise from your CSV file:</span>
+<span class="n">python</span> <span class="n">group_run</span><span class="o">.</span><span class="n">py</span> <span class="n">init</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">i</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">file</span><span class="o">.</span><span class="n">csv</span>
+
+<span class="c1"># 4.2 Perform scanning of netcdf files:</span>
+<span class="n">python</span> <span class="n">group_run</span><span class="o">.</span><span class="n">py</span> <span class="n">scan</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You should check after every <code class="docutils literal notranslate"><span class="pre">scan</span></code>, <code class="docutils literal notranslate"><span class="pre">compute</span></code> and <code class="docutils literal notranslate"><span class="pre">validate</span></code> that your SLURM jobs are running properly:</p>
+<p><code class="docutils literal notranslate"><span class="pre">squeue</span> <span class="pre">-u</span> <span class="pre">&lt;jasmin_username&gt;</span></code></p>
+<p>And once the SLURM jobs are complete you should check error logs to see which jobs were successful and which failed for different reasons. See Step 5 for details on how to run the <strong>Assessor</strong> [assess.py] script.</p>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 4.3 Perform computation (example options: ignore cache and show debug messages):</span>
+<span class="n">python</span> <span class="n">group_run</span><span class="o">.</span><span class="n">py</span> <span class="n">compute</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">vQ</span>
+
+<span class="c1"># 4.4 Perform validation (example options: using repeat_id long, set time and memory to specific values, forceful overwrite if outputs already present):</span>
+<span class="n">python</span> <span class="n">group_run</span><span class="o">.</span><span class="n">py</span> <span class="n">validate</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">r</span> <span class="n">long</span> <span class="o">-</span><span class="n">t</span> <span class="mi">120</span><span class="p">:</span><span class="mi">00</span> <span class="o">-</span><span class="n">M</span> <span class="mi">4</span><span class="n">G</span> <span class="o">-</span><span class="n">vf</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-5-assess-pipeline-results">
+<h2>Step 5: Assess pipeline results<a class="headerlink" href="#step-5-assess-pipeline-results" title="Permalink to this headline"></a></h2>
+</div>
+<div class="section" id="general-progress">
+<h2>5.1 General progress<a class="headerlink" href="#general-progress" title="Permalink to this headline"></a></h2>
+<p>To see the general status of the pipeline for a given group:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">progress</span>
+</pre></div>
+</div>
+<p>An example use case is to write out all datasets that require scanning to a new label (repeat_label):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">progress</span> <span class="o">-</span><span class="n">p</span> <span class="n">scan</span> <span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span><span class="n">label_for_scan_subgroup</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">W</span>
+</pre></div>
+</div>
+<p>The last flag <code class="docutils literal notranslate"><span class="pre">`-W`</span></code> is required when writing an output file from this program, otherwise the program will dryrun and produce no files.</p>
+</div>
+<div class="section" id="check-errors">
+<h2>5.2 Check errors<a class="headerlink" href="#check-errors" title="Permalink to this headline"></a></h2>
+<p>Check what repeat labels are available already using</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">errors</span> <span class="o">-</span><span class="n">s</span> <span class="n">labels</span>
+</pre></div>
+</div>
+<p>Show what jobs have previously run</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">errors</span> <span class="o">-</span><span class="n">s</span> <span class="n">jobids</span>
+</pre></div>
+</div>
+<p>For showing all errors from a previous job run</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">errors</span> <span class="o">-</span><span class="n">j</span> <span class="o">&lt;</span><span class="n">jobid</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>For selecting a specific type of error to investigate (-i) and examine the full log for each example (-E)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">errors</span> <span class="o">-</span><span class="n">j</span> <span class="o">&lt;</span><span class="n">jobid</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">i</span> <span class="s2">&quot;type_of_error&quot;</span> <span class="o">-</span><span class="n">E</span>
+</pre></div>
+</div>
 </div>
 </div>
 
@@ -117,8 +224,8 @@ export KVENV=/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/build_v
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to the Kerchunk Pipeline documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="execution.html" class="btn btn-neutral float-right" title="Running the Pipeline" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="pipeline-overview.html" class="btn btn-neutral float-left" title="Overview of Pipeline Phases" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="examples.html" class="btn btn-neutral float-right" title="Worked Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

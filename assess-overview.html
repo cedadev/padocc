@@ -19,7 +19,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Custom Pipeline Errors" href="errors.html" />
-    <link rel="prev" title="Worked Examples" href="examples.html" /> 
+    <link rel="prev" title="Pipeline Flags" href="execution.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,9 +40,10 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution.html">Running the Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Worked Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution.html">Pipeline Flags/Options</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Assessor Tool Overview</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#overall-progress-of-the-pipeline">1. Overall Progress of the Pipeline</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#checking-errors">2. Checking errors</a></li>
@@ -52,12 +53,9 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="init.html">Init Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="scan.html">Scan Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="compute.html">Compute Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="assess.html">Assess Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Execution Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline-source.html">Pipeline Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Script Source</a></li>
 </ul>
 
         </div>
@@ -95,28 +93,34 @@
 </dl>
 <div class="section" id="overall-progress-of-the-pipeline">
 <h2>1. Overall Progress of the Pipeline<a class="headerlink" href="#overall-progress-of-the-pipeline" title="Permalink to this headline"></a></h2>
-<p>To see the general status of the pipeline for a given group:
-::
-python assess.py &lt;group&gt; progress</p>
-<p>An example use case is to write out all datasets that require scanning to a new label (repeat_label):
-::
-python assess.py &lt;group&gt; progress -p scan -r &lt;label_for_scan_subgroup&gt; -W</p>
+<p>To see the general status of the pipeline for a given group:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">progress</span>
+</pre></div>
+</div>
+<p>An example use case is to write out all datasets that require scanning to a new label (repeat_label):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">progress</span> <span class="o">-</span><span class="n">p</span> <span class="n">scan</span> <span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span><span class="n">label_for_scan_subgroup</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">W</span>
+</pre></div>
+</div>
 <p>The last flag <code class="docutils literal notranslate"><span class="pre">`-W`</span></code> is required when writing an output file from this program, otherwise the program will dryrun and produce no files.</p>
 </div>
 <div class="section" id="checking-errors">
 <h2>2. Checking errors<a class="headerlink" href="#checking-errors" title="Permalink to this headline"></a></h2>
-<p>Check what repeat labels are available already using
-::
-python assess.py &lt;group&gt; errors -s labels</p>
-<p>Show what jobs have previously run
-::
-python assess.py &lt;group&gt; errors -s jobids</p>
-<p>For showing all errors from a previous job run
-::
-python assess.py &lt;group&gt; errors -j &lt;jobid&gt;</p>
-<p>For selecting a specific type of error to investigate (-i) and examine the full log for each example (-E)
-::
-python assess.py test errors -j &lt;jobid&gt; -i “type_of_error” -E</p>
+<p>Check what repeat labels are available already using</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">errors</span> <span class="o">-</span><span class="n">s</span> <span class="n">labels</span>
+</pre></div>
+</div>
+<p>Show what jobs have previously run</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">errors</span> <span class="o">-</span><span class="n">s</span> <span class="n">jobids</span>
+</pre></div>
+</div>
+<p>For showing all errors from a previous job run</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">errors</span> <span class="o">-</span><span class="n">j</span> <span class="o">&lt;</span><span class="n">jobid</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>For selecting a specific type of error to investigate (-i) and examine the full log for each example (-E)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">errors</span> <span class="o">-</span><span class="n">j</span> <span class="o">&lt;</span><span class="n">jobid</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">i</span> <span class="s2">&quot;type_of_error&quot;</span> <span class="o">-</span><span class="n">E</span>
+</pre></div>
+</div>
 </div>
 </div>
 
@@ -124,7 +128,7 @@ python assess.py test errors -j &lt;jobid&gt; -i “type_of_error” -E</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="examples.html" class="btn btn-neutral float-left" title="Worked Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="execution.html" class="btn btn-neutral float-left" title="Pipeline Flags" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="errors.html" class="btn btn-neutral float-right" title="Custom Pipeline Errors" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
