@@ -95,7 +95,7 @@ def blacklisted(proj_code: str, groupdir: str, logger):
     blackfile = f'{groupdir}/blacklist_codes.txt'
     if os.path.isfile(blackfile):
         with open(blackfile) as f:
-            blackcodes = f.readlines()
+            blackcodes = [r.strip().split(',')[0] for r in f.readlines()]
         for code in blackcodes:
             if proj_code in code:
                 return True
