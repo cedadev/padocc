@@ -45,7 +45,7 @@ def map_to_kerchunk(args, nfile: str, ctype: str, logger):
     logger.info(f'Running Kerchunk reader for {nfile}')
     from pipeline.compute.serial_process import Converter
 
-    quickConvert = Converter(logger, bypass_errs=args.bypass)
+    quickConvert = Converter(logger, bypass_driver=args.bypass.skip_driver)
 
     kwargs = {}
     supported_extensions = ['ncf3','hdf5','tif']
@@ -217,7 +217,7 @@ def scan_dataset(args, files: list, proj_dir: str, proj_code: str, logger):
         except ExpectTimeoutError as err:
             raise err
         except Exception as e:
-            if args.bypass:
+            if args.bypass.skip_scanfile:
                 logger.warning(f'Skipped file {count} - {e}')
                 is_skipwarn = True
             else:
@@ -233,8 +233,11 @@ def scan_dataset(args, files: list, proj_dir: str, proj_code: str, logger):
      spatial_res, data_represented, num_files, 
      total_chunks, addition, estm_time) = perform_safe_calculations(std_vars, cpf, volms, files, times, logger)
     
+    c2m = 1.67e-4 # Memory for each chunk in kerchunk in MB
+
     details = {
-        'data_represented' : format_float(data_represented, logger), 
+        'netcdf_data'      : format_float(data_represented, logger), 
+        'kerchunk_data'    : format_float(avg_cpf * num_files * c2m, logger), 
         'num_files'        : num_files,
         'chunks_per_file'  : safe_format(avg_cpf,'{value:.1f}'),
         'total_chunks'     : safe_format(total_chunks,'{value:.2f}'),
@@ -253,8 +256,6 @@ def scan_dataset(args, files: list, proj_dir: str, proj_code: str, logger):
 
     if len(set(ctypes)) == 1:
         details['driver'] = ctypes[0]
-    
-    c2m = 1.67e-4 # Memory for each chunk in kerchunk in MB
 
     if avg_cpf and files:
         if avg_cpf * len(files) * c2m > 500e6:

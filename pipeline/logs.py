@@ -1,3 +1,7 @@
+__author__    = "Daniel Westwood"
+__contact__   = "daniel.westwood@stfc.ac.uk"
+__copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
+
 import logging
 import os
 from pipeline.errors import MissingVariableError
@@ -15,6 +19,36 @@ SUFFIXES = {
     'M': 1000000,
     'G': 1000000000
 }
+
+class BypassSwitch:
+    def __init__(self, switch='FDSC'):
+        if switch.startswith('+'):
+            switch = 'FDSC' + switch[1:]
+        self.switch = switch
+        if type(switch) == str:
+            switch = list(switch)
+        
+        self.skip_scanfile = ('F' in switch)
+        self.skip_driver   = ('D' in switch)
+        self.skip_boxfail  = ('B' in switch)
+        self.skip_softfail = ('S' in switch)
+        self.skip_data_sum = ('C' in switch)
+        self.skip_memcheck = ('M' in switch)
+
+    def __str__(self):
+        return self.switch
+    
+    def help(self):
+        return str("""
+Bypass switch options: \n
+  "F" - * Skip individual file scanning errors.
+  "D" - * Skip driver failures - Pipeline tries different options for NetCDF (default).
+      -   Only need to turn this skip off if all drivers fail (KerchunkFatalDriverError).
+  "B" -   Skip Box compute errors.
+  "S" - * Skip Soft fails (NaN-only boxes in validation) (default).
+  "C" - * Skip calculation (data sum) errors (time array typically cannot be summed) (default).
+  "M" -   Skip memory checks (validate/compute aborts if utilisation estimate exceeds cap).
+""")
 
 class FalseLogger:
     def __init__(self):

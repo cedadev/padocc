@@ -7,7 +7,7 @@ from datetime import datetime
 import fsspec
 import xarray as xr
 
-from pipeline.logs import init_logger
+from pipeline.logs import init_logger, BypassSwitch
 
 class KerchunkDriverFatalError(Exception):
 
@@ -19,10 +19,10 @@ WORKDIR = None
 CONCAT_MSG = 'See individual files for more details'
 
 class Converter:
-    def __init__(self, clogger, bypass_errs=False):
+    def __init__(self, clogger, bypass_driver=False):
         self.logger = clogger
         self.success = True
-        self.bypass_errs = bypass_errs
+        self.bypass_driver = bypass_driver
 
     def convert_to_zarr(self, nfile, ctype, **kwargs):
         try:
@@ -36,7 +36,7 @@ class Converter:
                 self.logger.debug(f'Extension {ctype} not valid')
                 return None
         except Exception as err:
-            if self.bypass_errs:
+            if self.bypass_driver:
                 pass
             else:
                 raise err
@@ -63,9 +63,11 @@ class Indexer(Converter):
                  cfg_file=None, detail_file=None, workdir=WORKDIR, 
                  issave_meta=False, thorough=False, forceful=False, 
                  verb=0, mode=None, version_no=1,
-                 concat_msg=CONCAT_MSG, bypass=False, groupID=None):
+                 concat_msg=CONCAT_MSG, bypass=BypassSwitch(), groupID=None):
         """Initialise indexer for this dataset, set all variables and prepare for computation"""
-        super().__init__(init_logger(verb, mode, 'compute-serial'), bypass_errs=bypass)
+        super().__init__(init_logger(verb, mode, 'compute-serial'), bypass_driver=bypass.skip_driver)
+
+        self.bypass = bypass
 
         self.logger.debug('Starting variable definitions')
 
@@ -197,9 +199,10 @@ class Indexer(Converter):
         elif len(refs) == 1 or type(refs) == dict:
             pass
         else:
-            self.logger.info("Detecting identical_dims across time dimension")
+            self.logger.info("Detecting identical dims across time dimension")
             identical_dims = []
             concat_dims = []
+            normal_dims = []
             ds_examples = []
             for example in range(2):
                 ds_examples.append(open_kerchunk(refs[example], FalseLogger()))
@@ -207,16 +210,23 @@ class Indexer(Converter):
                 if 'time' not in ds_examples[0][var].dims:
                     try:
                         validate_data(ds_examples[0], ds_examples[1],
-                                      var, 0, self.logger, bypass=False)
+                                      var, 0, self.logger, bypass=self.bypass)
                         identical_dims.append(var)
                     except ValidationError:
                         self.logger.warning(f'Non-identical variable: {var} - if this variable should be identical across the files, please rerun.')
                         concat_dims.append(var)
-                    except:
-                        self.logger.warn('Unhandled exception in validation not bypassed')
-            self.logger.debug(f'Found {identical_dims} identical over time axis')
-            self.combine_kwargs['identical_dims'] = identical_dims
-            self.combine_kwargs['concat_dims'] += concat_dims
+                    except Exception as err:
+                        self.logger.warning('Non validation error is present')
+                        raise err
+                else:
+                    normal_dims.append(var)
+            if identical_dims:
+                self.logger.debug(f'Found {identical_dims} identical over time axis')
+                self.combine_kwargs['identical_dims'] = identical_dims
+            if concat_dims:
+                self.logger.debug(f'Found {concat_dims} additional concatenations as well as time')
+                self.combine_kwargs['concat_dims'] += concat_dims
+            self.logger.debug(f'Found {normal_dims} that stack as expected over time')          
 
     def combine_and_save(self, refs, zattrs):
         """Concatenation of ref data for different kerchunk schemes"""
@@ -454,7 +464,7 @@ class Indexer(Converter):
             with open(cache_ref) as f:
                 refs.append(json.load(f))
 
-        self.logger.debug(f'Loading attributes: {x+1}/{len(self.listfiles)}')
+        self.logger.debug(f'Loading attributes')
         with open(f'{self.cache}/temp_zattrs.json') as f:
             zattrs = json.load(f)
         if not zattrs:

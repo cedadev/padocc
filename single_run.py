@@ -9,7 +9,7 @@ import os
 import json
 import logging
 
-from pipeline.logs import init_logger, get_attribute
+from pipeline.logs import init_logger, get_attribute, BypassSwitch
 from pipeline.errors import ProjectCodeError, MissingVariableError, BlacklistProjectCode
 
 def run_init(args, logger):
@@ -95,7 +95,7 @@ def blacklisted(proj_code: str, groupdir: str, logger):
     blackfile = f'{groupdir}/blacklist_codes.txt'
     if os.path.isfile(blackfile):
         with open(blackfile) as f:
-            blackcodes = f.readlines()
+            blackcodes = [r.strip().split(',')[0] for r in f.readlines()]
         for code in blackcodes:
             if proj_code in code:
                 return True
@@ -111,6 +111,8 @@ def main(args):
 
     args.workdir  = get_attribute('WORKDIR', args, 'workdir')
     args.groupdir = get_attribute('GROUPDIR', args, 'groupdir')
+
+    args.bypass = BypassSwitch(switch=args.bypass)
 
     logger.debug('Pipeline variables:')
     logger.debug(f'WORKDIR : {args.workdir}')
@@ -184,26 +186,29 @@ if __name__ == '__main__':
     parser.add_argument('phase',    type=str, help='Phase of the pipeline to initiate')
     parser.add_argument('proj_code',type=str, help='Project identifier code')
 
+    # Action-based - standard flags
+    parser.add_argument('-f','--forceful',dest='forceful',action='store_true', help='Force overwrite of steps if previously done')
+    parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Print helpful statements while running')
+    parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
+    parser.add_argument('-Q','--quality', dest='quality', action='store_true', help='Quality assured checks - thorough run')
+    parser.add_argument('-b','--bypass-errs', dest='bypass', default='FDSC', help=BypassSwitch().help())
+
+    # Environment variables
     parser.add_argument('-w','--workdir',   dest='workdir',      help='Working directory for pipeline')
     parser.add_argument('-g','--groupdir',  dest='groupdir',     help='Group directory for pipeline')
-    parser.add_argument('-G','--groupID',   dest='groupID', default=None, help='Group identifier label')
     parser.add_argument('-p','--proj_dir',    dest='proj_dir',      help='Project directory for pipeline')
-    parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
-    parser.add_argument('-m','--mode',        dest='mode', default=None, help='Print or record information (log or std)')
+
+    # Single job within group
+    parser.add_argument('-G','--groupID',   dest='groupID', default=None, help='Group identifier label')
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
     parser.add_argument('-M','--memory', dest='memory', default='2G', help='Memory allocation for this job (i.e "2G" for 2GB)')
-    parser.add_argument('-b','--bypass-errs', dest='bypass', action='store_true', help='Bypass all error messages - skip failed jobs')
-
     parser.add_argument('-s','--subset',    dest='subset',    default=1,   type=int, help='Size of subset within group')
     parser.add_argument('-r','--repeat_id', dest='repeat_id', default='1', help='Repeat id (1 if first time running, <phase>_<repeat> otherwise)')
 
-    parser.add_argument('-f', dest='forceful', action='store_true', help='Force overwrite of steps if previously done')
-
-    parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Print helpful statements while running')
-    parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
-
-    parser.add_argument('-Q','--quality', dest='quality', action='store_true', help='Quality assured checks - thorough run')
-
+    # Specialised
+    parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
+    parser.add_argument('-m','--mode',        dest='mode', default=None, help='Print or record information (log or std)')
+    
     args = parser.parse_args()
 
     success = main(args)
