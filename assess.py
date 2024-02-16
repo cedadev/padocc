@@ -185,6 +185,30 @@ def extract_keys(filepath: str, logger, savetype=None, examine=None, phase=None,
                     examine_log(log, efile, code, ecode=ecode, phase=phase, groupID=groupID, repeat_id=repeat_id)
     return savedcodes, keys, len(listfiles)
 
+def merge_old_new(old_codes, new_codes, index_old='', index_new='', reason=None):
+    merge_dict = {}
+    indices = [index_old, index_new]
+    for ord, codeset in enumerate([old_codes, new_codes]):
+        index = indices[ord]
+        for code in codeset:
+            proj_code = code
+            value = None
+            if index != '':
+                proj_code = code[index]
+            if reason:
+                if ord != 0 and len(code) > 1:
+                    value = code[1]
+                else:
+                    value = reason
+            merge_dict[proj_code] = value
+    merged = []
+    for mkey in merge_dict.keys():
+        if merge_dict[mkey]:
+            merged.append(f'{mkey}, {merge_dict[mkey]}')
+        else:
+            merged.append(f'{mkey}')
+    return merged
+
 def save_sel(codes: list, groupdir: str, label: str, logger, overwrite=0):
     """Save selection of codes to a file with a given repeat label. 
     
@@ -197,9 +221,12 @@ def save_sel(codes: list, groupdir: str, label: str, logger, overwrite=0):
                 logger.info(f'Skipped writing {len(codes)} to proj_codes_{label} - file exists and overwrite not set')
             elif overwrite == 1:
                 logger.info(f'Adding {len(codes)} to existing proj_codes_{label}')
+                with open(f'{groupdir}/proj_codes_{label}.txt') as f:
+                    old_codes = [r.strip() for r in f.readlines()]
+                merged = merge_old_new(old_codes, codes, index_new=1)
                 # Need check for duplicates here
-                with open(f'{groupdir}/proj_codes_{label}.txt','a') as f:
-                    f.write(codeset)
+                with open(f'{groupdir}/proj_codes_{label}.txt','w') as f:
+                    f.write('\n'.join(merged))
             elif overwrite == 2:
                 logger.info(f'Overwriting with {len(codes)} in existing proj_codes_{label} file')
                 with open(f'{groupdir}/proj_codes_{label}.txt','w') as f:
@@ -269,23 +296,23 @@ def progress_check(args, logger):
         
 
     # Write pcodes
-    if not args.repeat_label:
+    if not args.repeat_id:
         id = 1
         new_projcode_file = f'{args.workdir}/groups/{args.groupID}/proj_codes_{args.phase}_{id}.txt'
         while os.path.isfile(new_projcode_file):
             id += 1
             new_projcode_file = f'{args.workdir}/groups/{args.groupID}/proj_codes_{args.phase}_{id}.txt'
 
-        args.repeat_label = f'{args.phase}_{id}'
+        args.repeat_id = f'{args.phase}_{id}'
 
-    new_projcode_file = f'{args.workdir}/groups/{args.groupID}/proj_codes_{args.repeat_label}.txt'
+    new_projcode_file = f'{args.workdir}/groups/{args.groupID}/proj_codes_{args.repeat_id}.txt'
 
     if args.write:
         with open(new_projcode_file,'w') as f:
             f.write('\n'.join(redo_pcodes))
 
         # Written new pcodes
-        print(f'Written {len(redo_pcodes)} pcodes, repeat label: {args.repeat_label}')
+        print(f'Written {len(redo_pcodes)} pcodes, repeat label: {args.repeat_id}')
 
 def error_check(args, logger):
     """Check error files and summarise results
@@ -312,12 +339,17 @@ def error_check(args, logger):
     print('')
     print(f'Identified {errs["Warning"]} files with Warnings')
 
-    if args.repeat_label and args.write:
-        save_sel(savedcodes, args.groupdir, args.repeat_label, logger, overwrite=args.overwrite)
-    elif args.repeat_label:
-        logger.info(f'Skipped writing {len(savedcodes)} to proj_codes_{args.repeat_label}')
+    logger.info(f'Found {len(savedcodes)} proj_codes with matching errory type "{args.inspect}"')
+
+    if args.write:
+        if args.blacklist:
+            add_to_blacklist(savedcodes, args.groupdir, args.reason, logger)
+        elif args.repeat_id:
+            save_sel(savedcodes, args.groupdir, args.repeat_id, logger, overwrite=args.overwrite)
+        else:
+            logger.info('No repeat_id supplied, proj_codes were not saved.')
     else:
-        pass
+        logger.info(f'Skipped writing {len(savedcodes)}')
 
 def output_check(args, logger):
     """Not implemented output log checker"""
@@ -325,32 +357,22 @@ def output_check(args, logger):
     logger.info(f'Checking output files for {args.groupID} ID: {args.jobID}')
     raise NotImplementedError
 
-def add_to_blacklist(args, logger):
-    blackfile = f'{args.workdir}/groups/{args.groupID}/blacklist_codes.txt'
+def add_to_blacklist(savedcodes, groupdir, reason, logger):
+    blackfile = f'{groupdir}/blacklist_codes.txt'
 
-    path = f'{args.workdir}/groups/{args.groupID}'
-    logger.debug(f'Looking in proj_codes_{args.repeat_label}')
-    proj_code_black = get_code_from_val(path, args.blacklist, f'proj_codes_{args.repeat_label}')
+    logger.debug(f'Starting blacklist concatenation')
 
-    add = True
-    if args.write:
-        with open(blackfile) as f:
-            blackcodes = f.readlines()
-        for code in blackcodes:
-            if proj_code_black in code:
-                add = False
+    merged = ''
+    with open(blackfile) as f:
+        blackcodes = [r.strip().split(',') for r in f.readlines()]
 
-        if add:
-            with open(blackfile,'a') as f:
-                f.write(f'{proj_code_black}\n')
-            logger.info(f'Written {proj_code_black} to blacklist')
-        else:
-            logger.info(f'Skipped blacklisting {proj_code_black} - already on the list')
-    else:
-        logger.info(f'Skipped blacklisting {proj_code_black}')
-    # Find blacklist file if it exists
-    # Translate blacklist ID into project code if not already a code
-    # Add project code to the blacklist file
+    merged = merge_old_new(blackcodes, savedcodes, index_old=0, index_new=1, reason=reason)
+    blacklist = '\n'.join([f'{m},{reason}' for m in merged])
+    
+    with open(blackfile,'w') as f:
+        f.write(blacklist)
+    logger.info(f'Blacklist now contains {len(merged)} codes.')
+
 
 def retro_errors(args, logger):
     """Retrospective analysis of errors for all project codes within this group.
@@ -441,14 +463,14 @@ if __name__ == "__main__":
     parser.add_argument('groupID',type=str, help='Group identifier code')
     parser.add_argument('operation',type=str, help=f'Operation to perform - choose from {operations.keys()}.')
 
-    parser.add_argument('-B','--blacklist', dest='blacklist', help='')
-    parser.add_argument('-R','--blacklist-reason', dest='reason', help='')
+    parser.add_argument('-B','--blacklist', dest='blacklist', action='store_true', help='Use when saving project codes to the blacklist')
+    parser.add_argument('-R','--blacklist-reason', dest='reason', help='Provide the reason for saving project codes to the blacklist')
 
     parser.add_argument('-j','--jobid', dest='jobID', help='Identifier of job to inspect')
     parser.add_argument('-p','--phase', dest='phase', default='validate', help='Pipeline phase to inspect')
     parser.add_argument('-s','--show-opts', dest='show_opts', help='Show options for jobids, labels')
 
-    parser.add_argument('-r','--repeat_label', dest='repeat_label', default=None, help='Save a selection of codes which failed on a given error - input a repeat id.')
+    parser.add_argument('-r','--repeat_id', dest='repeat_id', default=None, help='Save a selection of codes which failed on a given error - input a repeat id.')
     parser.add_argument('-i','--inspect', dest='inspect', default='', help='Inspect error/output of a given type/label')
     parser.add_argument('-E','--examine', dest='examine', action='store_true', help='Examine log outputs individually.')
     parser.add_argument('-c','--clean-up', dest='cleanup', default=None, help='Clean up group directory of errors/outputs/labels')
