@@ -27,38 +27,41 @@ Hence there will be 12x15 = 180 Kerchunk datasets at the end of this process.
 1. Initialising the Pipeline
 ----------------------------
 The easiest way to set up the pipeline for running this group is to create a CSV-type file with the details below for each dataset:
-```project_code, pattern, updates*, removals*```
+::
+    
+    project_code, pattern, updates*, removals*
 
 Updates and Removals can be ignored (left blank) unless a specific metadata change is known and required. 
 If this is the case, these two can be set as paths to different JSON files which contain the relevant information in the proper format:
 ::
+
     { # my_updates.json
-        'id': '<new_id_value',
+        'id': '<new_id_value>',
         'history': '<new_history_value>
     }
     { # my_removals.json
         'version_no': True # Value is irrelevant, only matters that this attribute is present.
     }
-::
 
 E.g
 
 ::
+    
     UKCP18_land-rcm_12km_rcp85_01_clt_day_v20190731, /badc/ukcp18/data/land-rcm/uk/12km/rcp85/01/clt/day/v20190731/*, path/to/updates.json, path/to/removals.json
-::
 
 For all 180 datasets in this group. A method of pattern matching and extracting the key information from the path to add to the project code should be used if possible.
 
 To initialise the pipeline with this input CSV file:
 
-```
-python group_run.py init UKCP_12km_day -i /path/to/csvfile.csv
-```
+::
+    python group_run.py init UKCP_12km_day -i /path/to/csvfile.csv
+
 
 2. Scan the datasets
 --------------------
 
-```python group_run.py scan UKCP_12km_day```
+::
+    python group_run.py scan UKCP_12km_day
 
 Parameters that may be necessary at this point:
- - time flag: If scan jobs fail for ```slurmstepd``` errors, use the time flag to change the job time allotment: (```-t 30:00``` for 30 mins)
+ - time flag: If scan jobs fail for ``slurmstepd`` errors, use the time flag to change the job time allotment: (```-t 30:00``` for 30 mins)
