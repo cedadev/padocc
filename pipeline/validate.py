@@ -66,8 +66,7 @@ def get_netcdf_list(proj_dir: str, logger, thorough=False):
             while testindex in indexes:
                 testindex = random.randint(0,numfiles-1)
             indexes.append(testindex)
-
-    logger.info(f'Selecting a subset of {len(indexes)}/{len(xfiles)} files')
+        logger.info(f'Selecting a subset of {numfiles}/{len(xfiles)} files')
     return indexes, xfiles
 
 def pick_index(nfiles: list, indexes: list):
