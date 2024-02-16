@@ -202,6 +202,7 @@ class Indexer(Converter):
             self.logger.info("Detecting identical dims across time dimension")
             identical_dims = []
             concat_dims = []
+            normal_dims = []
             ds_examples = []
             for example in range(2):
                 ds_examples.append(open_kerchunk(refs[example], FalseLogger()))
@@ -217,12 +218,15 @@ class Indexer(Converter):
                     except Exception as err:
                         self.logger.warning('Non validation error is present')
                         raise err
+                else:
+                    normal_dims.append(var)
             if identical_dims:
                 self.logger.debug(f'Found {identical_dims} identical over time axis')
                 self.combine_kwargs['identical_dims'] = identical_dims
             if concat_dims:
                 self.logger.debug(f'Found {concat_dims} additional concatenations as well as time')
                 self.combine_kwargs['concat_dims'] += concat_dims
+            self.logger.debug(f'Found {normal_dims} that stack as expected over time')          
 
     def combine_and_save(self, refs, zattrs):
         """Concatenation of ref data for different kerchunk schemes"""

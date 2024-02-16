@@ -55,7 +55,6 @@ def get_netcdf_list(proj_dir: str, logger, thorough=False):
         numfiles = int(len(xfiles)/1000)
         if numfiles < 3:
             numfiles = 3
-        logger.info(f'Selecting a subset of {numfiles} files')
 
     if numfiles > len(xfiles):
         numfiles = len(xfiles)
@@ -67,7 +66,7 @@ def get_netcdf_list(proj_dir: str, logger, thorough=False):
             while testindex in indexes:
                 testindex = random.randint(0,numfiles-1)
             indexes.append(testindex)
-
+        logger.info(f'Selecting a subset of {numfiles}/{len(xfiles)} files')
     return indexes, xfiles
 
 def pick_index(nfiles: list, indexes: list):
@@ -130,8 +129,6 @@ def locate_kerchunk(args, logger, get_str=False):
         logger.error(f'No Kerchunk file located at {args.proj_dir} and no in-place validation indicated - exiting')
         raise MissingKerchunkError
         
-        
-
 def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file'):
     """Open kerchunk file from JSON/parquet formats"""
     if isparq:
@@ -199,7 +196,6 @@ def open_netcdfs(args, logger, thorough=False):
     if len(indexes) == len(xfiles):
         thorough = True
     xobjs = []
-    many = len(indexes)
     if not thorough:
         if not args.bypass.skip_memcheck:
             check_memory(xfiles, indexes, args.memory, logger)
@@ -207,18 +203,18 @@ def open_netcdfs(args, logger, thorough=False):
             logger.warning('Memory checks bypassed')
         for one, i in enumerate(indexes):
             xobjs.append(xr.open_dataset(xfiles[i]))
+
+        if len(xobjs) == 0:
+            logger.error('No valid timestep objects identified')
+            raise NoValidTimeSlicesError(message='Kerchunk', verbose=args.verbose)
+        return xobjs, indexes, len(xfiles)
     else:
         if not args.bypass.skip_memcheck:
             check_memory(xfiles, [i for i in range(len(xfiles))], args.memory, logger)
         else:
             logger.warning('Memory checks bypassed')
-        xobjs = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim='time', data_vars='minimal')
-        indexes = [i for i in range(len(xobjs))]
-
-    if len(xobjs) == 0:
-        logger.error('No valid timestep objects identified')
-        raise NoValidTimeSlicesError(message='Kerchunk', verbose=args.verbose)
-    return xobjs, indexes, len(xfiles)
+        xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim='time', data_vars='minimal')
+        return xobj, None, len(xfiles)
 
 ## 3. Validation Testing
 
@@ -449,26 +445,25 @@ def validate_dataset(args):
     xobjs, indexes, nfiles = open_netcdfs(args, logger, thorough=args.quality)
     if len(xobjs) == 0:
         raise NoValidTimeSlicesError(message='Xarray/NetCDF')
-    if len(indexes) == nfiles:
+    if indexes == None:
         args.quality = True
 
     ## Open kerchunk file
-    kobj, in_place = locate_kerchunk(args, logger)
+    kobj, _v = locate_kerchunk(args, logger)
     if not kobj:
         raise MissingKerchunkError
 
     ## Set up loop variables
     fullset   = False
-    total     = len(indexes)
 
     if args.quality:
         fullset = True
 
     if not fullset:
-        logger.info(f"Attempting file subset validation: {len(indexes)}/{total}")
+        logger.info(f"Attempting file subset validation: {len(indexes)}/{nfiles}")
         for step, index in enumerate(indexes):
             xobj = xobjs[step]
-            logger.info(f'Running tests for selected file: {index} ({step+1}/{total})')
+            logger.info(f'Running tests for selected file: {index} ({step+1}/{len(indexes)})')
 
             try:
                 validate_timestep(args, xobj, kobj, step+1, nfiles, logger)

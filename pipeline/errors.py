@@ -35,6 +35,16 @@ class KerchunkDriverFatalError(KerchunkException):
         return 'MissingVariableError'
 
     
+class KerchunkDriverFatalError(KerchunkException):
+    """All known drivers failed when performing conversion - NetCDF3/HDF5/Tiff"""
+    def __init__(self,verbose=0, proj_code=None, groupdir=None):
+        self.message = "All drivers failed when performing conversion"
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'MissingVariableError'
+
 class BlacklistProjectCode(KerchunkException):
     """The project code you are trying to run for is on the list of project codes to ignore."""
     def __init__(self, verbose=0, proj_code=None, groupdir=None):
