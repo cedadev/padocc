@@ -38,6 +38,18 @@ class BypassSwitch:
 
     def __str__(self):
         return self.switch
+    
+    def help(self):
+        return str("""
+Bypass switch options: \n
+  "F" - * Skip individual file scanning errors.
+  "D" - * Skip driver failures - Pipeline tries different options for NetCDF (default).
+      -   Only need to turn this skip off if all drivers fail (KerchunkFatalDriverError).
+  "B" -   Skip Box compute errors.
+  "S" - * Skip Soft fails (NaN-only boxes in validation) (default).
+  "C" - * Skip calculation (data sum) errors (time array typically cannot be summed) (default).
+  "M" -   Skip memory checks (validate/compute aborts if utilisation estimate exceeds cap).
+""")
 
 class FalseLogger:
     def __init__(self):
