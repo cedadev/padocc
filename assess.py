@@ -339,7 +339,8 @@ def error_check(args, logger):
     print('')
     print(f'Identified {errs["Warning"]} files with Warnings')
 
-    logger.info(f'Found {len(savedcodes)} proj_codes with matching errory type "{args.inspect}"')
+    if args.inspect:
+        logger.info(f'Found {len(savedcodes)} proj_codes with matching errory type "{args.inspect}"')
 
     if args.write:
         if args.blacklist:
@@ -349,7 +350,8 @@ def error_check(args, logger):
         else:
             logger.info('No repeat_id supplied, proj_codes were not saved.')
     else:
-        logger.info(f'Skipped writing {len(savedcodes)}')
+        if len(savedcodes) != 0:
+            logger.info(f'Skipped writing {len(savedcodes)}')
 
 def output_check(args, logger):
     """Not implemented output log checker"""
