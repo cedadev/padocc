@@ -34,6 +34,7 @@ class BypassSwitch:
         self.skip_softfail = ('S' in switch)
         self.skip_data_sum = ('C' in switch)
         self.skip_memcheck = ('M' in switch)
+        self.skip_xkshape  = ('X' in switch)
 
     def __str__(self):
         return self.switch
