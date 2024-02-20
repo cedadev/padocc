@@ -211,7 +211,7 @@ def scan_dataset(args, files: list, proj_dir: str, proj_code: str, logger):
             if not std_vars:
                 std_vars = vars
             if vars != std_vars:
-                logger.warning('Variables differ between files')
+                logger.warning(f'Variables differ between files - {vars} vs {std_vars}')
                 is_varwarn = True
             logger.info(f'Data saved for file {count+1}')
         except ExpectTimeoutError as err:
