@@ -161,7 +161,7 @@ def main(args):
             else:
                 args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
 
-            if blacklisted(args.proj_code, args.groupdir, logger):
+            if blacklisted(args.proj_code, args.groupdir, logger) and not args.backtrack:
                 raise BlacklistProjectCode
 
             if args.phase in drivers:
@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Print helpful statements while running')
     parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
-
+    parser.add_argument('-B','--backtrack', dest='backtrack', action='store_true', help='Backtrack to previous position, remove files that would be created in this job.')
     parser.add_argument('-Q','--quality', dest='quality', action='store_true', help='Quality assured checks - thorough run')
 
     args = parser.parse_args()
