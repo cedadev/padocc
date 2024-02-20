@@ -44,6 +44,16 @@ class KerchunkDriverFatalError(KerchunkException):
             self.__class__.__module__ = 'builtins'
     def get_str(self):
         return 'MissingVariableError'
+    
+class XKShapeToleranceError(KerchunkException):
+    """Attempted validation using a tolerance for shape mismatch on concat-dims, shape difference exceeds tolerance allowance."""
+    def __init__(self,tolerance=0, diff=0, dim='',verbose=0, proj_code=None, groupdir=None):
+        self.message = f"Shape difference ({diff}) exceeds allowed tolerance ({tolerance}) for dimension ({dim})"
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'XKShapeToleranceError'
 
 class BlacklistProjectCode(KerchunkException):
     """The project code you are trying to run for is on the list of project codes to ignore."""

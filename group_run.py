@@ -113,6 +113,11 @@ def main(args):
         sb += f' -b {args.bypass}'
     if args.quality:
         sb += ' -Q'
+    if args.backtrack:
+        sb += ' -B'
+
+    if 'X' in args.bypass:
+        logger.warning('Running with XK Shape Bypass flag "X" is experimental and should only be used with approval.')
 
     if args.repeat_id:
         sb += f' -r {args.repeat_id}'
@@ -143,6 +148,7 @@ if __name__ == '__main__':
     parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
     parser.add_argument('-Q','--quality', dest='quality', action='store_true', help='Quality assured checks - thorough run')
     parser.add_argument('-b','--bypass-errs', dest='bypass', default='FDSC', help=BypassSwitch().help())
+    parser.add_argument('-B','--backtrack', dest='backtrack', action='store_true', help='Backtrack to previous position, remove files that would be created in this job.')
 
     # Environment variables
     parser.add_argument('-w','--workdir',   dest='workdir',      help='Working directory for pipeline')

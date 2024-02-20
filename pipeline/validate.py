@@ -39,6 +39,22 @@ def get_vslice(shape: list, dtypes: list, lengths: list, divisions: list, logger
     logger.debug(f'Slice {vslice}')
     return vslice
 
+def get_concat_dims(xfiles, detailfile=None):
+    concat_dims = {'time':0}
+    if os.path.isfile(detailfile):
+        with open(detailfile) as f:
+            details = json.load(f)
+    # Initialise concat dims
+    if 'concat_dims' in details:
+        concat_dims[details['concat_dims']] = 0
+
+    for xf in xfiles:
+        # Open netcdf in lowest memory intensive way possible.
+        ds = xr.open_dataset(xf)
+        for dim in concat_dims.keys():
+            concat_dims[dim] += ds[dim].shape[0]
+    return concat_dims
+
 ## 2. File Selection Tools
 
 def get_netcdf_list(proj_dir: str, logger, thorough=False):
@@ -207,14 +223,14 @@ def open_netcdfs(args, logger, thorough=False):
         if len(xobjs) == 0:
             logger.error('No valid timestep objects identified')
             raise NoValidTimeSlicesError(message='Kerchunk', verbose=args.verbose)
-        return xobjs, indexes, len(xfiles)
+        return xobjs, indexes, xfiles
     else:
         if not args.bypass.skip_memcheck:
             check_memory(xfiles, [i for i in range(len(xfiles))], args.memory, logger)
         else:
             logger.warning('Memory checks bypassed')
         xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim='time', data_vars='minimal')
-        return xobj, None, len(xfiles)
+        return xobj, None, xfiles
 
 ## 3. Validation Testing
 
@@ -297,25 +313,74 @@ def compare_data(vname: str, xbox, kerchunk_box, logger, bypass=False):
         logger.error('Validation Error')
         raise ValidationError
 
-def validate_shapes(xobj, kobj, step: int, nfiles: list, xv: str, logger):
+def validate_shape_to_tolerance(nfiles: int, xv, dims, xshape, kshape, logger, detailfile=None):
+    tolerance = 1/(nfiles*5)
+    logger.info(f'Attempting shape bypass using concat-dim tolerance {tolerance*100}%')
+    try:
+        logger.debug('Finding concat dims recorded in details for this proj_code')
+        with open(detailfile) as f:
+            concat_dims = json.load(f)['concat_dims']
+    except KeyError:
+        logger.debug('Unable to determine concat_dims, defaulting to time-only')
+        concat_dims = ['time']
+        check_dims = []
+        for cdim in concat_dims:
+            # Match to index in xobj
+            for index, dim in enumerate(dims):
+                if dim == cdim:
+                    check_dims.append(index)
+        tolerance_error = False
+        general_shape_error = False
+        for cdim in range(len(xshape)):
+            if cdim in check_dims:
+                if abs(xshape[cdim] - kshape[cdim]) / kshape[cdim] > tolerance:
+                    tolerance_error = XKShapeToleranceError(
+                        tolerance=tolerance,
+                        diff=abs(xshape[cdim] - kshape[cdim]) / kshape[cdim],
+                        dim=dims[cdim]
+                    )
+            else:
+                if xshape[cdim] != kshape[cdim]:
+                    general_shape_error = ShapeMismatchError(var=xv, first=kshape, second=xshape)
+        if general_shape_error:
+            raise general_shape_error
+        elif tolerance_error:
+            raise tolerance_error
+        else:
+            pass
+
+def validate_shapes(xobj, kobj, step: int, nfiles: list, xv: str, logger, proj_code, bypass_shape=False, detailfile=None, concat_dims={}):
     """Ensure shapes are equivalent across Kerchunk/NetCDF per variable
      - Accounts for the number of files opened vs how many files in total."""
     xshape = list(xobj[xv].shape)
     kshape = list(kobj[xv].shape)
 
-    if 'time' in xobj[xv].dims:
-        try:
-            xshape[0] *= nfiles
-        except TypeError:
-            logger.warning(f'{xv} - {nfiles}*{xshape[0]} failed to assign')
-        except:
-            pass
-
-    logger.debug(f'{xv} : Comparing shapes {xshape} and {kshape} - {step}')
+    # Perform dimension adjustments if necessary
+    logger.debug(f'{xv} - raw shapes - K: {kshape}, X: {xshape}')
+    if concat_dims:
+        for index, dim in enumerate(xobj[xv].dims):
+            if dim in concat_dims:
+                xshape[index] = concat_dims[dim]
+    else:           
+        if 'time' in xobj[xv].dims:
+            try:
+                xshape[0] *= nfiles
+            except TypeError:
+                logger.warning(f'{xv} - {nfiles}*{xshape[0]} failed to assign')
+            except:
+                pass
+    logger.debug(f'{xv} - dimension-adjusted shapes - K: {kshape}, X: {xshape}')
     
-    if xshape != kshape:
-        logger.info(f'Kerchunk/NetCDF mismatch for variable {xv} with shapes - K {kshape} vs N {xshape}')
+    if len(xshape) != len(kshape):
         raise ShapeMismatchError(var=xv, first=kshape, second=xshape)
+    elif xshape != kshape and bypass_shape: # Special bypass-shape testing
+        if concat_dims == {}:
+            logger.info('Attempting special bypass using tolerance feature')
+            validate_shape_to_tolerance(nfiles, xv, xobj[xv].dims, xshape, kshape, logger, detailfile=detailfile)
+        else:
+            raise TrueShapeValidationError
+    else:
+        pass
 
 def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: int, logger, bypass=BypassSwitch()):
     """Validate this data selection in xvariable/kvariable objects
@@ -381,7 +446,7 @@ def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=BypassSwitch())
     # Attempt 128 divisions within selection - 128, 64, 32, 16, 8, 4, 2, 1
     return validate_selection(xvariable, kvariable, xv, 128, 128, logger, bypass=bypass)
 
-def validate_timestep(args, xobj, kobj, step: int, nfiles: list, logger):
+def validate_timestep(args, xobj, kobj, step: int, nfiles: int, logger, concat_dims={}):
     """Run all tests for a single file which may or may not equate to 1 timestep"""
 
     # Run Variable and Shape validation
@@ -394,7 +459,10 @@ def validate_timestep(args, xobj, kobj, step: int, nfiles: list, logger):
         logger.info(f'Passed Variable tests')
         print()
         for xv in xvars:
-            validate_shapes(xobj, kobj, step, nfiles, xv, logger)
+            validate_shapes(xobj, kobj, step, nfiles, xv, logger, args.proj_code,
+                            bypass_shape=args.bypass.skip_xkshape, 
+                            detailfile=f'{args.proj_dir}/detail-cfg.json',
+                            concat_dims=concat_dims)
             logger.info(f'{xv} : Passed Shape test')
         logger.info(f'Passed all Shape tests')
         print()
@@ -430,9 +498,51 @@ def run_successful(args, logger):
         os.system(f'mv {kfile} {newfile}')
         os.system(f'touch {kfile}.complete')
 
-def run_backtrack():
-    """Not currently implemented"""
-    raise NotImplementedError
+def run_backtrack(args, logger):
+    """Backtrack progress on all output files. If quality is specified as well, files are removed rather than backtracked"""
+
+    if args.groupID:
+        complete_dir = f'{args.workdir}/complete/{args.groupID}'
+    else:
+        complete_dir = f'{args.workdir}/complete/single_runs'
+
+    if args.proj_dir:
+        proj_dir = args.proj_dir
+    else:
+        proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
+
+    logger.info("Removing 'complete' indicator file")
+
+    for f in glob.glob(f'{proj_dir}/*complete*'):
+        os.remove(f)
+    if args.quality:
+        logger.info("Removing Kerchunk file")
+        for f in glob.glob(f'{complete_dir}/{args.proj_code}*'):
+            os.remove(f)
+    else:
+        logger.info("Backtracking Kerchunk file")
+        for x, file in enumerate(glob.glob(f'{complete_dir}/{args.proj_code}*')):
+            os.rename(file, f'{proj_dir}/kerchunk-1{list("abcde")[x]}.json')
+
+    logger.info(f'{args.proj_code} Successfully backtracked to pre-validation')
+    
+def attempt_timestep(args, xobj, kobj, step, nfiles, logger, xfiles, depth=0, concat_dims={}):
+    try:
+        validate_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims=concat_dims)
+    except ShapeMismatchError as err:
+        if depth == 2:
+            raise TrueShapeValidationError
+        else:
+            return True
+    except XKShapeToleranceError as err:
+        if depth < 1:
+            # Try new routine to just get the key variable sizes
+            concat_dims = get_concat_dims(xfiles, detailfile=f'{args.proj_dir}/detail-cfg.json')
+            attempt_timestep(args, xobj, kobj, step+1, nfiles, logger, xfiles, depth=depth+1, concat_dims=concat_dims)
+        else:
+            return True
+    except Exception as err:
+        raise err
 
 def validate_dataset(args):
     """Perform validation steps for specific dataset defined here
@@ -442,7 +552,19 @@ def validate_dataset(args):
     logger = init_logger(args.verbose, args.mode,'validate')
     logger.info(f'Starting tests for {args.proj_code}')
 
-    xobjs, indexes, nfiles = open_netcdfs(args, logger, thorough=args.quality)
+    if hasattr(args, 'backtrack'):
+        if args.backtrack:
+            run_backtrack(args, logger)
+            return None
+
+    if not args.proj_dir:
+        if args.groupID:
+            args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
+        else:
+            args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
+
+    xobjs, indexes, xfiles = open_netcdfs(args, logger, thorough=args.quality)
+    nfiles = len(xfiles)
     if len(xobjs) == 0:
         raise NoValidTimeSlicesError(message='Xarray/NetCDF')
     if indexes == None:
@@ -454,38 +576,20 @@ def validate_dataset(args):
         raise MissingKerchunkError
 
     ## Set up loop variables
-    fullset   = False
-
-    if args.quality:
-        fullset = True
+    fullset = bool(args.quality)
 
     if not fullset:
         logger.info(f"Attempting file subset validation: {len(indexes)}/{nfiles}")
         for step, index in enumerate(indexes):
             xobj = xobjs[step]
             logger.info(f'Running tests for selected file: {index} ({step+1}/{len(indexes)})')
-
-            try:
-                validate_timestep(args, xobj, kobj, step+1, nfiles, logger)
-            except ShapeMismatchError:
-                fullset = True
-                break
-            except ChunkDataError as err:
-                raise err
-                fullset = True
-                break
+            fullset = attempt_timestep(args, xobj, kobj, step+1, nfiles, logger, xfiles)
 
     if fullset:
         print()
         logger.info(f"Attempting total validation")
         xobjs, indexes, nfiles = open_netcdfs(args, logger, thorough=True)
-        try:
-            validate_timestep(args, xobjs, kobj, 0, 1, logger)
-        except ShapeMismatchError:
-            raise TrueShapeValidationError
-        except Exception as err:
-            raise err
-    
+        fullset = attempt_timestep(args, xobjs, kobj, 0, 1, logger, xfiles)
     
     logger.info('All tests passed successfully')
     print()
