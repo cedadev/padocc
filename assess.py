@@ -177,7 +177,7 @@ def extract_keys(filepath: str, logger, savetype=None, examine=None, phase=None,
             path = '/'.join(filepath.split('/')[:-1]) + '/'
             code = get_code_from_val(path, ecode)
 
-            if matchtype:
+            if matchtype and not blacklisted(code, f'{filepath}/../', logger):
                 # Save matching types
                 savedcodes.append((efile, code, log))
                 if examine:
@@ -197,9 +197,9 @@ def merge_old_new(old_codes, new_codes, index_old='', index_new='', reason=None)
                 proj_code = code[index]
             if reason:
                 if ord != 0 and len(code) > 1:
-                    value = code[1]
-                else:
                     value = reason
+                else:
+                    value = code[1]
             merge_dict[proj_code] = value
     merged = []
     for mkey in merge_dict.keys():
@@ -214,7 +214,7 @@ def save_sel(codes: list, groupdir: str, label: str, logger, overwrite=0):
     
     Requires a groupdir (directory belonging to a group), list of codes and a label for the new file.
     """
-    if len(codes) > 1:
+    if len(codes) > 0:
         codeset = '\n'.join([code[1].strip() for code in codes])
         if os.path.isfile(f'{groupdir}/proj_codes_{label}.txt'):
             if overwrite == 0:
@@ -283,14 +283,20 @@ def progress_check(args, logger):
         return None
     else:
         logger.info(f'Discovering dataset progress within group {args.groupID}')
-        redo_pcodes = []
+        ignore_pcodes = []
+        blacklist = get_blacklist(args.groupdir)
+        if blacklist:
+            ignore_pcodes = [b.split(',')[0] for b in blacklist]
+            logger.info(f'blacklist: {len(blacklist)} datasets')
+
         for index, phase in enumerate(phases[:-1]): # Ignore complete check as this happens as a byproduct
-            redo_pcodes, completes = find_codes(phase, args.workdir, args.groupID, checks[index], ignore=redo_pcodes)
+            redo_pcodes, completes = find_codes(phase, args.workdir, args.groupID, checks[index], ignore=ignore_pcodes)
             logger.info(f'{phase}: {len(redo_pcodes)} datasets')
             if completes:
                 logger.info(f'complete: {len(completes)} datasets')
             if phase == args.phase:
                 break
+            ignore_pcodes += redo_pcodes
         if args.phase == 'complete':
             redo_pcodes = completes
         
@@ -361,7 +367,8 @@ def output_check(args, logger):
 
 def add_to_blacklist(savedcodes, groupdir, reason, logger):
     blackfile = f'{groupdir}/blacklist_codes.txt'
-
+    if not os.path.isfile(blackfile):
+        os.system(f'touch {blackfile}')
     logger.debug(f'Starting blacklist concatenation')
 
     merged = ''
@@ -369,12 +376,32 @@ def add_to_blacklist(savedcodes, groupdir, reason, logger):
         blackcodes = [r.strip().split(',') for r in f.readlines()]
 
     merged = merge_old_new(blackcodes, savedcodes, index_old=0, index_new=1, reason=reason)
-    blacklist = '\n'.join([f'{m},{reason}' for m in merged])
+    print(merged)
+    blacklist = '\n'.join([f'{m}' for m in merged])
     
     with open(blackfile,'w') as f:
         f.write(blacklist)
     logger.info(f'Blacklist now contains {len(merged)} codes.')
 
+def get_blacklist(groupdir):
+    blackfile = f'{groupdir}/blacklist_codes.txt'
+    if os.path.isfile(blackfile):
+        with open(blackfile) as f:
+            blackcodes = [r.strip().split(',')[0] for r in f.readlines()]
+    else:
+        return None
+    return blackcodes
+
+def blacklisted(proj_code: str, groupdir: str, logger):
+    blacklist = get_blacklist(groupdir)
+    if blacklist:
+        for code in blacklist:
+            if proj_code in code:
+                return True
+        return False
+    else:
+        logger.debug('No blacklist file preset for this group')
+        return False
 
 def retro_errors(args, logger):
     """Retrospective analysis of errors for all project codes within this group.
@@ -445,7 +472,12 @@ def assess_main(args):
     logger = init_logger(args.verbose, args.mode, 'assessor')
 
     args.workdir  = get_attribute('WORKDIR', args, 'workdir')
+
+    if args.groupID == 'A':
+        os.system(f'ls {args.workdir}/groups/')
+        return None
     args.groupdir = f'{args.workdir}/groups/{args.groupID}'
+
     if ',' in args.inspect:
         args.inspect = args.inspect.split(',')
 
