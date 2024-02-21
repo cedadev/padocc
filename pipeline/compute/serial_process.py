@@ -6,8 +6,12 @@ import logging
 from datetime import datetime
 import fsspec
 import xarray as xr
+import numpy as np
+import base64
 
-from pipeline.logs import init_logger, BypassSwitch
+from pipeline.logs import init_logger, BypassSwitch, FalseLogger
+from pipeline.errors import IdenticalVariablesError, ValidationError, ConcatenationError, SoftfailBypassError
+from pipeline.validate import validate_data, open_kerchunk, validate_selection
 
 class KerchunkDriverFatalError(Exception):
 
@@ -25,6 +29,7 @@ class Converter:
         self.bypass_driver = bypass_driver
 
     def convert_to_zarr(self, nfile, ctype, **kwargs):
+        #ctype = 'hdf5'
         try:
             if ctype == 'ncf3':
                 return self.ncf3_to_zarr(nfile, **kwargs)
@@ -62,24 +67,23 @@ class Indexer(Converter):
                  proj_code, 
                  cfg_file=None, detail_file=None, workdir=WORKDIR, 
                  issave_meta=False, thorough=False, forceful=False, 
-                 verb=0, mode=None, version_no=1,
-                 concat_msg=CONCAT_MSG, bypass=BypassSwitch(), groupID=None):
+                 verb=0, mode=None, version_no='trial-',
+                 concat_msg=CONCAT_MSG, bypass=BypassSwitch(), 
+                 groupID=None, limiter=None, dryrun=True):
         """Initialise indexer for this dataset, set all variables and prepare for computation"""
         super().__init__(init_logger(verb, mode, 'compute-serial'), bypass_driver=bypass.skip_driver)
 
-        self.bypass = bypass
-
         self.logger.debug('Starting variable definitions')
+        self.bypass     = bypass
+        self.limiter    = limiter
+        self.workdir    = workdir
+        self.proj_code  = proj_code
+        self.version_no = version_no
+        self.concat_msg = concat_msg
 
-        self.workdir   = workdir
-        self.proj_code = proj_code
-
+        self.dryrun = dryrun
         self.issave_meta = issave_meta
         self.updates, self.removals, self.load_refs = False, False, False
-
-        self.version_no = version_no
-
-        self.concat_msg = CONCAT_MSG
 
         self.verb = verb
         self.mode = mode
@@ -94,6 +98,9 @@ class Indexer(Converter):
 
         with open(detail_file) as f:
             self.detail = json.load(f)
+
+        if 'virtual_concat' not in self.detail:
+            self.detail['virtual_concat'] = False
 
         if groupID:
             self.proj_dir = f'{self.workdir}/in_progress/{groupID}/{self.proj_code}'
@@ -136,6 +143,8 @@ class Indexer(Converter):
         if thorough:
             os.system(f'rm -rf {self.cache}/*')
 
+        self.thorough = thorough
+
         self.combine_kwargs = {'concat_dims':['time']} # Always try time initially
         self.create_kwargs  = {'inline_threshold':1000}
         self.pre_kwargs     = {}
@@ -143,11 +152,16 @@ class Indexer(Converter):
         self.set_filelist()
         self.logger.debug('Finished all setup steps')
 
+    def collect_details(self):
+        self.detail['combine_kwargs'] = self.combine_kwargs
+        return self.detail
+
     def set_filelist(self):
         """Get the list of files from the filelist for this dataset"""
         with open(self.filelist) as f:
             self.listfiles = [r.strip() for r in f.readlines()]
-        self.limiter = len(self.listfiles)
+        if not self.limiter:
+            self.limiter = len(self.listfiles)
 
     def add_download_link(self, refs):
         timecount = 0
@@ -189,56 +203,127 @@ class Indexer(Converter):
         attrs['kerchunk_creation_date'] = now.strftime("%d%m%yT%H%M%S")
         return attrs
     
-    def check_identicals(self, refs):
-        from pipeline.validate import validate_data, open_kerchunk
-        from pipeline.errors import ValidationError, ConcatenationError
-        from pipeline.logs import FalseLogger
-        if 'identical_dims' in self.detail:
-            self.logger.info("Identified identical_dims for concatenation")
-            self.combine_kwargs['identical_dims'] = self.detail['identical_dims']
-        elif len(refs) == 1 or type(refs) == dict:
-            pass
-        else:
-            self.logger.info("Detecting identical dims across time dimension")
-            identical_dims = []
-            concat_dims = []
-            normal_dims = []
-            ds_examples = []
-            for example in range(2):
-                ds_examples.append(open_kerchunk(refs[example], FalseLogger()))
-            for var in ds_examples[0].variables:
-                if 'time' not in ds_examples[0][var].dims:
-                    try:
-                        validate_data(ds_examples[0], ds_examples[1],
-                                      var, 0, self.logger, bypass=self.bypass)
-                        identical_dims.append(var)
-                    except ValidationError:
-                        self.logger.warning(f'Non-identical variable: {var} - if this variable should be identical across the files, please rerun.')
-                        concat_dims.append(var)
-                    except Exception as err:
-                        self.logger.warning('Non validation error is present')
-                        raise err
-                else:
+    def find_concat_dims(self, ds_examples):
+        concat_dims = []
+        for dim in ds_examples[0].dims:
+            try:
+                validate_selection(ds_examples[0][dim], ds_examples[1][dim], dim, 1, 1, self.logger, bypass=self.bypass)          
+            except ValidationError:
+                self.logger.debug(f'Non-identical dimension: {dim} - if this dimension should be identical across the files, please inspect.')
+                concat_dims.append(dim)
+            except SoftfailBypassError as err:
+                self.logger.error(f'Found Empty dimension {dim} across example files - assuming non-stackable')
+                raise err
+            except Exception as err:
+                self.logger.warning('Non validation error is present')
+                raise err
+        if len(concat_dims) == 0:
+            self.detail['virtual_concat'] = True
+        self.combine_kwargs['concat_dims'] = concat_dims
+
+    def find_identical_dims(self, ds_examples):
+        identical_dims = []
+        normal_dims = []
+        for var in ds_examples[0].variables:
+            identical_check = True
+            for dim in self.combine_kwargs['concat_dims']:
+                if dim in ds_examples[0][var].dims:
+                    identical_check = False
+            if identical_check:
+                try:
+                    validate_selection(ds_examples[0][var], ds_examples[1][var], var, 1, 1, self.logger, bypass=self.bypass)
+                    identical_dims.append(var)
+                except ValidationError:
+                    self.logger.debug(f'Non-identical variable: {var} - if this variable should be identical across the files, please rerun.')
                     normal_dims.append(var)
-            if identical_dims:
-                self.logger.debug(f'Found {identical_dims} identical over time axis')
-                self.combine_kwargs['identical_dims'] = identical_dims
-            if concat_dims:
-                self.logger.debug(f'Found {concat_dims} additional concatenations as well as time')
-                self.combine_kwargs['concat_dims'] += concat_dims
-            self.logger.debug(f'Found {normal_dims} that stack as expected over time')          
+                except SoftfailBypassError as err:
+                    self.logger.warning(f'Found Empty variable {var} across example files - assuming non-identical')
+                    normal_dims.append(var)
+                except Exception as err:
+                    self.logger.warning('Unexpected error in checking identical dims')
+                    raise err
+            else:
+                normal_dims.append(var)
+        if len(identical_dims) == len(ds_examples[0].variables):
+            raise IdenticalVariablesError
+        self.combine_kwargs['identical_dims'] = identical_dims
+        if self.combine_kwargs["concat_dims"] == []:
+            self.logger.info(f'No concatenation dimensions identified - {normal_dims} will be concatenated using a virtual dimension')  
+        else:
+            self.logger.debug(f'Found {normal_dims} that vary over concatenation_dimensions: {self.combine_kwargs["concat_dims"]}')          
 
     def combine_and_save(self, refs, zattrs):
         """Concatenation of ref data for different kerchunk schemes"""
         self.logger.info('Starting concatenation of refs')
-        self.check_identicals(refs)
+        if len(refs) > 1:
+            # Pick 2 refs to use when determining dimension info.
+            if len(refs) == 1 or type(refs) == dict:
+                pass
+            else:
+                # Concatenation Dimensions
+                if 'combine_kwargs' in self.detail:
+                    self.combine_kwargs = self.detail['combine_kwargs']
+                else:
+                    self.logger.info("Determining concatenation dimensions")
+                    print()
+                    self.find_concat_dims([
+                        open_kerchunk(refs[0], FalseLogger()),
+                        open_kerchunk(refs[-1], FalseLogger())
+                    ])
+                    if self.combine_kwargs['concat_dims'] == []:
+                        self.logger.info(f"No concatenation dimensions available - virtual dimension will be constructed.")
+                    else:
+                        self.logger.info(f"Found {self.combine_kwargs['concat_dims']} concatenation dimensions.")
+                    print()
 
+                    # Identical (Variables) Dimensions
+                    self.logger.info("Determining identical variables")
+                    print()
+                    self.find_identical_dims([
+                        open_kerchunk(refs[0], FalseLogger()),
+                        open_kerchunk(refs[-1], FalseLogger())
+                    ])
+                    self.logger.info(f"Found {self.combine_kwargs['identical_dims']} identical variables.")
+                    print()
+                
         if self.use_json:
             self.logger.info('Concatenating to JSON format Kerchunk file')
             self.data_to_json(refs, zattrs)
         else:
             self.logger.info('Concatenating to Parquet format Kerchunk store')
             self.data_to_parq(refs)
+
+    def construct_virtual_dim(self, refs):
+        vdim = 'file_number'
+        for idx in range(len(refs)):
+            ref = refs[idx]
+            zarray = json.dumps({
+                "chunks": [1],
+                "compressor": None,
+                "dtype":"<i8",
+                "fill_value": 4611686018427387904,
+                "filters": None,
+                "order": "C",
+                "shape": [1],
+                "zarr_format": 2
+            })
+            zattrs = json.dumps({
+                "_ARRAY_DIMENSIONS": [vdim],
+                "axis": "F",
+                "long_name": vdim,
+                "standard_name": vdim
+            })
+            values = b"base64:" + base64.b64encode(np.array([idx]).tobytes())
+
+            if 'refs' in ref:
+                ref['refs'][f'{vdim}/.zarray'] = zarray
+                ref['refs'][f'{vdim}/.zattrs'] = zattrs
+                ref['refs'][f'{vdim}/0'] = values
+            else:
+                ref[f'{vdim}/.zarray'] = zarray
+                ref[f'{vdim}/.zattrs'] = zattrs
+                ref[f'{vdim}/0'] = values
+        return refs, vdim
 
     def data_to_parq(self, create_refs):
         """Concatenating to Parquet format Kerchunk store"""
@@ -272,6 +357,9 @@ class Indexer(Converter):
         # Already have default options saved to class variables
         if len(refs) > 1:
             self.logger.debug('Concatenating refs using MultiZarrToZarr')
+            if self.detail['virtual_concat']:
+                refs, vdim = self.construct_virtual_dim(refs)
+                self.combine_kwargs['concat_dims'] = [vdim]
             mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
             if zattrs:
                 zattrs = self.add_kerchunk_history(zattrs)
@@ -285,10 +373,12 @@ class Indexer(Converter):
         # Override global attributes
         mzz['refs'] = self.add_download_link(mzz['refs'])
 
-        with open(self.outfile,'w') as f:
-            f.write(json.dumps(mzz))
-
-        self.logger.info(f'Written to JSON file - {self.proj_code}/kerchunk-1a.json')
+        if not self.dryrun:
+            with open(self.outfile,'w') as f:
+                f.write(json.dumps(mzz))
+            self.logger.info(f'Written to JSON file - {self.outfile}')
+        else:
+            self.logger.info(f'Skipped writing to JSON file - {self.outfile}')
 
     def correct_metadata(self, allzattrs):
         # General function for correcting metadata
@@ -393,19 +483,25 @@ class Indexer(Converter):
 
     def save_metadata(self,zattrs):
         """Cache metadata global attributes in a temporary file"""
-        with open(f'{self.cache}/temp_zattrs.json','w') as f:
-            f.write(json.dumps(zattrs))
-        self.logger.debug('Saved global attribute cache')
+        if not self.dryrun:
+            with open(f'{self.cache}/temp_zattrs.json','w') as f:
+                f.write(json.dumps(zattrs))
+            self.logger.debug('Saved global attribute cache')
+        else:
+            self.logger.debug('Skipped saving global attribute cache')
 
     def save_cache(self, refs, zattrs):
         """Cache reference data in temporary json reference files"""
         self.logger.info('Saving pre-concat cache')
-        for x, r in enumerate(refs):
-            cache_ref = f'{self.cache}/{x}.json'
-            with open(cache_ref,'w') as f:
-                f.write(json.dumps(r))
+        if not self.dryrun:
+            for x, r in enumerate(refs):
+                cache_ref = f'{self.cache}/{x}.json'
+                with open(cache_ref,'w') as f:
+                    f.write(json.dumps(r))
+            self.logger.debug('Saved kerchunk data cache')
+        else:
+            self.logger.debug('Skipped saving metadata cache')
         self.save_metadata(zattrs)
-        self.logger.debug('Saved metadata cache')
         self.issave_meta = False
         # Save is only valid prior to concatenation
         # For a bizarre reason, the download link is applied to the whole cache on concatenation,
@@ -481,12 +577,12 @@ class Indexer(Converter):
             zattrs, refs = self.load_cache()
             zattrs = self.correct_metadata(zattrs)
         try:
-            if self.issave_meta:
+            if self.issave_meta and (not self.load_refs):
                 self.save_cache(refs, zattrs)
             if self.success:
                 self.combine_and_save(refs, zattrs)
         except Exception as err:
-            if self.issave_meta:
+            if self.issave_meta and (not self.load_refs or self.thorough):
                 self.save_cache(refs, zattrs)
             raise err
 
