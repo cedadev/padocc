@@ -64,7 +64,7 @@ def run_compute(args, logger):
         return Indexer(args.proj_code, cfg_file=cfg_file, detail_file=detail_file, 
                 workdir=args.workdir, issave_meta=True, thorough=args.quality, forceful=args.forceful,
                 verb=args.verbose, mode=args.mode,
-                version_no=version_no, concat_msg=concat_msg, bypass=args.bypass, groupID=args.groupID).create_refs()
+                version_no=version_no, concat_msg=concat_msg, bypass=args.bypass, groupID=args.groupID, dryrun=args.dryrun).create_refs()
     else:
         logger.error('Output file already exists and there is no plan to overwrite')
         return None
@@ -110,7 +110,8 @@ def main(args):
     logger = init_logger(args.verbose, args.mode, 'main')
 
     args.workdir  = get_attribute('WORKDIR', args, 'workdir')
-    args.groupdir = get_attribute('GROUPDIR', args, 'groupdir')
+    if args.groupID:
+        args.groupdir = f'{args.workdir}/groups/{args.groupID}'
 
     args.bypass = BypassSwitch(switch=args.bypass)
 
