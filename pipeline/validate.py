@@ -268,7 +268,7 @@ def compare_data(vname: str, xbox, kerchunk_box, logger, bypass=False):
      - Expect TypeErrors from summations which are bypassed.
      - Other errors will exit the run.
     """
-    logger.debug('Starting xk comparison')
+    logger.debug(f'Starting xk comparison')
 
     try: # Tolerance 0.1% of mean value for xarray set
         tolerance = np.abs(np.nanmean(kerchunk_box))/1000
@@ -277,36 +277,36 @@ def compare_data(vname: str, xbox, kerchunk_box, logger, bypass=False):
 
     testpass = True
     if not np.array_equal(xbox, kerchunk_box):
-        logger.warn(f'Failed equality check for {vname}')
+        logger.warning(f'Failed equality check for {vname}')
         raise ValidationError
     try:
         if np.abs(np.nanmax(kerchunk_box) - np.nanmax(xbox)) > tolerance:
-            logger.warn(f'Failed maximum comparison for {vname}')
+            logger.warning(f'Failed maximum comparison for {vname}')
             logger.debug('K ' + str(np.nanmax(kerchunk_box)) + ' N ' + str(np.nanmax(xbox)))
             testpass = False
     except TypeError as err:
         if bypass:
-            logger.warn(f'Max comparison skipped for non-summable values in {vname}')
+            logger.warning(f'Max comparison skipped for non-summable values in {vname}')
         else:
             raise err
     try:
         if np.abs(np.nanmin(kerchunk_box) - np.nanmin(xbox)) > tolerance:
-            logger.warn(f'Failed minimum comparison for {vname}')
+            logger.warning(f'Failed minimum comparison for {vname}')
             logger.debug('K ' + str(np.nanmin(kerchunk_box)) + ' N ' + str(np.nanmin(xbox)))
             testpass = False
     except TypeError as err:
         if bypass:
-            logger.warn(f'Min comparison skipped for non-summable values in {vname}')
+            logger.warning(f'Min comparison skipped for non-summable values in {vname}')
         else:
             raise err
     try:
         if np.abs(np.nanmean(kerchunk_box) - np.nanmean(xbox)) > tolerance:
-            logger.warn(f'Failed mean comparison for {vname}')
+            logger.warning(f'Failed mean comparison for {vname}')
             logger.debug('K ' + str(np.nanmean(kerchunk_box)) + ' N ' + str(np.nanmean(xbox)))
             testpass = False
     except TypeError as err:
         if bypass:
-            logger.warn(f'Mean comparison skipped for non-summable values in {vname}')
+            logger.warning(f'Mean comparison skipped for non-summable values in {vname}')
         else:
             raise err
     if not testpass:
@@ -395,8 +395,8 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
     logger.debug(f'Attempt {repeat} - {currentdiv} divs for {vname}')
 
     vslice = []
+    shape = {}
     if divs > 1:
-        shape = xvariable.shape
         logger.debug(f'Detected shape {shape} for {vname}')
         dtypes  = [xvariable[xvariable.dims[x]].dtype for x in range(len(xvariable.shape))]
         lengths = [len(xvariable[xvariable.dims[x]])  for x in range(len(xvariable.shape))]
@@ -415,7 +415,12 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
 
     try:
         kb = np.array(kbox)
-        isnan = np.all(kb!=kb)
+        if np.all(kb!=kb):
+            isnan = True
+        elif np.all(kb == np.mean(kb)):
+            isnan = True
+        else:
+            isnan = False
     except Exception as err:
         if bypass.skip_boxfail:
             logger.warning(f'{err} - check versions')
@@ -433,18 +438,18 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
             # Recursive search for increasing size (decreasing divisions)
             validate_selection(xvariable, kvariable, vname, divs, int(currentdiv/2), logger, bypass=bypass)
         else:
-            logger.warn(f'Failed to find non-NaN slice (tried: {int(math.log2(divs))}, var: {vname})')
+            logger.warning(f'Failed to find non-NaN slice (tried: {int(math.log2(divs))}, var: {vname})')
             if not bypass.skip_softfail:
                 raise SoftfailBypassError
 
-def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=BypassSwitch()):
+def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=BypassSwitch(), depth_default=128):
     """Run growing selection test for specified variable from xarray and kerchunk datasets"""
     logger.info(f'{xv} : Starting growbox data tests for {step}')
 
     kvariable, xvariable = match_timestamp(xobj[xv], kobj[xv], logger)
 
     # Attempt 128 divisions within selection - 128, 64, 32, 16, 8, 4, 2, 1
-    return validate_selection(xvariable, kvariable, xv, 128, 128, logger, bypass=bypass)
+    return validate_selection(xvariable, kvariable, xv, depth_default, depth_default, logger, bypass=bypass)
 
 def validate_timestep(args, xobj, kobj, step: int, nfiles: int, logger, concat_dims={}):
     """Run all tests for a single file which may or may not equate to 1 timestep"""
