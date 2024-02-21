@@ -115,6 +115,8 @@ def main(args):
         sb += ' -Q'
     if args.backtrack:
         sb += ' -B'
+    if args.dryrun:
+        sb += ' -d'
 
     if 'X' in args.bypass:
         logger.warning('Running with XK Shape Bypass flag "X" is experimental and should only be used with approval.')
