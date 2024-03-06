@@ -17,16 +17,17 @@ import math
 import json
 import numpy as np
 
-from pipeline.logs import *
-from pipeline.errors import ExpectTimeoutError, FilecapExceededError, ConcatFatalError
+from pipeline.logs import init_logger
+from pipeline.utils import get_attribute, BypassSwitch
+from pipeline.errors import *
 from pipeline.compute.serial_process import Converter, Indexer
 
 def format_float(value: int, logger):
     """Format byte-value with proper units"""
     logger.debug(f'Formatting value {value} in bytes')
     if value:
-        unit_index = -1
-        units = ['K','M','G','T','P']
+        unit_index = 0
+        units = ['','K','M','G','T','P']
         while value > 1000:
             value = value / 1000
             unit_index += 1
@@ -67,10 +68,10 @@ def trial_kerchunk(args, nfile: str, ctype: str, logger):
     
     if not tdict:
         logger.error('Scanning failed for all drivers, file type is not Kerchunkable')
-        return None, None, None
+        raise KerchunkDriverFatalError
     else:
         logger.info(f'Scan successful with {ctype} driver')
-        return tdict['refs'], ctype, t_len
+        return tdict, ctype, t_len
     
 def load_from_previous(args, cache_id, logger):
     cachefile = f'{args.proj_dir}/cache/{cache_id}.json'
@@ -82,9 +83,9 @@ def load_from_previous(args, cache_id, logger):
     else:
         return None
         
-def perform_scan(args, testfile: str, ctype: str, logger, savecache=False, cache_id=None):
+def perform_scan(args, testfile: str, ctype: str, logger, savecache=False, cache_id=None, thorough=False):
     """Map to kerchunk data and perform calculations on test netcdf file."""
-    if cache_id:
+    if cache_id and not thorough:
         refs = load_from_previous(args, cache_id, logger)
         ctype = None
         time = 0
@@ -93,13 +94,15 @@ def perform_scan(args, testfile: str, ctype: str, logger, savecache=False, cache
     else:
         refs, ctype, time = trial_kerchunk(args, testfile, ctype, logger)
     if not refs:
-        return None, None, None
+        return None, None, None, None, None
     logger.debug(f'Starting Analysis of references')
 
     # Perform summations, extract chunk attributes
     sizes = []
     vars = {}
     chunks = 0
+    if 'refs' in refs:
+        refs = refs['refs']
     for chunkkey in refs.keys():
         if len(refs[chunkkey]) >= 2:
             try:
@@ -238,7 +241,9 @@ def scan_dataset(args, files: list, logger):
 
         try:
             # Measure time and ensure job will not overrun if it can be prevented.
-            volume, chunks_per_file, varchunks, ctype, time = perform_scan(args, scanfile, extension, logger, savecache=True, cache_id=str(count))
+            volume, chunks_per_file, varchunks, ctype, time = perform_scan(args, scanfile, extension, logger, 
+                                                                           savecache=True, cache_id=str(count),
+                                                                           thorough=args.quality)
 
             vars = sorted(list(varchunks.keys()))
             if not std_vars:
@@ -283,7 +288,7 @@ def scan_dataset(args, files: list, logger):
      spatial_res, data_represented, num_files, 
      total_chunks, addition, estm_time) = perform_safe_calculations(std_vars, cpf, volms, files, times, logger)
     
-    c2m = 1.67e-4 # Memory for each chunk in kerchunk in MB
+    c2m = 167 # Memory for each chunk in kerchunk in B
 
     details = {
         'netcdf_data'      : format_float(data_represented, logger), 
@@ -354,6 +359,7 @@ def scan_config(args):
         with open(cfg_file) as f:
             cfg = json.load(f)
     else:
+        os.system(f'ls {args.proj_dir}')
         logger.error(f'cfg file missing or not provided - {cfg_file}')
         return None
     

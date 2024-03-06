@@ -9,7 +9,8 @@ import xarray as xr
 import numpy as np
 import base64
 
-from pipeline.logs import init_logger, BypassSwitch, FalseLogger
+from pipeline.logs import init_logger, FalseLogger
+from pipeline.utils import BypassSwitch
 from pipeline.errors import IdenticalVariablesError, ValidationError, ConcatenationError, SoftfailBypassError
 from pipeline.validate import validate_data, open_kerchunk, validate_selection
 
