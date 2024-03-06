@@ -2,6 +2,7 @@ import sys
 import json
 import os
 import argparse
+import subprocess
 
 from pipeline.logs import init_logger, BypassSwitch
 
@@ -28,8 +29,15 @@ def get_attribute(env, args, var):
     else:
         print(f'Error: Missing attribute {var}')
         return None
+    
 
 def main(args):
+
+    logger = init_logger(args.verbose, 0, 'main-group')
+
+    deploy(args, logger)
+
+def deploy(args, logger, get_id=False, dependent_id=False):
     """Assemble sbatch script for parallel running jobs"""
 
     logger = init_logger(args.verbose, 0, 'main-group')
@@ -98,8 +106,6 @@ def main(args):
         f'{group}_{phase}_array',             # Job name
         time,                                 # Time
         mem,                                  # Memory
-        f'{GROUPDIR}/outs/%A_{label}/%a.out', # Outs
-        f'{GROUPDIR}/errs/%A_{label}/%a.err', # Errs
         VENV,
         WORKDIR,
         GROUPDIR,
@@ -132,7 +138,17 @@ def main(args):
         logger.info('DRYRUN: sbatch command: ')
         print(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
     else:
-        os.system(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
+        if get_id: # Unused section to save the ID of the process
+            result = subprocess.run(['sbatch', f'--array=0-{group_len-1}', group_phase_sbatch], stdout=subprocess.PIPE)
+            try:
+                id = result.stdout.decode('utf-8').split(' ')[3].strip() # Check!
+                assert len(id) == 8
+                return id
+            except:
+                logger.error('Slurm submission failed')
+                return None
+        else:
+            os.system(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')
