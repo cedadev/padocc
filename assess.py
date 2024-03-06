@@ -3,189 +3,73 @@ import argparse
 import glob
 import json
 import sys
+from datetime import datetime
 
-from pipeline.logs import init_logger, get_attribute
-from pipeline.errors import MissingVariableError
+from pipeline.logs import init_logger
+from pipeline.utils import get_attribute, format_str, mem_to_val, get_codes
+import pipeline.errors as errs
 
-# Hints for errors
-HINTS = {
-    'TrueShapeValidationError': "Kerchunk array shape doesn't match netcdf - missing timesteps or write issue?",
-    'slurmstepd': "Ran out of time in job",
-    'INFO [main]': "No error recorded",
-    'MissingKerchunkError': "Missing the Kerchunk file",
-    'KerchunkDriverFatalError': "Kerchunking failed for one or more files",
-    'ExpectTimeoutError': "Time remaining estimate exceeded allowed job time (scan)",
-    'BlackListProjectCode': "Problematic Project currently on blacklist so being ignored"
-}
+# Hints for custom errors
+HINTS = {}
+for obj in dir(errs):
+    object = getattr(errs, obj)
+    try:
+        inst = object()
+        HINTS[inst.get_str()] = inst.message
+    except:
+        pass
+
 
 phases = ['scan', 'compute', 'validate', 'complete']
 checks = ['/detail-cfg.json','/*kerchunk*','/*.complete']
 
-def format_str(string: str, length: int):
-    """Simple function to format a string to a correct length"""
-    while len(string) < length:
-        string += ' '
-    return string[:length]
-
-def find_codes(phase: str, workdir: str, groupID: str, check: str, ignore=[]):
-    """Find project codes for datasets that failed at various stages of the pipeline
-    
-    Checks 'in-progress' and 'complete' directories for datasets and config files to determine progress of all datasets.
-    
-    Parameters
-    ----------
-    phase : str
-        Check config and output files corresponding to a pipeline phase.
-    workdir : str
-        Path to current working directory of the pipeline.
-    groupID : str
-        Check pipeline for a specific group ID.
-    check : str
-        File type or specific file required for this phase to be considered complete
-    ignore : list (str-like)
-
-    Returns
-    -------
-    redo_pcodes : list (str-like)
-        List of project codes to re-run for this phase.
-    complete : list (str-like)
-        List of project codes considered to be complete for the whole pipeline.
-    """
-    checkdir = f'{workdir}/in_progress/{groupID}/'
-    proj_codes = os.listdir(checkdir)
-
-    #if phase == 'validate':
-        #checkdir = f'{args.workdir}/complete/{args.groupID}/'
-    redo_pcodes = []
-    complete = []
-    for pcode in proj_codes:
-        check_file = checkdir + pcode + check
-        #if phase == 'validate':
-            #print(check_file)
-        if pcode not in ignore:
-            if glob.glob(check_file):
-                if phase == 'validate':
-                    complete.append(pcode)
-                else:
-                    pass
-            else:
-                redo_pcodes.append(pcode)
-    return redo_pcodes, complete
-
-def get_code_from_val(path: str, index: str, filename='proj_codes'):
-    """Takes some index value from command line and fetches the corresponding project code.
-    
-    Project codes stored in proj_codes.txt under each job id.
-
-    Returns
-    -------
-    proj_code : str
-        Project code that matches the provided index
-    """
-    path = path.split('*')[0]
-    if os.path.isfile(f'{path}/{filename}.txt'):
-        with open(f'{path}/{filename}.txt') as f:
-            try:
-                code = f.readlines()[int(index)].strip()
-            except IndexError:
-                print('code',index)
-                code = 'N/A'
-    else:
-        code = 'N/A'
-    return code
-
 def get_rerun_command(phase: str, ecode: str, groupID: str, repeat_id: str):
+    """Print a rerun command for inspecting a single dataset using single_run.py"""
     print(f'python single_run.py {phase} {ecode} -G {groupID} -r {repeat_id} -vvv -d')
 
-def examine_log(log: str, efile: str, code: str, ecode=None, phase=None, groupID=None, repeat_id=None):
+def get_index_of_code(workdir, groupID, repeat_id, code):
+    """Get the index of a project code within some repeat set of codes"""
+    proj_codes = get_codes(groupID, workdir, f'proj_codes_{repeat_id}')
+    pindex = 0
+    pcode = proj_codes[pindex]
+    while pcode != code:
+        pindex += 1
+        pcode = proj_codes[pindex]
+    return pindex
+
+def examine_log(workdir: str, proj_code: str,  phase: str, groupID=None, repeat_id=None):
+    """Open and examine a log file from a previous run of a given phase
+    - Show full error log
+    - Suggest rerun/examination command
+    """
+    if groupID:
+        proj_dir = f'{workdir}/in_progress/{groupID}/{proj_code}'
+
+    phase_log = f'{proj_dir}/phase_logs/{phase}.log'
+    if os.path.isfile(phase_log):
+        with open(phase_log) as f:
+            log = [r.strip() for r in f.readlines()]
+    else:
+        print(f'Phase log file not found: {phase_log}')
+        return None
+
     print()
     print('\n'.join(log))
-    print(f'{efile} - {code}')
+    print(f'Project Code: {proj_code}')
     print('Rerun suggested command:    ',end='')
-    if phase and ecode:
-        get_rerun_command(phase, ecode, groupID, repeat_id)
+
+    ecode = get_index_of_code(groupID, repeat_id, proj_code)
+    get_rerun_command(phase, ecode, groupID, repeat_id)
+
     paused=input('Type "E" to exit assessment: ')
     if paused == 'E':
         sys.exit()
 
-def extract_keys(filepath: str, logger, savetype=None, examine=None, phase=None, groupID=None, repeat_id=None):
-    """Extract keys from error/output files, collect into groups and examine a particular type if required.
-    
-    Parameters
-    ----------
-    filepath : str
-        String path to the error/output files
-    logger : Logging.object
-        Logger object for warning/info/debug messages.
-    savetype : str or bool
-        Error code to compare to error files and save matching codes to savedcodes array.
-    examine : bool
-        Boolean switch for halting if matching code is found.
-
-    Returns
-    -------
-    savedcodes : list
-        List of tuples for each file which abides by the savetype. Stored values in each tuple are:
-         - efile (str) : Path to error/output file
-         - code (str)  : Project code of error file
-         - log (str)   : Full error log for this project code
-    keys : dict
-        Dictionary of number of occurrences across all error logs of specific error codes.
-    total : int
-        Total number of error files found under the path provided. 
-    """
-    keys       = {'Warning': 0}
-    savedcodes = []
-    listfiles  = glob.glob(filepath)
-    total      = len(listfiles)
-    logger.info(f'Found {len(listfiles)} files to assess')
-
-    for efile in listfiles:
-        logger.debug(f'Starting {efile}')
-        log = []
-        show_warn = False
-        with open(os.path.join(filepath, efile)) as f:
-            for r in f.readlines():
-                log.append(r.strip())
-                if 'WARNING' in r.strip():
-                    show_warn = (savetype == 'Warning')
-                    keys['Warning'] += 1
-        logger.debug(f'Opened {efile}')
-        # Extract Error type from Error file last line
-        if len(log) > 0:
-            if type(log[-1]) == str:
-                key = log[-1].split(':')[0]
-            else:
-                key = log[-1][0]
-
-            if '/var/spool/slurmd' in key:
-                key = 'SlurmMemoryError'
-
-            if key == 'slurmstepd':
-                key = 'SlurmTimeoutError'
-
-            logger.debug(f'Identified error type {key}')
-            # Count error types
-            if key in keys:
-                keys[key] += 1
-            else:
-                keys[key] = 1
-
-            matchtype = (key == savetype or (type(savetype) == list and key in savetype) or show_warn)
-
-            ecode = efile.split('/')[-1].split('.')[0]
-            path = '/'.join(filepath.split('/')[:-1]) + '/'
-            code = get_code_from_val(path, ecode)
-
-            if matchtype:
-                # Save matching types
-                savedcodes.append((efile, code, log))
-                if examine:
-                    # Examine logs if matching types or warnings is on
-                    examine_log(log, efile, code, ecode=ecode, phase=phase, groupID=groupID, repeat_id=repeat_id)
-    return savedcodes, keys, len(listfiles)
-
 def merge_old_new(old_codes, new_codes, index_old='', index_new='', reason=None):
+    """Merge an existing list of project codes with a new set
+    - Uses indexes if not a 1d list
+    """
+
     merge_dict = {}
     indices = [index_old, index_new]
     for ord, codeset in enumerate([old_codes, new_codes]):
@@ -197,9 +81,9 @@ def merge_old_new(old_codes, new_codes, index_old='', index_new='', reason=None)
                 proj_code = code[index]
             if reason:
                 if ord != 0 and len(code) > 1:
-                    value = code[1]
-                else:
                     value = reason
+                else:
+                    value = code[1]
             merge_dict[proj_code] = value
     merged = []
     for mkey in merge_dict.keys():
@@ -209,88 +93,218 @@ def merge_old_new(old_codes, new_codes, index_old='', index_new='', reason=None)
             merged.append(f'{mkey}')
     return merged
 
-def save_sel(codes: list, groupdir: str, label: str, logger, overwrite=0):
+def save_selection(codes: list, groupdir: str, label: str, logger, overwrite=0):
     """Save selection of codes to a file with a given repeat label. 
     
     Requires a groupdir (directory belonging to a group), list of codes and a label for the new file.
     """
-    if len(codes) > 1:
+    if len(codes) > 0:
         codeset = '\n'.join([code[1].strip() for code in codes])
         if os.path.isfile(f'{groupdir}/proj_codes_{label}.txt'):
             if overwrite == 0:
-                logger.info(f'Skipped writing {len(codes)} to proj_codes_{label} - file exists and overwrite not set')
+                print(f'Skipped writing {len(codes)} to proj_codes_{label} - file exists and overwrite not set')
             elif overwrite == 1:
-                logger.info(f'Adding {len(codes)} to existing proj_codes_{label}')
+                print(f'Adding {len(codes)} to existing proj_codes_{label}')
                 with open(f'{groupdir}/proj_codes_{label}.txt') as f:
                     old_codes = [r.strip() for r in f.readlines()]
-                merged = merge_old_new(old_codes, codes, index_new=1)
+                merged = merge_old_new(old_codes, codes)
                 # Need check for duplicates here
                 with open(f'{groupdir}/proj_codes_{label}.txt','w') as f:
                     f.write('\n'.join(merged))
             elif overwrite == 2:
-                logger.info(f'Overwriting with {len(codes)} in existing proj_codes_{label} file')
+                print(f'Overwriting with {len(codes)} in existing proj_codes_{label} file')
                 with open(f'{groupdir}/proj_codes_{label}.txt','w') as f:
                     f.write(codeset)
         else:
             with open(f'{groupdir}/proj_codes_{label}.txt','w') as f:
                 f.write(codeset)
-            logger.info(f'Written {len(codes)} to proj_codes_{label}')
+            print(f'Written {len(codes)} to proj_codes_{label}')
     else:
-        logger.info('No codes identified, no files written')
+        print('No codes identified, no files written')
 
-def show_options(option: str, groupdir: str, operation: str, logger):
+def show_options(args, logger):
     """Use OS tools to list contents of relevant directories to see all jobids or labels.
     
     List output or error directories (one per job id), or list all proj_codes text files."""
-    if option == 'jobids':
-        logger.info('Detecting IDs from previous runs:')
-        if operation == 'outputs':
-            os.system(f'ls {groupdir}/outs/')
+
+    # Load the blacklist here 
+    if args.option in ['blacklist', 'virtuals']:
+        blackset = get_codes(args.groupID, args.workdir, 'blacklist_codes')
+        if blackset:
+            blackcodes = {b.split(',')[0]: b.split(',')[1] for b in blackset}
         else:
-            os.system(f'ls {groupdir}/errs/')
-    elif option == 'labels':
-        logger.info('Detecting labels from previous runs:')
-        labels = glob.glob(f'{args.workdir}/groups/{args.groupID}/proj_codes*')
+            blackcodes = {}
+
+    if args.option == 'jobids':
+        print('Detecting IDs from previous runs:')
+        if args.operation == 'outputs':
+            os.system(f'ls {args.groupdir}/outs/')
+        else:
+            os.system(f'ls {args.groupdir}/errs/')
+    elif args.option == 'labels':
+        print('Detecting labels from previous runs:')
+        labels = glob.glob(f'{args.groupdir}/proj_codes*')
         for l in labels:
             pcode = l.split('/')[-1].replace("proj_codes_","").replace(".txt","")
             if pcode == '1':
                 pcode = 'main'
-            logger.info(f'{format_str(pcode,20)} - {l}')
+            print(f'{format_str(pcode,20)} - {l}')
+    elif args.option == 'blacklist':
+        print('Current Blacklist:')
+        for b in blackcodes.keys():
+            print(f'{b} - {blackcodes[b]}')
+    elif args.option == 'virtuals':
+        print('Finding datasets with a virtual stacking dimension')
+        codefile = f'{args.groupdir}/proj_codes_1.txt'
+        if os.path.isfile(codefile):
+            with open(codefile) as f:
+                proj_codes = [r.strip() for r in f.readlines()]
+            for p in proj_codes:
+                virtual = False
+                if p in blackcodes:
+                    continue
+                detailfile = f'{args.workdir}/in_progress/{args.groupID}/{p}/detail-cfg.json'
+                if os.path.isfile(detailfile):
+                    with open(detailfile) as f:
+                        details = json.load(f)
+                    if 'virtual_concat' in details:
+                        if details['virtual_concat']:
+                            virtual = True
+                else:
+                    print(f'Missing detailfile for {p}')
+                            
+                if virtual:
+                    print(f'Project code: {p} - Virtual present')
+                else:
+                    print(f'Project code: {p}')
+        else:
+            logger.warning(f'No proj_codes file found for {args.groupID}')
     else:
-        logger.info(f'{option} not accepted - use "jobids" or "labels"')
+        print(f'{args.option} not accepted - use "jobids" or "labels"')
 
 def cleanup(cleantype: str, groupdir: str, logger):
     """Remove older versions of project code files, error or output logs. Clear directories."""
-    if cleantype == 'labels':
+    if cleantype == 'labels' or cleantype == 'all':
         projset = glob.glob(f'{groupdir}/proj_codes_*')
         for p in projset:
             if 'proj_codes_1' not in p:
                 os.system(f'rm {p}')
-    elif cleantype == 'errors':
+    if cleantype == 'errors' or cleantype == 'all':
         os.system(f'rm -rf {groupdir}/errs/*')
-    elif cleantype == 'outputs':
+    if cleantype == 'outputs' or cleantype == 'all':
         os.system(f'rm -rf {groupdir}/outs/*')
-    else:
-        pass
-
+        
 def progress_check(args, logger):
+    """Give a general overview of progress within the pipeline
+    - How many datasets currently at each stage of the pipeline
+    - Errors within each pipeline phase
+    - Allows for examination of error logs
+    - Allows saving codes matching an error type into a new repeat group
+    """
+    blacklist  = get_codes(args.groupID, args.workdir, 'blacklist_codes')
+    proj_codes = get_codes(args.groupID, args.workdir, f'proj_codes_{args.repeat_id}')
+
+    groupdir = f'{args.workdir}/groups/{args.groupID}'
+
+    done_set = {}
+    extras = {'unknown': {'no data': 0}, 'blacklist': {}}
+
+    for b in blacklist:
+        entry = b.replace(' ','').split(',')
+        if entry[1] in extras['blacklist']:
+            extras['blacklist'][entry[1]] += 1
+        else:
+            extras['blacklist'][entry[1]] = 1
+        done_set[entry[0]] = True
+
+    phases = {'init':{}, 'scan': {}, 'compute': {}, 'validate': {}, 'complete': {}}
+    savecodes = []
+    for p in proj_codes:
+        if p not in done_set:
+            proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{p}'
+            status_log = f'{proj_dir}/status_log.csv'
+            if os.path.isfile(status_log):
+                with open(status_log) as f:
+                    current = f.readlines()[-1].strip()
+            else:
+                extras['unknown']['no data'] += 1
+                continue
+            entry = current.split(',')
+
+
+            match_phase = (bool(args.phase) and args.phase == entry[0])
+            match_error = (bool(args.error) and args.error == entry[1])
+
+            if match_phase or match_error:
+                if args.examine:
+                    examine_log(args.workdir, p, entry[0], groupID=args.groupID, repeat_id=args.repeat_id)
+                if args.new_id:
+                    savecodes.append(p)
+
+            if entry[1] in phases[entry[0]]:
+                phases[entry[0]][entry[1]] += 1
+            else:
+                phases[entry[0]][entry[1]] = 1
+
+    num_codes  = len(proj_codes)
+    print()
+    print(f'Group: {args.groupID}')
+    print(f'  Total Codes: {num_codes}')
+
+    def summary_dict(pdict, num_codes):
+        """Display summary information for a dictionary structure of the expected format."""
+        for entry in pdict.keys():
+            pcount = len(list(pdict[entry].keys()))
+            num_types = sum([pdict[entry][pop] for pop in pdict[entry].keys()])
+            if pcount > 0:
+                print()
+                fmentry = format_str(entry,10)
+                fmnum_types = format_str(num_types,5)
+                fmcalc = format_str(f'{num_types*100/num_codes:.1f}',4)
+                print(f'   {fmentry}: {fmnum_types} [{fmcalc}%] (Variety: {int(pcount)})')
+
+                for err in pdict[entry]:
+                    num_errs = pdict[entry][err]
+                    print(f'    - {format_str(err, 25)}: {num_errs}')
+
+    summary_dict(phases, num_codes)
+    summary_dict(extras, num_codes)
+    print()
+
+    if args.new_id:
+        logger.debug(f'Preparing to write {len(savecodes)} codes to proj_codes_{args.new_id}.txt')
+        if args.write:
+            save_selection(savecodes, groupdir, args.new_id, logger, overwrite=args.overwrite)
+        else:
+            print('Skipped writing new codes - no overwrite mechanism specified')
+    
+def status_check(args, logger):
     """Check general progress of pipeline for a specific group.
     
     Lists progress up to the provided phase, options to save all project codes stuck at a specific phase to a repeat_id for later use."""
 
+    status_check(args, logger)
+
+    """
     if args.phase not in phases:
         logger.error(f'Phase not accepted here - {args.phase}')
         return None
     else:
-        logger.info(f'Discovering dataset progress within group {args.groupID}')
-        redo_pcodes = []
+        print(f'Discovering dataset progress within group {args.groupID}')
+        ignore_pcodes = []
+        blacklist = get_blacklist(args.groupdir)
+        if blacklist:
+            ignore_pcodes = [b.split(',')[0] for b in blacklist]
+            print(f'blacklist: {len(blacklist)} datasets')
+
         for index, phase in enumerate(phases[:-1]): # Ignore complete check as this happens as a byproduct
-            redo_pcodes, completes = find_codes(phase, args.workdir, args.groupID, checks[index], ignore=redo_pcodes)
-            logger.info(f'{phase}: {len(redo_pcodes)} datasets')
+            redo_pcodes, completes = find_codes(phase, args.workdir, args.groupID, checks[index], ignore=ignore_pcodes)
+            print(f'{phase}: {len(redo_pcodes)} datasets')
             if completes:
-                logger.info(f'complete: {len(completes)} datasets')
+                print(f'complete: {len(completes)} datasets')
             if phase == args.phase:
                 break
+            ignore_pcodes += redo_pcodes
         if args.phase == 'complete':
             redo_pcodes = completes
         
@@ -313,55 +327,13 @@ def progress_check(args, logger):
 
         # Written new pcodes
         print(f'Written {len(redo_pcodes)} pcodes, repeat label: {args.repeat_id}')
-
-def error_check(args, logger):
-    """Check error files and summarise results
-    
-    Extract savedcodes and total number of errors from each type given a specific path, save selection of codes for later use if required.
     """
-    job_path = f'{args.workdir}/groups/{args.groupID}/errs/{args.jobID}'
-    logger.info(f'Checking error files for {args.groupID} ID: {args.jobID}')
-
-    savedcodes, errs, total = extract_keys(f'{job_path}/*.err', logger, 
-                                           savetype=args.inspect, examine=args.examine,
-                                           phase=args.phase, groupID=args.groupID, 
-                                           repeat_id='_'.join(args.jobID.split('_')[1:]))
-    
-    # Summarise results
-    print(f'Found {total} error files:')
-    for key in errs.keys():
-        if errs[key] > 0 and key != 'Warning':
-            known_hint = 'Unknown'
-            if key in HINTS:
-                known_hint = HINTS[key]
-            print(f'{key}: {errs[key]}    - ({known_hint})')
-
-    print('')
-    print(f'Identified {errs["Warning"]} files with Warnings')
-
-    if args.inspect:
-        logger.info(f'Found {len(savedcodes)} proj_codes with matching errory type "{args.inspect}"')
-
-    if args.write:
-        if args.blacklist:
-            add_to_blacklist(savedcodes, args.groupdir, args.reason, logger)
-        elif args.repeat_id:
-            save_sel(savedcodes, args.groupdir, args.repeat_id, logger, overwrite=args.overwrite)
-        else:
-            logger.info('No repeat_id supplied, proj_codes were not saved.')
-    else:
-        if len(savedcodes) != 0:
-            logger.info(f'Skipped writing {len(savedcodes)}')
-
-def output_check(args, logger):
-    """Not implemented output log checker"""
-    job_path = f'{args.workdir}/groups/{args.groupID}/errs/{args.jobID}'
-    logger.info(f'Checking output files for {args.groupID} ID: {args.jobID}')
-    raise NotImplementedError
 
 def add_to_blacklist(savedcodes, groupdir, reason, logger):
+    """Add a set of codes to the blacklist for a given reason"""
     blackfile = f'{groupdir}/blacklist_codes.txt'
-
+    if not os.path.isfile(blackfile):
+        os.system(f'touch {blackfile}')
     logger.debug(f'Starting blacklist concatenation')
 
     merged = ''
@@ -369,74 +341,175 @@ def add_to_blacklist(savedcodes, groupdir, reason, logger):
         blackcodes = [r.strip().split(',') for r in f.readlines()]
 
     merged = merge_old_new(blackcodes, savedcodes, index_old=0, index_new=1, reason=reason)
-    blacklist = '\n'.join([f'{m},{reason}' for m in merged])
+    blacklist = '\n'.join([f'{m}' for m in merged])
     
     with open(blackfile,'w') as f:
         f.write(blacklist)
-    logger.info(f'Blacklist now contains {len(merged)} codes.')
+    print(f'Blacklist now contains {len(merged)} codes.')
 
+def upgrade_version(args, logger):
+    """Upgrade the version info in the kerchunk file
+    - Default - assume phase = validate - alter in kerchunk-1a.json
+                       phase = compute - just replace in detail-cfg.
+                       phase = complete - alter in complete
 
-def retro_errors(args, logger):
-    """Retrospective analysis of errors for all project codes within this group.
-     - Saved in ErrorSummary.json file"""
+    In all cases, alter in detail-cfg.
+    """
+
+    proj_codes = []
+    if not args.repeat_id:
+        logger.warning('No repeat ID specified - upgrade whole group using "-r 1"')
+        return None
     
-    proj_file = f'{args.groupdir}/proj_codes_1.txt'
-    summ_file  = f'{args.groupdir}/ErrorSummary.json'
+    if not args.upgrade:
+        logger.warning('New version not specified - should be of the format "krX.X"')
+        return None
 
-    with open(proj_file) as f:
-        proj_codes = [r.strip() for r in f.readlines()]
+    projfile = f'{args.groupdir}/proj_codes_{args.repeat_id}.txt'
+    if os.path.isfile(projfile):
+        with open(projfile) as f:
+            proj_codes = [r.strip() for r in f.readlines()]
+    else:
+        logger.warning(f'Repeat id {args.repeat_id} not found for {args.groupID}')
+        return None
+        
+    # Upgrade each code
+    for code in proj_codes:
+        try:
+            proj_dir   = f'{args.workdir}/in_progress/{args.groupID}/{code}'
+            print(f'Upgrading {code} to {args.upgrade}')
 
-    try:
-        with open(summ_file) as f:
-            summ_refs = json.load(f)
-    except FileNotFoundError:
-        logger.info("No prior summary error file detected")
-        summ_refs = {}
-    
-    if args.write:
-
-        logger.info(f"Initialising {len(proj_codes)} error entries")
-        # Initialise summary file
-        for pcode in proj_codes:
-            if pcode not in summ_refs:
-                summ_refs[pcode] = None
-
-        errs = {}
-
-        logs = glob.glob(f'{args.groupdir}/errs/*')
-        for l in logs:
-            logger.info(f'Reading error files for {l.split("/")[-1]}')
-            pcode_file = f'{l}/proj_codes.txt'
+            logger.debug(f'Updating detail-cfg for {code}')
+            detailfile = f'{proj_dir}/detail-cfg.json'
             try:
-                with open(pcode_file) as f:
-                    repeat_pcodes = [r.strip() for r in f.readlines()]
-            except FileNotFoundError:
-                logger.info(f'Skipped {l.split("/")[-1]} - old version')
-            for x, rpc in enumerate(repeat_pcodes):
-                rpc_err = f'{l}/{x}.err'
-                try:
-                    with open(rpc_err) as f:
-                        err = f.readlines()[-1].split(':')[0]
-                except FileNotFoundError:
-                    logger.debug(f'Not able to locate error file {x}')
-                summ_refs[rpc] = err
+                with open(detailfile) as f:
+                    details = json.load(f)
+                details['version_no'] = args.upgrade
+                if args.reason:
+                    details['version_reason'] = args.reason
+                if args.write:
+                    with open(detailfile,'w') as f:
+                        f.write(json.dumps(details))
+            except:
+                print("Skipped detail step")
 
-    for rpc in summ_refs.keys():
-        err = summ_refs[rpc]
-        if err not in errs:
-            errs[err] = 1
-        else:
-            errs[err] += 1
+            logger.debug(f'Locating kerchunk file for {code}')
+            in_filename = False
+            if args.phase == 'validate':
+                # Locate kerchunk file with latest version
+                files = glob.glob(f'{args.workdir}/in_progress/{args.groupID}/{code}/kerchunk*.json')
+            elif args.phase == 'complete':
+                # TEMPORARY DIVERSION
+                files = glob.glob(f'{args.workdir}/needs_version_updating/{code}*.json')
+                in_filename = True
+            if files:
+                kfile = files[-1]
+            else:
+                print(f'Skipping for {code} - file not found')
+                continue
 
-    print('Retrospective Error Summary:')
-    print(errs)
+            logger.debug(f'Found kerchunk file {kfile}')
+            with open(kfile) as f:
+                refs = json.load(f)
+            attrs = json.loads(refs['refs']['.zattrs'])
+            # Open with json and upgrade correctly
+                
+            logger.debug(f'Adding history to {code}')
+            now = datetime.now()
+            if 'history' in attrs:
+                if type(attrs['history']) == str:
+                    hist = attrs['history'].split('\n')
+                else:
+                    hist = attrs['history']
 
+                hist.append(f'Kerchunk file revised on {now.strftime("%D")} - {args.reason}')
+                attrs['history'] = '\n'.join(hist)
+            else:
+                attrs['history'] = f'Kerchunk file revised on {now.strftime("%D")} - {args.reason}'
+            old_version = 'kr1.0' # Hardcoded for now
+            attrs['kerchunk_revision'] = args.upgrade
+
+            logger.debug(attrs)
+            
+            refs['refs']['.zattrs'] = json.dumps(attrs)
+            if in_filename:
+                logger.debug('Replacing revision number in file')
+                kfile = kfile.replace(old_version, args.upgrade)
+            if args.write:
+                if not os.path.isfile(kfile):
+                    os.system(f'touch {kfile}')
+                with open(kfile,'w') as f:
+                    f.write(json.dumps(refs))
+                print(f'Written new attributes for {code} to {kfile}')
+            else:
+                print(f'Skipped writing new attributes for {code} to {kfile}')
+        except:
+            print('Failed for',code)
+
+def analyse_data(g, workdir):
+    """Show some statistics of netcdf and kerchunk data amounts for this particular group"""
+    ncf, ker, kus = 0, 0, 0
+    complete, scanned = 0, 0
+    projset = get_codes(g, workdir, 'proj_codes_1')
+
+    # Add individual error log checking PPC here.
+    
+    for p in projset:
+        details = None
+        try:
+            with open(f'{workdir}/in_progress/{g}/{p}/detail-cfg.json') as f:
+                details = json.load(f)
+        except:
+            pass
+        if details:
+            scanned += 1
+            if 'netcdf_data' in details:
+                ncf += mem_to_val(details['netcdf_data'])
+                ker += mem_to_val(details['kerchunk_data'])
+                if os.path.isfile(f'{workdir}/in_progress/{g}/{p}/kerchunk-1a.json.complete'):
+                    kus += mem_to_val(details['kerchunk_data'])
+                    complete += 1
+    return ncf, ker, kus, scanned, complete
+
+def summary_data(args, logger):
+    """Display summary info in terms of data representation"""
+    from pipeline.logs import FalseLogger
+    from pipeline.scan import format_float
+    if ',' in args.groupID:
+        groups = args.groupID.split(',')
+    else:
+        groups = [args.groupID]
+
+    Tncf, Tker, Tkus, Tscan, Tcomp = 0, 0, 0, 0, 0
+    for g in groups:
+        print()
+        print(g)
+        ncf, ker, kus, scanned, complete = analyse_data(g, args.workdir)
+        print(f'   Datasets          : {len(get_codes(g, args.workdir, "proj_codes_1"))}')
+        print(f'    - Unavailable    : {len(get_codes(g, args.workdir, "blacklist_codes"))}')
+        print(f'   Data:')
+        print(f'    - NetCDF         : {format_float(ncf, FalseLogger())}')
+        print(f'    - Kerchunk Estm  : {format_float(ker, FalseLogger())} ({scanned})')
+        print(f'    - Kerchunk Actual: {format_float(kus, FalseLogger())} ({complete})')
+        print()
+
+        Tncf += ncf
+        Tker += ker
+        Tkus += kus
+        Tscan += scanned
+        Tcomp += complete
+
+    if len(groups) > 1:
+        print(f'Total Across {len(groups)} groups')
+        print(f'         NetCDF: {format_float(Tncf, FalseLogger())}')
+        print(f'  Kerchunk Estm: {format_float(Tker, FalseLogger())} ({Tscan})')
+        print(f'Kerchunk Actual: {format_float(Tkus, FalseLogger())} ({Tcomp})')
+        
 operations = {
     'progress': progress_check,
-    'errors': error_check,
-    'outputs': output_check,
     'blacklist': add_to_blacklist,
-    'retro': retro_errors
+    'upgrade': upgrade_version,
+    'summarise': summary_data,
 }
 
 def assess_main(args):
@@ -445,12 +518,18 @@ def assess_main(args):
     logger = init_logger(args.verbose, args.mode, 'assessor')
 
     args.workdir  = get_attribute('WORKDIR', args, 'workdir')
-    args.groupdir = f'{args.workdir}/groups/{args.groupID}'
-    if ',' in args.inspect:
-        args.inspect = args.inspect.split(',')
 
-    if args.show_opts:
-        show_options(args.show_opts, args.groupdir, args.operation, logger)
+    if args.groupID == 'A': # Just show which groups exist
+        os.system(f'ls {args.workdir}/groups/')
+        return None
+    
+    args.groupdir = f'{args.workdir}/groups/{args.groupID}'
+
+    if ',' in args.error:
+        args.error = args.error.split(',')
+
+    if args.option:
+        show_options(args, logger)
         return None
 
     if args.cleanup:
@@ -459,31 +538,43 @@ def assess_main(args):
 
     if args.operation in operations:
         operations[args.operation](args, logger)
+    else:
+        print(f'{args.operation} - Unknown operation, not one of {list(operations.keys())}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run a pipeline step for a single dataset')
-    parser.add_argument('groupID',type=str, help='Group identifier code')
     parser.add_argument('operation',type=str, help=f'Operation to perform - choose from {operations.keys()}.')
+    parser.add_argument('groupID',type=str, help='Group identifier code')
 
+    # Blacklist with a given reason
     parser.add_argument('-B','--blacklist', dest='blacklist', action='store_true', help='Use when saving project codes to the blacklist')
-    parser.add_argument('-R','--blacklist-reason', dest='reason', help='Provide the reason for saving project codes to the blacklist')
+    parser.add_argument('-R','--reason', dest='reason', default='No reason given',help='Provide the reason for handling project codes when saving to the blacklist or upgrading')
 
-    parser.add_argument('-j','--jobid', dest='jobID', help='Identifier of job to inspect')
-    parser.add_argument('-p','--phase', dest='phase', default='validate', help='Pipeline phase to inspect')
-    parser.add_argument('-s','--show-opts', dest='show_opts', help='Show options for jobids, labels')
-
-    parser.add_argument('-r','--repeat_id', dest='repeat_id', default=None, help='Save a selection of codes which failed on a given error - input a repeat id.')
-    parser.add_argument('-i','--inspect', dest='inspect', default='', help='Inspect error/output of a given type/label')
-    parser.add_argument('-E','--examine', dest='examine', action='store_true', help='Examine log outputs individually.')
+    # Special options
+    parser.add_argument('-s','--show-opts', dest='option', help='Show options for jobids, labels')
     parser.add_argument('-c','--clean-up', dest='cleanup', default=None, help='Clean up group directory of errors/outputs/labels')
+    parser.add_argument('-U','--upgrade', dest='upgrade', default=None, help='Upgrade to new version')
+    # Note this will be replaced with upgrader tool at some point
 
+    # Select subgroups and save new repeat groups
+    parser.add_argument('-j','--jobid', dest='jobID', default=None, help='Identifier of job to inspect')
+    parser.add_argument('-p','--phase', dest='phase', default=None, help='Pipeline phase to inspect')
+    parser.add_argument('-r','--repeat_id', dest='repeat_id', default='1', help='Inspect an existing ID for errors')
+    parser.add_argument('-n','--new_id', dest='new_id', default=None, help='Create a new repeat ID, specify selection of codes by phase, error etc.')
+
+    # Error inspection
+    parser.add_argument('-e','--error', dest='error', default='', help='Inspect error of a specific type')
+    parser.add_argument('-E','--examine', dest='examine', action='store_true', help='Examine log outputs individually.')
+
+    # Output to new text files - need both to ensure no accidental writing
+    parser.add_argument('-W','--write',  dest='write',  action='count', help='Write outputs to files' )
     parser.add_argument('-O','--overwrite', dest='overwrite', action='count', help='Force overwrite of steps if previously done')
 
+    # Generic Pipeline
     parser.add_argument('-w','--workdir',   dest='workdir',      help='Working directory for pipeline')
     parser.add_argument('-g','--groupdir',  dest='groupdir',     help='Group directory for pipeline')
     parser.add_argument('-v','--verbose', dest='verbose', action='count', default=1, help='Print helpful statements while running')
     parser.add_argument('-m','--mode',        dest='mode', default=None, help='Print or record information (log or std)')
-    parser.add_argument('-W','--write',  dest='write',  action='store_true', help='Write outputs to files' )
 
     args = parser.parse_args()
 

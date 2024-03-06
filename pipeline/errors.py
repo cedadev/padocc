@@ -32,18 +32,17 @@ class KerchunkDriverFatalError(KerchunkException):
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
     def get_str(self):
-        return 'MissingVariableError'
+        return 'KerchunkDriverFatalError'
 
-    
-class KerchunkDriverFatalError(KerchunkException):
-    """All known drivers failed when performing conversion - NetCDF3/HDF5/Tiff"""
+class IdenticalVariablesError(KerchunkException):
+    """All variables found to be suitably identical between files as to not stack or concatenate"""
     def __init__(self,verbose=0, proj_code=None, groupdir=None):
-        self.message = "All drivers failed when performing conversion"
+        self.message = "All variables are identical across files"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
     def get_str(self):
-        return 'MissingVariableError'
+        return 'IdenticalVariablesError'
     
 class XKShapeToleranceError(KerchunkException):
     """Attempted validation using a tolerance for shape mismatch on concat-dims, shape difference exceeds tolerance allowance."""
@@ -214,3 +213,13 @@ class ConcatenationError(KerchunkException):
             self.__class__.__module__ = 'builtins'
     def get_str(self):
         return 'ConcatenationError'
+    
+class ConcatFatalError(KerchunkException):
+    """Chunk sizes differ between refs - files cannot be concatenated"""
+    def __init__(self, var=None, chunk1=None, chunk2=None, verbose=0, proj_code=None, groupdir=None):
+        self.message = f"Chunk sizes differ between refs for {var}: {chunk1} - {chunk2} - files cannot be concatenated"
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'ConcatFatalError'

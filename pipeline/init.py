@@ -53,7 +53,9 @@ def make_filelist(pattern: str, proj_dir: str, logger):
     if pattern.endswith('.txt'):
         os.system(f'cp {pattern} {proj_dir}/allfiles.txt')
     elif os.path.isdir(proj_dir):
-        os.system(f'ls {pattern} > {proj_dir}/allfiles.txt')
+        name = pattern.split('/')[-1]
+        path = '/'.join(pattern.split('/')[:-1])
+        os.system(f'find {path} -name "{name}" -type f > {proj_dir}/allfiles.txt')
     else:
         logger.error(f'Project Directory not located - {proj_dir}')
         return None
@@ -157,7 +159,7 @@ def make_dirs(args, logger):
         proj_codes = proj_codes[1:]
     
     for index, proj_code in enumerate(proj_codes):
-        cfg_values = dict(config)      # Ensure no linking
+        cfg_values = dict(config)
         ds_values  = datasets[proj_code]
         pattern    = ds_values[0]
 
@@ -205,7 +207,9 @@ def make_dirs(args, logger):
             if not args.forceful:
                 logger.warn(f'{proj_code} directory already exists')
 
-        status = make_filelist(pattern, proj_dir, logger)
+        status = True
+        if not os.path.isfile(f'{proj_dir}/allfiles.txt'):
+            status = make_filelist(pattern, proj_dir, logger)
         if not status:
             logger.error(f'Issue creating filelist for {proj_code}')
         else:
