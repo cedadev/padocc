@@ -8,8 +8,10 @@ import argparse
 import os
 import json
 import logging
+from datetime import datetime
 
-from pipeline.logs import init_logger, get_attribute, BypassSwitch
+from pipeline.logs import init_logger, reset_file_handler, log_status
+from pipeline.utils import get_attribute, BypassSwitch
 from pipeline.errors import ProjectCodeError, MissingVariableError, BlacklistProjectCode
 
 def run_init(args, logger):
@@ -103,15 +105,23 @@ def blacklisted(proj_code: str, groupdir: str, logger):
     else:
         logger.debug('No blacklist file preset for this group')
         return False
-
+    
 def main(args):
     """Main function for single run processing"""
 
-    logger = init_logger(args.verbose, args.mode, 'main')
+    jobid = ''
+    fh    = ''
+
+    if os.getenv('SLURM_ARRAY_JOB_ID'):
+        jobid = os.getenv('SLURM_ARRAY_JOB_ID')
 
     args.workdir  = get_attribute('WORKDIR', args, 'workdir')
     if args.groupID:
         args.groupdir = f'{args.workdir}/groups/{args.groupID}'
+        if jobid != '':
+            fh = f'{args.groupdir}/errs/{jobid}_{args.phase}_{args.repeat_id}.log'
+
+    logger = init_logger(args.verbose, args.mode, 'main', fh=fh)
 
     args.bypass = BypassSwitch(switch=args.bypass)
 
@@ -128,6 +138,8 @@ def main(args):
         raise IOError('Workdir not read/writable')
 
     logger.debug('Passed initial writability checks')
+
+    passes, fails = 0, 0
 
     for id in range(args.subset):
         print()
@@ -147,9 +159,8 @@ def main(args):
                 args.proj_code = get_proj_code(args.groupdir, proj_code, args.repeat_id, subset=args.subset, id=id)
                 args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
 
-                # Get ID from within a job?
-                if os.getenv('SLURM_ARRAY_JOB_ID'):
-                    jobid = os.getenv('SLURM_ARRAY_JOB_ID')
+                # Get rid of this section if necessary - redo to put code list elsewhere
+                if jobid != '':
                     errs_dir = f'{args.workdir}/groups/{args.groupID}/errs'
                     if not os.path.isdir(f'{errs_dir}/{jobid}_{args.repeat_id}'):
                         os.makedirs(f'{errs_dir}/{jobid}_{args.repeat_id}')
@@ -162,8 +173,8 @@ def main(args):
             else:
                 args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
 
-            if blacklisted(args.proj_code, args.groupdir, logger) and not args.backtrack:
-                raise BlacklistProjectCode
+            #if blacklisted(args.proj_code, args.groupdir, logger) and not args.backtrack:
+                #raise BlacklistProjectCode
 
             if args.phase in drivers:
                 logger.debug('Pipeline variables (reconfigured):')
@@ -172,14 +183,37 @@ def main(args):
                 logger.debug('Using attributes:')
                 logger.debug(f'proj_code: {args.proj_code}')
                 logger.debug(f'proj_dir : {args.proj_dir}')
-                drivers[args.phase](args, logger)
+
+                # Refresh log for this phase
+                proj_log = f'{args.proj_dir}/phase_logs/{args.phase}.log'
+                os.system(f'rm {proj_log}')
+                if not args.bypass.skip_report:
+                    log_status(args.phase, args.proj_dir, 'pending', logger, jobid=jobid, dryrun=args.dryrun)
+                try:
+                    if jobid != '':
+                        logger = reset_file_handler(logger, args.verbose, proj_log)
+                        drivers[args.phase](args, logger)
+                        logger = reset_file_handler(logger, args.verbose, fh)
+                    else:
+                        drivers[args.phase](args, logger)
+                    passes += 1
+                    if not args.bypass.skip_report:
+                        log_status(args.phase, args.proj_dir, 'complete', logger, jobid=jobid, dryrun=args.dryrun)
+                except Exception as err:
+                    if jobid != '':
+                        logger = reset_file_handler(logger, args.verbose, fh)
+                    fails += 1
+                    if not args.bypass.skip_report:
+                        log_status(args.phase, args.proj_dir, err.get_str(), logger, jobid=jobid, dryrun=args.dryrun)
+                    else:
+                        raise err
             else:
                 logger.error(f'"{args.phase}" not recognised, please select from {list(drivers.keys())}')
         except Exception as err:
-            # Capture all errors - any error handled here is fatal
+            # Capture all errors - any error handled here is a setup error
             raise err
     logger.info('Pipeline phase execution finished')
-    print('Success')
+    logger.info(f'Success: {passes}, Error: {fails}') 
     return True
 
 if __name__ == '__main__':
