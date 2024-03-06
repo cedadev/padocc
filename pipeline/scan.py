@@ -271,12 +271,8 @@ def scan_dataset(args, files: list, logger):
             raise err
         except ConcatFatalError as err:
             raise err
-        except Exception as e:
-            if args.bypass.skip_scanfile:
-                logger.warning(f'Skipped file {count} - {e}')
-                is_skipwarn = True
-            else:
-                raise e
+        except Exception as err:
+            raise err
         count += 1
         if count >= filecap:
             escape = True
