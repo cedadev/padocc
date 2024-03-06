@@ -23,22 +23,26 @@ WORKDIR = None
 CONCAT_MSG = 'See individual files for more details'
 
 class Converter:
+    """Class for converting a single file to a Kerchunk reference object"""
+
     def __init__(self, clogger, bypass_driver=False):
         self.logger = clogger
+        self.ctype = None
         self.success = True
         self.bypass_driver = bypass_driver
 
-    def convert_to_zarr(self, nfile, ctype, **kwargs):
-        #ctype = 'hdf5'
+    def convert_to_zarr(self, nfile, **kwargs):
+        """Perform conversion to zarr with exceptions for bypassing driver errors."""
+        drivers = {
+            'ncf3': self.ncf3_to_zarr,
+            'hdf5': self.hdf5_to_zarr,
+            'tif' : self.tiff_to_zarr
+        }
         try:
-            if ctype == 'ncf3':
-                return self.ncf3_to_zarr(nfile, **kwargs)
-            elif ctype == 'hdf5':
-                return self.hdf5_to_zarr(nfile, **kwargs)
-            elif ctype == 'tif':
-                return self.tiff_to_zarr(nfile, **kwargs)
+            if self.ctype in drivers:
+                return drivers[self.ctype](nfile, **kwargs)
             else:
-                self.logger.debug(f'Extension {ctype} not valid')
+                self.logger.debug(f'Extension {self.ctype} not valid')
                 return None
         except Exception as err:
             if self.bypass_driver:
@@ -74,33 +78,34 @@ class Indexer(Converter):
         super().__init__(init_logger(verb, mode, 'compute-serial'), bypass_driver=bypass.skip_driver)
 
         self.logger.debug('Starting variable definitions')
+
         self.bypass     = bypass
         self.limiter    = limiter
         self.workdir    = workdir
         self.proj_code  = proj_code
         self.version_no = version_no
         self.concat_msg = concat_msg
+        self.thorough   = thorough
+        self.forceful   = forceful
 
-        self.dryrun = dryrun
+        self.dryrun      = dryrun
         self.issave_meta = issave_meta
         self.updates, self.removals, self.load_refs = False, False, False
-
-        self.verb = verb
-        self.mode = mode
-        if mode != 'std':
-            self.log = ''
-        else:
-            self.log = None
 
         self.logger.debug('Loading config information')
         with open(cfg_file) as f:
             cfg = json.load(f)
 
+        self.detailfile = detail_file
         with open(detail_file) as f:
             self.detail = json.load(f)
 
         if 'virtual_concat' not in self.detail:
             self.detail['virtual_concat'] = False
+
+        if version_no != 'trial-':
+            if 'version_no' in self.detail:
+                self.version_no = self.detail['version_no']
 
         if groupID:
             self.proj_dir = f'{self.workdir}/in_progress/{groupID}/{self.proj_code}'
@@ -125,6 +130,8 @@ class Indexer(Converter):
         else:
             self.use_json = True
 
+        self.use_json = True
+
         self.outfile     = f'{self.proj_dir}/kerchunk-{version_no}a.json'
         self.outstore    = f'{self.proj_dir}/kerchunk-{version_no}a.parq'
         self.record_size = 167 # Default
@@ -143,17 +150,20 @@ class Indexer(Converter):
         if thorough:
             os.system(f'rm -rf {self.cache}/*')
 
-        self.thorough = thorough
-
-        self.combine_kwargs = {'concat_dims':['time']} # Always try time initially
+        self.combine_kwargs = {} # Now using concat_dims and identical dims finders.
         self.create_kwargs  = {'inline_threshold':1000}
         self.pre_kwargs     = {}
+
+        self.special_attrs = {}
 
         self.set_filelist()
         self.logger.debug('Finished all setup steps')
 
     def collect_details(self):
+        """Collect kwargs for combining and any special attributes - save to detail file."""
         self.detail['combine_kwargs'] = self.combine_kwargs
+        if self.special_attrs:
+            self.detail['special_attrs'] = list(self.special_attrs.keys())
         return self.detail
 
     def set_filelist(self):
@@ -164,17 +174,11 @@ class Indexer(Converter):
             self.limiter = len(self.listfiles)
 
     def add_download_link(self, refs):
-        timecount = 0
-        total = len(list(refs.keys()))
-        t1 = datetime.now()
+        """Add the download link to the Kerchunk references"""
         for key in refs.keys():
             if len(refs[key]) == 3:
                 if refs[key][0][0] == '/':
                     refs[key][0] = 'https://dap.ceda.ac.uk' + refs[key][0]
-            if timecount == 100:
-                end_time = (datetime.now()-t1).total_seconds()*(total/6000)
-                self.logger.debug(f'Expected time remaining: {end_time} mins')
-            timecount += 1
         return refs
 
     def add_kerchunk_history(self, attrs):
@@ -204,10 +208,13 @@ class Indexer(Converter):
         return attrs
     
     def find_concat_dims(self, ds_examples):
+        """Find dimensions to use when combining for concatenation
+        - Dimensions which change over the set of files must be concatenated together
+        - Dimensions which do not change (typically lat/lon) are instead identified as identical_dims"""
         concat_dims = []
         for dim in ds_examples[0].dims:
             try:
-                validate_selection(ds_examples[0][dim], ds_examples[1][dim], dim, 1, 1, self.logger, bypass=self.bypass)          
+                validate_selection(ds_examples[0][dim], ds_examples[1][dim], dim, 128, 128, self.logger, bypass=self.bypass)          
             except ValidationError:
                 self.logger.debug(f'Non-identical dimension: {dim} - if this dimension should be identical across the files, please inspect.')
                 concat_dims.append(dim)
@@ -222,6 +229,10 @@ class Indexer(Converter):
         self.combine_kwargs['concat_dims'] = concat_dims
 
     def find_identical_dims(self, ds_examples):
+        """Find dimensions and variables that are identical across the set of files.
+        - Variables which do not change (typically lat/lon) are identified as identical_dims and not concatenated over the set of files.
+        - Variables which do change are concatenated as usual.
+        """
         identical_dims = []
         normal_dims = []
         for var in ds_examples[0].variables:
@@ -231,7 +242,7 @@ class Indexer(Converter):
                     identical_check = False
             if identical_check:
                 try:
-                    validate_selection(ds_examples[0][var], ds_examples[1][var], var, 1, 1, self.logger, bypass=self.bypass)
+                    validate_selection(ds_examples[0][var], ds_examples[1][var], var, 128, 128, self.logger, bypass=self.bypass)
                     identical_dims.append(var)
                 except ValidationError:
                     self.logger.debug(f'Non-identical variable: {var} - if this variable should be identical across the files, please rerun.')
@@ -293,8 +304,17 @@ class Indexer(Converter):
             self.logger.info('Concatenating to Parquet format Kerchunk store')
             self.data_to_parq(refs)
 
+        if not self.dryrun:
+            self.collect_details()
+            with open(self.detailfile,'w') as f:
+                f.write(json.dumps(self.detail))
+            self.logger.info("Details updated in detail-cfg.json")
+
     def construct_virtual_dim(self, refs):
+        """Construct a Virtual dimension for stacking multiple files where no suitable concatenation dimension is present."""
+        # For now this just means creating a list of numbers 0 to N files
         vdim = 'file_number'
+
         for idx in range(len(refs)):
             ref = refs[idx]
             zarray = json.dumps({
@@ -325,7 +345,7 @@ class Indexer(Converter):
                 ref[f'{vdim}/0'] = values
         return refs, vdim
 
-    def data_to_parq(self, create_refs):
+    def data_to_parq(self, refs):
         """Concatenating to Parquet format Kerchunk store"""
         from kerchunk.combine import MultiZarrToZarr
         from fsspec import filesystem
@@ -360,6 +380,7 @@ class Indexer(Converter):
             if self.detail['virtual_concat']:
                 refs, vdim = self.construct_virtual_dim(refs)
                 self.combine_kwargs['concat_dims'] = [vdim]
+            print(self.combine_kwargs)
             mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
             if zattrs:
                 zattrs = self.add_kerchunk_history(zattrs)
@@ -381,9 +402,10 @@ class Indexer(Converter):
             self.logger.info(f'Skipped writing to JSON file - {self.outfile}')
 
     def correct_metadata(self, allzattrs):
-        # General function for correcting metadata
-        # - Combine all existing metadata in standard way
-        # - Add updates and remove removals specified by configuration
+        """General function for correcting metadata
+        - Combine all existing metadata in standard way (cleaning arrays)
+        - Add updates and remove removals specified by configuration
+        """
 
         self.logger.debug('Starting metadata corrections')
         if type(allzattrs) == list:
@@ -410,27 +432,32 @@ class Indexer(Converter):
         return new_zattrs
         
     def clean_attr_array(self, allzattrs):
-        # Collect attributes from all files, 
-        # determine which are always equal, which have differences
+        """Collect global attributes from all refs:
+        - Determine which differ between refs and apply changes
+        """
         base = json.loads(allzattrs[0])
 
         self.logger.debug('Correcting time attributes')
         # Sort out time metadata here
         times = {}
         all_values = {}
+
+        # Global attributes with 'time' in the name i.e start_datetime
         for k in base.keys():
             if 'time' in k:
                 times[k] = [base[k]]
             all_values[k] = []
 
         nonequal = {}
+        # Compare other attribute sets to a starting set 0
         for ref in allzattrs[1:]:
             zattrs = json.loads(ref)
             for attr in zattrs.keys():
+                # Compare each attribute.
                 if attr in all_values:
                     all_values[attr].append(zattrs[attr])
                 else:
-                    all_values[attr] = zattrs[attr]
+                    all_values[attr] = [zattrs[attr]]
                 if attr in times:
                     times[attr].append(zattrs[attr])
                 elif attr not in base:
@@ -439,6 +466,7 @@ class Indexer(Converter):
                     if base[attr] != zattrs[attr]:
                         nonequal[attr] = False
 
+        # Requires something special for start and end times
         base = {**base, **self.check_time_attributes(times)}
         self.logger.debug('Comparing similar keys')
 
@@ -447,18 +475,23 @@ class Indexer(Converter):
                 base[attr] = all_values[attr][0]
             else:
                 base[attr] = self.concat_msg
+                self.special_attrs[attr] = 0
 
         self.logger.debug('Finished checking similar keys')
         return base
 
     def clean_attrs(self, zattrs):
+        """Ammend any saved attributes post-combining
+        - Not currently implemented, may be unnecessary
+        """
         self.logger.warning('Attribute cleaning post-loading from temp is not implemented')
         return zattrs
 
     def check_time_attributes(self, times):
-        # Takes dict of time attributes with lists of values
-        # Sort time arrays
-        # Assume time_coverage_start, time_coverage_end, duration (2 or 3 variables)
+        """Takes dict of time attributes with lists of values
+        - Sort time arrays
+        - Assume time_coverage_start, time_coverage_end, duration (2 or 3 variables)
+        """
         combined = {}
         for k in times.keys():
             if 'start' in k:
@@ -490,44 +523,29 @@ class Indexer(Converter):
         else:
             self.logger.debug('Skipped saving global attribute cache')
 
-    def save_cache(self, refs, zattrs):
-        """Cache reference data in temporary json reference files"""
-        self.logger.info('Saving pre-concat cache')
-        if not self.dryrun:
-            for x, r in enumerate(refs):
-                cache_ref = f'{self.cache}/{x}.json'
-                with open(cache_ref,'w') as f:
-                    f.write(json.dumps(r))
-            self.logger.debug('Saved kerchunk data cache')
-        else:
-            self.logger.debug('Skipped saving metadata cache')
-        self.save_metadata(zattrs)
-        self.issave_meta = False
-        # Save is only valid prior to concatenation
-        # For a bizarre reason, the download link is applied to the whole cache on concatenation,
-        # So cache saving MUST occur BEFORE concatenation.
+    def save_individual_ref(self, ref, cache_ref):
+        if not os.path.isfile(cache_ref) or self.forceful:
+            with open(cache_ref,'w') as f:
+                f.write(json.dumps(ref))
 
     def try_all_drivers(self, nfile, **kwargs):
         """Safe creation allows for known issues and tries multiple drivers"""
 
         extension = False
-
-        if '.' in nfile:
-            ctype = f'.{nfile.split(".")[-1]}'
-        else:
-            ctype = '.nc'
-
         supported_extensions = ['ncf3','hdf5','tif']
 
-        self.logger.debug(f'Attempting conversion for 1 {ctype} extension')
+        self.logger.debug(f'Attempting conversion for 1 {self.ctype} extension')
 
-        tdict = self.convert_to_zarr(nfile, ctype, **kwargs)
+        if not self.ctype:
+            self.ctype = supported_extensions[0]
+
+        tdict = self.convert_to_zarr(nfile, **kwargs)
         ext_index = 0
         while not tdict and ext_index < len(supported_extensions)-1:
             # Try the other ones
             extension = supported_extensions[ext_index]
             self.logger.debug(f'Attempting conversion for {extension} extension')
-            if extension != ctype:
+            if extension != self.ctype:
                 tdict = self.convert_to_zarr(nfile, extension, **kwargs)
             ext_index += 1
 
@@ -536,54 +554,57 @@ class Indexer(Converter):
             raise KerchunkDriverFatalError
         else:
             if extension:
-                self.logger.debug(f'Scan successful with {extension} driver')
-            else:
-                self.logger.debug(f'Scan successful with {ctype} driver')
+                self.ctype = extension
+            self.logger.debug(f'Scan successful with {self.ctype} driver')
             return tdict
     
-    def convert_to_kerchunk(self):
-        refs = []
-        allzattrs = []
-        for x, nfile in enumerate(self.listfiles[:self.limiter]):
-            self.logger.info(f'Creating refs: {x+1}/{len(self.listfiles)}')
-            zarr_content = self.try_all_drivers(nfile, **self.create_kwargs)
-            if zarr_content:
-                allzattrs.append(zarr_content['refs']['.zattrs'])
-                refs.append(zarr_content)
-        return allzattrs, refs
-    
-    def load_cache(self):
-        refs = []
-        for x, nfile in enumerate(self.listfiles[:self.limiter]):
-            self.logger.info(f'Loading refs: {x+1}/{len(self.listfiles)}')
-            cache_ref = f'{self.cache}/{x}.json'
-            with open(cache_ref) as f:
-                refs.append(json.load(f))
-
+    def load_temp_zattrs(self):
         self.logger.debug(f'Loading attributes')
         with open(f'{self.cache}/temp_zattrs.json') as f:
             zattrs = json.load(f)
         if not zattrs:
-            self.logger.error('No attributes loaded from temp store')
-            raise ValueError
-        return zattrs, refs
+            self.logger.debug('No attributes loaded from temp store')
+            return None
+        return zattrs
 
     def create_refs(self):
+        """Organise creation and loading of refs
+        - Load existing cached refs
+        - Create new refs
+        - Combine metadata and global attributes into a single set
+        - Coordinate combining and saving of data"""
         self.logger.info(f'Starting computation for components of {self.proj_code}')
-        if not self.load_refs:
-            allzattrs, refs = self.convert_to_kerchunk()
+        refs, allzattrs = []
+        zattrs = None
+        use_temp_zattrs = True
+
+        # Attempt to load existing file - create if not exists already
+        for x, nfile in enumerate(self.listfiles[:self.limiter]):
+            cache_ref = f'{self.cache}/{x}.json'
+            ref = None
+            if os.path.isfile(cache_ref) and not self.thorough:
+                self.logger.info(f'Loading refs: {x+1}/{len(self.listfiles)}')
+                ref = self.load_cached(cache_ref)
+            if not ref:
+                self.logger.info(f'Creating refs: {x+1}/{len(self.listfiles)}')
+                ref = self.try_all_drivers(nfile, **self.create_kwargs)
+                use_temp_zattrs = False
+            if ref:
+                allzattrs.append(ref['refs']['.zattrs'])
+                refs.append(ref)
+                cache_ref = f'{self.cache}/{x}.json'
+                self.save_individual_ref(ref, cache_ref)
+
+        if use_temp_zattrs:
+            zattrs = self.load_temp_zattrs()
+        if not zattrs:
             zattrs = self.correct_metadata(allzattrs)
-        else:
-            zattrs, refs = self.load_cache()
-            zattrs = self.correct_metadata(zattrs)
+
         try:
-            if self.issave_meta and (not self.load_refs):
-                self.save_cache(refs, zattrs)
             if self.success:
                 self.combine_and_save(refs, zattrs)
         except Exception as err:
-            if self.issave_meta and (not self.load_refs or self.thorough):
-                self.save_cache(refs, zattrs)
+            # Any additional parts here.
             raise err
 
 if __name__ == '__main__':
