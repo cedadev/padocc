@@ -2,12 +2,14 @@ import sys
 import json
 import os
 import argparse
+import subprocess
 
-from pipeline.logs import init_logger, BypassSwitch
+from pipeline.logs import init_logger
+from pipeline.utils import BypassSwitch
 
 def get_group_len(workdir, group, repeat_id=1):
     """Implement parallel reads from single 'group' file"""
-    with open(f'{workdir}/groups/{group}/proj_codes_{repeat_id}.txt') as f:
+    with open(f'{workdir}/groups/{group}/proj_codes/{repeat_id}.txt') as f:
         group_len = len(list(f.readlines()))
     return group_len
 
@@ -29,7 +31,7 @@ def get_attribute(env, args, var):
         print(f'Error: Missing attribute {var}')
         return None
 
-def main(args):
+def main(args,get_id=False, dependent_id=False):
     """Assemble sbatch script for parallel running jobs"""
 
     logger = init_logger(args.verbose, 0, 'main-group')
@@ -98,8 +100,6 @@ def main(args):
         f'{group}_{phase}_array',             # Job name
         time,                                 # Time
         mem,                                  # Memory
-        f'{GROUPDIR}/outs/%A_{label}/%a.out', # Outs
-        f'{GROUPDIR}/errs/%A_{label}/%a.err', # Errs
         VENV,
         WORKDIR,
         GROUPDIR,
@@ -113,6 +113,13 @@ def main(args):
         sb += f' -b {args.bypass}'
     if args.quality:
         sb += ' -Q'
+    if args.backtrack:
+        sb += ' -B'
+    if args.dryrun:
+        sb += ' -d'
+
+    if 'X' in args.bypass:
+        logger.warning('Running with XK Shape Bypass flag "X" is experimental and should only be used with approval.')
 
     if args.repeat_id:
         sb += f' -r {args.repeat_id}'
@@ -125,7 +132,17 @@ def main(args):
         logger.info('DRYRUN: sbatch command: ')
         print(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
     else:
-        os.system(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
+        if get_id: # Unused section to save the ID of the process
+            result = subprocess.run(['sbatch', f'--array=0-{group_len-1}', group_phase_sbatch], stdout=subprocess.PIPE)
+            try:
+                id = result.stdout.decode('utf-8').split(' ')[3].strip() # Check!
+                assert len(id) == 8
+                return id
+            except:
+                logger.error('Slurm submission failed')
+                return None
+        else:
+            os.system(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')
@@ -142,7 +159,8 @@ if __name__ == '__main__':
     parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Print helpful statements while running')
     parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
     parser.add_argument('-Q','--quality', dest='quality', action='store_true', help='Quality assured checks - thorough run')
-    parser.add_argument('-b','--bypass-errs', dest='bypass', default='FDSC', help=BypassSwitch().help())
+    parser.add_argument('-b','--bypass-errs', dest='bypass', default='DBSCM', help=BypassSwitch().help())
+    parser.add_argument('-B','--backtrack', dest='backtrack', action='store_true', help='Backtrack to previous position, remove files that would be created in this job.')
 
     # Environment variables
     parser.add_argument('-w','--workdir',   dest='workdir',      help='Working directory for pipeline')
@@ -154,7 +172,7 @@ if __name__ == '__main__':
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
     parser.add_argument('-M','--memory', dest='memory', default='2G', help='Memory allocation for this job (i.e "2G" for 2GB)')
     parser.add_argument('-s','--subset',    dest='subset',    default=1,   type=int, help='Size of subset within group')
-    parser.add_argument('-r','--repeat_id', dest='repeat_id', default='1', help='Repeat id (1 if first time running, <phase>_<repeat> otherwise)')
+    parser.add_argument('-r','--repeat_id', dest='repeat_id', default='main', help='Repeat id (main if first time running, <phase>_<repeat> otherwise)')
 
     # Specialised
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')

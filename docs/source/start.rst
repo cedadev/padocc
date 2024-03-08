@@ -3,19 +3,20 @@ Getting Started
 
 .. note::
 
-    Ensure you have local modules enabled such that you have python 3.x installed in your local environment.
+    Ensure you have local modules enabled such that you have python 3.x installed in your local environment. A version of the pipeline source code exists at ``/gws/nopw/j04/cedaproc/kerchunk_builder`` so please see if this can be used before cloning the repository elsewhere.
 
 Step 0: Git clone the repository
 --------------------------------
-The Kerchunk builder has now been updated to version 1.0.2, which you can clone using:
+
+If you need to clone the repository, either simply clone the main branch of the repository (no branch specified) or check the latest version of the repository at github.com/cedadev/kerchunk-builder, which you can clone using:
 ::
 
-    git clone git@github.com:cedadev/kerchunk-builder.git --branch v1.0.2
+    git clone git@github.com:cedadev/kerchunk-builder.git --branch v1.1
 
 Step 1: Set up Virtual Environment
 ----------------------------------
 
-Step 1 is to create a virtual environment and install the necessary packages with pip. This can be done inside the local repo you've cloned as ```local``` or ```build_venv``` which will be ignored by the repository, or you can create a venv elsewhere in your home directory i.e ```~/venvs/build_venv```
+Step 1 is to create a virtual environment and install the necessary packages with pip. This can be done inside the local repo you've cloned as ``local`` or ``kvenv`` which will be ignored by the repository, or you can create a venv elsewhere in your home directory i.e ``~/venvs/build_venv``. If you are using the pipeline version in ``cedaproc`` there should already be a virtual environment set up.
 
 .. code-block:: console
 
@@ -26,14 +27,13 @@ Step 1 is to create a virtual environment and install the necessary packages wit
 
 Step 2: Environment configuration
 ---------------------------------
-Create a config file to set necessary environment variables. (Suggested to place these in a local `templates/` folder as this will be ignored by git). Eg:
+Create a config file to set necessary environment variables. (Suggested to place these in the local `config/` folder as this will be ignored by git). Eg:
 
 .. code-block:: console
 
-    export WORKDIR  =/gws/nopw/j04/cmip6_prep_vol1/kerchunk-pipeline;
-    export GROUPDIR =/gws/nopw/j04/cmip6_prep_vol1/kerchunk-pipeline/groups/CMIP6_rel1_6233;
-    export SRCDIR   =/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder;
-    export KVENV    =/home/users/dwest77/Documents/kerchunk_dev/kerchunk-builder/build_venv;
+    export WORKDIR = /path/to/kerchunk-pipeline
+    export SRCDIR  = /gws/nopw/j04/cedaproc/kerchunk_builder/kerchunk-builder
+    export KVENV   = $SRCDIR/kvenv
 
 
 Now you should be set up to run the pipeline properly. For any of the pipeline scripts, running ```python <script>.py -h # or --help``` will bring up a list of options to use for that script as well as the required parameters.
@@ -49,7 +49,6 @@ In order to successfully run the pipeline you need the following input files:
 
 It is also helpful to create a setup/config bash script to set all your environment variables which include:
  - WORKDIR: The working directory for the pipeline (where to store all the cache files)
- - GROUPDIR: Subdirectory under the working directory for the particular group you are running. (This is not required but could make things easier)
  - SRCDIR: Path to the kerchunk-builder repo where it has been cloned.
  - KVENV: Path to a virtual environment for the pipeline.
 
@@ -69,7 +68,7 @@ Some useful option/flags to add:
     -Q # Quality
        #  - thorough run - use to ignore cache files and perform checks on all netcdf files
     -r # repeat_id
-       #  - default uses main (1), if you have created repeat_ids manually or with assess.py, specify here [omit "proj_codes_"]
+       #  - default uses main, if you have created repeat_ids manually or with assess.py, specify here.
     -d # dryrun
        #  - Skip creating any new files in this phase
 

@@ -8,7 +8,7 @@ import json
 import logging
 import glob
 
-from pipeline.logs import init_logger
+from pipeline.logs import init_logger, log_status
 
 config = {
     'proj_code': None,
@@ -53,7 +53,9 @@ def make_filelist(pattern: str, proj_dir: str, logger):
     if pattern.endswith('.txt'):
         os.system(f'cp {pattern} {proj_dir}/allfiles.txt')
     elif os.path.isdir(proj_dir):
-        os.system(f'ls {pattern} > {proj_dir}/allfiles.txt')
+        name = pattern.split('/')[-1]
+        path = '/'.join(pattern.split('/')[:-1])
+        os.system(f'find {path} -name "{name}" -type f > {proj_dir}/allfiles.txt')
     else:
         logger.error(f'Project Directory not located - {proj_dir}')
         return None
@@ -141,7 +143,7 @@ def text_file_to_csv(args, logger, prefix=None):
     
     # Output completed csv setup part
 
-def make_dirs(args, logger):
+def make_directories(args, logger):
     """Set up directory structure for working directory"""
     logger.info('Creating project directories')
 
@@ -157,7 +159,7 @@ def make_dirs(args, logger):
         proj_codes = proj_codes[1:]
     
     for index, proj_code in enumerate(proj_codes):
-        cfg_values = dict(config)      # Ensure no linking
+        cfg_values = dict(config)
         ds_values  = datasets[proj_code]
         pattern    = ds_values[0]
 
@@ -205,7 +207,9 @@ def make_dirs(args, logger):
             if not args.forceful:
                 logger.warn(f'{proj_code} directory already exists')
 
-        status = make_filelist(pattern, proj_dir, logger)
+        status = True
+        if not os.path.isfile(f'{proj_dir}/allfiles.txt'):
+            status = make_filelist(pattern, proj_dir, logger)
         if not status:
             logger.error(f'Issue creating filelist for {proj_code}')
         else:
@@ -220,21 +224,42 @@ def make_dirs(args, logger):
             else:
                 logger.warn(f'{base_file} already exists - skipping')
 
-    logger.info(f'Exporting {len(proj_codes)} dataset config files')
+        # New directories and files required
+        if not os.path.isfile(f'{proj_dir}/status_log.csv'):
+            os.system(f'touch {proj_dir}/status_log.csv')
+        log_status('init', proj_dir, 'complete',logger)
+        
+        if not os.path.isdir(f'{proj_dir}/phase_logs'):
+            os.makedirs(f'{proj_dir}/phase_logs')
+        for phase in ['scan','compute','validate']:
+            if not os.path.isfile(f'{proj_dir}/phase_logs/{phase}.log'):
+                os.system(f'touch {proj_dir}/phase_logs/{phase}.log')
 
-    if args.dryrun:
-        logger.debug(f'DRYRUN: Skip writing {len(proj_codes)} project codes list {args.groupdir}/proj_codes_1.txt')
-    else:
-        with open(f'{args.groupdir}/proj_codes_1.txt','w') as f:
-            f.write('\n'.join(proj_codes))
+    logger.info(f'Created {len(proj_codes)*6} files, {len(proj_codes)*2} directories in group {args.groupID}')
+
+    if not os.path.isdir(args.groupdir):
+        os.makedirs(args.groupdir)
+
+    if not os.path.isdir(f'{args.groupdir}/proj_codes/'):
+        os.makedirs(f'{args.groupdir}/proj_codes/')
+
+    with open(f'{args.groupdir}/proj_codes/main.txt','w') as f:
+        f.write('\n'.join(proj_codes))
+    if not os.path.isfile(f'{args.groupdir}/blacklist_codes.txt'):
+        os.system(f'touch {args.groupdir}/blacklist_codes.txt')
 
     logger.info(f'Written as group ID: {args.groupID}')
 
-def init_config(args):
+def init_config(args, fh=None, logid=None, **kwargs):
     """Main configuration script, load configurations from input sources"""
 
-    logger = init_logger(args.verbose, args.mode, 'init')
+    logger = init_logger(args.verbose, args.mode, 'init',fh=fh, logid=logid)
     logger.info('Starting initialisation')
+
+    if not args.input.startswith('/'):
+        pwd = os.getcwd()
+        logger.info(f'Copying input file from relative path - resolved to {pwd}')
+        args.input = os.path.join(pwd, args.input)
 
     groupID = None
     if hasattr(args, 'groupID'):
@@ -260,7 +285,7 @@ def init_config(args):
                 os.makedirs(args.groupdir)
 
             os.system(f'cp {args.input} {new_csv}')
-        make_dirs(args, logger)
+        make_directories(args, logger)
 
     else:
         logger.debug('Starting single project initialisation')

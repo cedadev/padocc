@@ -5,6 +5,7 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 import logging
 import os
 from pipeline.errors import MissingVariableError
+from datetime import datetime
 
 levels = [
     logging.WARN,
@@ -20,35 +21,29 @@ SUFFIXES = {
     'G': 1000000000
 }
 
-class BypassSwitch:
-    def __init__(self, switch='FDSC'):
-        if switch.startswith('+'):
-            switch = 'FDSC' + switch[1:]
-        self.switch = switch
-        if type(switch) == str:
-            switch = list(switch)
-        
-        self.skip_scanfile = ('F' in switch)
-        self.skip_driver   = ('D' in switch)
-        self.skip_boxfail  = ('B' in switch)
-        self.skip_softfail = ('S' in switch)
-        self.skip_data_sum = ('C' in switch)
-        self.skip_memcheck = ('M' in switch)
+def log_status(phase, proj_dir, status, logger, jobid='', dryrun=''):
+    """Find the status file for this project code, add a new entry for the status.
+    - Entry should be of the form:
+    - phase, status, time, jobid
+    """
 
-    def __str__(self):
-        return self.switch
+    # Create file if not already present
+    status_log = f'{proj_dir}/status_log.csv'
+    if not os.path.isfile(status_log):
+        logger.debug(f'Creating status file {status_log}')
+        os.system(f'touch {status_log}')
     
-    def help(self):
-        return str("""
-Bypass switch options: \n
-  "F" - * Skip individual file scanning errors.
-  "D" - * Skip driver failures - Pipeline tries different options for NetCDF (default).
-      -   Only need to turn this skip off if all drivers fail (KerchunkFatalDriverError).
-  "B" -   Skip Box compute errors.
-  "S" - * Skip Soft fails (NaN-only boxes in validation) (default).
-  "C" - * Skip calculation (data sum) errors (time array typically cannot be summed) (default).
-  "M" -   Skip memory checks (validate/compute aborts if utilisation estimate exceeds cap).
-""")
+    # Open existing file
+    with open(status_log) as f:
+        lines = [r.strip() for r in f.readlines()]
+
+    # Add new content from most recent run
+    lines.append(f'{phase},{status},{datetime.now().strftime("%H:%M %D")},{jobid},{dryrun}')
+
+    # Save content
+    with open(status_log, 'w') as f:
+        f.write('\n'.join(lines))
+    logger.info(f'Updated new status: {phase} - {status}')
 
 class FalseLogger:
     def __init__(self):
@@ -62,9 +57,29 @@ class FalseLogger:
     def error(self, message):
         pass
 
-def init_logger(verbose, mode, name):
+def reset_file_handler(logger, verbose, new_log):
+    logger.handlers.clear()
+    verbose = min(verbose, len(levels)-1)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(levels[verbose])
+
+    formatter = logging.Formatter('%(levelname)s [%(name)s]: %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    fh = logging.FileHandler(new_log)
+    fh.setLevel(levels[verbose])
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
+    return logger
+
+def init_logger(verbose, mode, name, fh=None, logid=None):
     """Logger object init and configure with formatting"""
     verbose = min(verbose, len(levels)-1)
+    if logid != None:
+        name = f'{name}_{logid}'
 
     logger = logging.getLogger(name)
     logger.setLevel(levels[verbose])
@@ -76,17 +91,11 @@ def init_logger(verbose, mode, name):
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
-    return logger
+    if fh:
+        handle = logging.FileHandler(fh)
+        handle.setLevel(levels[verbose])
+        handle.setFormatter(formatter)
+        logger.addHandler(handle)
+        print(fh)
 
-def get_attribute(env: str, args, var: str):
-    """Assemble environment variable or take from passed argument.
-    
-    Finds value of variable from Environment or ParseArgs object, or reports failure
-    """
-    if getattr(args, var):
-        return getattr(args, var)
-    elif os.getenv(env):
-        return os.getenv(env)
-    else:
-        print(var)
-        raise MissingVariableError(type=var)
+    return logger

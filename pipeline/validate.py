@@ -15,7 +15,9 @@ import logging
 import math
 
 from pipeline.errors import *
-from pipeline.logs import init_logger, SUFFIXES, SUFFIX_LIST, BypassSwitch
+from pipeline.logs import init_logger, SUFFIXES, SUFFIX_LIST
+from pipeline.utils import BypassSwitch
+from ujson import JSONDecodeError
 
 ## 1. Array Selection Tools
 
@@ -38,6 +40,24 @@ def get_vslice(shape: list, dtypes: list, lengths: list, divisions: list, logger
             vslice.append(slice(0,find_dimensions(dim,divisions)))
     logger.debug(f'Slice {vslice}')
     return vslice
+
+def get_concat_dims(xfiles, detailfile=None):
+    # Not usable with virtual dimensions
+    concat_dims = {'time':0}
+    if os.path.isfile(detailfile):
+        with open(detailfile) as f:
+            details = json.load(f)
+    # Initialise concat dims
+    if 'concat_dims' in details:
+        for dim in details['concat_dims']:
+            concat_dims[dim] = 0
+
+    for xf in xfiles:
+        # Open netcdf in lowest memory intensive way possible.
+        ds = xr.open_dataset(xf)
+        for dim in concat_dims.keys():
+            concat_dims[dim] += ds[dim].shape[0]
+    return concat_dims
 
 ## 2. File Selection Tools
 
@@ -146,7 +166,11 @@ def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file'):
         )
     else:
         logger.debug('Opening Kerchunk JSON file')
-        mapper  = fsspec.get_mapper('reference://',fo=kfile, target_options={"compression":None}, remote_protocol=remote_protocol)
+        try:
+            mapper  = fsspec.get_mapper('reference://',fo=kfile, target_options={"compression":None}, remote_protocol=remote_protocol)
+        except JSONDecodeError as err:
+            logger.error(f"Kerchunk file {kfile} appears to be empty")
+            raise MissingKerchunkError
         # Need a safe repeat here
         ds = None
         attempts = 0
@@ -155,7 +179,9 @@ def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file'):
             try:
                 ds = xr.open_zarr(mapper, consolidated=False, decode_times=True)
             except OverflowError:
-                ds = None  
+                ds = None
+            except Exception as err:
+                raise MissingKerchunkError(message=f'Failed to open kerchunk file {kfile}')
         if not ds:
             raise ChunkDataError
         logger.debug('Successfully opened Kerchunk with virtual xarray ds')
@@ -184,7 +210,7 @@ def check_memory(nfiles, indexes, mem, logger):
     if nftotal > memcap:
         raise ExpectMemoryError(required=value_to_mem(nftotal), current=mem)
 
-def open_netcdfs(args, logger, thorough=False):
+def open_netcdfs(args, logger, thorough=False, concat_dims='time'):
     """Returns a single xarray object with one timestep:
      - Select a single file and a single timestep from that file
      - Verify that a single timestep can be selected (Yes: return this xarray object, No: select all files and select a single timestep from that)
@@ -207,14 +233,14 @@ def open_netcdfs(args, logger, thorough=False):
         if len(xobjs) == 0:
             logger.error('No valid timestep objects identified')
             raise NoValidTimeSlicesError(message='Kerchunk', verbose=args.verbose)
-        return xobjs, indexes, len(xfiles)
+        return xobjs, indexes, xfiles
     else:
         if not args.bypass.skip_memcheck:
             check_memory(xfiles, [i for i in range(len(xfiles))], args.memory, logger)
         else:
             logger.warning('Memory checks bypassed')
-        xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim='time', data_vars='minimal')
-        return xobj, None, len(xfiles)
+        xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim=concat_dims, data_vars='minimal')
+        return xobj, None, xfiles
 
 ## 3. Validation Testing
 
@@ -252,7 +278,7 @@ def compare_data(vname: str, xbox, kerchunk_box, logger, bypass=False):
      - Expect TypeErrors from summations which are bypassed.
      - Other errors will exit the run.
     """
-    logger.debug('Starting xk comparison')
+    logger.debug(f'Starting xk comparison')
 
     try: # Tolerance 0.1% of mean value for xarray set
         tolerance = np.abs(np.nanmean(kerchunk_box))/1000
@@ -260,62 +286,142 @@ def compare_data(vname: str, xbox, kerchunk_box, logger, bypass=False):
         tolerance = None
 
     testpass = True
-    if not np.array_equal(xbox, kerchunk_box):
-        logger.warn(f'Failed equality check for {vname}')
+    if not np.array_equal(xbox, kerchunk_box, equal_nan=True):
+        logger.warning(f'Failed equality check for {vname}')
         raise ValidationError
     try:
         if np.abs(np.nanmax(kerchunk_box) - np.nanmax(xbox)) > tolerance:
-            logger.warn(f'Failed maximum comparison for {vname}')
+            logger.warning(f'Failed maximum comparison for {vname}')
             logger.debug('K ' + str(np.nanmax(kerchunk_box)) + ' N ' + str(np.nanmax(xbox)))
             testpass = False
     except TypeError as err:
         if bypass:
-            logger.warn(f'Max comparison skipped for non-summable values in {vname}')
+            logger.warning(f'Max comparison skipped for non-summable values in {vname}')
         else:
             raise err
     try:
         if np.abs(np.nanmin(kerchunk_box) - np.nanmin(xbox)) > tolerance:
-            logger.warn(f'Failed minimum comparison for {vname}')
+            logger.warning(f'Failed minimum comparison for {vname}')
             logger.debug('K ' + str(np.nanmin(kerchunk_box)) + ' N ' + str(np.nanmin(xbox)))
             testpass = False
     except TypeError as err:
         if bypass:
-            logger.warn(f'Min comparison skipped for non-summable values in {vname}')
+            logger.warning(f'Min comparison skipped for non-summable values in {vname}')
         else:
             raise err
     try:
         if np.abs(np.nanmean(kerchunk_box) - np.nanmean(xbox)) > tolerance:
-            logger.warn(f'Failed mean comparison for {vname}')
+            logger.warning(f'Failed mean comparison for {vname}')
             logger.debug('K ' + str(np.nanmean(kerchunk_box)) + ' N ' + str(np.nanmean(xbox)))
             testpass = False
     except TypeError as err:
         if bypass:
-            logger.warn(f'Mean comparison skipped for non-summable values in {vname}')
+            logger.warning(f'Mean comparison skipped for non-summable values in {vname}')
         else:
             raise err
     if not testpass:
         logger.error('Validation Error')
         raise ValidationError
 
-def validate_shapes(xobj, kobj, step: int, nfiles: list, xv: str, logger):
+def validate_shape_to_tolerance(nfiles: int, xv, dims, xshape, kshape, logger, detailfile=None):
+    tolerance = 1/(nfiles*5)
+    logger.info(f'Attempting shape bypass using concat-dim tolerance {tolerance*100}%')
+    try:
+        logger.debug('Finding concat dims recorded in details for this proj_code')
+        with open(detailfile) as f:
+            concat_dims = json.load(f)['concat_dims']
+    except KeyError:
+        logger.debug('Unable to determine concat_dims, defaulting to time-only')
+        concat_dims = ['time']
+        check_dims = []
+        for cdim in concat_dims:
+            # Match to index in xobj
+            for index, dim in enumerate(dims):
+                if dim == cdim:
+                    check_dims.append(index)
+        tolerance_error = False
+        general_shape_error = False
+        for cdim in range(len(xshape)):
+            if cdim in check_dims:
+                if abs(xshape[cdim] - kshape[cdim]) / kshape[cdim] > tolerance:
+                    tolerance_error = XKShapeToleranceError(
+                        tolerance=tolerance,
+                        diff=abs(xshape[cdim] - kshape[cdim]) / kshape[cdim],
+                        dim=dims[cdim]
+                    )
+            else:
+                if xshape[cdim] != kshape[cdim]:
+                    general_shape_error = ShapeMismatchError(var=xv, first=kshape, second=xshape)
+        if general_shape_error:
+            raise general_shape_error
+        elif tolerance_error:
+            raise tolerance_error
+        else:
+            pass
+
+def validate_shapes(xobj, kobj, step: int, nfiles: list, xv: str, logger, proj_code, bypass_shape=False, detailfile=None, concat_dims={}):
     """Ensure shapes are equivalent across Kerchunk/NetCDF per variable
      - Accounts for the number of files opened vs how many files in total."""
     xshape = list(xobj[xv].shape)
     kshape = list(kobj[xv].shape)
 
-    if 'time' in xobj[xv].dims:
-        try:
-            xshape[0] *= nfiles
-        except TypeError:
-            logger.warning(f'{xv} - {nfiles}*{xshape[0]} failed to assign')
-        except:
-            pass
-
-    logger.debug(f'{xv} : Comparing shapes {xshape} and {kshape} - {step}')
-    
+    # Perform dimension adjustments if necessary
+    logger.debug(f'{xv} - raw shapes - K: {kshape}, X: {xshape}')
+    if concat_dims:
+        for index, dim in enumerate(xobj[xv].dims):
+            if dim in concat_dims:
+                xshape[index] = concat_dims[dim]
+    else:           
+        if 'time' in xobj[xv].dims:
+            try:
+                xshape[0] *= nfiles
+            except TypeError:
+                logger.warning(f'{xv} - {nfiles}*{xshape[0]} failed to assign')
+            except:
+                pass
+    logger.debug(f'{xv} - dimension-adjusted shapes - K: {kshape}, X: {xshape}')
     if xshape != kshape:
-        logger.info(f'Kerchunk/NetCDF mismatch for variable {xv} with shapes - K {kshape} vs N {xshape}')
-        raise ShapeMismatchError(var=xv, first=kshape, second=xshape)
+        # Incorrect dimensions on the shapes of the arrays
+        if xshape != kshape and bypass_shape: # Special bypass-shape testing
+            logger.info('Attempting special bypass using tolerance feature')
+            validate_shape_to_tolerance(nfiles, xv, xobj[xv].dims, xshape, kshape, logger, detailfile=detailfile)
+        else:
+            raise ShapeMismatchError(var=xv, first=xshape, second=kshape)
+        
+def check_for_nan(box, bypass, logger, label=None):
+    """Special function for assessing if a box selection has non-NaN values within it.
+    
+    - Needs further testing using different data types"""
+    logger.debug(f'Checking nan values for {label}')
+
+    def handle_boxissue(err):
+        if type(err) == TypeError:
+            return False
+        else:
+            if bypass.skip_boxfail:
+                logger.warning(f'{err} - Uncaught error bypassed')
+                return False
+            else:
+                raise err
+
+    if box.size == 1:
+        try:
+            isnan = np.isnan(box)
+        except Exception as err:
+            isnan = handle_boxissue(err)
+    else:
+        try:
+            kb = np.array(box)
+            isnan = np.all(kb!=kb)
+        except Exception as err:
+            isnan = handle_boxissue(err)
+        
+        if not isnan and box.size >= 1:
+            try:
+                isnan = np.all(kb == np.mean(kb))
+            except Exception as err:
+                isnan = handle_boxissue(err)
+    return isnan
 
 def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: int, logger, bypass=BypassSwitch()):
     """Validate this data selection in xvariable/kvariable objects
@@ -330,6 +436,7 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
     logger.debug(f'Attempt {repeat} - {currentdiv} divs for {vname}')
 
     vslice = []
+    shape = []
     if divs > 1:
         shape = xvariable.shape
         logger.debug(f'Detected shape {shape} for {vname}')
@@ -344,23 +451,32 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
         kbox = kvariable
 
     # Zero shape means no point running divisions - just perform full check
-    if shape == {} and vslice == []:
+    if shape == [] and vslice == []:
         logger.debug(f'Skipping to full selection (1 division) for {vname}')
         currentdiv = 1
 
-    try:
-        kb = np.array(kbox)
-        isnan = np.all(kb!=kb)
-    except Exception as err:
-        if bypass.skip_boxfail:
-            logger.warning(f'{err} - check versions')
-            isnan = True
+    # Need to check datatype and do something special here for strings
+    if xbox.dtype == 'object':
+        # Skip all other comparison steps for data types
+        if not np.array_equal(xbox, kbox):
+            raise ValidationError
         else:
-            raise err
+            return None
+
+    try_multiple = 0
+    knan, xnan = False, True
+    # Attempt nan checking multiple times due to network issues.
+    while try_multiple < 3 and knan != xnan:
+        knan = check_for_nan(kbox, bypass, logger, label='Kerchunk')
+        xnan = check_for_nan(xbox, bypass, logger, label='Xarray')
+        try_multiple += 1
+
+    if knan != xnan:
+        raise ValidationError('Kerchunk/NetCDF value mismatch - expected NaN, received values')
         
-    if kbox.size >= 1 and not isnan:
+    if kbox.size >= 1 and not knan:
         # Evaluate kerchunk vs xarray and stop here
-        logger.debug(f'Found non-NaN values with box-size: {int(kbox.size)}')
+        logger.debug(f'Found comparable box-size: {int(kbox.size)} values')
         compare_data(vname, xbox, kbox, logger, bypass=bypass.skip_data_sum)
     else:
         logger.debug(f'Attempt {repeat} - slice is Null')
@@ -368,38 +484,54 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
             # Recursive search for increasing size (decreasing divisions)
             validate_selection(xvariable, kvariable, vname, divs, int(currentdiv/2), logger, bypass=bypass)
         else:
-            logger.warn(f'Failed to find non-NaN slice (tried: {int(math.log2(divs))}, var: {vname})')
+            logger.warning(f'Failed to find non-NaN slice (tried: {int(math.log2(divs))}, var: {vname})')
             if not bypass.skip_softfail:
                 raise SoftfailBypassError
 
-def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=BypassSwitch()):
+def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=BypassSwitch(), depth_default=128, nfiles=2):
     """Run growing selection test for specified variable from xarray and kerchunk datasets"""
-    logger.info(f'{xv} : Starting growbox data tests for {step}')
+    logger.info(f'{xv} : Starting growbox data tests for {step+1} - {depth_default}')
 
-    kvariable, xvariable = match_timestamp(xobj[xv], kobj[xv], logger)
+    if nfiles > 1: # Timestep matching not required if only one file
+        kvariable, xvariable = match_timestamp(xobj[xv], kobj[xv], logger)
+    else:
+        kvariable = kobj[xv]
+        xvariable = xobj[xv]
 
     # Attempt 128 divisions within selection - 128, 64, 32, 16, 8, 4, 2, 1
-    return validate_selection(xvariable, kvariable, xv, 128, 128, logger, bypass=bypass)
+    return validate_selection(xvariable, kvariable, xv, depth_default, depth_default, logger, bypass=bypass)
 
-def validate_timestep(args, xobj, kobj, step: int, nfiles: list, logger):
+def validate_timestep(args, xobj, kobj, step: int, nfiles: int, logger, concat_dims={}, index=0):
     """Run all tests for a single file which may or may not equate to 1 timestep"""
+    # Note: step indexed from 0
 
     # Run Variable and Shape validation
+
+    if 'virtual' in concat_dims:
+        # Assume virtual dimension is first?
+        logger.info("Filtering out virtual dimension for testing")
+        virtual = {concat_dims['virtual']:index}
+        logger.debug(f'Kerchunk index: {index}')
+        kobj = kobj.isel(**virtual)
+
     xvars = set(xobj.variables)
     kvars = set(kobj.variables)
     if xvars&kvars != xvars: # Overlap of sets - all xvars should be in kvars
         missing = (xvars^kvars)&xvars 
         raise VariableMismatchError(missing=missing)
     else:
-        logger.info(f'Passed Variable tests')
+        logger.info(f'Passed Variable tests - all required variables are present')
         print()
         for xv in xvars:
-            validate_shapes(xobj, kobj, step, nfiles, xv, logger)
+            validate_shapes(xobj, kobj, step, nfiles, xv, logger, args.proj_code,
+                            bypass_shape=args.bypass.skip_xkshape, 
+                            detailfile=f'{args.proj_dir}/detail-cfg.json',
+                            concat_dims=concat_dims)
             logger.info(f'{xv} : Passed Shape test')
         logger.info(f'Passed all Shape tests')
         print()
         for xv in xvars:
-            validate_data(xobj, kobj, xv, step, logger, bypass=args.bypass)
+            validate_data(xobj, kobj, xv, step, logger, bypass=args.bypass, nfiles=nfiles)
             logger.info(f'{xv} : Passed Data test')
 
 def run_successful(args, logger):
@@ -422,70 +554,130 @@ def run_successful(args, logger):
         os.makedirs(complete_dir)
 
     # Open config file to get correct version
+    version_no = 'kr1.0'
+    detailfile = f'{args.proj_dir}/detail-cfg.json'
+    if os.path.isfile(detailfile):
+        with open(detailfile) as f:
+            details = json.load(f)
+        if 'version_no' in details:
+            version_no = details['version_no']
+            logger.info(f'Found version {version_no} in detail-cfg')
+    else:
+        logger.warning('detail-cfg.json file missing or unreachable - using default version number')
 
-    newfile = f'{complete_dir}/{args.proj_code}_kr1.0.json'
+    newfile = f'{complete_dir}/{args.proj_code}_{version_no}.json'
     if args.dryrun:
         logger.info(f'DRYRUN: mv {kfile} {newfile}')
     else:
         os.system(f'mv {kfile} {newfile}')
         os.system(f'touch {kfile}.complete')
 
-def run_backtrack():
-    """Not currently implemented"""
-    raise NotImplementedError
+def run_backtrack(args, logger):
+    """Backtrack progress on all output files. If quality is specified as well, files are removed rather than backtracked"""
 
-def validate_dataset(args):
+    if args.groupID:
+        complete_dir = f'{args.workdir}/complete/{args.groupID}'
+    else:
+        complete_dir = f'{args.workdir}/complete/single_runs'
+
+    if args.proj_dir:
+        proj_dir = args.proj_dir
+    else:
+        proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
+
+    logger.info("Removing 'complete' indicator file")
+
+    for f in glob.glob(f'{proj_dir}/*complete*'):
+        os.remove(f)
+    if args.quality:
+        logger.info("Removing Kerchunk file")
+        for f in glob.glob(f'{complete_dir}/{args.proj_code}*'):
+            os.remove(f)
+    else:
+        logger.info("Backtracking Kerchunk file")
+        for x, file in enumerate(glob.glob(f'{complete_dir}/{args.proj_code}*')):
+            os.rename(file, f'{proj_dir}/kerchunk-1{list("abcde")[x]}.json')
+
+    logger.info(f'{args.proj_code} Successfully backtracked to pre-validation')
+    
+def attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims={}, fullset=False):
+    """Handler for attempting processing on a timestep multiple times.
+    - Handles error conditions"""
+    try:
+        validate_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims=concat_dims)
+    except ShapeMismatchError as err:
+        if fullset:
+            raise TrueShapeValidationError
+        else:
+            return True
+    except Exception as err:
+        raise err
+
+def validate_dataset(args, fh=None, logid=None, **kwargs):
     """Perform validation steps for specific dataset defined here
      - Determine the number of NetCDF files in total
      - Run validation for a minimum subset of those files
     """
-    logger = init_logger(args.verbose, args.mode,'validate')
+    logger = init_logger(args.verbose, args.mode,'validate', fh=fh, logid=logid)
     logger.info(f'Starting tests for {args.proj_code}')
 
-    xobjs, indexes, nfiles = open_netcdfs(args, logger, thorough=args.quality)
+    if hasattr(args, 'backtrack'):
+        if args.backtrack:
+            run_backtrack(args, logger)
+            return None
+
+    if not args.proj_dir:
+        if args.groupID:
+            args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
+        else:
+            args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
+
+    xobjs, indexes, xfiles = open_netcdfs(args, logger, thorough=args.quality)
+    nfiles = len(xfiles)
     if len(xobjs) == 0:
         raise NoValidTimeSlicesError(message='Xarray/NetCDF')
     if indexes == None:
         args.quality = True
+
+    detailfile = f'{args.proj_dir}/detail-cfg.json'
+    with open(detailfile) as f:
+        details = json.load(f)
 
     ## Open kerchunk file
     kobj, _v = locate_kerchunk(args, logger)
     if not kobj:
         raise MissingKerchunkError
 
-    ## Set up loop variables
-    fullset   = False
+    virtual = False
+    if 'virtual_concat' in details:
+        virtual = details['virtual_concat']
+    
+    if virtual:
+        concat_dims = {'virtual': details['combine_kwargs']['concat_dims'][0]}
+        # Perform virtual attempt
+        logger.info(f"Attempting file subset validation: {len(indexes)}/{nfiles} (virtual dimension)")
+        for step, index in enumerate(indexes):
+            xobj = xobjs[step]
+            logger.info(f'Running tests for selected file: {index} ({step+1}/{len(indexes)})')
+            attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims=concat_dims, index=index)
+    else:
+        ## Set up loop variables
+        fullset     = bool(args.quality)
+        concat_dims = get_concat_dims(xfiles, detailfile=f'{args.proj_dir}/detail-cfg.json')
 
-    if args.quality:
-        fullset = True
-
-    if not fullset:
         logger.info(f"Attempting file subset validation: {len(indexes)}/{nfiles}")
         for step, index in enumerate(indexes):
             xobj = xobjs[step]
             logger.info(f'Running tests for selected file: {index} ({step+1}/{len(indexes)})')
-
-            try:
-                validate_timestep(args, xobj, kobj, step+1, nfiles, logger)
-            except ShapeMismatchError:
-                fullset = True
-                break
-            except ChunkDataError as err:
-                raise err
-                fullset = True
+            fullset = attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims=concat_dims)
+            if fullset:
                 break
 
-    if fullset:
-        print()
-        logger.info(f"Attempting total validation")
-        xobjs, indexes, nfiles = open_netcdfs(args, logger, thorough=True)
-        try:
-            validate_timestep(args, xobjs, kobj, 0, 1, logger)
-        except ShapeMismatchError:
-            raise TrueShapeValidationError
-        except Exception as err:
-            raise err
-    
+        if fullset:
+            print()
+            logger.info(f"Attempting total validation")
+            xobjs, indexes, nfiles = open_netcdfs(args, logger, thorough=True)
+            attempt_timestep(args, xobjs, kobj, 0, 1, logger, xfiles, concat_dims=concat_dims, fullset=True)
     
     logger.info('All tests passed successfully')
     print()

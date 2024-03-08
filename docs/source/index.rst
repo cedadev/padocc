@@ -19,7 +19,7 @@ The pipeline consists of four central phases, with an additional phase for inges
 
    Introduction <pipeline-overview>
    Getting Started <start>
-   Worked Examples <examples>
+   Example CCI Water Vapour <cci_water>
    Pipeline Flags/Options <execution>
    Assessor Tool Overview <assess-overview>
    Error Codes <errors>

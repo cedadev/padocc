@@ -17,15 +17,17 @@ import math
 import json
 import numpy as np
 
-from pipeline.logs import *
-from pipeline.errors import ExpectTimeoutError, FilecapExceededError
+from pipeline.logs import init_logger
+from pipeline.utils import get_attribute, BypassSwitch
+from pipeline.errors import *
+from pipeline.compute.serial_process import Converter, Indexer
 
 def format_float(value: int, logger):
     """Format byte-value with proper units"""
     logger.debug(f'Formatting value {value} in bytes')
     if value:
-        unit_index = -1
-        units = ['K','M','G','T','P']
+        unit_index = 0
+        units = ['','K','M','G','T','P']
         while value > 1000:
             value = value / 1000
             unit_index += 1
@@ -40,15 +42,16 @@ def safe_format(value: int, fstring: str):
     except:
         return ''
 
-def map_to_kerchunk(args, nfile: str, ctype: str, logger):
+def trial_kerchunk(args, nfile: str, ctype: str, logger):
     """Perform Kerchunk reading on specific file"""
     logger.info(f'Running Kerchunk reader for {nfile}')
-    from pipeline.compute.serial_process import Converter
 
     quickConvert = Converter(logger, bypass_driver=args.bypass.skip_driver)
 
     kwargs = {}
     supported_extensions = ['ncf3','hdf5','tif']
+
+    usetype = ctype
 
     logger.debug(f'Attempting conversion for 1 {ctype} extension')
     t1 = datetime.now()
@@ -59,39 +62,76 @@ def map_to_kerchunk(args, nfile: str, ctype: str, logger):
         # Try the other ones
         extension = supported_extensions[ext_index]
         logger.debug(f'Attempting conversion for {extension} extension')
+
         if extension != ctype:
             t1 = datetime.now()
             tdict = quickConvert.convert_to_zarr(nfile, extension, **kwargs)
             t_len = (datetime.now()-t1).total_seconds()
+            usetype = extension
         ext_index += 1
     
     if not tdict:
         logger.error('Scanning failed for all drivers, file type is not Kerchunkable')
-        return None, None, None
+        raise KerchunkDriverFatalError
     else:
-        logger.info(f'Scan successful with {ctype} driver')
-        return tdict['refs'], ctype, t_len
-
-def get_internals(args, testfile: str, ctype: str, logger):
+        logger.info(f'Scan successful with {usetype} driver')
+        return tdict, usetype, t_len
+    
+def load_from_previous(args, cache_id, logger):
+    cachefile = f'{args.proj_dir}/cache/{cache_id}.json'
+    if os.path.isfile(cachefile):
+        logger.info(f"Found existing cached file {cache_id}.json")
+        with open(cachefile) as f:
+            refs = json.load(f)
+        return refs
+    else:
+        return None
+        
+def perform_scan(args, testfile: str, ctype: str, logger, savecache=True, cache_id=None, thorough=False):
     """Map to kerchunk data and perform calculations on test netcdf file."""
-    refs, ctype, time = map_to_kerchunk(args, testfile, ctype, logger)
+    if cache_id and not thorough:
+        refs = load_from_previous(args, cache_id, logger)
+        time = 0
+        if not refs:
+            refs, ctype, time = trial_kerchunk(args, testfile, ctype, logger)
+    else:
+        refs, ctype, time = trial_kerchunk(args, testfile, ctype, logger)
     if not refs:
-        return None, None, None
-    logger.info(f'Starting summation process for {testfile}')
+        return None, None, None, None, None
+
+    logger.debug('Starting Analysis of references')
 
     # Perform summations, extract chunk attributes
     sizes = []
     vars = {}
     chunks = 0
-    for chunkkey in refs.keys():
-        if len(refs[chunkkey]) >= 2:
+    kdict = refs['refs']
+    for chunkkey in kdict.keys():
+        if len(kdict[chunkkey]) >= 2:
             try:
-                sizes.append(int(refs[chunkkey][2]))
+                sizes.append(int(kdict[chunkkey][2]))
                 chunks += 1
-                vars[chunkkey.split('/')[0]] = 1
             except ValueError:
                 pass
-    return np.sum(sizes), chunks, sorted(list(vars.keys())), ctype, time
+        if '/.zarray' in chunkkey:
+            var = chunkkey.split('/')[0]
+            chunksize = 0
+            if var not in vars:
+                if type(kdict[chunkkey]) == str:
+                    chunksize = json.loads(kdict[chunkkey])['chunks']
+                else:
+                    chunksize = dict(kdict[chunkkey])['chunks']
+                vars[var] = chunksize
+
+    # Save refs individually within cache.
+    if savecache:
+        cachedir = f'{args.proj_dir}/cache'
+        if not os.path.isdir(cachedir):
+            os.makedirs(cachedir)
+        with open(f'{cachedir}/{cache_id}.json','w') as f:
+            f.write(json.dumps(refs))
+
+    return np.sum(sizes), chunks, vars, ctype, time
 
 def eval_sizes(files: list):
     """Get a list of file sizes on disk from a list of filepaths"""
@@ -162,44 +202,65 @@ def perform_safe_calculations(std_vars: list, cpf: list, volms: list, files: lis
 
     return avg_cpf, num_vars, avg_chunk, spatial_res, data_represented, num_files, total_chunks, addition, estm_time
 
-def scan_dataset(args, files: list, proj_dir: str, proj_code: str, logger):
+def write_skip(proj_dir, proj_code, logger):
+    details = {'skipped':True}
+    with open(f'{proj_dir}/detail-cfg.json','w') as f:
+        f.write(json.dumps(details))
+    logger.info(f'Skipped scanning - {proj_code}/detail-cfg.json blank file created')
+
+def scan_dataset(args, files: list, logger):
     """Main process handler for scanning phase"""
+    proj_code = args.proj_code
+    proj_dir  = args.proj_dir
+    detailfile = f'{proj_dir}/detail-cfg.json'
     logger.debug(f'Assessment for {proj_code}')
 
     # Set up conditions, skip for small file count < 5
     escape, is_varwarn, is_skipwarn = False, False, False
     cpf, volms, times = [],[],[]
     trial_files = 5
+
     if len(files) < 5:
-        details = {'skipped':True}
-        if args.dryrun:
-            logger.info(f'DRYRUN: Skip writing to {proj_dir}/detail-cfg.json')
-        else:
-            with open(f'{proj_dir}/detail-cfg.json','w') as f:
-                f.write(json.dumps(details))
-            logger.info(f'Skipped scanning - {proj_code}/detail-cfg.json blank file created')
+        write_skip(proj_dir, proj_code, logger)
         return None
     else:
         logger.info(f'Identified {len(files)} files for scanning')
     
     # Perform scans for sample (max 5) files
     count    = 0
-    std_vars = None
+    std_vars   = None
+    std_chunks = None
     ctypes   = []
+
+    scanfile = files[0]
+    if '.' in scanfile:
+        ctype = f'.{scanfile.split(".")[-1]}'
+    else:
+        ctype = 'ncf3'
+
     filecap = min(100,len(files))
     while not escape and len(cpf) < trial_files:
         logger.info(f'Attempting scan for file {count+1} (min 5, max 100)')
         # Add random file selector here
-
         scanfile = files[count]
-        if '.' in scanfile:
-            extension = f'.{scanfile.split(".")[-1]}'
-        else:
-            extension = '.nc'
-
         try:
             # Measure time and ensure job will not overrun if it can be prevented.
-            volume, chunks_per_file, vars, ctype, time = get_internals(args, scanfile, extension, logger)
+            volume, chunks_per_file, varchunks, ctype, time = perform_scan(args, scanfile, ctype, logger, 
+                                                                           savecache=True, cache_id=str(count),
+                                                                           thorough=args.quality)
+            vars = sorted(list(varchunks.keys()))
+            if not std_vars:
+                std_vars = vars
+            if vars != std_vars:
+                logger.warning(f'Variables differ between files - {vars} vs {std_vars}')
+                is_varwarn = True
+
+            if not std_chunks:
+                std_chunks = varchunks
+            for var in std_vars:
+                if std_chunks[var] != varchunks[var]:
+                    raise ConcatFatalError(var=var, chunk1=std_chunks[var], chunk2=varchunks[var])
+
             if count == 0 and time > get_seconds(args.time_allowed)/trial_files:
                 raise ExpectTimeoutError(required=format_seconds(time*5), current=args.time_allowed)
 
@@ -208,20 +269,13 @@ def scan_dataset(args, files: list, proj_dir: str, proj_code: str, logger):
             ctypes.append(ctype)
             times.append(time)
 
-            if not std_vars:
-                std_vars = vars
-            if vars != std_vars:
-                logger.warning('Variables differ between files')
-                is_varwarn = True
-            logger.info(f'Data saved for file {count+1}')
+            logger.info(f'Data recorded for file {count+1}')
         except ExpectTimeoutError as err:
             raise err
-        except Exception as e:
-            if args.bypass.skip_scanfile:
-                logger.warning(f'Skipped file {count} - {e}')
-                is_skipwarn = True
-            else:
-                raise e
+        except ConcatFatalError as err:
+            raise err
+        except Exception as err:
+            raise err
         count += 1
         if count >= filecap:
             escape = True
@@ -233,7 +287,7 @@ def scan_dataset(args, files: list, proj_dir: str, proj_code: str, logger):
      spatial_res, data_represented, num_files, 
      total_chunks, addition, estm_time) = perform_safe_calculations(std_vars, cpf, volms, files, times, logger)
     
-    c2m = 1.67e-4 # Memory for each chunk in kerchunk in MB
+    c2m = 167 # Memory for each chunk in kerchunk in B
 
     details = {
         'netcdf_data'      : format_float(data_represented, logger), 
@@ -270,11 +324,33 @@ def scan_dataset(args, files: list, proj_dir: str, proj_code: str, logger):
             # Replace with dumping dictionary
             f.write(json.dumps(details))
         logger.info(f'Written output file {proj_code}/detail-cfg.json')
+    logger.info('Performing concatenation attempt with minimal files')
+    try:
+        assemble_trial_concatenation(args, ctype, logger)
+    except Exception as err:
+        logger.error('Error in concatenating files')
+        raise err
 
-def scan_config(args):
+def assemble_trial_concatenation(args, ctype, logger):
+
+    cfg_file    = f'{args.proj_dir}/base-cfg.json'
+    detail_file = f'{args.proj_dir}/detail-cfg.json'
+
+    idx_trial = Indexer(args.proj_code, cfg_file=cfg_file, detail_file=detail_file, 
+                    workdir=args.workdir, issave_meta=True, thorough=False, forceful=args.forceful,
+                    verb=args.verbose, mode=args.mode,
+                    bypass=args.bypass, groupID=args.groupID, limiter=2, ctype=ctype)
+    
+    idx_trial.create_refs()
+    with open(detail_file,'w') as f:
+        f.write(json.dumps(idx_trial.collect_details()))
+    logger.debug('Collected new details into detail-cfg.json')
+
+
+def scan_config(args, fh=None, logid=None, **kwargs):
     """Configure scanning and access main section"""
 
-    logger = init_logger(args.verbose, args.mode, 'scan')
+    logger = init_logger(args.verbose, args.mode, 'scan',fh=fh, logid=logid)
     logger.debug(f'Setting up scanning process')
 
     cfg_file = f'{args.proj_dir}/base-cfg.json'
@@ -282,22 +358,24 @@ def scan_config(args):
         with open(cfg_file) as f:
             cfg = json.load(f)
     else:
+        os.system(f'ls {args.proj_dir}')
         logger.error(f'cfg file missing or not provided - {cfg_file}')
         return None
     
     args.workdir  = get_attribute('WORKDIR', args, 'workdir')
     args.groupdir = get_attribute('GROUPDIR', args, 'groupdir')
 
-    proj_code = args.proj_code
-
     if args.groupID:
-        proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{proj_code}'
+        args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
     else:
-        proj_dir = f'{args.workdir}/in_progress/{proj_code}'
+        args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
 
-    logger.debug(f'Extracted attributes: {proj_code}, {args.workdir}, {proj_dir}')
+    logger.debug(f"""Extracted attributes: {args.proj_code}, 
+                                           {args.workdir}, 
+                                           {args.proj_dir}
+    """)
 
-    filelist = f'{proj_dir}/allfiles.txt'
+    filelist = f'{args.proj_dir}/allfiles.txt'
     
     if not os.path.isfile(filelist):
         logger.error(f'No filelist detected - {filelist}')
@@ -306,10 +384,10 @@ def scan_config(args):
     with open(filelist) as f:
         files = [r.strip() for r in f.readlines()]
 
-    if not os.path.isfile(f'{proj_dir}/detail-cfg.json') or args.forceful:
-        scan_dataset(args, files, proj_dir, proj_code, logger)
+    if not os.path.isfile(f'{args.proj_dir}/detail-cfg.json') or args.forceful:
+        scan_dataset(args, files, logger)
     else:
-        logger.warning(f'Skipped scanning {proj_code} - detailed config already exists')
+        logger.warning(f'Skipped scanning {args.proj_code} - detailed config already exists')
 
 if __name__ == '__main__':
     print('Kerchunk Pipeline Config Scanner - run using master scripts')

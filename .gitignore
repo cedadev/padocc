@@ -1,8 +1,10 @@
 .ipynb_checkpoints
 build_venv/
+kvenv/
 temp/
 testing/
 *__pycache__*
+.vscode/
 docs/build/
 build/
 pipeline.egg-info
