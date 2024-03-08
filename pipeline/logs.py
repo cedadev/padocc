@@ -59,6 +59,7 @@ class FalseLogger:
 
 def reset_file_handler(logger, verbose, new_log):
     logger.handlers.clear()
+    verbose = min(verbose, len(levels)-1)
 
     ch = logging.StreamHandler()
     ch.setLevel(levels[verbose])
@@ -69,13 +70,16 @@ def reset_file_handler(logger, verbose, new_log):
 
     fh = logging.FileHandler(new_log)
     fh.setLevel(levels[verbose])
+    fh.setFormatter(formatter)
     logger.addHandler(fh)
 
     return logger
 
-def init_logger(verbose, mode, name, fh=None):
+def init_logger(verbose, mode, name, fh=None, logid=None):
     """Logger object init and configure with formatting"""
     verbose = min(verbose, len(levels)-1)
+    if logid != None:
+        name = f'{name}_{logid}'
 
     logger = logging.getLogger(name)
     logger.setLevel(levels[verbose])
@@ -90,6 +94,8 @@ def init_logger(verbose, mode, name, fh=None):
     if fh:
         handle = logging.FileHandler(fh)
         handle.setLevel(levels[verbose])
+        handle.setFormatter(formatter)
         logger.addHandler(handle)
+        print(fh)
 
     return logger

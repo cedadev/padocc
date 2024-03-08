@@ -51,6 +51,8 @@ def trial_kerchunk(args, nfile: str, ctype: str, logger):
     kwargs = {}
     supported_extensions = ['ncf3','hdf5','tif']
 
+    usetype = ctype
+
     logger.debug(f'Attempting conversion for 1 {ctype} extension')
     t1 = datetime.now()
     tdict = quickConvert.convert_to_zarr(nfile, ctype, **kwargs)
@@ -60,18 +62,20 @@ def trial_kerchunk(args, nfile: str, ctype: str, logger):
         # Try the other ones
         extension = supported_extensions[ext_index]
         logger.debug(f'Attempting conversion for {extension} extension')
+
         if extension != ctype:
             t1 = datetime.now()
             tdict = quickConvert.convert_to_zarr(nfile, extension, **kwargs)
             t_len = (datetime.now()-t1).total_seconds()
+            usetype = extension
         ext_index += 1
     
     if not tdict:
         logger.error('Scanning failed for all drivers, file type is not Kerchunkable')
         raise KerchunkDriverFatalError
     else:
-        logger.info(f'Scan successful with {ctype} driver')
-        return tdict, ctype, t_len
+        logger.info(f'Scan successful with {usetype} driver')
+        return tdict, usetype, t_len
     
 def load_from_previous(args, cache_id, logger):
     cachefile = f'{args.proj_dir}/cache/{cache_id}.json'
@@ -83,11 +87,10 @@ def load_from_previous(args, cache_id, logger):
     else:
         return None
         
-def perform_scan(args, testfile: str, ctype: str, logger, savecache=False, cache_id=None, thorough=False):
+def perform_scan(args, testfile: str, ctype: str, logger, savecache=True, cache_id=None, thorough=False):
     """Map to kerchunk data and perform calculations on test netcdf file."""
     if cache_id and not thorough:
         refs = load_from_previous(args, cache_id, logger)
-        ctype = None
         time = 0
         if not refs:
             refs, ctype, time = trial_kerchunk(args, testfile, ctype, logger)
@@ -95,18 +98,18 @@ def perform_scan(args, testfile: str, ctype: str, logger, savecache=False, cache
         refs, ctype, time = trial_kerchunk(args, testfile, ctype, logger)
     if not refs:
         return None, None, None, None, None
-    logger.debug(f'Starting Analysis of references')
+
+    logger.debug('Starting Analysis of references')
 
     # Perform summations, extract chunk attributes
     sizes = []
     vars = {}
     chunks = 0
-    if 'refs' in refs:
-        refs = refs['refs']
-    for chunkkey in refs.keys():
-        if len(refs[chunkkey]) >= 2:
+    kdict = refs['refs']
+    for chunkkey in kdict.keys():
+        if len(kdict[chunkkey]) >= 2:
             try:
-                sizes.append(int(refs[chunkkey][2]))
+                sizes.append(int(kdict[chunkkey][2]))
                 chunks += 1
             except ValueError:
                 pass
@@ -114,10 +117,10 @@ def perform_scan(args, testfile: str, ctype: str, logger, savecache=False, cache
             var = chunkkey.split('/')[0]
             chunksize = 0
             if var not in vars:
-                if type(refs[chunkkey]) == str:
-                    chunksize = json.loads(refs[chunkkey])['chunks']
+                if type(kdict[chunkkey]) == str:
+                    chunksize = json.loads(kdict[chunkkey])['chunks']
                 else:
-                    chunksize = dict(refs[chunkkey])['chunks']
+                    chunksize = dict(kdict[chunkkey])['chunks']
                 vars[var] = chunksize
 
     # Save refs individually within cache.
@@ -228,23 +231,23 @@ def scan_dataset(args, files: list, logger):
     std_vars   = None
     std_chunks = None
     ctypes   = []
+
+    scanfile = files[0]
+    if '.' in scanfile:
+        ctype = f'.{scanfile.split(".")[-1]}'
+    else:
+        ctype = 'ncf3'
+
     filecap = min(100,len(files))
     while not escape and len(cpf) < trial_files:
         logger.info(f'Attempting scan for file {count+1} (min 5, max 100)')
         # Add random file selector here
-
         scanfile = files[count]
-        if '.' in scanfile:
-            extension = f'.{scanfile.split(".")[-1]}'
-        else:
-            extension = 'ncf3'
-
         try:
             # Measure time and ensure job will not overrun if it can be prevented.
-            volume, chunks_per_file, varchunks, ctype, time = perform_scan(args, scanfile, extension, logger, 
+            volume, chunks_per_file, varchunks, ctype, time = perform_scan(args, scanfile, ctype, logger, 
                                                                            savecache=True, cache_id=str(count),
                                                                            thorough=args.quality)
-
             vars = sorted(list(varchunks.keys()))
             if not std_vars:
                 std_vars = vars
@@ -323,20 +326,20 @@ def scan_dataset(args, files: list, logger):
         logger.info(f'Written output file {proj_code}/detail-cfg.json')
     logger.info('Performing concatenation attempt with minimal files')
     try:
-        assemble_trial_concatenation(args, logger)
+        assemble_trial_concatenation(args, ctype, logger)
     except Exception as err:
         logger.error('Error in concatenating files')
         raise err
 
-def assemble_trial_concatenation(args, logger):
+def assemble_trial_concatenation(args, ctype, logger):
 
     cfg_file    = f'{args.proj_dir}/base-cfg.json'
     detail_file = f'{args.proj_dir}/detail-cfg.json'
 
     idx_trial = Indexer(args.proj_code, cfg_file=cfg_file, detail_file=detail_file, 
-                    workdir=args.workdir, issave_meta=True, thorough=args.quality, forceful=args.forceful,
+                    workdir=args.workdir, issave_meta=True, thorough=False, forceful=args.forceful,
                     verb=args.verbose, mode=args.mode,
-                    bypass=args.bypass, groupID=args.groupID, limiter=2)
+                    bypass=args.bypass, groupID=args.groupID, limiter=2, ctype=ctype)
     
     idx_trial.create_refs()
     with open(detail_file,'w') as f:
@@ -344,10 +347,10 @@ def assemble_trial_concatenation(args, logger):
     logger.debug('Collected new details into detail-cfg.json')
 
 
-def scan_config(args):
+def scan_config(args, fh=None, logid=None, **kwargs):
     """Configure scanning and access main section"""
 
-    logger = init_logger(args.verbose, args.mode, 'scan')
+    logger = init_logger(args.verbose, args.mode, 'scan',fh=fh, logid=logid)
     logger.debug(f'Setting up scanning process')
 
     cfg_file = f'{args.proj_dir}/base-cfg.json'

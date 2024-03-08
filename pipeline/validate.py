@@ -179,7 +179,9 @@ def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file'):
             try:
                 ds = xr.open_zarr(mapper, consolidated=False, decode_times=True)
             except OverflowError:
-                ds = None  
+                ds = None
+            except Exception as err:
+                raise MissingKerchunkError(message=f'Failed to open kerchunk file {kfile}')
         if not ds:
             raise ChunkDataError
         logger.debug('Successfully opened Kerchunk with virtual xarray ds')
@@ -453,6 +455,14 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
         logger.debug(f'Skipping to full selection (1 division) for {vname}')
         currentdiv = 1
 
+    # Need to check datatype and do something special here for strings
+    if xbox.dtype == 'object':
+        # Skip all other comparison steps for data types
+        if not np.array_equal(xbox, kbox):
+            raise ValidationError
+        else:
+            return None
+
     try_multiple = 0
     knan, xnan = False, True
     # Attempt nan checking multiple times due to network issues.
@@ -603,12 +613,12 @@ def attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims={}, ful
     except Exception as err:
         raise err
 
-def validate_dataset(args):
+def validate_dataset(args, fh=None, logid=None, **kwargs):
     """Perform validation steps for specific dataset defined here
      - Determine the number of NetCDF files in total
      - Run validation for a minimum subset of those files
     """
-    logger = init_logger(args.verbose, args.mode,'validate')
+    logger = init_logger(args.verbose, args.mode,'validate', fh=fh, logid=logid)
     logger.info(f'Starting tests for {args.proj_code}')
 
     if hasattr(args, 'backtrack'):

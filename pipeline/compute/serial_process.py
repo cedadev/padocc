@@ -11,7 +11,7 @@ import base64
 
 from pipeline.logs import init_logger, FalseLogger
 from pipeline.utils import BypassSwitch
-from pipeline.errors import IdenticalVariablesError, ValidationError, ConcatenationError, SoftfailBypassError
+from pipeline.errors import *
 from pipeline.validate import validate_data, open_kerchunk, validate_selection
 
 class KerchunkDriverFatalError(Exception):
@@ -26,19 +26,21 @@ CONCAT_MSG = 'See individual files for more details'
 class Converter:
     """Class for converting a single file to a Kerchunk reference object"""
 
-    def __init__(self, clogger, bypass_driver=False):
+    def __init__(self, clogger, bypass_driver=False, ctype=None):
         self.logger = clogger
-        self.ctype = None
+        self.ctype = ctype
         self.success = True
         self.bypass_driver = bypass_driver
 
-    def convert_to_zarr(self, nfile, **kwargs):
+    def convert_to_zarr(self, nfile, extension=False, **kwargs):
         """Perform conversion to zarr with exceptions for bypassing driver errors."""
         drivers = {
             'ncf3': self.ncf3_to_zarr,
             'hdf5': self.hdf5_to_zarr,
             'tif' : self.tiff_to_zarr
         }
+        if extension:
+            self.ctype=extension
         try:
             if self.ctype in drivers:
                 return drivers[self.ctype](nfile, **kwargs)
@@ -74,9 +76,9 @@ class Indexer(Converter):
                  issave_meta=False, thorough=False, forceful=False, 
                  verb=0, mode=None, version_no='trial-',
                  concat_msg=CONCAT_MSG, bypass=BypassSwitch(), 
-                 groupID=None, limiter=None, dryrun=True):
+                 groupID=None, limiter=None, dryrun=True, ctype=None, fh=None, logid=None, **kwargs):
         """Initialise indexer for this dataset, set all variables and prepare for computation"""
-        super().__init__(init_logger(verb, mode, 'compute-serial'), bypass_driver=bypass.skip_driver)
+        super().__init__(init_logger(verb, mode, 'compute-serial', fh=fh, logid=logid), bypass_driver=bypass.skip_driver, ctype=ctype)
 
         self.logger.debug('Starting variable definitions')
 
@@ -561,8 +563,11 @@ class Indexer(Converter):
     
     def load_temp_zattrs(self):
         self.logger.debug(f'Loading attributes')
-        with open(f'{self.cache}/temp_zattrs.json') as f:
-            zattrs = json.load(f)
+        try:
+            with open(f'{self.cache}/temp_zattrs.json') as f:
+                zattrs = json.load(f)
+        except FileNotFoundError:
+            zattrs = None
         if not zattrs:
             self.logger.debug('No attributes loaded from temp store')
             return None
@@ -575,7 +580,8 @@ class Indexer(Converter):
         - Combine metadata and global attributes into a single set
         - Coordinate combining and saving of data"""
         self.logger.info(f'Starting computation for components of {self.proj_code}')
-        refs, allzattrs = []
+        refs, allzattrs = [], []
+        partials = []
         zattrs = None
         use_temp_zattrs = True
 
@@ -585,16 +591,27 @@ class Indexer(Converter):
             ref = None
             if os.path.isfile(cache_ref) and not self.thorough:
                 self.logger.info(f'Loading refs: {x+1}/{len(self.listfiles)}')
-                ref = self.load_cached(cache_ref)
+                if os.path.isfile(cache_ref):
+                    with open(cache_ref) as f:
+                        ref = json.load(f)
             if not ref:
                 self.logger.info(f'Creating refs: {x+1}/{len(self.listfiles)}')
-                ref = self.try_all_drivers(nfile, **self.create_kwargs)
+                try:
+                    ref = self.try_all_drivers(nfile, **self.create_kwargs)
+                except KerchunkDriverFatalError as err:
+                    if len(refs) == 0:
+                        raise err
+                    else:
+                        partials.append(x)
                 use_temp_zattrs = False
             if ref:
                 allzattrs.append(ref['refs']['.zattrs'])
                 refs.append(ref)
                 cache_ref = f'{self.cache}/{x}.json'
                 self.save_individual_ref(ref, cache_ref)
+
+        if len(partials) > 0:
+            raise PartialDriverError(filenums=partials)
 
         if use_temp_zattrs:
             zattrs = self.load_temp_zattrs()

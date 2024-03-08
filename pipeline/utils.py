@@ -27,9 +27,9 @@ def format_str(string: str, length: int):
     return string[:length]
 
 class BypassSwitch:
-    def __init__(self, switch='DBSCM'):
+    def __init__(self, switch='DBSCMR'):
         if switch.startswith('+'):
-            switch = 'DBSCM' + switch[1:]
+            switch = 'DBSCMR' + switch[1:]
         self.switch = switch
         if type(switch) == str:
             switch = list(switch)
@@ -71,8 +71,5 @@ def mem_to_val(value):
 
 def get_codes(group, workdir, filename):
     """Returns a list of the project codes given a filename (repeat id)"""
-    try:
-        with open(f'{workdir}/groups/{group}/{filename}.txt') as f:
-            return [r.strip() for r in f.readlines()]
-    except FileNotFoundError:
-        return []
+    with open(f'{workdir}/groups/{group}/{filename}.txt') as f:
+        return [r.strip() for r in f.readlines()]
