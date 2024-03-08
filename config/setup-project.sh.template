@@ -1,0 +1,7 @@
+module load jaspy
+
+export WORKDIR=/path/to/kerchunk-pipeline
+export SRCDIR=/gws/nopw/j04/cedaproc/kerchunk_builder/kerchunk-builder
+export KVENV=$SRCDIR/kvenv
+
+source $KVENV/bin/activate
