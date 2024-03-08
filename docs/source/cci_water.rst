@@ -7,6 +7,7 @@ Assuming you have already gone through the setup instructions in *Getting Starte
 A new *group* is created within the pipeline using the ``init`` operation as follows:
 
 ::
+
     python group_run.py init <my_new_group> -i extensions/example_water_vapour/water_vapour.csv -v
 
 .. note::
