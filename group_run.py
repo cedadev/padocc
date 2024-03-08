@@ -4,11 +4,12 @@ import os
 import argparse
 import subprocess
 
-from pipeline.logs import init_logger, BypassSwitch
+from pipeline.logs import init_logger
+from pipeline.utils import BypassSwitch
 
 def get_group_len(workdir, group, repeat_id=1):
     """Implement parallel reads from single 'group' file"""
-    with open(f'{workdir}/groups/{group}/proj_codes_{repeat_id}.txt') as f:
+    with open(f'{workdir}/groups/{group}/proj_codes/{repeat_id}.txt') as f:
         group_len = len(list(f.readlines()))
     return group_len
 
@@ -29,15 +30,8 @@ def get_attribute(env, args, var):
     else:
         print(f'Error: Missing attribute {var}')
         return None
-    
 
-def main(args):
-
-    logger = init_logger(args.verbose, 0, 'main-group')
-
-    deploy(args, logger)
-
-def deploy(args, logger, get_id=False, dependent_id=False):
+def main(args,get_id=False, dependent_id=False):
     """Assemble sbatch script for parallel running jobs"""
 
     logger = init_logger(args.verbose, 0, 'main-group')
@@ -165,7 +159,7 @@ if __name__ == '__main__':
     parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Print helpful statements while running')
     parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
     parser.add_argument('-Q','--quality', dest='quality', action='store_true', help='Quality assured checks - thorough run')
-    parser.add_argument('-b','--bypass-errs', dest='bypass', default='FDSC', help=BypassSwitch().help())
+    parser.add_argument('-b','--bypass-errs', dest='bypass', default='DBSCM', help=BypassSwitch().help())
     parser.add_argument('-B','--backtrack', dest='backtrack', action='store_true', help='Backtrack to previous position, remove files that would be created in this job.')
 
     # Environment variables
@@ -178,7 +172,7 @@ if __name__ == '__main__':
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
     parser.add_argument('-M','--memory', dest='memory', default='2G', help='Memory allocation for this job (i.e "2G" for 2GB)')
     parser.add_argument('-s','--subset',    dest='subset',    default=1,   type=int, help='Size of subset within group')
-    parser.add_argument('-r','--repeat_id', dest='repeat_id', default='1', help='Repeat id (1 if first time running, <phase>_<repeat> otherwise)')
+    parser.add_argument('-r','--repeat_id', dest='repeat_id', default='main', help='Repeat id (main if first time running, <phase>_<repeat> otherwise)')
 
     # Specialised
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
