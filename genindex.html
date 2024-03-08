@@ -40,7 +40,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Worked Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Pipeline Flags/Options</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
@@ -80,8 +80,8 @@
 
 <div class="genindex-jumpbox">
  <a href="#A"><strong>A</strong></a>
- | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
  | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
@@ -96,11 +96,22 @@
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
  | <a href="#V"><strong>V</strong></a>
  
 </div>
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.add_download_link">add_download_link() (pipeline.compute.serial_process.Indexer method)</a>
+</li>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.add_kerchunk_history">add_kerchunk_history() (pipeline.compute.serial_process.Indexer method)</a>
+</li>
+      <li><a href="assess.html#assess.add_to_blacklist">add_to_blacklist() (in module assess)</a>
+</li>
+      <li><a href="assess.html#assess.analyse_data">analyse_data() (in module assess)</a>
+</li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     assess
@@ -109,17 +120,9 @@
         <li><a href="assess.html#module-assess">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="assess.html#assess.assess_main">assess_main() (in module assess)</a>
 </li>
-  </ul></td>
-</tr></table>
-
-<h2 id="B">B</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="errors.html#pipeline.errors.BlacklistProjectCode">BlacklistProjectCode</a>
+      <li><a href="pipeline-source.html#pipeline.validate.attempt_timestep">attempt_timestep() (in module pipeline.validate)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -127,17 +130,45 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="errors.html#pipeline.errors.ChunkDataError">ChunkDataError</a>
+      <li><a href="pipeline-source.html#pipeline.validate.check_for_nan">check_for_nan() (in module pipeline.validate)</a>
+</li>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.check_time_attributes">check_time_attributes() (pipeline.compute.serial_process.Indexer method)</a>
+</li>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.clean_attr_array">clean_attr_array() (pipeline.compute.serial_process.Indexer method)</a>
+</li>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.clean_attrs">clean_attrs() (pipeline.compute.serial_process.Indexer method)</a>
 </li>
       <li><a href="assess.html#assess.cleanup">cleanup() (in module assess)</a>
 </li>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.collect_details">collect_details() (pipeline.compute.serial_process.Indexer method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.combine_and_save">combine_and_save() (pipeline.compute.serial_process.Indexer method)</a>
+</li>
       <li><a href="pipeline-source.html#pipeline.validate.compare_data">compare_data() (in module pipeline.validate)</a>
 </li>
-      <li><a href="errors.html#pipeline.errors.ConcatenationError">ConcatenationError</a>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.construct_virtual_dim">construct_virtual_dim() (pipeline.compute.serial_process.Indexer method)</a>
 </li>
-      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Converter">Converter (class in pipeline.compute.serial_process)</a>
+      <li><a href="pipeline-source.html#id1">convert_to_zarr() (pipeline.compute.serial_process.Converter method)</a>, <a href="pipeline-source.html#pipeline.compute.serial_process.Converter.convert_to_zarr">[1]</a>
+</li>
+      <li><a href="pipeline-source.html#id0">Converter (class in pipeline.compute.serial_process)</a>, <a href="pipeline-source.html#pipeline.compute.serial_process.Converter">[1]</a>
+</li>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.correct_metadata">correct_metadata() (pipeline.compute.serial_process.Indexer method)</a>
+</li>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.create_refs">create_refs() (pipeline.compute.serial_process.Indexer method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.data_to_json">data_to_json() (pipeline.compute.serial_process.Indexer method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.data_to_parq">data_to_parq() (pipeline.compute.serial_process.Indexer method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -145,17 +176,11 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="assess.html#assess.error_check">error_check() (in module assess)</a>
-</li>
       <li><a href="pipeline-source.html#pipeline.scan.eval_sizes">eval_sizes() (in module pipeline.scan)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="errors.html#pipeline.errors.ExpectMemoryError">ExpectMemoryError</a>
-</li>
-      <li><a href="errors.html#pipeline.errors.ExpectTimeoutError">ExpectTimeoutError</a>
-</li>
-      <li><a href="assess.html#assess.extract_keys">extract_keys() (in module assess)</a>
+      <li><a href="assess.html#assess.examine_log">examine_log() (in module assess)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -163,19 +188,17 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="errors.html#pipeline.errors.FilecapExceededError">FilecapExceededError</a>
-</li>
-      <li><a href="assess.html#assess.find_codes">find_codes() (in module assess)</a>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.find_concat_dims">find_concat_dims() (pipeline.compute.serial_process.Indexer method)</a>
 </li>
       <li><a href="pipeline-source.html#pipeline.validate.find_dimensions">find_dimensions() (in module pipeline.validate)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.find_identical_dims">find_identical_dims() (pipeline.compute.serial_process.Indexer method)</a>
+</li>
       <li><a href="pipeline-source.html#pipeline.scan.format_float">format_float() (in module pipeline.scan)</a>
 </li>
       <li><a href="pipeline-source.html#pipeline.scan.format_seconds">format_seconds() (in module pipeline.scan)</a>
-</li>
-      <li><a href="assess.html#assess.format_str">format_str() (in module assess)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -185,13 +208,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="execution-source.html#group_run.get_attribute">get_attribute() (in module group_run)</a>
 </li>
-      <li><a href="assess.html#assess.get_code_from_val">get_code_from_val() (in module assess)</a>
-</li>
       <li><a href="execution-source.html#group_run.get_group_len">get_group_len() (in module group_run)</a>
 </li>
-      <li><a href="pipeline-source.html#pipeline.init.get_input">get_input() (in module pipeline.init)</a>
+      <li><a href="assess.html#assess.get_index_of_code">get_index_of_code() (in module assess)</a>
 </li>
-      <li><a href="pipeline-source.html#pipeline.scan.get_internals">get_internals() (in module pipeline.scan)</a>
+      <li><a href="pipeline-source.html#pipeline.init.get_input">get_input() (in module pipeline.init)</a>
 </li>
       <li><a href="pipeline-source.html#pipeline.validate.get_netcdf_list">get_netcdf_list() (in module pipeline.validate)</a>
 </li>
@@ -204,6 +225,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pipeline-source.html#pipeline.init.get_removals">get_removals() (in module pipeline.init)</a>
+</li>
+      <li><a href="assess.html#assess.get_rerun_command">get_rerun_command() (in module assess)</a>
 </li>
       <li><a href="pipeline-source.html#pipeline.scan.get_seconds">get_seconds() (in module pipeline.scan)</a>
 </li>
@@ -224,13 +247,17 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Converter.hdf5_to_zarr">hdf5_to_zarr() (pipeline.compute.serial_process.Converter method)</a>
+      <li><a href="pipeline-source.html#id2">hdf5_to_zarr() (pipeline.compute.serial_process.Converter method)</a>, <a href="pipeline-source.html#pipeline.compute.serial_process.Converter.hdf5_to_zarr">[1]</a>
 </li>
   </ul></td>
 </tr></table>
 
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer">Indexer (class in pipeline.compute.serial_process)</a>
+</li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pipeline-source.html#pipeline.init.init_config">init_config() (in module pipeline.init)</a>
 </li>
@@ -240,7 +267,7 @@
 <h2 id="K">K</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="errors.html#pipeline.errors.KerchunkDriverFatalError">KerchunkDriverFatalError</a>, <a href="pipeline-source.html#pipeline.compute.serial_process.KerchunkDriverFatalError">[1]</a>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.KerchunkDriverFatalError">KerchunkDriverFatalError</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -270,22 +297,16 @@
         <li><a href="execution-source.html#single_run.main">(in module single_run)</a>
 </li>
       </ul></li>
-      <li><a href="pipeline-source.html#pipeline.init.make_dirs">make_dirs() (in module pipeline.init)</a>
+      <li><a href="pipeline-source.html#pipeline.init.make_directories">make_directories() (in module pipeline.init)</a>
 </li>
       <li><a href="pipeline-source.html#pipeline.init.make_filelist">make_filelist() (in module pipeline.init)</a>
-</li>
-      <li><a href="pipeline-source.html#pipeline.scan.map_to_kerchunk">map_to_kerchunk() (in module pipeline.scan)</a>
 </li>
       <li><a href="pipeline-source.html#pipeline.validate.match_timestamp">match_timestamp() (in module pipeline.validate)</a>
 </li>
       <li><a href="pipeline-source.html#pipeline.validate.mem_to_value">mem_to_value() (in module pipeline.validate)</a>
 </li>
-      <li><a href="errors.html#pipeline.errors.MissingKerchunkError">MissingKerchunkError</a>
+      <li><a href="assess.html#assess.merge_old_new">merge_old_new() (in module assess)</a>
 </li>
-      <li><a href="errors.html#pipeline.errors.MissingVariableError">MissingVariableError</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     module
 
@@ -313,13 +334,7 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Converter.ncf3_to_zarr">ncf3_to_zarr() (pipeline.compute.serial_process.Converter method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="errors.html#pipeline.errors.NoOverwriteError">NoOverwriteError</a>
-</li>
-      <li><a href="errors.html#pipeline.errors.NoValidTimeSlicesError">NoValidTimeSlicesError</a>
+      <li><a href="pipeline-source.html#id3">ncf3_to_zarr() (pipeline.compute.serial_process.Converter method)</a>, <a href="pipeline-source.html#pipeline.compute.serial_process.Converter.ncf3_to_zarr">[1]</a>
 </li>
   </ul></td>
 </tr></table>
@@ -333,8 +348,6 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pipeline-source.html#pipeline.validate.open_netcdfs">open_netcdfs() (in module pipeline.validate)</a>
 </li>
-      <li><a href="assess.html#assess.output_check">output_check() (in module assess)</a>
-</li>
   </ul></td>
 </tr></table>
 
@@ -342,6 +355,8 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pipeline-source.html#pipeline.scan.perform_safe_calculations">perform_safe_calculations() (in module pipeline.scan)</a>
+</li>
+      <li><a href="pipeline-source.html#pipeline.scan.perform_scan">perform_scan() (in module pipeline.scan)</a>
 </li>
       <li><a href="pipeline-source.html#pipeline.validate.pick_index">pick_index() (in module pipeline.validate)</a>
 </li>
@@ -359,6 +374,8 @@
         <li><a href="errors.html#module-pipeline.errors">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     pipeline.init
 
@@ -366,8 +383,6 @@
         <li><a href="pipeline-source.html#module-pipeline.init">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     pipeline.scan
 
@@ -384,24 +399,20 @@
       </ul></li>
       <li><a href="assess.html#assess.progress_check">progress_check() (in module assess)</a>
 </li>
-      <li><a href="errors.html#pipeline.errors.ProjectCodeError">ProjectCodeError</a>
-</li>
   </ul></td>
 </tr></table>
 
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="assess.html#assess.retro_errors">retro_errors() (in module assess)</a>
-</li>
       <li><a href="pipeline-source.html#pipeline.validate.run_backtrack">run_backtrack() (in module pipeline.validate)</a>
 </li>
       <li><a href="execution-source.html#single_run.run_compute">run_compute() (in module single_run)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="execution-source.html#single_run.run_init">run_init() (in module single_run)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="execution-source.html#single_run.run_scan">run_scan() (in module single_run)</a>
 </li>
       <li><a href="pipeline-source.html#pipeline.validate.run_successful">run_successful() (in module pipeline.validate)</a>
@@ -416,7 +427,9 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pipeline-source.html#pipeline.scan.safe_format">safe_format() (in module pipeline.scan)</a>
 </li>
-      <li><a href="assess.html#assess.save_sel">save_sel() (in module assess)</a>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.save_metadata">save_metadata() (pipeline.compute.serial_process.Indexer method)</a>
+</li>
+      <li><a href="assess.html#assess.save_selection">save_selection() (in module assess)</a>
 </li>
       <li><a href="pipeline-source.html#pipeline.scan.scan_config">scan_config() (in module pipeline.scan)</a>
 </li>
@@ -424,7 +437,7 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="errors.html#pipeline.errors.ShapeMismatchError">ShapeMismatchError</a>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.set_filelist">set_filelist() (pipeline.compute.serial_process.Indexer method)</a>
 </li>
       <li><a href="assess.html#assess.show_options">show_options() (in module assess)</a>
 </li>
@@ -435,7 +448,9 @@
         <li><a href="execution-source.html#module-single_run">module</a>
 </li>
       </ul></li>
-      <li><a href="errors.html#pipeline.errors.SoftfailBypassError">SoftfailBypassError</a>
+      <li><a href="assess.html#assess.status_check">status_check() (in module assess)</a>
+</li>
+      <li><a href="assess.html#assess.summary_data">summary_data() (in module assess)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -445,11 +460,21 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pipeline-source.html#pipeline.init.text_file_to_csv">text_file_to_csv() (in module pipeline.init)</a>
 </li>
+      <li><a href="pipeline-source.html#id4">tiff_to_zarr() (pipeline.compute.serial_process.Converter method)</a>, <a href="pipeline-source.html#pipeline.compute.serial_process.Converter.tiff_to_zarr">[1]</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Converter.tiff_to_zarr">tiff_to_zarr() (pipeline.compute.serial_process.Converter method)</a>
+      <li><a href="pipeline-source.html#pipeline.scan.trial_kerchunk">trial_kerchunk() (in module pipeline.scan)</a>
 </li>
-      <li><a href="errors.html#pipeline.errors.TrueShapeValidationError">TrueShapeValidationError</a>
+      <li><a href="pipeline-source.html#pipeline.compute.serial_process.Indexer.try_all_drivers">try_all_drivers() (pipeline.compute.serial_process.Indexer method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="assess.html#assess.upgrade_version">upgrade_version() (in module assess)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -461,17 +486,13 @@
 </li>
       <li><a href="pipeline-source.html#pipeline.validate.validate_dataset">validate_dataset() (in module pipeline.validate)</a>
 </li>
-      <li><a href="pipeline-source.html#pipeline.validate.validate_selection">validate_selection() (in module pipeline.validate)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="pipeline-source.html#pipeline.validate.validate_selection">validate_selection() (in module pipeline.validate)</a>
+</li>
       <li><a href="pipeline-source.html#pipeline.validate.validate_shapes">validate_shapes() (in module pipeline.validate)</a>
 </li>
       <li><a href="pipeline-source.html#pipeline.validate.validate_timestep">validate_timestep() (in module pipeline.validate)</a>
-</li>
-      <li><a href="errors.html#pipeline.errors.ValidationError">ValidationError</a>
-</li>
-      <li><a href="errors.html#pipeline.errors.VariableMismatchError">VariableMismatchError</a>
 </li>
   </ul></td>
 </tr></table>

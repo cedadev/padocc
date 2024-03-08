@@ -42,7 +42,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Worked Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Pipeline Flags/Options</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
@@ -114,7 +114,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.init.init_config">
-<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">init_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.init_config" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">init_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.init_config" title="Permalink to this definition"></a></dt>
 <dd><p>Main configuration script, load configurations from input sources</p>
 </dd></dl>
 
@@ -125,8 +125,8 @@
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="pipeline.init.make_dirs">
-<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">make_dirs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.make_dirs" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pipeline.init.make_directories">
+<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">make_directories</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.make_directories" title="Permalink to this definition"></a></dt>
 <dd><p>Set up directory structure for working directory</p>
 </dd></dl>
 
@@ -164,27 +164,21 @@
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.get_internals">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">get_internals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">testfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.scan.get_internals" title="Permalink to this definition"></a></dt>
-<dd><p>Map to kerchunk data and perform calculations on test netcdf file.</p>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="pipeline.scan.get_seconds">
 <span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">get_seconds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_allowed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.scan.get_seconds" title="Permalink to this definition"></a></dt>
 <dd><p>Convert time in MM:SS to seconds</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.map_to_kerchunk">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">map_to_kerchunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.scan.map_to_kerchunk" title="Permalink to this definition"></a></dt>
-<dd><p>Perform Kerchunk reading on specific file</p>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="pipeline.scan.perform_safe_calculations">
 <span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">perform_safe_calculations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">std_vars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.scan.perform_safe_calculations" title="Permalink to this definition"></a></dt>
 <dd><p>Perform all calculations safely to mitigate errors that come through during data collation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.scan.perform_scan">
+<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">perform_scan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">testfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savecache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.scan.perform_scan" title="Permalink to this definition"></a></dt>
+<dd><p>Map to kerchunk data and perform calculations on test netcdf file.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -195,14 +189,20 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.scan.scan_config">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">scan_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.scan.scan_config" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">scan_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.scan.scan_config" title="Permalink to this definition"></a></dt>
 <dd><p>Configure scanning and access main section</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.scan.scan_dataset">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">scan_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.scan.scan_dataset" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">scan_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.scan.scan_dataset" title="Permalink to this definition"></a></dt>
 <dd><p>Main process handler for scanning phase</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.scan.trial_kerchunk">
+<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">trial_kerchunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.scan.trial_kerchunk" title="Permalink to this definition"></a></dt>
+<dd><p>Perform Kerchunk reading on specific file</p>
 </dd></dl>
 
 </div>
@@ -211,8 +211,15 @@
 <p><strong>Serial Processor</strong></p>
 <span class="target" id="module-pipeline.compute.serial_process"></span><dl class="py class">
 <dt class="sig sig-object py" id="pipeline.compute.serial_process.Converter">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.compute.serial_process.</span></span><span class="sig-name descname"><span class="pre">Converter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clogger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass_driver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Converter" title="Permalink to this definition"></a></dt>
-<dd><dl class="py method">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.compute.serial_process.</span></span><span class="sig-name descname"><span class="pre">Converter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clogger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass_driver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Converter" title="Permalink to this definition"></a></dt>
+<dd><p>Class for converting a single file to a Kerchunk reference object</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Converter.convert_to_zarr">
+<span class="sig-name descname"><span class="pre">convert_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Converter.convert_to_zarr" title="Permalink to this definition"></a></dt>
+<dd><p>Perform conversion to zarr with exceptions for bypassing driver errors.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="pipeline.compute.serial_process.Converter.hdf5_to_zarr">
 <span class="sig-name descname"><span class="pre">hdf5_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Converter.hdf5_to_zarr" title="Permalink to this definition"></a></dt>
 <dd><p>Converter for HDF5 type files</p>
@@ -232,6 +239,157 @@
 
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="id0">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.compute.serial_process.</span></span><span class="sig-name descname"><span class="pre">Converter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clogger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass_driver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#id0" title="Permalink to this definition"></a></dt>
+<dd><p>Class for converting a single file to a Kerchunk reference object</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">convert_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#id1" title="Permalink to this definition"></a></dt>
+<dd><p>Perform conversion to zarr with exceptions for bypassing driver errors.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">hdf5_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#id2" title="Permalink to this definition"></a></dt>
+<dd><p>Converter for HDF5 type files</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">ncf3_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#id3" title="Permalink to this definition"></a></dt>
+<dd><p>Converter for NetCDF3 type files</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id4">
+<span class="sig-name descname"><span class="pre">tiff_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tfile</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#id4" title="Permalink to this definition"></a></dt>
+<dd><p>Converter for Tiff type files</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.compute.serial_process.</span></span><span class="sig-name descname"><span class="pre">Indexer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cfg_file=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detail_file=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">issave_meta=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verb=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version_no='trial-'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_msg='See</span> <span class="pre">individual</span> <span class="pre">files</span> <span class="pre">for</span> <span class="pre">more</span> <span class="pre">details'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass=&lt;pipeline.utils.BypassSwitch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limiter=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctype=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.add_download_link">
+<span class="sig-name descname"><span class="pre">add_download_link</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.add_download_link" title="Permalink to this definition"></a></dt>
+<dd><p>Add the download link to the Kerchunk references</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.add_kerchunk_history">
+<span class="sig-name descname"><span class="pre">add_kerchunk_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attrs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.add_kerchunk_history" title="Permalink to this definition"></a></dt>
+<dd><p>Add kerchunk variables to the metadata for this dataset</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.check_time_attributes">
+<span class="sig-name descname"><span class="pre">check_time_attributes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">times</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.check_time_attributes" title="Permalink to this definition"></a></dt>
+<dd><p>Takes dict of time attributes with lists of values
+- Sort time arrays
+- Assume time_coverage_start, time_coverage_end, duration (2 or 3 variables)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.clean_attr_array">
+<span class="sig-name descname"><span class="pre">clean_attr_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allzattrs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.clean_attr_array" title="Permalink to this definition"></a></dt>
+<dd><p>Collect global attributes from all refs:
+- Determine which differ between refs and apply changes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.clean_attrs">
+<span class="sig-name descname"><span class="pre">clean_attrs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zattrs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.clean_attrs" title="Permalink to this definition"></a></dt>
+<dd><p>Ammend any saved attributes post-combining
+- Not currently implemented, may be unnecessary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.collect_details">
+<span class="sig-name descname"><span class="pre">collect_details</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.collect_details" title="Permalink to this definition"></a></dt>
+<dd><p>Collect kwargs for combining and any special attributes - save to detail file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.combine_and_save">
+<span class="sig-name descname"><span class="pre">combine_and_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zattrs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.combine_and_save" title="Permalink to this definition"></a></dt>
+<dd><p>Concatenation of ref data for different kerchunk schemes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.construct_virtual_dim">
+<span class="sig-name descname"><span class="pre">construct_virtual_dim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.construct_virtual_dim" title="Permalink to this definition"></a></dt>
+<dd><p>Construct a Virtual dimension for stacking multiple files where no suitable concatenation dimension is present.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.correct_metadata">
+<span class="sig-name descname"><span class="pre">correct_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allzattrs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.correct_metadata" title="Permalink to this definition"></a></dt>
+<dd><p>General function for correcting metadata
+- Combine all existing metadata in standard way (cleaning arrays)
+- Add updates and remove removals specified by configuration</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.create_refs">
+<span class="sig-name descname"><span class="pre">create_refs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.create_refs" title="Permalink to this definition"></a></dt>
+<dd><p>Organise creation and loading of refs
+- Load existing cached refs
+- Create new refs
+- Combine metadata and global attributes into a single set
+- Coordinate combining and saving of data</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.data_to_json">
+<span class="sig-name descname"><span class="pre">data_to_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zattrs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.data_to_json" title="Permalink to this definition"></a></dt>
+<dd><p>Concatenating to JSON format Kerchunk file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.data_to_parq">
+<span class="sig-name descname"><span class="pre">data_to_parq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.data_to_parq" title="Permalink to this definition"></a></dt>
+<dd><p>Concatenating to Parquet format Kerchunk store</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.find_concat_dims">
+<span class="sig-name descname"><span class="pre">find_concat_dims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds_examples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.find_concat_dims" title="Permalink to this definition"></a></dt>
+<dd><p>Find dimensions to use when combining for concatenation
+- Dimensions which change over the set of files must be concatenated together
+- Dimensions which do not change (typically lat/lon) are instead identified as identical_dims</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.find_identical_dims">
+<span class="sig-name descname"><span class="pre">find_identical_dims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds_examples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.find_identical_dims" title="Permalink to this definition"></a></dt>
+<dd><p>Find dimensions and variables that are identical across the set of files.
+- Variables which do not change (typically lat/lon) are identified as identical_dims and not concatenated over the set of files.
+- Variables which do change are concatenated as usual.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.save_metadata">
+<span class="sig-name descname"><span class="pre">save_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zattrs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.save_metadata" title="Permalink to this definition"></a></dt>
+<dd><p>Cache metadata global attributes in a temporary file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.set_filelist">
+<span class="sig-name descname"><span class="pre">set_filelist</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.set_filelist" title="Permalink to this definition"></a></dt>
+<dd><p>Get the list of files from the filelist for this dataset</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.serial_process.Indexer.try_all_drivers">
+<span class="sig-name descname"><span class="pre">try_all_drivers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.Indexer.try_all_drivers" title="Permalink to this definition"></a></dt>
+<dd><p>Safe creation allows for known issues and tries multiple drivers</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py exception">
 <dt class="sig sig-object py" id="pipeline.compute.serial_process.KerchunkDriverFatalError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.compute.serial_process.</span></span><span class="sig-name descname"><span class="pre">KerchunkDriverFatalError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'All</span> <span class="pre">drivers</span> <span class="pre">failed</span> <span class="pre">when</span> <span class="pre">performing</span> <span class="pre">conversion'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.serial_process.KerchunkDriverFatalError" title="Permalink to this definition"></a></dt>
@@ -240,6 +398,22 @@
 </div>
 <div class="section" id="module-pipeline.validate">
 <span id="validation-module"></span><h2>Validation Module<a class="headerlink" href="#module-pipeline.validate" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.attempt_timestep">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">attempt_timestep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfiles</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fullset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.attempt_timestep" title="Permalink to this definition"></a></dt>
+<dd><p>Handler for attempting processing on a timestep multiple times.
+- Handles error conditions</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.validate.check_for_nan">
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">check_for_nan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">box</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.check_for_nan" title="Permalink to this definition"></a></dt>
+<dd><p>Special function for assessing if a box selection has non-NaN values within it.</p>
+<ul class="simple">
+<li><p>Needs further testing using different data types</p></li>
+</ul>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.validate.compare_data">
 <span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">compare_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xbox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kerchunk_box</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.compare_data" title="Permalink to this definition"></a></dt>
@@ -298,7 +472,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.validate.open_netcdfs">
-<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">open_netcdfs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.open_netcdfs" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">open_netcdfs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'time'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.open_netcdfs" title="Permalink to this definition"></a></dt>
 <dd><p>Returns a single xarray object with one timestep:
 - Select a single file and a single timestep from that file
 - Verify that a single timestep can be selected (Yes: return this xarray object, No: select all files and select a single timestep from that)
@@ -313,8 +487,8 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.validate.run_backtrack">
-<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">run_backtrack</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.run_backtrack" title="Permalink to this definition"></a></dt>
-<dd><p>Not currently implemented</p>
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">run_backtrack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.run_backtrack" title="Permalink to this definition"></a></dt>
+<dd><p>Backtrack progress on all output files. If quality is specified as well, files are removed rather than backtracked</p>
 </dd></dl>
 
 <dl class="py function">
@@ -325,13 +499,13 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.validate.validate_data">
-<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xv:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass=&lt;pipeline.logs.BypassSwitch</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_data" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xv:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass=&lt;pipeline.utils.BypassSwitch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth_default=128</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfiles=2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_data" title="Permalink to this definition"></a></dt>
 <dd><p>Run growing selection test for specified variable from xarray and kerchunk datasets</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.validate.validate_dataset">
-<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_dataset" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_dataset" title="Permalink to this definition"></a></dt>
 <dd><p>Perform validation steps for specific dataset defined here
 - Determine the number of NetCDF files in total
 - Run validation for a minimum subset of those files</p>
@@ -339,7 +513,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.validate.validate_selection">
-<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xvariable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kvariable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vname:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">divs:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">currentdiv:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass=&lt;pipeline.logs.BypassSwitch</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_selection" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xvariable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kvariable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vname:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">divs:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">currentdiv:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass=&lt;pipeline.utils.BypassSwitch</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_selection" title="Permalink to this definition"></a></dt>
 <dd><p>Validate this data selection in xvariable/kvariable objects
 - Recursive function tests a growing selection of data until one is found with real data
 - Repeats with exponentially increasing box size (divisions of all data dimensions)
@@ -348,14 +522,14 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.validate.validate_shapes">
-<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_shapes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_shapes" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_shapes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detailfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_shapes" title="Permalink to this definition"></a></dt>
 <dd><p>Ensure shapes are equivalent across Kerchunk/NetCDF per variable
 - Accounts for the number of files opened vs how many files in total.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.validate.validate_timestep">
-<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_timestep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_timestep" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">pipeline.validate.</span></span><span class="sig-name descname"><span class="pre">validate_timestep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.validate.validate_timestep" title="Permalink to this definition"></a></dt>
 <dd><p>Run all tests for a single file which may or may not equate to 1 timestep</p>
 </dd></dl>
 

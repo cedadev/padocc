@@ -42,11 +42,12 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Worked Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Pipeline Flags/Options</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Assessor Tool Overview</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#overall-progress-of-the-pipeline">1. Overall Progress of the Pipeline</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#checking-errors">2. Checking errors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#special-display-options">3. Special Display options</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
@@ -88,37 +89,82 @@
 <dt>The assessor script <code class="docutils literal notranslate"><span class="pre">`assess.py`</span></code> is an all-purpose pipeline checking tool which can be used to assess:</dt><dd><ul class="simple">
 <li><p>The current status of all datasets within a given group in the pipeline (which phase each dataset currently sits in)</p></li>
 <li><p>The errors/outputs associated with previous job runs.</p></li>
+<li><p>Specific logs from datasets which are presenting a specific type of error.</p></li>
+</ul>
+</dd>
+</dl>
+<p>An example command to run the assessor tool can be found below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">operation</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>Where the operation can be one of the below options:</dt><dd><ul class="simple">
+<li><p>Progress: Get a general overview of the pipeline; how many datasets have completed or are stuck on each phase.</p></li>
+<li><p>Summarise: Get an assessment of the data processed for this group</p></li>
+<li><p>Display: Display a specific type of information about the pipeline (blacklisted codes, datasets with virtual dimensions or using parquet)</p></li>
 </ul>
 </dd>
 </dl>
 <div class="section" id="overall-progress-of-the-pipeline">
 <h2>1. Overall Progress of the Pipeline<a class="headerlink" href="#overall-progress-of-the-pipeline" title="Permalink to this headline"></a></h2>
 <p>To see the general status of the pipeline for a given group:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">progress</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">progress</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span>
 </pre></div>
 </div>
+<p>An example output from this command can be seen below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Group</span><span class="p">:</span> <span class="n">cci_group_v1</span>
+<span class="n">Total</span> <span class="n">Codes</span><span class="p">:</span> <span class="mi">361</span>
+
+<span class="n">scan</span>      <span class="p">:</span> <span class="mi">1</span>     <span class="p">[</span><span class="mf">0.3</span> <span class="o">%</span><span class="p">]</span> <span class="p">(</span><span class="n">Variety</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="o">-</span> <span class="n">Complete</span>                 <span class="p">:</span> <span class="mi">1</span>
+
+<span class="n">complete</span>  <span class="p">:</span> <span class="mi">185</span>   <span class="p">[</span><span class="mf">51.2</span><span class="o">%</span><span class="p">]</span> <span class="p">(</span><span class="n">Variety</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="o">-</span> <span class="n">complete</span>                 <span class="p">:</span> <span class="mi">185</span>
+
+<span class="n">unknown</span>   <span class="p">:</span> <span class="mi">21</span>    <span class="p">[</span><span class="mf">5.8</span> <span class="o">%</span><span class="p">]</span> <span class="p">(</span><span class="n">Variety</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="o">-</span> <span class="n">no</span> <span class="n">data</span>                  <span class="p">:</span> <span class="mi">21</span>
+
+<span class="n">blacklist</span> <span class="p">:</span> <span class="mi">162</span>   <span class="p">[</span><span class="mf">44.9</span><span class="o">%</span><span class="p">]</span> <span class="p">(</span><span class="n">Variety</span><span class="p">:</span> <span class="mi">7</span><span class="p">)</span>
+    <span class="o">-</span> <span class="n">NonKerchunkable</span>          <span class="p">:</span> <span class="mi">50</span>
+    <span class="o">-</span> <span class="n">PartialDriver</span>            <span class="p">:</span> <span class="mi">3</span>
+    <span class="o">-</span> <span class="n">PartialDriverFail</span>        <span class="p">:</span> <span class="mi">5</span>
+    <span class="o">-</span> <span class="n">ExhaustedMemoryLimit</span>     <span class="p">:</span> <span class="mi">64</span>
+    <span class="o">-</span> <span class="n">ExhaustedTimeLimit</span>       <span class="p">:</span> <span class="mi">18</span>
+    <span class="o">-</span> <span class="n">ExhaustedTimeLimit</span><span class="o">*</span>      <span class="p">:</span> <span class="mi">1</span>
+    <span class="o">-</span> <span class="n">ValidationMemoryLimit</span>    <span class="p">:</span> <span class="mi">21</span>
+</pre></div>
+</div>
+<p>In this case there are 185 datasets that have completed the pipeline with 1 left to be scanned. The 21 unknowns have no log file so there is no information on these. This will be resolved in later versions where a <cite>seek</cite> function will automatically run when checking the progress, to fix gaps in the logs for missing datasets.</p>
 <p>An example use case is to write out all datasets that require scanning to a new label (repeat_label):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">progress</span> <span class="o">-</span><span class="n">p</span> <span class="n">scan</span> <span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span><span class="n">label_for_scan_subgroup</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">W</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">progress</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">p</span> <span class="n">scan</span> <span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span><span class="n">label_for_scan_subgroup</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">W</span>
 </pre></div>
 </div>
 <p>The last flag <code class="docutils literal notranslate"><span class="pre">`-W`</span></code> is required when writing an output file from this program, otherwise the program will dryrun and produce no files.</p>
 </div>
 <div class="section" id="checking-errors">
 <h2>2. Checking errors<a class="headerlink" href="#checking-errors" title="Permalink to this headline"></a></h2>
-<p>Check what repeat labels are available already using</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">errors</span> <span class="o">-</span><span class="n">s</span> <span class="n">labels</span>
+<p>Check what repeat labels are available already using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">display</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">s</span> <span class="n">labels</span>
 </pre></div>
 </div>
-<p>Show what jobs have previously run</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">errors</span> <span class="o">-</span><span class="n">s</span> <span class="n">jobids</span>
+<p>For listing the status of all datasets from a previous repeat idL</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">progress</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span><span class="n">repeat_id</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-<p>For showing all errors from a previous job run</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">errors</span> <span class="o">-</span><span class="n">j</span> <span class="o">&lt;</span><span class="n">jobid</span><span class="o">&gt;</span>
+<p>For selecting a specific type of error (-e) and examine the full log for each example (-E)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">progress</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span><span class="n">old_id</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;type_of_error&quot;</span> <span class="o">-</span><span class="n">p</span> <span class="n">scan</span> <span class="o">-</span><span class="n">E</span>
 </pre></div>
 </div>
-<p>For selecting a specific type of error to investigate (-i) and examine the full log for each example (-E)</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">errors</span> <span class="o">-</span><span class="n">j</span> <span class="o">&lt;</span><span class="n">jobid</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">i</span> <span class="s2">&quot;type_of_error&quot;</span> <span class="o">-</span><span class="n">E</span>
+<p>Following from this, you may want to rerun the pipeline for just one type of error previously found:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">progress</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span><span class="n">old_repeat_id</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;type_of_error&quot;</span> <span class="o">-</span><span class="n">p</span> <span class="n">scan</span> <span class="o">-</span><span class="n">n</span> <span class="o">&lt;</span><span class="n">new_repeat_id</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Note that if you are looking at a specific repeat ID, you can forego the phase (-p) flag, since it is expected this set would appear in the same phase anyway.</p>
+</div>
+<div class="section" id="special-display-options">
+<h2>3. Special Display options<a class="headerlink" href="#special-display-options" title="Permalink to this headline"></a></h2>
+<p>Check how many of the datasets in a group have virtual dimensions</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">display</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">s</span> <span class="n">virtuals</span>
 </pre></div>
 </div>
 </div>

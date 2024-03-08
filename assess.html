@@ -42,7 +42,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Worked Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Pipeline Flags/Options</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
@@ -81,6 +81,18 @@
   <div class="section" id="module-assess">
 <span id="assess-module"></span><h1>Assess Module<a class="headerlink" href="#module-assess" title="Permalink to this headline"></a></h1>
 <dl class="py function">
+<dt class="sig sig-object py" id="assess.add_to_blacklist">
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">add_to_blacklist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">savedcodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupdir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.add_to_blacklist" title="Permalink to this definition"></a></dt>
+<dd><p>Add a set of codes to the blacklist for a given reason</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="assess.analyse_data">
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">analyse_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.analyse_data" title="Permalink to this definition"></a></dt>
+<dd><p>Show some statistics of netcdf and kerchunk data amounts for this particular group</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="assess.assess_main">
 <span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">assess_main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.assess_main" title="Permalink to this definition"></a></dt>
 <dd><p>Main assessment function, different tools diverge from here.</p>
@@ -93,116 +105,73 @@
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="assess.error_check">
-<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">error_check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.error_check" title="Permalink to this definition"></a></dt>
-<dd><p>Check error files and summarise results</p>
-<p>Extract savedcodes and total number of errors from each type given a specific path, save selection of codes for later use if required.</p>
+<dt class="sig sig-object py" id="assess.examine_log">
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">examine_log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.examine_log" title="Permalink to this definition"></a></dt>
+<dd><p>Open and examine a log file from a previous run of a given phase
+- Show full error log
+- Suggest rerun/examination command</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="assess.extract_keys">
-<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">extract_keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savetype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">examine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.extract_keys" title="Permalink to this definition"></a></dt>
-<dd><p>Extract keys from error/output files, collect into groups and examine a particular type if required.</p>
-<dl class="simple">
-<dt>filepath<span class="classifier">str</span></dt><dd><p>String path to the error/output files</p>
-</dd>
-<dt>logger<span class="classifier">Logging.object</span></dt><dd><p>Logger object for warning/info/debug messages.</p>
-</dd>
-<dt>savetype<span class="classifier">str or bool</span></dt><dd><p>Error code to compare to error files and save matching codes to savedcodes array.</p>
-</dd>
-<dt>examine<span class="classifier">bool</span></dt><dd><p>Boolean switch for halting if matching code is found.</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>savedcodes<span class="classifier">list</span></dt><dd><dl class="simple">
-<dt>List of tuples for each file which abides by the savetype. Stored values in each tuple are:</dt><dd><ul class="simple">
-<li><p>efile (str) : Path to error/output file</p></li>
-<li><p>code (str)  : Project code of error file</p></li>
-<li><p>log (str)   : Full error log for this project code</p></li>
-</ul>
-</dd>
-</dl>
-</dd>
-<dt>keys<span class="classifier">dict</span></dt><dd><p>Dictionary of number of occurrences across all error logs of specific error codes.</p>
-</dd>
-<dt>total<span class="classifier">int</span></dt><dd><p>Total number of error files found under the path provided.</p>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="assess.get_index_of_code">
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">get_index_of_code</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workdir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">code</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.get_index_of_code" title="Permalink to this definition"></a></dt>
+<dd><p>Get the index of a project code within some repeat set of codes</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="assess.find_codes">
-<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">find_codes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.find_codes" title="Permalink to this definition"></a></dt>
-<dd><p>Find project codes for datasets that failed at various stages of the pipeline</p>
-<p>Checks ‘in-progress’ and ‘complete’ directories for datasets and config files to determine progress of all datasets.</p>
-<dl class="simple">
-<dt>phase<span class="classifier">str</span></dt><dd><p>Check config and output files corresponding to a pipeline phase.</p>
-</dd>
-<dt>workdir<span class="classifier">str</span></dt><dd><p>Path to current working directory of the pipeline.</p>
-</dd>
-<dt>groupID<span class="classifier">str</span></dt><dd><p>Check pipeline for a specific group ID.</p>
-</dd>
-<dt>check<span class="classifier">str</span></dt><dd><p>File type or specific file required for this phase to be considered complete</p>
-</dd>
-</dl>
-<p>ignore : list (str-like)</p>
-<dl class="simple">
-<dt>redo_pcodes<span class="classifier">list (str-like)</span></dt><dd><p>List of project codes to re-run for this phase.</p>
-</dd>
-<dt>complete<span class="classifier">list (str-like)</span></dt><dd><p>List of project codes considered to be complete for the whole pipeline.</p>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="assess.get_rerun_command">
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">get_rerun_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ecode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.get_rerun_command" title="Permalink to this definition"></a></dt>
+<dd><p>Print a rerun command for inspecting a single dataset using single_run.py</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="assess.format_str">
-<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">format_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.format_str" title="Permalink to this definition"></a></dt>
-<dd><p>Simple function to format a string to a correct length</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="assess.get_code_from_val">
-<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">get_code_from_val</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'proj_codes'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.get_code_from_val" title="Permalink to this definition"></a></dt>
-<dd><p>Takes some index value from command line and fetches the corresponding project code.</p>
-<p>Project codes stored in proj_codes.txt under each job id.</p>
-<dl class="simple">
-<dt>proj_code<span class="classifier">str</span></dt><dd><p>Project code that matches the provided index</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="assess.output_check">
-<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">output_check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.output_check" title="Permalink to this definition"></a></dt>
-<dd><p>Not implemented output log checker</p>
+<dt class="sig sig-object py" id="assess.merge_old_new">
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">merge_old_new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_codes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_codes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_old</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_new</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.merge_old_new" title="Permalink to this definition"></a></dt>
+<dd><p>Merge an existing list of project codes with a new set
+- Uses indexes if not a 1d list</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="assess.progress_check">
 <span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">progress_check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.progress_check" title="Permalink to this definition"></a></dt>
-<dd><p>Check general progress of pipeline for a specific group.</p>
-<p>Lists progress up to the provided phase, options to save all project codes stuck at a specific phase to a repeat_id for later use.</p>
+<dd><p>Give a general overview of progress within the pipeline
+- How many datasets currently at each stage of the pipeline
+- Errors within each pipeline phase
+- Allows for examination of error logs
+- Allows saving codes matching an error type into a new repeat group</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="assess.retro_errors">
-<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">retro_errors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.retro_errors" title="Permalink to this definition"></a></dt>
-<dd><p>Retrospective analysis of errors for all project codes within this group.
-- Saved in ErrorSummary.json file</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="assess.save_sel">
-<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">save_sel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.save_sel" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="assess.save_selection">
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">save_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.save_selection" title="Permalink to this definition"></a></dt>
 <dd><p>Save selection of codes to a file with a given repeat label.</p>
 <p>Requires a groupdir (directory belonging to a group), list of codes and a label for the new file.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="assess.show_options">
-<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">show_options</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.show_options" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">show_options</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.show_options" title="Permalink to this definition"></a></dt>
 <dd><p>Use OS tools to list contents of relevant directories to see all jobids or labels.</p>
 <p>List output or error directories (one per job id), or list all proj_codes text files.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="assess.status_check">
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">status_check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.status_check" title="Permalink to this definition"></a></dt>
+<dd><p>Check general progress of pipeline for a specific group.</p>
+<p>Lists progress up to the provided phase, options to save all project codes stuck at a specific phase to a repeat_id for later use.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="assess.summary_data">
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">summary_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.summary_data" title="Permalink to this definition"></a></dt>
+<dd><p>Display summary info in terms of data representation</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="assess.upgrade_version">
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">upgrade_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.upgrade_version" title="Permalink to this definition"></a></dt>
+<dd><p>Upgrade the version info in the kerchunk file</p>
 </dd></dl>
 
 </div>
