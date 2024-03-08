@@ -1,5 +1,6 @@
 .ipynb_checkpoints
 build_venv/
+kvenv/
 temp/
 testing/
 *__pycache__*
