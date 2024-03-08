@@ -9,24 +9,25 @@ import os
 import json
 import logging
 from datetime import datetime
+import traceback
 
 from pipeline.logs import init_logger, reset_file_handler, log_status
-from pipeline.utils import get_attribute, BypassSwitch
+from pipeline.utils import get_attribute, BypassSwitch, get_codes
 from pipeline.errors import ProjectCodeError, MissingVariableError, BlacklistProjectCode
 
-def run_init(args, logger):
+def run_init(args, logger, fh=None, **kwargs):
     """Start initialisation for single dataset"""
     from pipeline.init import init_config
     logger.info('Starting init process')
-    return init_config(args)
+    return init_config(args, fh=fh, **kwargs)
 
-def run_scan(args, logger):
+def run_scan(args, logger, fh=None,**kwargs):
     """Start scanning process for individual dataset"""
     from pipeline.scan import scan_config
     logger.info('Starting scan process')
-    return scan_config(args)
+    return scan_config(args,fh=fh, **kwargs)
 
-def run_compute(args, logger):
+def run_compute(args, logger, fh=None, logid=None, **kwargs):
     """Setup computation parameters for individual dataset"""
     from pipeline.compute.serial_process import Indexer
 
@@ -66,16 +67,17 @@ def run_compute(args, logger):
         return Indexer(args.proj_code, cfg_file=cfg_file, detail_file=detail_file, 
                 workdir=args.workdir, issave_meta=True, thorough=args.quality, forceful=args.forceful,
                 verb=args.verbose, mode=args.mode,
-                version_no=version_no, concat_msg=concat_msg, bypass=args.bypass, groupID=args.groupID, dryrun=args.dryrun).create_refs()
+                version_no=version_no, concat_msg=concat_msg, bypass=args.bypass, groupID=args.groupID, 
+                dryrun=args.dryrun, fh=fh, logid=logid).create_refs()
     else:
         logger.error('Output file already exists and there is no plan to overwrite')
         return None
 
-def run_validation(args, logger):
+def run_validation(args, logger, fh=None, **kwargs):
     """Start validation of single dataset"""
     from pipeline.validate import validate_dataset
     logger.info('Starting validation process')
-    return validate_dataset(args)
+    return validate_dataset(args, fh=fh, **kwargs)
 
 drivers = {
     'init':run_init,
@@ -84,11 +86,11 @@ drivers = {
     'validate': run_validation
 }
 
-def get_proj_code(groupdir: str, pid, repeat_id, subset=0, id=0):
+def get_proj_code(workdir: str, group: str, pid, repeat_id, subset=0, id=0):
     """Get the correct code given a slurm id from a group of project codes"""
     try:
-        with open(f'{groupdir}/proj_codes_{repeat_id}.txt') as f:
-            proj_code = f.readlines()[int(id)*subset + pid].strip()
+        proj_codes = get_codes(group, workdir, f'proj_codes/{repeat_id}')
+        proj_code = proj_codes[int(id)*subset + pid]
     except:
         raise ProjectCodeError
     return proj_code
@@ -114,12 +116,13 @@ def main(args):
 
     if os.getenv('SLURM_ARRAY_JOB_ID'):
         jobid = os.getenv('SLURM_ARRAY_JOB_ID')
+        taskid = os.getenv('SLURM_ARRAY_TASK_ID')
 
     args.workdir  = get_attribute('WORKDIR', args, 'workdir')
     if args.groupID:
         args.groupdir = f'{args.workdir}/groups/{args.groupID}'
         if jobid != '':
-            fh = f'{args.groupdir}/errs/{jobid}_{args.phase}_{args.repeat_id}.log'
+            fh = f'{args.groupdir}/errs/{jobid}_{taskid}_{args.phase}_{args.repeat_id}.log'
 
     logger = init_logger(args.verbose, args.mode, 'main', fh=fh)
 
@@ -156,7 +159,7 @@ def main(args):
 
                 proj_code = int(args.proj_code)
 
-                args.proj_code = get_proj_code(args.groupdir, proj_code, args.repeat_id, subset=args.subset, id=id)
+                args.proj_code = get_proj_code(args.workdir, args.groupID, proj_code, args.repeat_id, subset=args.subset, id=id)
                 args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
 
                 # Get rid of this section if necessary - redo to put code list elsewhere
@@ -165,7 +168,7 @@ def main(args):
                     if not os.path.isdir(f'{errs_dir}/{jobid}_{args.repeat_id}'):
                         os.makedirs(f'{errs_dir}/{jobid}_{args.repeat_id}')
 
-                    proj_code_file = f'{args.workdir}/groups/{args.groupID}/proj_codes_{args.repeat_id}.txt'
+                    proj_code_file = f'{args.workdir}/groups/{args.groupID}/proj_codes/{args.repeat_id}.txt'
 
                     if not os.path.isfile(f'{errs_dir}/{jobid}_{args.repeat_id}/proj_codes.txt'):
                         os.system(f'cp {proj_code_file} {errs_dir}/{jobid}_{args.repeat_id}/proj_codes.txt')
@@ -186,13 +189,19 @@ def main(args):
 
                 # Refresh log for this phase
                 proj_log = f'{args.proj_dir}/phase_logs/{args.phase}.log'
-                os.system(f'rm {proj_log}')
+                if not os.path.isdir(f'{args.proj_dir}/phase_logs'):
+                    os.makedirs(f'{args.proj_dir}/phase_logs')
+                if jobid != '':
+                    if os.path.isfile(proj_log):
+                        os.system(f'rm {proj_log}')
+                    if os.path.isfile(fh):
+                        os.system(f'rm {fh}')
                 if not args.bypass.skip_report:
                     log_status(args.phase, args.proj_dir, 'pending', logger, jobid=jobid, dryrun=args.dryrun)
                 try:
                     if jobid != '':
                         logger = reset_file_handler(logger, args.verbose, proj_log)
-                        drivers[args.phase](args, logger)
+                        drivers[args.phase](args, logger, fh=proj_log, logid=id)
                         logger = reset_file_handler(logger, args.verbose, fh)
                     else:
                         drivers[args.phase](args, logger)
@@ -200,11 +209,22 @@ def main(args):
                     if not args.bypass.skip_report:
                         log_status(args.phase, args.proj_dir, 'complete', logger, jobid=jobid, dryrun=args.dryrun)
                 except Exception as err:
+                    # Add error traceback
+                    tb = traceback.format_exc()
+                    logger.error(tb)
+
                     if jobid != '':
                         logger = reset_file_handler(logger, args.verbose, fh)
                     fails += 1
                     if not args.bypass.skip_report:
-                        log_status(args.phase, args.proj_dir, err.get_str(), logger, jobid=jobid, dryrun=args.dryrun)
+                        try:
+                            status = err.get_str()
+                        except AttributeError:
+                            status = type(err).__name__ + ' ' + str(err)
+                            
+                        # Messes up the csv if there are commas
+                        status = status.replace(',','-')
+                        log_status(args.phase, args.proj_dir, status, logger, jobid=jobid, dryrun=args.dryrun)
                     else:
                         raise err
             else:
@@ -226,7 +246,7 @@ if __name__ == '__main__':
     parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Print helpful statements while running')
     parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
     parser.add_argument('-Q','--quality', dest='quality', action='store_true', help='Quality assured checks - thorough run')
-    parser.add_argument('-b','--bypass-errs', dest='bypass', default='FDSC', help=BypassSwitch().help())
+    parser.add_argument('-b','--bypass-errs', dest='bypass', default='DBSCMR', help=BypassSwitch().help())
     parser.add_argument('-B','--backtrack', dest='backtrack', action='store_true', help='Backtrack to previous position, remove files that would be created in this job.')
 
     # Environment variables
@@ -239,7 +259,7 @@ if __name__ == '__main__':
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
     parser.add_argument('-M','--memory', dest='memory', default='2G', help='Memory allocation for this job (i.e "2G" for 2GB)')
     parser.add_argument('-s','--subset',    dest='subset',    default=1,   type=int, help='Size of subset within group')
-    parser.add_argument('-r','--repeat_id', dest='repeat_id', default='1', help='Repeat id (1 if first time running, <phase>_<repeat> otherwise)')
+    parser.add_argument('-r','--repeat_id', dest='repeat_id', default='main', help='Repeat id (1 if first time running, <phase>_<repeat> otherwise)')
 
     # Specialised
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
