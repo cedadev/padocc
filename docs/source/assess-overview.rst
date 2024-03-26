@@ -8,6 +8,7 @@ The assessor script ```assess.py``` is an all-purpose pipeline checking tool whi
 
 An example command to run the assessor tool can be found below:
 ::
+    
     python assess.py <operation> <group>
 
 Where the operation can be one of the below options:
