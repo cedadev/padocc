@@ -1,3 +1,7 @@
+__author__    = "Daniel Westwood"
+__contact__   = "daniel.westwood@stfc.ac.uk"
+__copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
+
 import sys
 import json
 import os
@@ -5,34 +9,48 @@ import argparse
 import subprocess
 
 from pipeline.logs import init_logger
-from pipeline.utils import BypassSwitch
-
-def get_group_len(workdir, group, repeat_id=1):
-    """Implement parallel reads from single 'group' file"""
-    with open(f'{workdir}/groups/{group}/proj_codes/{repeat_id}.txt') as f:
-        group_len = len(list(f.readlines()))
-    return group_len
+from pipeline.utils import BypassSwitch, get_attribute, get_codes
+from pipeline.allocate import create_allocation
 
 times = {
-    'scan':'5:00',
-    'compute':'30:00',
-    'validate':'15:00'
+    'scan'    :'10:00', # No prediction possible prior to scanning
+    'compute' :'60:00',
+    'validate':'30:00' # From CMIP experiments - no reliable prediction mechanism possible
 }
 
 phases = list(times.keys())
 
-def get_attribute(env, args, var):
-    """Assemble environment variable or take from passed argument."""
-    if os.getenv(env):
-        return os.getenv(env)
-    elif hasattr(args, var):
-        return getattr(args, var)
-    else:
-        print(f'Error: Missing attribute {var}')
-        return None
+def get_group_len(workdir, group, repeat_id='main') -> int:
+    """
+    Implement parallel reads from single 'group' file
 
-def main(args,get_id=False, dependent_id=False):
-    """Assemble sbatch script for parallel running jobs"""
+    :param workdir:     (str) The path of the current pipeline working directory.
+
+    :param group:       (str) The name of the dataset group within the pipeline.
+
+    :param repeat_id:   (int) Repeat-id subset within the group, default is main.
+
+    :returns:           (int) The number of projects within the specified subset 
+                        of a group of datasets.
+    """
+
+    # Semi-superfluous function, left in only as a doc-string reference.
+    codes = get_codes(group, workdir, f'proj_codes/{repeat_id}')
+    if codes:
+        return len(codes)
+    else:
+        return 0
+
+def main(args) -> None:
+    """
+    Assemble sbatch script for parallel running jobs and execute. May include
+    allocation of multiple tasks to each job if enabled.
+
+    :param args:    (Object) ArgParse object containing all required parameters
+                    from default values or specific inputs from command-line.
+    
+    :returns: None
+    """
 
     logger = init_logger(args.verbose, 0, 'main-group')
 
@@ -40,86 +58,89 @@ def main(args,get_id=False, dependent_id=False):
     phase   = args.phase
     group   = args.groupID
 
-    WORKDIR  = get_attribute('WORKDIR', args, 'workdir')
-    if not WORKDIR:
-        logger.error('WORKDIR missing or undefined')
+    if phase not in phases:
+        logger.error(f'"{phase}" not recognised, please select from {phases}')
         return None
-    SRCDIR   = get_attribute('SRCDIR', args, 'source')
-    if not SRCDIR:
-        logger.error('SRCDIR missing or undefined')
-        return None
-    VENV     = get_attribute('KVENV', args, 'kvenv')
-    if not VENV:
-        logger.error('VENV missing or undefined')
-        return None
-    GROUPDIR = f'{WORKDIR}/groups/{group}'
 
-    # init not parallelised
+    args.workdir  = get_attribute('WORKDIR', args, 'workdir')
+    SRCDIR        = get_attribute('SRCDIR', args, 'source')
+    VENV          = get_attribute('KVENV', args, 'kvenv')
+
+    args.groupdir = f'{args.workdir}/groups/{group}'
+
+    logger.info(f'Starting group execution for {group}')
+    logger.debug('Pipeline variables:')
+    logger.debug(f'WORKDIR : {args.workdir}')
+    logger.debug(f'GROUPDIR: {args.groupdir}')
+    logger.debug(f'SRCDIR  : {SRCDIR}')
+    logger.debug(f'VENVDIR : {VENV}')
+
+    # Experimental bin-packing: Not fully implemented 25/03
+    if args.binpack:
+        create_allocation(args)
+
+    # Init not parallelised - run for whole group here
     if phase == 'init':
         from pipeline.init import init_config
-        logger.info('Running init steps as serial process')
-        args.groupdir = GROUPDIR
-        args.workdir  = WORKDIR
+        logger.info(f'Running init steps as a serial process for {group}')
         args.source   = SRCDIR
         args.venvpath = VENV
         init_config(args)
         return None
 
     # Establish some group parameters
-    group_len          = get_group_len(WORKDIR, group, repeat_id = args.repeat_id)
-    group_phase_sbatch = f'{GROUPDIR}/sbatch/{phase}.sbatch'
+    group_len          = get_group_len(args.workdir, group, repeat_id = args.repeat_id)
+    group_phase_sbatch = f'{args.groupdir}/sbatch/{phase}.sbatch'
     master_script      = f'{SRCDIR}/single_run.py'
     template           = 'extensions/templates/phase.sbatch.template'
 
-
     # Make Directories
-    for dirx in ['sbatch','outs','errs']:
-        if not os.path.isdir(f'{GROUPDIR}/{dirx}'):
-            os.makedirs(f'{GROUPDIR}/{dirx}')
+    for dirx in ['sbatch','outs','errs']: # Add allocations
+        if not os.path.isdir(f'{args.groupdir}/{dirx}'):
+            os.makedirs(f'{args.groupdir}/{dirx}')
 
-    if phase not in phases:
-        logger.error(f'"{phase}" not recognised, please select from {phases}')
-        return None
-
+    # Open sbatch template from file.
     with open(template) as f:
         sbatch = '\n'.join([r.strip() for r in f.readlines()])
 
+    # Setup time and memory defaults
     time = times[phase]
     if args.time_allowed:
         time = args.time_allowed
-        
-    label = phase
-    if args.repeat_id:
-        label = args.repeat_id
-
     mem = '2G'
     if args.memory:
         mem = args.memory
+
+    outdir = f'{args.workdir}/groups/args.groupID/outs/raw/%A_%a.out'
+    errdir = f'{args.workdir}/groups/{args.groupID}/errs/raw/%A_%a.out'
+
+    os.system(f'rm -rf {outdir}/*')
+    os.system(f'rm -rf {errdir}/*')
 
     sb = sbatch.format(
         f'{group}_{phase}_array',             # Job name
         time,                                 # Time
         mem,                                  # Memory
+        outdir,
+        errdir,
         VENV,
-        WORKDIR,
-        GROUPDIR,
-        master_script, phase, group, time, mem
+        args.workdir,
+        args.groupdir,
+        master_script, phase, group, time, mem, args.repeat_id
     )
+
+    # Additional carry-through flags
+    sb += f' -b {args.bypass}'
     if args.forceful:
         sb += ' -f'
     if args.verbose:
         sb += ' -v'
-    if args.bypass != 'FDSC':
-        sb += f' -b {args.bypass}'
     if args.quality:
         sb += ' -Q'
     if args.backtrack:
         sb += ' -B'
     if args.dryrun:
         sb += ' -d'
-
-    if 'X' in args.bypass:
-        logger.warning('Running with XK Shape Bypass flag "X" is experimental and should only be used with approval.')
 
     if args.repeat_id:
         sb += f' -r {args.repeat_id}'
@@ -132,17 +153,7 @@ def main(args,get_id=False, dependent_id=False):
         logger.info('DRYRUN: sbatch command: ')
         print(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
     else:
-        if get_id: # Unused section to save the ID of the process
-            result = subprocess.run(['sbatch', f'--array=0-{group_len-1}', group_phase_sbatch], stdout=subprocess.PIPE)
-            try:
-                id = result.stdout.decode('utf-8').split(' ')[3].strip() # Check!
-                assert len(id) == 8
-                return id
-            except:
-                logger.error('Slurm submission failed')
-                return None
-        else:
-            os.system(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
+        os.system(f'sbatch --array=0-{group_len-1} {group_phase_sbatch}')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')
@@ -153,6 +164,7 @@ if __name__ == '__main__':
     parser.add_argument('-S','--source', dest='source', help='Path to directory containing master scripts (this one)')
     parser.add_argument('-e','--environ',dest='venvpath', help='Path to virtual (e)nvironment (excludes /bin/activate)')
     parser.add_argument('-i', '--input', dest='input', help='input file (for init phase)')
+    parser.add_argument('-A', '--alloc-bins', dest='binpack',action='store_true', help='input file (for init phase)')
 
     # Action-based - standard flags
     parser.add_argument('-f','--forceful',dest='forceful',action='store_true', help='Force overwrite of steps if previously done')
