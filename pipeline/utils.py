@@ -6,11 +6,56 @@ import os
 import xarray as xr
 import json
 import fsspec
+import logging
 
 from pipeline.errors import MissingVariableError, MissingKerchunkError, ChunkDataError
 
-def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file'):
-    """Open kerchunk file from JSON/parquet formats"""
+class BypassSwitch:
+    def __init__(self, switch='DBSCMR'):
+        if switch.startswith('+'):
+            switch = 'DBSCMR' + switch[1:]
+        self.switch = switch
+        if type(switch) == str:
+            switch = list(switch)
+        
+        self.skip_driver   = ('D' in switch)
+        self.skip_boxfail  = ('B' in switch)
+        self.skip_softfail = ('S' in switch)
+        self.skip_data_sum = ('C' in switch)
+        self.skip_xkshape  = ('X' in switch)
+        self.skip_report   = ('R' in switch)
+
+        # Removed scanfile and memory skips
+
+    def __str__(self):
+        return self.switch
+    
+    def help(self):
+        return str("""
+Bypass switch options: \n
+  "F" - * Skip individual file scanning errors.
+  "D" - * Skip driver failures - Pipeline tries different options for NetCDF (default).
+      -   Only need to turn this skip off if all drivers fail (KerchunkFatalDriverError).
+  "B" -   Skip Box compute errors.
+  "S" - * Skip Soft fails (NaN-only boxes in validation) (default).
+  "C" - * Skip calculation (data sum) errors (time array typically cannot be summed) (default).
+  "M" -   Skip memory checks (validate/compute aborts if utilisation estimate exceeds cap).
+""")
+  
+def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file') -> xr.Dataset:
+    """
+    Open kerchunk file from JSON/parquet formats
+
+    :param kfile:   (str) Path to a kerchunk file (or https link if using a remote file)
+
+    :param logger:  (obj) Logging object for info/debug/error messages.
+
+    :param isparq:  (bool) Switch for using Parquet or JSON Format
+
+    :param remote_protocol: (str) 'file' for local filepaths, 'http' for remote links.
+    
+    :returns: An xarray virtual dataset constructed from the Kerchunk file
+    """
     if isparq:
         logger.debug('Opening Kerchunk Parquet store')
         from fsspec.implementations.reference import ReferenceFileSystem
@@ -47,10 +92,18 @@ def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file'):
         logger.debug('Successfully opened Kerchunk with virtual xarray ds')
         return ds
 
-def get_attribute(env: str, args, var: str):
-    """Assemble environment variable or take from passed argument.
+def get_attribute(env: str, args, var: str) -> str:
+    """
+    Assemble environment variable or take from passed argument. Find
+    value of variable from Environment or ParseArgs object, or reports failure.
+
+    :param env:     (str) Name of environment variable.
+
+    :param args:    (obj) Set of command line arguments supplied by argparse.
     
-    Finds value of variable from Environment or ParseArgs object, or reports failure
+    :param var:     (str) Name of argparse parameter to check.
+
+    :returns: Value of either environment variable or argparse value.
     """
     try:
         if getattr(args, var):
@@ -63,8 +116,10 @@ def get_attribute(env: str, args, var: str):
         print(var)
         raise MissingVariableError(type=var)
 
-def format_str(string: str, length: int, concat=False):
-    """Simple function to format a string to a correct length"""
+def format_str(string: str, length: int, concat=False) -> str:
+    """
+    Simple function to format a string to a correct length.
+    """
     string = str(string)
     if len(string) >= length and concat:
         string = string[:length-3] + '...'
@@ -72,41 +127,12 @@ def format_str(string: str, length: int, concat=False):
         while len(string) < length:
             string += ' '
     return string[:length]
+  
+def mem_to_val(value: str) -> float:
+    """
+    Convert a value in Bytes to an integer number of bytes
+    """
 
-class BypassSwitch:
-    def __init__(self, switch='DBSCMR'):
-        if switch.startswith('+'):
-            switch = 'DBSCMR' + switch[1:]
-        self.switch = switch
-        if type(switch) == str:
-            switch = list(switch)
-        
-        self.skip_driver   = ('D' in switch)
-        self.skip_boxfail  = ('B' in switch)
-        self.skip_softfail = ('S' in switch)
-        self.skip_data_sum = ('C' in switch)
-        self.skip_xkshape  = ('X' in switch)
-        self.skip_report   = ('R' in switch)
-
-        # Removed scanfile and memory skips
-
-    def __str__(self):
-        return self.switch
-    
-    def help(self):
-        return str("""
-Bypass switch options: \n
-  "F" - * Skip individual file scanning errors.
-  "D" - * Skip driver failures - Pipeline tries different options for NetCDF (default).
-      -   Only need to turn this skip off if all drivers fail (KerchunkFatalDriverError).
-  "B" -   Skip Box compute errors.
-  "S" - * Skip Soft fails (NaN-only boxes in validation) (default).
-  "C" - * Skip calculation (data sum) errors (time array typically cannot be summed) (default).
-  "M" -   Skip memory checks (validate/compute aborts if utilisation estimate exceeds cap).
-""")
-    
-def mem_to_val(value):
-    """Convert a value in Bytes to an integer number of bytes"""
     suffixes = {
         'KB': 1000,
         'MB': 1000000,
@@ -116,10 +142,25 @@ def mem_to_val(value):
     suff = suffixes[value.split(' ')[1]]
     return float(value.split(' ')[0]) * suff
 
-def get_codes(group, workdir, filename):
-    """Returns a list of the project codes given a filename (repeat id)"""
+def get_codes(group: str, workdir: str | None, filename: str, extension='.txt') -> list:
+    """
+    Returns a list of the project codes given a filename (repeat id)
+
+    :param group:       (str) Name of current group or path to group directory
+                        (groupdir) in which case workdir can be left as None.
+
+    :param workdir:     (str | None) Path to working directory. If this is none,
+                        group value will be assumed as the groupdir path.
+
+    :param filename:    (str) Name of text file to access within group (or path
+                        within the groupdir to the text file
+
+    :param extension:   (str) For the specific case of non-text-files.
+
+    :returns: A list of codes if the file is found, an empty list otherwise.
+    """
     if workdir:
-        codefile = f'{workdir}/groups/{group}/{filename}.txt'
+        codefile = f'{workdir}/groups/{group}/{filename}{extension}'
     else:
         codefile = f'{group}/{filename}.txt'
     if os.path.isfile(codefile):
@@ -128,10 +169,31 @@ def get_codes(group, workdir, filename):
     else:
         return []
     
-def set_codes(group, workdir, filename, contents, overwrite=0):
+def set_codes(group: str, workdir: str | None, filename: str, contents, extension='.txt', overwrite=0) -> None:
+    """
+    Returns a list of the project codes given a filename (repeat id)
+
+    :param group:       (str) Name of current group or path to group directory
+                        (groupdir) in which case workdir can be left as None.
+
+    :param workdir:     (str | None) Path to working directory. If this is none,
+                        group value will be assumed as the groupdir path.
+
+    :param filename:    (str) Name of text file to access within group (or path
+                        within the groupdir to the text file
+    
+    :param contents:    (str) Combined contents to write to the file.
+
+    :param extension:   (str) For the specific case of non-text-files.
+
+    :param overwrite:   (str) Specifier for open() built-in python method, completely
+                        overwrite the file contents or append to existing values.
+
+    :returns: None
+    """
     codefile = f'{group}/{filename}.txt'
     if workdir:
-        codefile = f'{workdir}/groups/{group}/{filename}.txt'
+        codefile = f'{workdir}/groups/{group}/{filename}{extension}'
 
     ow = 'w'
     if overwrite == 1:
@@ -140,7 +202,16 @@ def set_codes(group, workdir, filename, contents, overwrite=0):
     with open(codefile, ow) as f:
         f.write(contents)
     
-def get_proj_file(proj_dir, proj_file):
+def get_proj_file(proj_dir: str, proj_file: str) -> dict | None:
+    """
+    Returns the contents of a project file within a project code directory.
+
+    :param proj_code:   (str) The project code in string format (DOI)
+
+    :param proj_file:   (str) Name of a file to access within the project directory.
+
+    :returns: A dictionary of the contents of a json file or None if there are problems.
+    """
     projfile = f'{proj_dir}/{proj_file}'
     if os.path.isfile(projfile):
         try:
@@ -154,7 +225,16 @@ def get_proj_file(proj_dir, proj_file):
     else:
         return None
     
-def set_proj_file(proj_dir, proj_file, contents, logger):
+def set_proj_file(proj_dir: str, proj_file: str, contents: list, logger: logging.Logger) -> None:
+    """
+    Overwrite the contents of a project file within a project code directory.
+
+    :param proj_code:   (str) The project code in string format (DOI)
+
+    :param proj_file:   (str) Name of a file to access within the project directory.
+
+    :returns: A dictionary of the contents of a json file or None if there are problems.
+    """
     projfile = f'{proj_dir}/{proj_file}'
     if not os.path.isfile(projfile):
         os.system(f'touch {projfile}')
@@ -165,9 +245,12 @@ def set_proj_file(proj_dir, proj_file, contents, logger):
     except Exception as err:
         logger.error(f'{proj_file} unable to update - {err}')
     
-def get_proj_dir(proj_code, workdir, groupID):
+def get_proj_dir(proj_code: str, workdir: str, groupID: str) -> str:
+    """
+    Simple function to assemble the project directory, depends on groupID
+    May be redundant in the future if a 'serial' directory is added.
+    """
     if groupID:
         return f'{workdir}/in_progress/{groupID}/{proj_code}'
     else:
         return f'{workdir}/in_progress/{proj_code}'
-
