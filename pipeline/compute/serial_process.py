@@ -1,4 +1,7 @@
-# Borrows from kerchunk tools but with more automation
+__author__    = "Daniel Westwood"
+__contact__   = "daniel.westwood@stfc.ac.uk"
+__copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
+
 import os
 import json
 import sys
@@ -10,15 +13,9 @@ import numpy as np
 import base64
 
 from pipeline.logs import init_logger, FalseLogger
-from pipeline.utils import BypassSwitch
+from pipeline.utils import BypassSwitch, open_kerchunk, get_proj_file
 from pipeline.errors import *
-from pipeline.validate import validate_data, open_kerchunk, validate_selection
-
-class KerchunkDriverFatalError(Exception):
-
-    def __init__(self, message="All drivers failed when performing conversion"):
-        self.message = message
-        super().__init__(self.message)
+from pipeline.validate import validate_selection
 
 WORKDIR = None
 CONCAT_MSG = 'See individual files for more details'
@@ -26,58 +23,131 @@ CONCAT_MSG = 'See individual files for more details'
 class Converter:
     """Class for converting a single file to a Kerchunk reference object"""
 
-    def __init__(self, clogger, bypass_driver=False, ctype=None):
-        self.logger = clogger
-        self.ctype = ctype
-        self.success = True
+    def __init__(self, clogger, bypass_driver=False, ctype=None) -> None:
+        self.logger        = clogger
+        self.ctype         = ctype
+        self.success       = True
         self.bypass_driver = bypass_driver
 
-    def convert_to_zarr(self, nfile, extension=False, **kwargs):
-        """Perform conversion to zarr with exceptions for bypassing driver errors."""
+    def convert_to_zarr(self, nfile: str, extension=False, **kwargs) -> None:
+        """
+        Perform conversion to zarr with exceptions for bypassing driver errors.
+
+        :param nfile:           (str) Path to a local native file of an appropriate
+                                type to be converted.
+
+        :param extension:       (str) File extension relating to file type if known.
+                                All extensions/drivers will be tried first, subsequent
+                                files in the same dataset will use whatever extension
+                                worked for the first file as a starting point.
+
+        :returns:               The output of performing a driver if successful, None
+                                if the driver is unsuccessful. Errors will be bypassed
+                                if the bypass_driver option is selected for this class.
+        """
         drivers = {
             'ncf3': self.ncf3_to_zarr,
             'hdf5': self.hdf5_to_zarr,
-            'tif' : self.tiff_to_zarr
+            'tif' : self.tiff_to_zarr,
+            'grib': self.grib_to_zarr,
         }
         if extension:
             self.ctype=extension
         try:
             if self.ctype in drivers:
-                return drivers[self.ctype](nfile, **kwargs)
+                ref = drivers[self.ctype](nfile, **kwargs)
+                return ref
             else:
                 self.logger.debug(f'Extension {self.ctype} not valid')
                 return None
         except Exception as err:
             if self.bypass_driver:
-                pass
+                return None
             else:
                 raise err
+            
+    def save_individual_ref(self, ref: dict, cache_ref: str, forceful=False) -> None:
+        """
+        Save each individual set of refs created for each file immediately to reduce
+        loss of progress in the event of a failure somewhere in processing.
+        """
+        if ref and (not os.path.isfile(cache_ref) or forceful):
+            with open(cache_ref,'w') as f:
+                f.write(json.dumps(ref))
 
-    def hdf5_to_zarr(self, nfile, **kwargs):
-        """Converter for HDF5 type files"""
+    def hdf5_to_zarr(self, nfile: str, **kwargs) -> None:
+        """Wrapper for converting NetCDF4/HDF5 type files to Kerchunk"""
         from kerchunk.hdf import SingleHdf5ToZarr
         return SingleHdf5ToZarr(nfile, **kwargs).translate()
 
-    def ncf3_to_zarr(self, nfile, **kwargs):
-        """Converter for NetCDF3 type files"""
+    def ncf3_to_zarr(self, nfile: str, **kwargs) -> None:
+        """Wrapper for converting NetCDF3 type files to Kerchunk"""
         from kerchunk.netCDF3 import NetCDF3ToZarr
         return NetCDF3ToZarr(nfile, **kwargs).translate()
 
-    def tiff_to_zarr(self, tfile, **kwargs):
-        """Converter for Tiff type files"""
-        self.logger.error('Tiff conversion not yet implemented - aborting')
-        self.success = False
-        return None
+    def tiff_to_zarr(self, tfile: str, **kwargs) -> None:
+        """Wrapper for converting GeoTiff type files to Kerchunk"""
+        from kerchunk.tiff import TiffToZarr
+        return TiffToZarr(tfile, **kwargs).translate()
+    
+    def grib_to_zarr(self, gfile: str, **kwargs) -> None:
+        """Wrapper for converting GRIB type files to Kerchunk"""
+        from kerchunk.grib2 import GribToZarr
+        return GribToZarr(gfile, **kwargs).translate()
     
 class Indexer(Converter):
     def __init__(self, 
                  proj_code, 
-                 cfg_file=None, detail_file=None, workdir=WORKDIR, 
-                 issave_meta=False, thorough=False, forceful=False, 
-                 verb=0, mode=None, version_no='trial-',
-                 concat_msg=CONCAT_MSG, bypass=BypassSwitch(), 
-                 groupID=None, limiter=None, dryrun=True, ctype=None, fh=None, logid=None, **kwargs):
-        """Initialise indexer for this dataset, set all variables and prepare for computation"""
+                 workdir=WORKDIR, thorough=False, forceful=False, 
+                 verb=0, mode=None, version_no='trial-', concat_msg=CONCAT_MSG, bypass=BypassSwitch(), 
+                 groupID=None, limiter=None, dryrun=True, ctype=None, fh=None, logid=None, **kwargs) -> None:
+        """
+        Initialise indexer for this dataset, set all variables and prepare for computation.
+        
+        :param proj_code:           (str) The project code in string format (DOI)
+
+        :param workdir:             (str) Path to the current working directory.
+
+        :param thorough:            (bool) From args.quality - if True will create all files from scratch,
+                                    otherwise saved refs from previous runs will be loaded.
+
+        :param forceful:            (bool) Continue with processing even if final output file already exists.
+
+        :param verb:                (int) From args.verbose - Level of verboseness (see logs.init_logger).
+
+        :param mode:                (str) Unused parameter for different logging output mechanisms.
+
+        :param version_no:          (str) Kerchunk revision number/identifier. Default is trial - used for 
+                                    'scan' phase, will be overridden with specific revision in 'compute'
+                                    actual phase.
+        
+        :param concat_msg:          (str) Value displayed as global attribute for any attributes that 
+                                    differ across the set of files, instead of a list of the differences,
+                                    this message will be used, default can be found above.
+
+        :param bypass:              (BypassSwitch) instance of BypassSwitch class containing multiple
+                                    bypass/skip options for specific events. See utils.BypassSwitch.
+
+        :param groupID:             (str) Name of current dataset group.
+
+        :param limiter:             (int) Number of files to process from the whole set of files. Default
+                                    value of None will mean all files are processed. Any non-None value
+                                    will limit the number of files for processing - utilised in 'scan' phase.
+
+        :param dryrun:              (bool) From args.dryrun - if True will prevent output files being generated
+                                    or updated and instead will demonstrate commands that would otherwise happen.
+
+        :param ctype:               (str) Extension/filetype of the set of files to be processed if already known.
+
+        :param fh:                  (str) Path to logfile for logger object generated in this specific process.
+
+        :param logid:               (str) ID of the process within a subset, which is then added to the name
+                                    of the logger - prevents multiple processes with different logfiles getting
+                                    loggers confused.
+
+        :returns: None
+
+        """
         super().__init__(init_logger(verb, mode, 'compute-serial', fh=fh, logid=logid), bypass_driver=bypass.skip_driver, ctype=ctype)
 
         self.logger.debug('Starting variable definitions')
@@ -91,17 +161,29 @@ class Indexer(Converter):
         self.thorough   = thorough
         self.forceful   = forceful
 
+        self.validate_time = None
+        self.concat_time   = None
+        self.convert_time  = None
+
         self.dryrun      = dryrun
-        self.issave_meta = issave_meta
         self.updates, self.removals, self.load_refs = False, False, False
 
-        self.logger.debug('Loading config information')
-        with open(cfg_file) as f:
-            cfg = json.load(f)
+        if groupID:
+            self.proj_dir = f'{self.workdir}/in_progress/{groupID}/{self.proj_code}'
+        else:
+            self.proj_dir = f'{self.workdir}/in_progress/{self.proj_code}'
 
-        self.detailfile = detail_file
-        with open(detail_file) as f:
-            self.detail = json.load(f)
+        self.logger.debug('Loading config information')
+        self.cfg = get_proj_file(self.proj_dir, 'base-cfg.json')
+
+        self.detail = get_proj_file(self.proj_dir, 'detail-cfg.json')
+        if not self.detail:
+            self.detail={}
+
+        with open(f'{self.proj_dir}/allfiles.txt')as f:
+            self.num_files = len(list(f.readlines()))
+
+        self.partial = (self.limiter and self.num_files != self.limiter)
 
         if 'virtual_concat' not in self.detail:
             self.detail['virtual_concat'] = False
@@ -110,20 +192,15 @@ class Indexer(Converter):
             if 'version_no' in self.detail:
                 self.version_no = self.detail['version_no']
 
-        if groupID:
-            self.proj_dir = f'{self.workdir}/in_progress/{groupID}/{self.proj_code}'
-        else:
-            self.proj_dir = f'{self.workdir}/in_progress/{self.proj_code}'
-
-        if 'update' in cfg:
+        if 'update' in self.cfg:
             try:
-                self.updates = dict(cfg['update'])
+                self.updates = dict(self.cfg['update'])
             except ValueError:
                 self.logger.warning('Updates attribute not read')
                 self.updates = {}
-        if 'remove' in cfg:
+        if 'remove' in self.cfg:
             try:
-                self.removals = dict(cfg['remove'])
+                self.removals = dict(self.cfg['remove'])
             except ValueError:
                 self.logger.warning('Removal attribute not read')
                 self.removals = {}
@@ -132,8 +209,6 @@ class Indexer(Converter):
             self.use_json = (self.detail['type'] == 'JSON')
         else:
             self.use_json = True
-
-        self.use_json = True
 
         self.outfile     = f'{self.proj_dir}/kerchunk-{version_no}a.json'
         self.outstore    = f'{self.proj_dir}/kerchunk-{version_no}a.parq'
@@ -162,30 +237,40 @@ class Indexer(Converter):
         self.set_filelist()
         self.logger.debug('Finished all setup steps')
 
-    def collect_details(self):
-        """Collect kwargs for combining and any special attributes - save to detail file."""
+    def collect_details(self) -> dict:
+        """
+        Collect kwargs for combining and any special attributes - save to detail file.
+        """
         self.detail['combine_kwargs'] = self.combine_kwargs
         if self.special_attrs:
             self.detail['special_attrs'] = list(self.special_attrs.keys())
         return self.detail
 
-    def set_filelist(self):
-        """Get the list of files from the filelist for this dataset"""
+    def set_filelist(self) -> None:
+        """
+        Get the list of files from the filelist for this dataset and set
+        to 'filelist' list.
+        """
         with open(self.filelist) as f:
             self.listfiles = [r.strip() for r in f.readlines()]
         if not self.limiter:
             self.limiter = len(self.listfiles)
 
-    def add_download_link(self, refs):
-        """Add the download link to the Kerchunk references"""
+    def add_download_link(self, refs: dict) -> dict:
+        """
+        Add the download link to each of the Kerchunk references
+        """
         for key in refs.keys():
             if len(refs[key]) == 3:
                 if refs[key][0][0] == '/':
                     refs[key][0] = 'https://dap.ceda.ac.uk' + refs[key][0]
         return refs
 
-    def add_kerchunk_history(self, attrs):
-        """Add kerchunk variables to the metadata for this dataset"""
+    def add_kerchunk_history(self, attrs: dict) -> dict:
+        """
+        Add kerchunk variables to the metadata for this dataset, including 
+        creation/update date and version/revision number.
+        """
 
         from datetime import datetime
 
@@ -210,10 +295,11 @@ class Indexer(Converter):
         attrs['kerchunk_creation_date'] = now.strftime("%d%m%yT%H%M%S")
         return attrs
     
-    def find_concat_dims(self, ds_examples):
+    def find_concat_dims(self, ds_examples: list) -> None:
         """Find dimensions to use when combining for concatenation
         - Dimensions which change over the set of files must be concatenated together
-        - Dimensions which do not change (typically lat/lon) are instead identified as identical_dims"""
+        - Dimensions which do not change (typically lat/lon) are instead identified as identical_dims
+        """
         concat_dims = []
         for dim in ds_examples[0].dims:
             try:
@@ -231,8 +317,9 @@ class Indexer(Converter):
             self.detail['virtual_concat'] = True
         self.combine_kwargs['concat_dims'] = concat_dims
 
-    def find_identical_dims(self, ds_examples):
-        """Find dimensions and variables that are identical across the set of files.
+    def find_identical_dims(self, ds_examples: list) -> None:
+        """
+        Find dimensions and variables that are identical across the set of files.
         - Variables which do not change (typically lat/lon) are identified as identical_dims and not concatenated over the set of files.
         - Variables which do change are concatenated as usual.
         """
@@ -266,46 +353,52 @@ class Indexer(Converter):
         else:
             self.logger.debug(f'Found {normal_dims} that vary over concatenation_dimensions: {self.combine_kwargs["concat_dims"]}')          
 
-    def combine_and_save(self, refs, zattrs):
-        """Concatenation of ref data for different kerchunk schemes"""
+    def combine_and_save(self, refs: dict, zattrs: dict) -> None:
+        """
+        Concatenation of ref data for different kerchunk schemes
+        """
         self.logger.info('Starting concatenation of refs')
-        if len(refs) > 1:
+        if not (len(refs) == 1 or type(refs) == dict):
             # Pick 2 refs to use when determining dimension info.
-            if len(refs) == 1 or type(refs) == dict:
-                pass
+            # Concatenation Dimensions
+            if 'combine_kwargs' in self.detail:
+                self.combine_kwargs = self.detail['combine_kwargs']
             else:
-                # Concatenation Dimensions
-                if 'combine_kwargs' in self.detail:
-                    self.combine_kwargs = self.detail['combine_kwargs']
+                # Calculate Partial Validation Estimate here
+                t1 = datetime.now()
+                self.logger.info("Determining concatenation dimensions")
+                print()
+                self.find_concat_dims([
+                    open_kerchunk(refs[0], FalseLogger(), remote_protocol=None),
+                    open_kerchunk(refs[-1], FalseLogger(), remote_protocol=None)
+                ])
+                if self.combine_kwargs['concat_dims'] == []:
+                    self.logger.info(f"No concatenation dimensions available - virtual dimension will be constructed.")
                 else:
-                    self.logger.info("Determining concatenation dimensions")
-                    print()
-                    self.find_concat_dims([
-                        open_kerchunk(refs[0], FalseLogger()),
-                        open_kerchunk(refs[-1], FalseLogger())
-                    ])
-                    if self.combine_kwargs['concat_dims'] == []:
-                        self.logger.info(f"No concatenation dimensions available - virtual dimension will be constructed.")
-                    else:
-                        self.logger.info(f"Found {self.combine_kwargs['concat_dims']} concatenation dimensions.")
-                    print()
+                    self.logger.info(f"Found {self.combine_kwargs['concat_dims']} concatenation dimensions.")
+                print()
 
-                    # Identical (Variables) Dimensions
-                    self.logger.info("Determining identical variables")
-                    print()
-                    self.find_identical_dims([
-                        open_kerchunk(refs[0], FalseLogger()),
-                        open_kerchunk(refs[-1], FalseLogger())
-                    ])
-                    self.logger.info(f"Found {self.combine_kwargs['identical_dims']} identical variables.")
-                    print()
-                
+                # Identical (Variables) Dimensions
+                self.logger.info("Determining identical variables")
+                print()
+                self.find_identical_dims([
+                    open_kerchunk(refs[0], FalseLogger(), remote_protocol=None),
+                    open_kerchunk(refs[-1], FalseLogger(), remote_protocol=None)
+                ])
+                self.logger.info(f"Found {self.combine_kwargs['identical_dims']} identical variables.")
+                print()
+
+                # This one only happens for two files so don't need to take a mean
+                self.validate_time = (datetime.now()-t1).total_seconds()
+
+        t1 = datetime.now()  
         if self.use_json:
             self.logger.info('Concatenating to JSON format Kerchunk file')
             self.data_to_json(refs, zattrs)
         else:
             self.logger.info('Concatenating to Parquet format Kerchunk store')
             self.data_to_parq(refs)
+        self.concat_time = (datetime.now()-t1).total_seconds()/self.limiter
 
         if not self.dryrun:
             self.collect_details()
@@ -313,8 +406,11 @@ class Indexer(Converter):
                 f.write(json.dumps(self.detail))
             self.logger.info("Details updated in detail-cfg.json")
 
-    def construct_virtual_dim(self, refs):
-        """Construct a Virtual dimension for stacking multiple files where no suitable concatenation dimension is present."""
+    def construct_virtual_dim(self, refs: dict) -> None:
+        """
+        Construct a Virtual dimension for stacking multiple files 
+        where no suitable concatenation dimension is present.
+        """
         # For now this just means creating a list of numbers 0 to N files
         vdim = 'file_number'
 
@@ -348,8 +444,11 @@ class Indexer(Converter):
                 ref[f'{vdim}/0'] = values
         return refs, vdim
 
-    def data_to_parq(self, refs):
-        """Concatenating to Parquet format Kerchunk store"""
+    def data_to_parq(self, refs: dict) -> None:
+        """
+        Concatenating to Parquet-format Kerchunk store
+        """
+
         from kerchunk.combine import MultiZarrToZarr
         from fsspec import filesystem
         from fsspec.implementations.reference import LazyReferenceMapper
@@ -364,15 +463,19 @@ class Indexer(Converter):
             refs,
             out=out,
             remote_protocol='file',
-            concat_dims=['time'],
             **self.combine_kwargs
         ).translate()
         
-        out.flush()
-        self.logger.info(f'Written to parquet store - {self.proj_code}/kerchunk-1a.parq')
+        if self.partial:
+            self.logger.info(f'Skipped writing to parquet store - {self.outstore}')
+        else:
+            out.flush()
+            self.logger.info(f'Written to parquet store - {self.outstore}')
 
-    def data_to_json(self, refs, zattrs):
-        """Concatenating to JSON format Kerchunk file"""
+    def data_to_json(self, refs: dict, zattrs: dict) -> None:
+        """
+        Concatenating to JSON-format Kerchunk file
+        """
         from kerchunk.combine import MultiZarrToZarr
 
         self.logger.debug('Starting JSON-write process')
@@ -383,7 +486,6 @@ class Indexer(Converter):
             if self.detail['virtual_concat']:
                 refs, vdim = self.construct_virtual_dim(refs)
                 self.combine_kwargs['concat_dims'] = [vdim]
-            print(self.combine_kwargs)
             mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
             if zattrs:
                 zattrs = self.add_kerchunk_history(zattrs)
@@ -397,15 +499,16 @@ class Indexer(Converter):
         # Override global attributes
         mzz['refs'] = self.add_download_link(mzz['refs'])
 
-        if not self.dryrun:
+        if not self.dryrun and not self.partial:
             with open(self.outfile,'w') as f:
                 f.write(json.dumps(mzz))
             self.logger.info(f'Written to JSON file - {self.outfile}')
         else:
             self.logger.info(f'Skipped writing to JSON file - {self.outfile}')
 
-    def correct_metadata(self, allzattrs):
-        """General function for correcting metadata
+    def correct_metadata(self, allzattrs: dict) -> dict:
+        """
+        General function for correcting metadata
         - Combine all existing metadata in standard way (cleaning arrays)
         - Add updates and remove removals specified by configuration
         """
@@ -434,10 +537,12 @@ class Indexer(Converter):
             raise ValueError
         return new_zattrs
         
-    def clean_attr_array(self, allzattrs):
-        """Collect global attributes from all refs:
+    def clean_attr_array(self, allzattrs: dict) -> dict:
+        """
+        Collect global attributes from all refs:
         - Determine which differ between refs and apply changes
         """
+
         base = json.loads(allzattrs[0])
 
         self.logger.debug('Correcting time attributes')
@@ -483,15 +588,17 @@ class Indexer(Converter):
         self.logger.debug('Finished checking similar keys')
         return base
 
-    def clean_attrs(self, zattrs):
-        """Ammend any saved attributes post-combining
+    def clean_attrs(self, zattrs: dict) -> dict:
+        """
+        Ammend any saved attributes post-combining
         - Not currently implemented, may be unnecessary
         """
         self.logger.warning('Attribute cleaning post-loading from temp is not implemented')
         return zattrs
 
-    def check_time_attributes(self, times):
-        """Takes dict of time attributes with lists of values
+    def check_time_attributes(self, times: dict) -> dict:
+        """
+        Takes dict of time attributes with lists of values
         - Sort time arrays
         - Assume time_coverage_start, time_coverage_end, duration (2 or 3 variables)
         """
@@ -513,12 +620,14 @@ class Indexer(Converter):
                 else:
                     combined[k] = list(set(times[k]))
 
-        duration = '' # Need to compare start/end
         self.logger.debug('Finished time corrections')
         return combined
 
-    def save_metadata(self,zattrs):
-        """Cache metadata global attributes in a temporary file"""
+    def save_metadata(self,zattrs: dict) -> dict:
+        """
+        Cache metadata global attributes in a temporary file.
+        """
+
         if not self.dryrun:
             with open(f'{self.cache}/temp_zattrs.json','w') as f:
                 f.write(json.dumps(zattrs))
@@ -526,13 +635,13 @@ class Indexer(Converter):
         else:
             self.logger.debug('Skipped saving global attribute cache')
 
-    def save_individual_ref(self, ref, cache_ref):
-        if not os.path.isfile(cache_ref) or self.forceful:
-            with open(cache_ref,'w') as f:
-                f.write(json.dumps(ref))
+    def try_all_drivers(self, nfile: str, **kwargs) -> dict | None:
+        """
+        Safe creation allows for known issues and tries multiple drivers
 
-    def try_all_drivers(self, nfile, **kwargs):
-        """Safe creation allows for known issues and tries multiple drivers"""
+        :returns:   dictionary of Kerchunk references if successful, raises error
+                    otherwise if unsuccessful.
+        """
 
         extension = False
         supported_extensions = ['ncf3','hdf5','tif']
@@ -561,7 +670,11 @@ class Indexer(Converter):
             self.logger.debug(f'Scan successful with {self.ctype} driver')
             return tdict
     
-    def load_temp_zattrs(self):
+    def load_temp_zattrs(self) -> dict:
+        """
+        Load global attributes from a 'temporary' cache file.
+        """
+
         self.logger.debug(f'Loading attributes')
         try:
             with open(f'{self.cache}/temp_zattrs.json') as f:
@@ -573,7 +686,7 @@ class Indexer(Converter):
             return None
         return zattrs
 
-    def create_refs(self):
+    def create_refs(self) -> None:
         """Organise creation and loading of refs
         - Load existing cached refs
         - Create new refs
@@ -586,16 +699,17 @@ class Indexer(Converter):
         use_temp_zattrs = True
 
         # Attempt to load existing file - create if not exists already
+        t1 = datetime.now()
         for x, nfile in enumerate(self.listfiles[:self.limiter]):
             cache_ref = f'{self.cache}/{x}.json'
             ref = None
             if os.path.isfile(cache_ref) and not self.thorough:
-                self.logger.info(f'Loading refs: {x+1}/{len(self.listfiles)}')
+                self.logger.info(f'Loading refs: {x+1}/{self.limiter}')
                 if os.path.isfile(cache_ref):
                     with open(cache_ref) as f:
                         ref = json.load(f)
             if not ref:
-                self.logger.info(f'Creating refs: {x+1}/{len(self.listfiles)}')
+                self.logger.info(f'Creating refs: {x+1}/{self.limiter}')
                 try:
                     ref = self.try_all_drivers(nfile, **self.create_kwargs)
                 except KerchunkDriverFatalError as err:
@@ -608,7 +722,9 @@ class Indexer(Converter):
                 allzattrs.append(ref['refs']['.zattrs'])
                 refs.append(ref)
                 cache_ref = f'{self.cache}/{x}.json'
-                self.save_individual_ref(ref, cache_ref)
+                self.save_individual_ref(ref, cache_ref, forceful=self.forceful)
+        # Compute mean conversion time for this set.
+        self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
 
         if len(partials) > 0:
             raise PartialDriverError(filenums=partials)
