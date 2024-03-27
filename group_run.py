@@ -111,18 +111,19 @@ def main(args) -> None:
     if args.memory:
         mem = args.memory
 
-    outdir = f'{args.workdir}/groups/args.groupID/outs/raw/%A_%a.out'
-    errdir = f'{args.workdir}/groups/{args.groupID}/errs/raw/%A_%a.out'
+    # Suppressed since now manually logging with changing filehandler.
+    #outdir = f'{args.workdir}/groups/args.groupID/outs/raw/%A_%a.out'
+    #errdir = f'{args.workdir}/groups/{args.groupID}/errs/raw/%A_%a.out'
 
-    os.system(f'rm -rf {outdir}/*')
-    os.system(f'rm -rf {errdir}/*')
+    #os.system(f'rm -rf {outdir}/*')
+    #os.system(f'rm -rf {errdir}/*')
 
     sb = sbatch.format(
         f'{group}_{phase}_array',             # Job name
         time,                                 # Time
         mem,                                  # Memory
-        outdir,
-        errdir,
+        #outdir,
+        #errdir,
         VENV,
         args.workdir,
         args.groupdir,

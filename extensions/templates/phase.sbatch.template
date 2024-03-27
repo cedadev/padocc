@@ -5,10 +5,13 @@
 #SBATCH --time={}
 #SBATCH --mem={}
 
+#SBATCH -o /dev/null
+#SBATCH -e /dev/null
+
 module add jaspy
 source {}/bin/activate
 
 export WORKDIR={}
 export GROUPDIR={}
 
-python {} {} $SLURM_ARRAY_TASK_ID -G {} -t {} -M {}
+python {} {} $SLURM_ARRAY_TASK_ID -G {} -t {} -M {} -r {}
