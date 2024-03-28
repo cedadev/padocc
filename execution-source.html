@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pipeline Execution &mdash; Kerchunk Pipeline v1.1 documentation</title>
+  <title>Pipeline Execution &mdash; Padocc Package v1.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -26,7 +26,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Kerchunk Pipeline
+            <a href="index.html" class="icon icon-home"> Padocc Package
             <img src="_static/ceda.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -42,15 +42,15 @@
 <li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution.html">Pipeline Flags/Options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Advanced:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="pipeline-source.html">Pipeline Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline-source.html">Padocc Source</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Control Script Source</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Control Scripts Source</a></li>
 </ul>
 
         </div>
@@ -59,7 +59,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">Kerchunk Pipeline</a>
+          <a href="index.html">Padocc Package</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -77,62 +77,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="module-group_run">
-<span id="pipeline-execution"></span><h1>Pipeline Execution<a class="headerlink" href="#module-group_run" title="Permalink to this headline"></a></h1>
-<dl class="py function">
-<dt class="sig sig-object py" id="group_run.get_attribute">
-<span class="sig-prename descclassname"><span class="pre">group_run.</span></span><span class="sig-name descname"><span class="pre">get_attribute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#group_run.get_attribute" title="Permalink to this definition"></a></dt>
-<dd><p>Assemble environment variable or take from passed argument.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="group_run.get_group_len">
-<span class="sig-prename descclassname"><span class="pre">group_run.</span></span><span class="sig-name descname"><span class="pre">get_group_len</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workdir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#group_run.get_group_len" title="Permalink to this definition"></a></dt>
-<dd><p>Implement parallel reads from single ‘group’ file</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="group_run.main">
-<span class="sig-prename descclassname"><span class="pre">group_run.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">get_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#group_run.main" title="Permalink to this definition"></a></dt>
-<dd><p>Assemble sbatch script for parallel running jobs</p>
-</dd></dl>
-
-<span class="target" id="module-single_run"></span><dl class="py function">
-<dt class="sig sig-object py" id="single_run.get_proj_code">
-<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">get_proj_code</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#single_run.get_proj_code" title="Permalink to this definition"></a></dt>
-<dd><p>Get the correct code given a slurm id from a group of project codes</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="single_run.main">
-<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#single_run.main" title="Permalink to this definition"></a></dt>
-<dd><p>Main function for single run processing</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="single_run.run_compute">
-<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">run_compute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#single_run.run_compute" title="Permalink to this definition"></a></dt>
-<dd><p>Setup computation parameters for individual dataset</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="single_run.run_init">
-<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">run_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#single_run.run_init" title="Permalink to this definition"></a></dt>
-<dd><p>Start initialisation for single dataset</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="single_run.run_scan">
-<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">run_scan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#single_run.run_scan" title="Permalink to this definition"></a></dt>
-<dd><p>Start scanning process for individual dataset</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="single_run.run_validation">
-<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">run_validation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#single_run.run_validation" title="Permalink to this definition"></a></dt>
-<dd><p>Start validation of single dataset</p>
-</dd></dl>
-
+  <div class="section" id="pipeline-execution">
+<h1>Pipeline Execution<a class="headerlink" href="#pipeline-execution" title="Permalink to this headline"></a></h1>
 </div>
 
 

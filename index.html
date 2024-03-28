@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to the Kerchunk Pipeline documentation! &mdash; Kerchunk Pipeline v1.1 documentation</title>
+  <title>Padocc - User Documentation &mdash; Padocc Package v1.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -26,7 +26,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="#" class="icon icon-home"> Kerchunk Pipeline
+            <a href="#" class="icon icon-home"> Padocc Package
             <img src="_static/ceda.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -42,15 +42,15 @@
 <li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution.html">Pipeline Flags/Options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="pipeline-source.html">Pipeline Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline-source.html">Padocc Source</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Script Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Scripts Source</a></li>
 </ul>
 
         </div>
@@ -59,7 +59,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">Kerchunk Pipeline</a>
+          <a href="#">Padocc Package</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -67,7 +67,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home"></a> &raquo;</li>
-      <li>Welcome to the Kerchunk Pipeline documentation!</li>
+      <li>Padocc - User Documentation</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -77,9 +77,21 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="welcome-to-the-kerchunk-pipeline-documentation">
-<h1>Welcome to the Kerchunk Pipeline documentation!<a class="headerlink" href="#welcome-to-the-kerchunk-pipeline-documentation" title="Permalink to this headline"></a></h1>
-<p><strong>kerchunk-builder</strong> is a Python package for creating sets of Kerchunk files from an archive of NetCDF/HDF/Tiff files. The pipeline makes it easy to create multiple Kerchunk files for different datasets in parallel with validation steps to ensure the outputs are correct.</p>
+  <div class="section" id="padocc-user-documentation">
+<h1>Padocc - User Documentation<a class="headerlink" href="#padocc-user-documentation" title="Permalink to this headline"></a></h1>
+<p><strong>padocc</strong> (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package (package name <strong>kerchunk-builder</strong>) for aggregating data to enable methods of access for cloud-based applications.</p>
+<p>The pipeline makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across different datasets simultaneously with validation steps to ensure the outputs are correct.</p>
+<p>Vast amounts of archival data in a variety of formats can be processed using the package’s group mechanics and automatic deployment to a job submission system.</p>
+<dl class="simple">
+<dt>Currently supported input file formats:</dt><dd><ul class="simple">
+<li><p>NetCDF/HDF</p></li>
+<li><p>GeoTiff (<strong>coming soon</strong>)</p></li>
+<li><p>GRIB (<strong>coming soon</strong>)</p></li>
+<li><p>MetOffice (<strong>future</strong>)</p></li>
+</ul>
+</dd>
+</dl>
+<p><em>padocc</em> is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr.</p>
 <p>The pipeline consists of four central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. This is not part of the code-base of the pipeline currently but could be added in a future update.</p>
 <img alt="Stages of the Kerchunk Pipeline" src="_images/pipeline.png" />
 <div class="toctree-wrapper compound">
@@ -98,7 +110,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution.html">Pipeline Flags/Options</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="execution.html#bypassswitch-options">BypassSwitch Options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="execution.html#single-dataset-operation">Single Dataset Operation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="execution.html#multi-dataset-group-operation">Multi-Dataset Group Operation</a></li>
@@ -116,15 +128,17 @@
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="pipeline-source.html">Pipeline Source</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="pipeline-source.html">Padocc Source</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="pipeline-source.html#module-pipeline.init">Initialisation Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pipeline-source.html#module-pipeline.scan">Scanner Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline-source.html#scanner-module">Scanner Module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pipeline-source.html#compute-module">Compute Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pipeline-source.html#module-pipeline.validate">Validation Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline-source.html#validation-module">Validation Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline-source.html#utilities">Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline-source.html#module-pipeline.logs">Logging</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Script Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Scripts Source</a></li>
 </ul>
 </div>
 </div>

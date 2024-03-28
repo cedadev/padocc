@@ -5,3 +5,4 @@ Custom Pipeline Errors
 
 .. automodule:: pipeline.errors
     :members:
+    :show-inheritance:

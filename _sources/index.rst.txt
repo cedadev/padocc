@@ -3,10 +3,22 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to the Kerchunk Pipeline documentation!
-===============================================
+Padocc - User Documentation
+============================
 
-**kerchunk-builder** is a Python package for creating sets of Kerchunk files from an archive of NetCDF/HDF/Tiff files. The pipeline makes it easy to create multiple Kerchunk files for different datasets in parallel with validation steps to ensure the outputs are correct.
+**padocc** (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package (package name **kerchunk-builder**) for aggregating data to enable methods of access for cloud-based applications.
+
+The pipeline makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across different datasets simultaneously with validation steps to ensure the outputs are correct.
+
+Vast amounts of archival data in a variety of formats can be processed using the package's group mechanics and automatic deployment to a job submission system.
+
+Currently supported input file formats:
+ - NetCDF/HDF
+ - GeoTiff (**coming soon**)
+ - GRIB (**coming soon**)
+ - MetOffice (**future**)
+
+*padocc* is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr.
 
 The pipeline consists of four central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. This is not part of the code-base of the pipeline currently but could be added in a future update.
 
@@ -20,7 +32,7 @@ The pipeline consists of four central phases, with an additional phase for inges
    Introduction <pipeline-overview>
    Getting Started <start>
    Example CCI Water Vapour <cci_water>
-   Pipeline Flags/Options <execution>
+   Padocc Flags/Options <execution>
    Assessor Tool Overview <assess-overview>
    Error Codes <errors>
 
@@ -28,9 +40,9 @@ The pipeline consists of four central phases, with an additional phase for inges
    :maxdepth: 2
    :caption: Advanced:
 
-   Pipeline Source <pipeline-source>
+   Padocc Source <pipeline-source>
    Assessor Source <assess>
-   Control Script Source <execution-source>
+   Control Scripts Source <execution-source>
 
 
 
