@@ -112,9 +112,9 @@ def perform_safe_calculations(std_vars: list, cpf: list, volms: list, files: lis
 
     :param logger:          (obj) Logging object for info/debug/error messages.
 
-    :returns: Average values of: chunks per file (cpf), number of variables (num_vars), chunk size (avg_chunk),
-    spatial resolution of each chunk assuming 2:1 ratio lat/lon (spatial_res), totals of NetCDF and Kerchunk estimate
-    data amounts, number of files, total number of chunks and the addition percentage.
+    :returns:   Average values of: chunks per file (cpf), number of variables (num_vars), chunk size (avg_chunk),
+                spatial resolution of each chunk assuming 2:1 ratio lat/lon (spatial_res), totals of NetCDF and Kerchunk estimate
+                data amounts, number of files, total number of chunks and the addition percentage.
     """
     kchunk_const = 167 # Bytes per Kerchunk ref (standard/typical)
     if std_vars:
