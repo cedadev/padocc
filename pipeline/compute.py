@@ -13,14 +13,14 @@ import numpy as np
 import base64
 
 from pipeline.logs import init_logger, FalseLogger
-from pipeline.utils import BypassSwitch, open_kerchunk, get_proj_file
+from pipeline.utils import BypassSwitch, open_kerchunk, get_proj_file, set_proj_file
 from pipeline.errors import *
 from pipeline.validate import validate_selection
 
 WORKDIR = None
 CONCAT_MSG = 'See individual files for more details'
 
-class Converter:
+class KerchunkConverter:
     """Class for converting a single file to a Kerchunk reference object"""
 
     def __init__(self, clogger, bypass_driver=False, ctype=None) -> None:
@@ -28,6 +28,7 @@ class Converter:
         self.ctype         = ctype
         self.success       = True
         self.bypass_driver = bypass_driver
+        self.loaded_refs   = False
 
     def convert_to_zarr(self, nfile: str, extension=False, **kwargs) -> None:
         """
@@ -75,6 +76,13 @@ class Converter:
             with open(cache_ref,'w') as f:
                 f.write(json.dumps(ref))
 
+    def load_individual_ref(self, cache_ref: str) -> dict | None:
+        """Wrapper for getting proj_file cache_ref."""
+        ref = get_proj_file(cache_ref, None)
+        if ref:
+            self.loaded_refs = True
+        return ref
+
     def hdf5_to_zarr(self, nfile: str, **kwargs) -> None:
         """Wrapper for converting NetCDF4/HDF5 type files to Kerchunk"""
         from kerchunk.hdf import SingleHdf5ToZarr
@@ -95,14 +103,15 @@ class Converter:
         from kerchunk.grib2 import GribToZarr
         return GribToZarr(gfile, **kwargs).translate()
     
-class Indexer(Converter):
+class KerchunkDSProcessor(KerchunkConverter):
     def __init__(self, 
                  proj_code, 
                  workdir=WORKDIR, thorough=False, forceful=False, 
                  verb=0, mode=None, version_no='trial-', concat_msg=CONCAT_MSG, bypass=BypassSwitch(), 
-                 groupID=None, limiter=None, dryrun=True, ctype=None, fh=None, logid=None, **kwargs) -> None:
+                 groupID=None, limiter=None, dryrun=True, ctype=None, fh=None, logid=None, 
+                 skip_concat=False, logger=None, **kwargs) -> None:
         """
-        Initialise indexer for this dataset, set all variables and prepare for computation.
+        Initialise KerchunkDSProcessor for this dataset, set all variables and prepare for computation.
         
         :param proj_code:           (str) The project code in string format (DOI)
 
@@ -145,10 +154,15 @@ class Indexer(Converter):
                                     of the logger - prevents multiple processes with different logfiles getting
                                     loggers confused.
 
+        :param skip_concat:         (bool) Internal parameter for skipping concat - used for parallel construction 
+                                    which requires a more complex job allocation.
+
         :returns: None
 
         """
-        super().__init__(init_logger(verb, mode, 'compute-serial', fh=fh, logid=logid), bypass_driver=bypass.skip_driver, ctype=ctype)
+        if not logger:
+            logger = init_logger(verb, mode, 'compute-serial', fh=fh, logid=logid)
+        super().__init__(logger, bypass_driver=bypass.skip_driver, ctype=ctype)
 
         self.logger.debug('Starting variable definitions')
 
@@ -160,6 +174,7 @@ class Indexer(Converter):
         self.concat_msg = concat_msg
         self.thorough   = thorough
         self.forceful   = forceful
+        self.skip_concat= skip_concat
 
         self.validate_time = None
         self.concat_time   = None
@@ -245,6 +260,20 @@ class Indexer(Converter):
         if self.special_attrs:
             self.detail['special_attrs'] = list(self.special_attrs.keys())
         return self.detail
+    
+    def get_timings(self) -> dict | None:
+        """
+        Export timed values if refs were all created from scratch.
+        Ref loading invalidates timings so returns None if any refs were loaded
+        not created.
+        """
+        timings = None
+        if not self.loaded_refs:
+            timings = {
+                'convert_actual': self.convert_time,
+                'concat_actual' : self.concat_time
+            }
+        return timings
 
     def set_filelist(self) -> None:
         """
@@ -703,11 +732,10 @@ class Indexer(Converter):
         for x, nfile in enumerate(self.listfiles[:self.limiter]):
             cache_ref = f'{self.cache}/{x}.json'
             ref = None
-            if os.path.isfile(cache_ref) and not self.thorough:
-                self.logger.info(f'Loading refs: {x+1}/{self.limiter}')
-                if os.path.isfile(cache_ref):
-                    with open(cache_ref) as f:
-                        ref = json.load(f)
+            if not self.thorough:
+                ref = self.load_individual_ref(cache_ref)
+                if ref:
+                    self.logger.info(f'Loaded refs: {x+1}/{self.limiter}')
             if not ref:
                 self.logger.info(f'Creating refs: {x+1}/{self.limiter}')
                 try:
@@ -735,11 +763,104 @@ class Indexer(Converter):
             zattrs = self.correct_metadata(allzattrs)
 
         try:
-            if self.success:
+            if self.success and not self.skip_concat:
                 self.combine_and_save(refs, zattrs)
         except Exception as err:
             # Any additional parts here.
             raise err
+
+class ZarrRechunker(KerchunkConverter):
+    """
+    Rechunk input data types directly into zarr using Pangeo Rechunker.
+    - If refs already exist from previous Kerchunk runs, can use these to inform rechunker.
+    - Otherwise will have to start from scratch.
+    """
+    def __init__(self):
+        raise NotImplementedError
+
+def configure_kerchunk(args, logger, fh=None, logid=None):
+    """
+    Configure all required steps for Kerchunk processing.
+    - Check if output files already exist.
+    - Configure timings post-run.
+    """
+    version_no = 1
+    complete, escape = False, False
+    while not (complete or escape):
+        out_json = f'{args.proj_dir}/kerchunk-{version_no}a.json'
+        out_parq = f'{args.proj_dir}/kerchunk-{version_no}a.parq'
+
+        if os.path.isfile(out_json) or os.path.isfile(out_parq):
+            if args.forceful:
+                complete = True
+            elif args.new_version:
+                version_no += 1
+            else:
+                escape = True
+        else:
+            complete = True
+
+    concat_msg = '' # CMIP and CCI may be different?
+
+    if complete and not escape:
+
+        t1 = datetime.now()
+        ds = KerchunkDSProcessor(args.proj_code,
+                workdir=args.workdir,thorough=args.quality, forceful=args.forceful,
+                verb=args.verbose, mode=args.mode,
+                version_no=version_no, concat_msg=concat_msg, bypass=args.bypass, groupID=args.groupID, 
+                dryrun=args.dryrun, fh=fh, logid=logid)
+        ds.create_refs()
+
+        compute_time = (datetime.now()-t1).total_seconds()
+
+        detail = get_proj_file(args.proj_dir, 'detail-cfg.json')
+        if 'timings' not in detail:
+            detail['timings'] = {}
+
+        timings = ds.get_timings()
+        if timings:
+            logger.info('Export timings for this process - all refs created from scratch.')
+            detail['timings']['convert_actual'] = timings['convert_actual']
+            detail['timings']['concat_actual']  = timings['concat_actual']
+            detail['timings']['compute_actual'] = compute_time
+        set_proj_file(args.proj_dir, 'detail-cfg.json', detail, logger)
+
+    else:
+        logger.error('Output file already exists and there is no plan to overwrite')
+        return None
+
+def configure_zarr(args, logger):
+    raise NotImplementedError
+
+def compute_config(args, fh=None, logid=None, **kwargs) -> None:
+    """
+    Will serve as main point of configuration for processing runs.
+    Must be able to assess between using Zarr/Kerchunk.
+    """
+
+    logger = init_logger(args.verbose, args.mode, 'compute-serial', fh=fh, logid=logid)
+
+    logger.info(f'Starting computation step for {args.proj_code}')
+
+    cfg_file = f'{args.proj_dir}/base-cfg.json'
+    detail_file = f'{args.proj_dir}/detail-cfg.json'
+
+    # Preliminary checks
+    if not os.path.isfile(cfg_file):
+        logger.error(f'cfg file missing or not provided - {cfg_file}')
+        raise FileNotFoundError(cfg_file)
+    
+    if not os.path.isfile(detail_file):
+        logger.error(f'cfg file missing or not provided - {detail_file}')
+        raise FileNotFoundError(detail_file)
+    
+    # Open the detailfile to check type.
+    detail = get_proj_file(args.proj_dir, 'detail-cfg.json')
+    if detail['type'] == 'Zarr':
+        configure_zarr(args, logger)
+    else:
+        configure_kerchunk(args, logger)
 
 if __name__ == '__main__':
     print('Serial Processor for Kerchunk Pipeline - run with single_run.py')
