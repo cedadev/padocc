@@ -212,7 +212,10 @@ def get_proj_file(proj_dir: str, proj_file: str) -> dict | None:
 
     :returns: A dictionary of the contents of a json file or None if there are problems.
     """
-    projfile = f'{proj_dir}/{proj_file}'
+    if not proj_file:
+        projfile = proj_dir
+    else:
+        projfile = f'{proj_dir}/{proj_file}'
     if os.path.isfile(projfile):
         try:
             with open(projfile) as f:
@@ -225,13 +228,16 @@ def get_proj_file(proj_dir: str, proj_file: str) -> dict | None:
     else:
         return None
     
-def set_proj_file(proj_dir: str, proj_file: str, contents: list, logger: logging.Logger) -> None:
+def set_proj_file(proj_dir: str, proj_file: str, contents: dict, logger: logging.Logger) -> None:
     """
     Overwrite the contents of a project file within a project code directory.
 
     :param proj_code:   (str) The project code in string format (DOI)
 
     :param proj_file:   (str) Name of a file to access within the project directory.
+
+    :param contents:    (dict) Dictionary to write into json format config file within
+                        the project directory.
 
     :returns: A dictionary of the contents of a json file or None if there are problems.
     """
