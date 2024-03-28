@@ -232,7 +232,7 @@ def set_proj_file(proj_dir: str, proj_file: str, contents: dict, logger: logging
     """
     Overwrite the contents of a project file within a project code directory.
 
-    :param proj_code:   (str) The project code in string format (DOI)
+    :param proj_code:   (str) The project code in string format (DOI).
 
     :param proj_file:   (str) Name of a file to access within the project directory.
 
