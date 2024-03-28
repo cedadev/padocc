@@ -21,11 +21,9 @@ Compute Module
 
 **Serial Processor**
 
-.. automodule:: pipeline.compute.serial_process
+.. automodule:: pipeline.compute
     :members:
-
-    .. autoclass:: Converter
-        :members:
+    :show-inheritance:
 
 =================
 Validation Module
