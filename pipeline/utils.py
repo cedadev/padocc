@@ -260,3 +260,11 @@ def get_proj_dir(proj_code: str, workdir: str, groupID: str) -> str:
         return f'{workdir}/in_progress/{groupID}/{proj_code}'
     else:
         return f'{workdir}/in_progress/{proj_code}'
+
+def find_zarrays(refs: dict) -> dict:
+    """Quick way of extracting all the zarray components of a ref set."""
+    zarrays = {}
+    for r in refs['refs'].keys():
+        if '.zarray' in r:
+            zarrays[r] = refs['refs'][r]
+    return zarrays

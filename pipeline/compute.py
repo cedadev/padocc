@@ -23,12 +23,22 @@ CONCAT_MSG = 'See individual files for more details'
 class KerchunkConverter:
     """Class for converting a single file to a Kerchunk reference object"""
 
-    def __init__(self, clogger, bypass_driver=False, ctype=None) -> None:
+    def __init__(self, clogger=None, bypass_driver=False, ctype=None, verbose=1) -> None:
+        if not clogger:
+            clogger = init_logger(verbose,0,'convert-trial')
+
         self.logger        = clogger
         self.ctype         = ctype
         self.success       = True
         self.bypass_driver = bypass_driver
         self.loaded_refs   = False
+
+        self.drivers = {
+            'ncf3': self.ncf3_to_zarr,
+            'hdf5': self.hdf5_to_zarr,
+            'tif' : self.tiff_to_zarr,
+            'grib': self.grib_to_zarr,
+        }
 
     def convert_to_zarr(self, nfile: str, extension=False, **kwargs) -> None:
         """
@@ -46,17 +56,12 @@ class KerchunkConverter:
                                 if the driver is unsuccessful. Errors will be bypassed
                                 if the bypass_driver option is selected for this class.
         """
-        drivers = {
-            'ncf3': self.ncf3_to_zarr,
-            'hdf5': self.hdf5_to_zarr,
-            'tif' : self.tiff_to_zarr,
-            'grib': self.grib_to_zarr,
-        }
+
         if extension:
             self.ctype=extension
         try:
-            if self.ctype in drivers:
-                ref = drivers[self.ctype](nfile, **kwargs)
+            if self.ctype in self.drivers:
+                ref = self.drivers[self.ctype](nfile, **kwargs)
                 return ref
             else:
                 self.logger.debug(f'Extension {self.ctype} not valid')
@@ -66,6 +71,41 @@ class KerchunkConverter:
                 return None
             else:
                 raise err
+            
+    def try_all_drivers(self, nfile: str, **kwargs) -> dict | None:
+        """
+        Safe creation allows for known issues and tries multiple drivers
+
+        :returns:   dictionary of Kerchunk references if successful, raises error
+                    otherwise if unsuccessful.
+        """
+
+        extension = False
+        supported_extensions = list(self.drivers.keys())
+
+        self.logger.debug(f'Attempting conversion for 1 {self.ctype} extension')
+
+        if not self.ctype:
+            self.ctype = supported_extensions[0]
+
+        tdict = self.convert_to_zarr(nfile, **kwargs)
+        ext_index = 0
+        while not tdict and ext_index < len(supported_extensions)-1:
+            # Try the other ones
+            extension = supported_extensions[ext_index]
+            self.logger.debug(f'Attempting conversion for {extension} extension')
+            if extension != self.ctype:
+                tdict = self.convert_to_zarr(nfile, extension, **kwargs)
+            ext_index += 1
+
+        if not tdict:
+            self.logger.error('Scanning failed for all drivers, file type is not Kerchunkable')
+            raise KerchunkDriverFatalError
+        else:
+            if extension:
+                self.ctype = extension
+            self.logger.debug(f'Scan successful with {self.ctype} driver')
+            return tdict
             
     def save_individual_ref(self, ref: dict, cache_ref: str, forceful=False) -> None:
         """
@@ -162,7 +202,7 @@ class KerchunkDSProcessor(KerchunkConverter):
         """
         if not logger:
             logger = init_logger(verb, mode, 'compute-serial', fh=fh, logid=logid)
-        super().__init__(logger, bypass_driver=bypass.skip_driver, ctype=ctype)
+        super().__init__(caselogger=logger, bypass_driver=bypass.skip_driver, ctype=ctype)
 
         self.logger.debug('Starting variable definitions')
 
@@ -663,41 +703,6 @@ class KerchunkDSProcessor(KerchunkConverter):
             self.logger.debug('Saved global attribute cache')
         else:
             self.logger.debug('Skipped saving global attribute cache')
-
-    def try_all_drivers(self, nfile: str, **kwargs) -> dict | None:
-        """
-        Safe creation allows for known issues and tries multiple drivers
-
-        :returns:   dictionary of Kerchunk references if successful, raises error
-                    otherwise if unsuccessful.
-        """
-
-        extension = False
-        supported_extensions = ['ncf3','hdf5','tif']
-
-        self.logger.debug(f'Attempting conversion for 1 {self.ctype} extension')
-
-        if not self.ctype:
-            self.ctype = supported_extensions[0]
-
-        tdict = self.convert_to_zarr(nfile, **kwargs)
-        ext_index = 0
-        while not tdict and ext_index < len(supported_extensions)-1:
-            # Try the other ones
-            extension = supported_extensions[ext_index]
-            self.logger.debug(f'Attempting conversion for {extension} extension')
-            if extension != self.ctype:
-                tdict = self.convert_to_zarr(nfile, extension, **kwargs)
-            ext_index += 1
-
-        if not tdict:
-            self.logger.error('Scanning failed for all drivers, file type is not Kerchunkable')
-            raise KerchunkDriverFatalError
-        else:
-            if extension:
-                self.ctype = extension
-            self.logger.debug(f'Scan successful with {self.ctype} driver')
-            return tdict
     
     def load_temp_zattrs(self) -> dict:
         """

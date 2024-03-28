@@ -16,8 +16,9 @@ from datetime import datetime
 import math
 import json
 import numpy as np
+import re
 
-from pipeline.logs import init_logger
+from pipeline.logs import init_logger, FalseLogger
 from pipeline.utils import get_attribute, BypassSwitch, get_codes, get_proj_dir, get_proj_file, set_codes
 from pipeline.errors import *
 from pipeline.compute import KerchunkConverter, KerchunkDSProcessor
@@ -45,15 +46,23 @@ def safe_format(value: int, fstring: str) -> str:
     except:
         return ''
         
-def summarise_json(args, count: int, ctype: str, logger) -> tuple:
+def summarise_json(identifier, ctype: str, logger=None, proj_dir=None) -> tuple:
     """
     Open previously written JSON cached files and perform analysis.
     """
-    refs = get_proj_file(args.proj_dir, f'cache/{count}.json')
+    if not logger:
+        logger = FalseLogger()
+
+    if type(identifier) == dict:
+        # Assume refs passed directly.
+        refs = identifier
+    else:
+        if proj_dir:
+            refs = get_proj_file(proj_dir, f'cache/{identifier}.json')
+            logger.debug(f'Starting Analysis of references for {identifier}')
+
     if not refs:
         return None, None, None, None
-
-    logger.debug(f'Starting Analysis of references for {count}')
 
     # Perform summations, extract chunk attributes
     sizes = []
@@ -61,13 +70,13 @@ def summarise_json(args, count: int, ctype: str, logger) -> tuple:
     chunks = 0
     kdict = refs['refs']
     for chunkkey in kdict.keys():
-        if len(kdict[chunkkey]) >= 2:
+        if bool(re.search(r'\d', chunkkey)):
             try:
                 sizes.append(int(kdict[chunkkey][2]))
-                chunks += 1
             except ValueError:
                 pass
-        if '/.zarray' in chunkkey:
+            chunks += 1
+        elif '/.zarray' in chunkkey:
             var = chunkkey.split('/')[0]
             chunksize = 0
             if var not in vars:
@@ -216,7 +225,7 @@ def scan_dataset(args, files: list, logger) -> None:
     logger.info(f'Summarising scan results for {limiter} files')
     for count in range(limiter):
         try:
-            volume, chunks_per_file, varchunks, ctype = summarise_json(args, count, ctype, logger)
+            volume, chunks_per_file, varchunks, ctype = summarise_json(count, ctype, logger=logger,proj_dir=args.proj_dir)
             vars = sorted(list(varchunks.keys()))
 
             # Keeping the below options although may be redundant as have already processed the files
