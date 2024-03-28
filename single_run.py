@@ -10,75 +10,83 @@ import json
 import logging
 from datetime import datetime
 import traceback
+import re
 
+# Pipeline Modules
 from pipeline.logs import init_logger, reset_file_handler, log_status
-from pipeline.utils import get_attribute, BypassSwitch, get_codes
+from pipeline.utils import get_attribute, BypassSwitch, get_codes, get_proj_file
 from pipeline.errors import ProjectCodeError, MissingVariableError, BlacklistProjectCode
 
-def run_init(args, logger, fh=None, **kwargs):
-    """Start initialisation for single dataset"""
+def run_init(args, logger, fh=None, **kwargs) -> None:
+    """
+    Start initialisation for single dataset
+
+    :param args:    (obj) Set of command line arguments supplied by argparse.
+
+    :param logger:  (obj) Logging object for info/debug/error messages.
+
+    :param fh:      (str) Path to file for logger I/O when defining new logger.
+
+    :returns: None
+    """
     from pipeline.init import init_config
     logger.info('Starting init process')
-    return init_config(args, fh=fh, **kwargs)
+    init_config(args, fh=fh, **kwargs)
 
-def run_scan(args, logger, fh=None,**kwargs):
-    """Start scanning process for individual dataset"""
+def run_scan(args, logger, fh=None,**kwargs) -> None:
+    """
+    Start scanning process for individual dataset
+
+    :param args:    (obj) Set of command line arguments supplied by argparse.
+
+    :param logger:  (obj) Logging object for info/debug/error messages.
+
+    :param fh:      (str) Path to file for logger I/O when defining new logger.
+
+    :returns: None
+    """
     from pipeline.scan import scan_config
     logger.info('Starting scan process')
-    return scan_config(args,fh=fh, **kwargs)
+    scan_config(args,fh=fh, **kwargs)
 
-def run_compute(args, logger, fh=None, logid=None, **kwargs):
-    """Setup computation parameters for individual dataset"""
-    from pipeline.compute.serial_process import Indexer
+def run_compute(args, logger, fh=None, logid=None, **kwargs) -> None:
+    """
+    Setup computation parameters for individual dataset
 
-    logger.info(f'Starting computation step for {args.proj_code}')
+    :params args:   (obj) Set of command line arguments supplied by argparse.
 
-    cfg_file = f'{args.proj_dir}/base-cfg.json'
-    detail_file = f'{args.proj_dir}/detail-cfg.json'
+    :params logger: (obj) Logging object for info/debug/error messages.
 
-    if not os.path.isfile(cfg_file):
-        logger.error(f'cfg file missing or not provided - {cfg_file}')
-        return None
+    :params fh:     (str) Path to file for logger I/O when defining new logger.
+
+    :params logid:  (str) Passed to KerchunkDSProcessor for specifying a logger component.
+
+    :returns: None
+    """
+    from pipeline.compute import compute_config
+    logger.info('Starting compute process')
+    compute_config(args, fh=fh, logid=logid, **kwargs)
+
+def run_validation(args, logger, fh=None, **kwargs) -> None:
+    """
+    Start validation of single dataset.
+
+    :param args:    (obj) Set of command line arguments supplied by argparse.
+
+    :param logger:  (obj) Logging object for info/debug/error messages.
+
+    :param fh:      (str) Path to file for logger I/O when defining new logger.
+
+    :returns: None
     
-    if not os.path.isfile(detail_file):
-        logger.error(f'cfg file missing or not provided - {detail_file}')
-        return None
-    
-    version_no = 1
-    complete, escape = False, False
-    while not (complete or escape):
-        out_json = f'{args.proj_dir}/kerchunk-{version_no}a.json'
-        out_parq = f'{args.proj_dir}/kerchunk-{version_no}a.parq'
-
-        if os.path.isfile(out_json) or os.path.isfile(out_parq):
-            if args.forceful:
-                complete = True
-            elif args.new_version:
-                version_no += 1
-            else:
-                escape = True
-        else:
-            complete = True
-
-    concat_msg = '' # CMIP and CCI may be different?
-
-    if complete and not escape:
-
-        return Indexer(args.proj_code, cfg_file=cfg_file, detail_file=detail_file, 
-                workdir=args.workdir, issave_meta=True, thorough=args.quality, forceful=args.forceful,
-                verb=args.verbose, mode=args.mode,
-                version_no=version_no, concat_msg=concat_msg, bypass=args.bypass, groupID=args.groupID, 
-                dryrun=args.dryrun, fh=fh, logid=logid).create_refs()
-    else:
-        logger.error('Output file already exists and there is no plan to overwrite')
-        return None
-
-def run_validation(args, logger, fh=None, **kwargs):
-    """Start validation of single dataset"""
+    """
     from pipeline.validate import validate_dataset
     logger.info('Starting validation process')
-    return validate_dataset(args, fh=fh, **kwargs)
+    validate_dataset(args, fh=fh, **kwargs)
 
+    # Note: Validation proved to be unpredictable for timings - not suitable for job allocation.
+
+# Driver functions map to command line input of 'phase'
 drivers = {
     'init':run_init,
     'scan':run_scan,
@@ -86,8 +94,26 @@ drivers = {
     'validate': run_validation
 }
 
-def get_proj_code(workdir: str, group: str, pid, repeat_id, subset=0, id=0):
-    """Get the correct code given a slurm id from a group of project codes"""
+def get_proj_code(workdir: str, group: str, pid, repeat_id, subset=0, id=0) -> str:
+    """
+    Get the correct code given a slurm id from a group of project codes
+    
+    :param workdir:     (str) The current pipeline working directory.
+
+    :param group:       (str) The name of the group which this project code belongs to.
+
+    :param pid:         (str) The project code for which to get the index.
+
+    :param repeat_id:   (str) The subset within the group (default is main)
+
+    :param subset:      (int) The size of the subset within this repeat group.
+
+    :param id:          (int) The specific index of this subset within a group.
+                        i.e subset size of 100, total codes is 1000 so 10 codes per subset.
+                        an id value of 2 would mean the third group of 10 codes.
+
+    :returns: The project code (DOI) in string format not index format.
+    """
     try:
         proj_codes = get_codes(group, workdir, f'proj_codes/{repeat_id}')
         proj_code = proj_codes[int(id)*subset + pid]
@@ -95,21 +121,120 @@ def get_proj_code(workdir: str, group: str, pid, repeat_id, subset=0, id=0):
         raise ProjectCodeError
     return proj_code
 
-def blacklisted(proj_code: str, groupdir: str, logger):
-    blackfile = f'{groupdir}/blacklist_codes.txt'
-    if os.path.isfile(blackfile):
-        with open(blackfile) as f:
-            blackcodes = [r.strip().split(',')[0] for r in f.readlines()]
-        for code in blackcodes:
-            if proj_code in code:
-                return True
-        return False
+def blacklisted(proj_code: str, groupdir: str, logger) -> bool:
+    """
+    Determine if the current project code is blacklisted
+    
+    :param groupdir:    (str) The path to a group directory within the pipeline
+
+    :param proj_code:   (str) The project code in string format (DOI)
+
+    :param logger:      (obj) Logging object for info/debug/error messages.
+
+    :returns: True if the project code is in the blacklist, false otherwise.
+    """
+    blackcodes = get_codes(groupdir, None, 'blacklist_codes')
+    if blackcodes:
+        return bool(re.match(f'.*{proj_code}.*',''.join(map(str,blackcodes))))
     else:
         logger.debug('No blacklist file preset for this group')
         return False
     
-def main(args):
-    """Main function for single run processing"""
+def assemble_single_process(args, logger, jobid='', fh=None) -> None:
+    """
+    Process a single task and assemble required parameters. This task may sit within a subset,
+    repeat id or larger group, but everything from here is concerned with the processing of 
+    a single dataset (task).
+
+    :param args:        (obj) Set of command line arguments supplied by argparse.
+
+    :param logger:      (obj) Logging object for info/debug/error messages.
+
+    :param jobid:       (str) From SLURM_ARRAY_JOB_ID
+
+    :param fh:          (str) Path to file for logger I/O when defining new logger.
+
+    :returns: None
+    """
+
+    if args.groupID:
+
+        # Avoid stray groupdir definition in environment variables
+        cmd_groupdir = f'{args.workdir}/groups/{args.groupID}'
+        if cmd_groupdir != args.groupdir:
+            logger.warning(f'Overriding environment-defined groupdir value with: {cmd_groupdir}')
+            args.groupdir = cmd_groupdir
+
+        # Assume using an integer (SLURM_ARRAY_TASK_ID)
+        proj_code = int(args.proj_code)
+
+        if args.binpack:
+            # Binpacking requires separate system for getting the right project code
+            raise NotImplementedError
+
+        args.proj_code = get_proj_code(args.workdir, args.groupID, proj_code, args.repeat_id, subset=args.subset, id=id)
+        args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
+
+        # Get rid of this section if necessary
+        # Made redundant with use of error logging PPC but still needed - job-error suppression required.
+        if jobid != '':
+            errs_dir = f'{args.workdir}/groups/{args.groupID}/errs'
+            if not os.path.isdir(f'{errs_dir}/{jobid}_{args.repeat_id}'):
+                os.makedirs(f'{errs_dir}/{jobid}_{args.repeat_id}')
+
+            proj_code_file = f'{args.workdir}/groups/{args.groupID}/proj_codes/{args.repeat_id}.txt'
+
+            if not os.path.isfile(f'{errs_dir}/{jobid}_{args.repeat_id}/proj_codes.txt'):
+                os.system(f'cp {proj_code_file} {errs_dir}/{jobid}_{args.repeat_id}/proj_codes.txt')
+
+    else:
+        args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
+
+    #if blacklisted(args.proj_code, args.groupdir, logger) and not args.backtrack:
+        #raise BlacklistProjectCode
+
+    if not args.phase in drivers:
+        logger.error(f'"{args.phase}" not recognised, please select from {list(drivers.keys())}') 
+        return None
+
+    logger.debug('Pipeline variables (reconfigured):')
+    logger.debug(f'WORKDIR : {args.workdir}')
+    logger.debug(f'GROUPDIR: {args.groupdir}')
+    logger.debug('Using attributes:')
+    logger.debug(f'proj_code: {args.proj_code}')
+    logger.debug(f'proj_dir : {args.proj_dir}')
+
+    # Refresh log for this phase
+    proj_log = f'{args.proj_dir}/phase_logs/{args.phase}.log'
+    if not os.path.isdir(f'{args.proj_dir}/phase_logs'):
+        os.makedirs(f'{args.proj_dir}/phase_logs')
+    if jobid != '':
+        if os.path.isfile(proj_log):
+            os.system(f'rm {proj_log}')
+        if os.path.isfile(fh):
+            os.system(f'rm {fh}')
+    if not args.bypass.skip_report:
+        log_status(args.phase, args.proj_dir, 'pending', logger, jobid=jobid, dryrun=args.dryrun)
+
+    if jobid != '':
+        logger = reset_file_handler(logger, args.verbose, proj_log)
+        drivers[args.phase](args, logger, fh=proj_log, logid=id)
+        logger = reset_file_handler(logger, args.verbose, fh)
+    else:
+        drivers[args.phase](args, logger)
+    passes += 1
+    if not args.bypass.skip_report:
+        log_status(args.phase, args.proj_dir, 'complete', logger, jobid=jobid, dryrun=args.dryrun)
+
+def main(args) -> None:
+    """
+    Main function for processing a single job. This could be multiple tasks/datasets within 
+    a single job, but everything from here is serialised, i.e run one after another.
+
+    :param args:        (obj) Set of command line arguments supplied by argparse.
+
+    :returns: None
+    """
 
     jobid = ''
     fh    = ''
@@ -149,89 +274,37 @@ def main(args):
         if args.subset > 1:
             logger.info(f'Starting process for {id+1}/{args.subset}')
         try:
-            if args.groupID:
-
-                # Avoid stray groupdir definition in environment variables
-                cmd_groupdir = f'{args.workdir}/groups/{args.groupID}'
-                if cmd_groupdir != args.groupdir:
-                    logger.warning(f'Overriding environment-defined groupdir value with: {cmd_groupdir}')
-                    args.groupdir = cmd_groupdir
-
-                proj_code = int(args.proj_code)
-
-                args.proj_code = get_proj_code(args.workdir, args.groupID, proj_code, args.repeat_id, subset=args.subset, id=id)
-                args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
-
-                # Get rid of this section if necessary - redo to put code list elsewhere
-                if jobid != '':
-                    errs_dir = f'{args.workdir}/groups/{args.groupID}/errs'
-                    if not os.path.isdir(f'{errs_dir}/{jobid}_{args.repeat_id}'):
-                        os.makedirs(f'{errs_dir}/{jobid}_{args.repeat_id}')
-
-                    proj_code_file = f'{args.workdir}/groups/{args.groupID}/proj_codes/{args.repeat_id}.txt'
-
-                    if not os.path.isfile(f'{errs_dir}/{jobid}_{args.repeat_id}/proj_codes.txt'):
-                        os.system(f'cp {proj_code_file} {errs_dir}/{jobid}_{args.repeat_id}/proj_codes.txt')
-
-            else:
-                args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
-
-            #if blacklisted(args.proj_code, args.groupdir, logger) and not args.backtrack:
-                #raise BlacklistProjectCode
-
-            if args.phase in drivers:
-                logger.debug('Pipeline variables (reconfigured):')
-                logger.debug(f'WORKDIR : {args.workdir}')
-                logger.debug(f'GROUPDIR: {args.groupdir}')
-                logger.debug('Using attributes:')
-                logger.debug(f'proj_code: {args.proj_code}')
-                logger.debug(f'proj_dir : {args.proj_dir}')
-
-                # Refresh log for this phase
-                proj_log = f'{args.proj_dir}/phase_logs/{args.phase}.log'
-                if not os.path.isdir(f'{args.proj_dir}/phase_logs'):
-                    os.makedirs(f'{args.proj_dir}/phase_logs')
-                if jobid != '':
-                    if os.path.isfile(proj_log):
-                        os.system(f'rm {proj_log}')
-                    if os.path.isfile(fh):
-                        os.system(f'rm {fh}')
-                if not args.bypass.skip_report:
-                    log_status(args.phase, args.proj_dir, 'pending', logger, jobid=jobid, dryrun=args.dryrun)
-                try:
-                    if jobid != '':
-                        logger = reset_file_handler(logger, args.verbose, proj_log)
-                        drivers[args.phase](args, logger, fh=proj_log, logid=id)
-                        logger = reset_file_handler(logger, args.verbose, fh)
-                    else:
-                        drivers[args.phase](args, logger)
-                    passes += 1
-                    if not args.bypass.skip_report:
-                        log_status(args.phase, args.proj_dir, 'complete', logger, jobid=jobid, dryrun=args.dryrun)
-                except Exception as err:
-                    # Add error traceback
-                    tb = traceback.format_exc()
-                    logger.error(tb)
-
-                    if jobid != '':
-                        logger = reset_file_handler(logger, args.verbose, fh)
-                    fails += 1
-                    if not args.bypass.skip_report:
-                        try:
-                            status = err.get_str()
-                        except AttributeError:
-                            status = type(err).__name__ + ' ' + str(err)
-                            
-                        # Messes up the csv if there are commas
-                        status = status.replace(',','-')
-                        log_status(args.phase, args.proj_dir, status, logger, jobid=jobid, dryrun=args.dryrun)
-                    else:
-                        raise err
-            else:
-                logger.error(f'"{args.phase}" not recognised, please select from {list(drivers.keys())}')
+            assemble_single_process(args, logger, jobid=jobid, fh=fh)
+            passes += 1
         except Exception as err:
             # Capture all errors - any error handled here is a setup error
-            raise err
+            # Implement allocation override here - no error thrown if using allocation.
+
+            # Add error traceback
+            tb = traceback.format_exc()
+            logger.error(tb)
+
+            # Reset file handler back to main.
+            if jobid != '':
+                logger = reset_file_handler(logger, args.verbose, fh)
+            fails += 1
+
+            # Report/log status
+            if not args.bypass.skip_report:
+                try:
+                    status = err.get_str()
+                except AttributeError:
+                    status = type(err).__name__ + ' ' + str(err)
+                    
+                # Messes up the csv if there are commas
+                status = status.replace(',','-')
+                log_status(args.phase, args.proj_dir, status, logger, jobid=jobid, dryrun=args.dryrun)
+            elif not args.binpack:
+                # Only raise error if we're not bin packing AND skipping the reporting.
+                # If reporting is skipped, the error is not displayed directly but fails are recorded at the end.
+                raise err
+            else:
+                pass
     logger.info('Pipeline phase execution finished')
     logger.info(f'Success: {passes}, Error: {fails}') 
     return True
@@ -248,6 +321,7 @@ if __name__ == '__main__':
     parser.add_argument('-Q','--quality', dest='quality', action='store_true', help='Quality assured checks - thorough run')
     parser.add_argument('-b','--bypass-errs', dest='bypass', default='DBSCMR', help=BypassSwitch().help())
     parser.add_argument('-B','--backtrack', dest='backtrack', action='store_true', help='Backtrack to previous position, remove files that would be created in this job.')
+    parser.add_argument('-A', '--alloc-bins', dest='binpack',action='store_true', help='input file (for init phase)')
 
     # Environment variables
     parser.add_argument('-w','--workdir',   dest='workdir',      help='Working directory for pipeline')

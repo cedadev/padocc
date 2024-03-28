@@ -10,7 +10,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
 
-project = 'Kerchunk Pipeline'
+project = 'Padocc Package'
 copyright = '2024, Daniel Westwood'
 author = 'Daniel Westwood'
 release = 'v1.1'

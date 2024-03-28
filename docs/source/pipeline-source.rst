@@ -1,4 +1,4 @@
-Pipeline Source Code
+Padocc Source Code
 ====================
 
 =====================
@@ -21,11 +21,9 @@ Compute Module
 
 **Serial Processor**
 
-.. automodule:: pipeline.compute.serial_process
+.. automodule:: pipeline.compute
     :members:
-
-    .. autoclass:: Converter
-        :members:
+    :show-inheritance:
 
 =================
 Validation Module
@@ -33,3 +31,19 @@ Validation Module
 
 .. automodule:: pipeline.validate
     :members:
+
+=========
+Utilities
+=========
+
+.. automodule:: pipeline.utils 
+    :members:
+    :show-inheritance:
+
+=======
+Logging
+=======
+
+.. automodule:: pipeline.logs
+    :members:
+    :show-inheritance:

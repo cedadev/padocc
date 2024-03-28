@@ -6,7 +6,7 @@ Overview of Pipeline Phases
 
 **Init (Initialisation) Phase**
 
-The Kerchunk pipeline takes a CSV (or similar) input file and creates the necessary directories and config files for the pipeline to being running.
+The pipeline takes a CSV (or similar) input file and creates the necessary directories and config files for the pipeline to being running.
 
 **Scan Phase**
 

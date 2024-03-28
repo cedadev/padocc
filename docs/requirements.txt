@@ -5,3 +5,6 @@ xarray==2023.1.0
 kerchunk==0.2.0
 numpy==1.24.4
 scipy==1.10.1
+dask==2023.3.1
+binpacking==1.5.2
+distributed==2023.3.1
