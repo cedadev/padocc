@@ -59,69 +59,13 @@ def run_compute(args, logger, fh=None, logid=None, **kwargs) -> None:
 
     :params fh:     (str) Path to file for logger I/O when defining new logger.
 
-    :params logid:  (str) Passed to Indexer for specifying a logger component.
+    :params logid:  (str) Passed to KerchunkDSProcessor for specifying a logger component.
 
     :returns: None
     """
-    from pipeline.compute.serial_process import Indexer
-
-    logger.info(f'Starting computation step for {args.proj_code}')
-
-    cfg_file = f'{args.proj_dir}/base-cfg.json'
-    detail_file = f'{args.proj_dir}/detail-cfg.json'
-
-    if not os.path.isfile(cfg_file):
-        logger.error(f'cfg file missing or not provided - {cfg_file}')
-        return None
-    
-    if not os.path.isfile(detail_file):
-        logger.error(f'cfg file missing or not provided - {detail_file}')
-        return None
-    
-    version_no = 1
-    complete, escape = False, False
-    while not (complete or escape):
-        out_json = f'{args.proj_dir}/kerchunk-{version_no}a.json'
-        out_parq = f'{args.proj_dir}/kerchunk-{version_no}a.parq'
-
-        if os.path.isfile(out_json) or os.path.isfile(out_parq):
-            if args.forceful:
-                complete = True
-            elif args.new_version:
-                version_no += 1
-            else:
-                escape = True
-        else:
-            complete = True
-
-    concat_msg = '' # CMIP and CCI may be different?
-
-    if complete and not escape:
-
-        t1 = datetime.now()
-        ds = Indexer(args.proj_code, cfg_file=cfg_file, detail_file=detail_file, 
-                workdir=args.workdir, issave_meta=True, thorough=args.quality, forceful=args.forceful,
-                verb=args.verbose, mode=args.mode,
-                version_no=version_no, concat_msg=concat_msg, bypass=args.bypass, groupID=args.groupID, 
-                dryrun=args.dryrun, fh=fh, logid=logid)
-        ds.create_refs()
-
-        compute_time = (datetime.now()-t1).total_seconds()
-
-        detailfile = f'{args.proj_dir}/detail-cfg.json'
-        with open(detailfile) as f:
-            detail = json.load(f)
-        if 'timings' not in detail:
-            detail['timings'] = {}
-        detail['timings']['convert_actual'] = ds.convert_time
-        detail['timings']['concat_actual']  = ds.concat_time
-        detail['timings']['compute_actual'] = compute_time
-        with open(detailfile,'w') as f:
-            f.write(json.dumps(detail))
-
-    else:
-        logger.error('Output file already exists and there is no plan to overwrite')
-        return None
+    from pipeline.compute import compute_config
+    logger.info('Starting compute process')
+    compute_config(args, fh=fh, logid=logid, **kwargs)
 
 def run_validation(args, logger, fh=None, **kwargs) -> None:
     """
