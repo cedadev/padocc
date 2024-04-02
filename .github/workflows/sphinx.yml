@@ -1,13 +1,28 @@
 name: Sphinx build
 
-on: push
+on:
+  # Push/Pull for main branch.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
+  # Run workflow manually from actions tab.
+  workflow_dispatch:
+    
 jobs:
   build:
+    # Linux version requirements
     runs-on: ubuntu-latest
     steps:
     # Checkout and build the docs with sphinx
     - uses: actions/checkout@v2
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.10"
+
     - name: Build HTML
       uses: ammaraskar/sphinx-action@master
       with: 
