@@ -1,20 +1,24 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pipeline Flags &mdash; Padocc Package v1.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
     <link rel="shortcut icon" href="_static/favicon.ico"/>
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=3dd8cc91"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -27,12 +31,16 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Padocc Package
-            <img src="_static/ceda.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Padocc Package
+              <img src="_static/ceda.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -72,8 +80,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Pipeline Flags</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Pipeline Flags</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/execution.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -83,10 +91,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="pipeline-flags">
-<h1>Pipeline Flags<a class="headerlink" href="#pipeline-flags" title="Permalink to this headline"></a></h1>
-<div class="section" id="bypassswitch-options">
-<h2>BypassSwitch Options<a class="headerlink" href="#bypassswitch-options" title="Permalink to this headline"></a></h2>
+  <section id="pipeline-flags">
+<h1>Pipeline Flags<a class="headerlink" href="#pipeline-flags" title="Permalink to this heading"></a></h1>
+<section id="bypassswitch-options">
+<h2>BypassSwitch Options<a class="headerlink" href="#bypassswitch-options" title="Permalink to this heading"></a></h2>
 <p>Certain non-fatal errors may be bypassed using the Bypass flag:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Format</span><span class="p">:</span> <span class="o">-</span><span class="n">b</span> <span class="s2">&quot;FBDSCM&quot;</span>
 
@@ -101,9 +109,9 @@
 <span class="s2">&quot;M&quot;</span> <span class="o">-</span>   <span class="n">Skip</span> <span class="n">memory</span> <span class="n">checks</span> <span class="p">(</span><span class="n">validate</span><span class="o">/</span><span class="n">compute</span> <span class="n">aborts</span> <span class="k">if</span> <span class="n">utilisation</span> <span class="n">estimate</span> <span class="n">exceeds</span> <span class="n">cap</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="single-dataset-operation">
-<h2>Single Dataset Operation<a class="headerlink" href="#single-dataset-operation" title="Permalink to this headline"></a></h2>
+</section>
+<section id="single-dataset-operation">
+<h2>Single Dataset Operation<a class="headerlink" href="#single-dataset-operation" title="Permalink to this heading"></a></h2>
 <p>Run all single-dataset processes with the <code class="docutils literal notranslate"><span class="pre">`single-run.py`</span></code> script.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">single_run</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">Q</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">b</span> <span class="n">BYPASS</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">w</span> <span class="n">WORKDIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">g</span> <span class="n">GROUPDIR</span><span class="p">]</span>
                      <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">PROJ_DIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">G</span> <span class="n">GROUPID</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">t</span> <span class="n">TIME_ALLOWED</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">M</span> <span class="n">MEMORY</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="n">SUBSET</span><span class="p">]</span>
@@ -153,9 +161,9 @@
   <span class="o">-</span><span class="n">m</span> <span class="n">MODE</span><span class="p">,</span> <span class="o">--</span><span class="n">mode</span> <span class="n">MODE</span>  <span class="n">Print</span> <span class="ow">or</span> <span class="n">record</span> <span class="n">information</span> <span class="p">(</span><span class="n">log</span> <span class="ow">or</span> <span class="n">std</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="multi-dataset-group-operation">
-<h2>Multi-Dataset Group Operation<a class="headerlink" href="#multi-dataset-group-operation" title="Permalink to this headline"></a></h2>
+</section>
+<section id="multi-dataset-group-operation">
+<h2>Multi-Dataset Group Operation<a class="headerlink" href="#multi-dataset-group-operation" title="Permalink to this heading"></a></h2>
 <p>Run all multi-dataset group processes within the pipeline using the <code class="docutils literal notranslate"><span class="pre">`group_run.py`</span></code> script.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">group_run</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">S</span> <span class="n">SOURCE</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">e</span> <span class="n">VENVPATH</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">i</span> <span class="n">INPUT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">Q</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">b</span> <span class="n">BYPASS</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">w</span> <span class="n">WORKDIR</span><span class="p">]</span>
                     <span class="p">[</span><span class="o">-</span><span class="n">g</span> <span class="n">GROUPDIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">PROJ_DIR</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">G</span> <span class="n">GROUPID</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">t</span> <span class="n">TIME_ALLOWED</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">M</span> <span class="n">MEMORY</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="n">SUBSET</span><span class="p">]</span>
@@ -213,8 +221,8 @@
   <span class="o">-</span><span class="n">m</span> <span class="n">MODE</span><span class="p">,</span> <span class="o">--</span><span class="n">mode</span> <span class="n">MODE</span>  <span class="n">Print</span> <span class="ow">or</span> <span class="n">record</span> <span class="n">information</span> <span class="p">(</span><span class="n">log</span> <span class="ow">or</span> <span class="n">std</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>

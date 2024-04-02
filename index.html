@@ -1,20 +1,24 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Padocc - User Documentation &mdash; Padocc Package v1.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
     <link rel="shortcut icon" href="_static/favicon.ico"/>
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=3dd8cc91"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -26,12 +30,16 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="#" class="icon icon-home"> Padocc Package
-            <img src="_static/ceda.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="#" class="icon icon-home">
+            Padocc Package
+              <img src="_static/ceda.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -66,8 +74,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
-      <li>Padocc - User Documentation</li>
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Padocc - User Documentation</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -77,8 +85,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="padocc-user-documentation">
-<h1>Padocc - User Documentation<a class="headerlink" href="#padocc-user-documentation" title="Permalink to this headline"></a></h1>
+  <section id="padocc-user-documentation">
+<h1>Padocc - User Documentation<a class="headerlink" href="#padocc-user-documentation" title="Permalink to this heading"></a></h1>
 <p><strong>padocc</strong> (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package (package name <strong>kerchunk-builder</strong>) for aggregating data to enable methods of access for cloud-based applications.</p>
 <p>The pipeline makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across different datasets simultaneously with validation steps to ensure the outputs are correct.</p>
 <p>Vast amounts of archival data in a variety of formats can be processed using the package’s group mechanics and automatic deployment to a job submission system.</p>
@@ -122,7 +130,31 @@
 <li class="toctree-l2"><a class="reference internal" href="assess-overview.html#special-display-options">3. Special Display options</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.BlacklistProjectCode"><code class="docutils literal notranslate"><span class="pre">BlacklistProjectCode</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.ChunkDataError"><code class="docutils literal notranslate"><span class="pre">ChunkDataError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.ConcatFatalError"><code class="docutils literal notranslate"><span class="pre">ConcatFatalError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.ConcatenationError"><code class="docutils literal notranslate"><span class="pre">ConcatenationError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.ExpectMemoryError"><code class="docutils literal notranslate"><span class="pre">ExpectMemoryError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.ExpectTimeoutError"><code class="docutils literal notranslate"><span class="pre">ExpectTimeoutError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.FilecapExceededError"><code class="docutils literal notranslate"><span class="pre">FilecapExceededError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.IdenticalVariablesError"><code class="docutils literal notranslate"><span class="pre">IdenticalVariablesError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.KerchunkDriverFatalError"><code class="docutils literal notranslate"><span class="pre">KerchunkDriverFatalError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.KerchunkException"><code class="docutils literal notranslate"><span class="pre">KerchunkException</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.MissingKerchunkError"><code class="docutils literal notranslate"><span class="pre">MissingKerchunkError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.MissingVariableError"><code class="docutils literal notranslate"><span class="pre">MissingVariableError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.NoOverwriteError"><code class="docutils literal notranslate"><span class="pre">NoOverwriteError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.NoValidTimeSlicesError"><code class="docutils literal notranslate"><span class="pre">NoValidTimeSlicesError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.PartialDriverError"><code class="docutils literal notranslate"><span class="pre">PartialDriverError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.ProjectCodeError"><code class="docutils literal notranslate"><span class="pre">ProjectCodeError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.ShapeMismatchError"><code class="docutils literal notranslate"><span class="pre">ShapeMismatchError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.SoftfailBypassError"><code class="docutils literal notranslate"><span class="pre">SoftfailBypassError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.TrueShapeValidationError"><code class="docutils literal notranslate"><span class="pre">TrueShapeValidationError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.ValidationError"><code class="docutils literal notranslate"><span class="pre">ValidationError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.VariableMismatchError"><code class="docutils literal notranslate"><span class="pre">VariableMismatchError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html#pipeline.errors.XKShapeToleranceError"><code class="docutils literal notranslate"><span class="pre">XKShapeToleranceError</span></code></a></li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
@@ -141,15 +173,15 @@
 <li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Scripts Source</a></li>
 </ul>
 </div>
-</div>
-<div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline"></a></h1>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading"></a></h1>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-</div>
+</section>
 
 
            </div>

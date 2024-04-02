@@ -1,20 +1,24 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Assessor Tool &mdash; Padocc Package v1.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
     <link rel="shortcut icon" href="_static/favicon.ico"/>
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=3dd8cc91"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -27,12 +31,16 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Padocc Package
-            <img src="_static/ceda.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Padocc Package
+              <img src="_static/ceda.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -72,8 +80,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Assessor Tool</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Assessor Tool</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/assess-overview.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -83,8 +91,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="assessor-tool">
-<h1>Assessor Tool<a class="headerlink" href="#assessor-tool" title="Permalink to this headline"></a></h1>
+  <section id="assessor-tool">
+<h1>Assessor Tool<a class="headerlink" href="#assessor-tool" title="Permalink to this heading"></a></h1>
 <dl class="simple">
 <dt>The assessor script <code class="docutils literal notranslate"><span class="pre">`assess.py`</span></code> is an all-purpose pipeline checking tool which can be used to assess:</dt><dd><ul class="simple">
 <li><p>The current status of all datasets within a given group in the pipeline (which phase each dataset currently sits in)</p></li>
@@ -105,8 +113,8 @@
 </ul>
 </dd>
 </dl>
-<div class="section" id="overall-progress-of-the-pipeline">
-<h2>1. Overall Progress of the Pipeline<a class="headerlink" href="#overall-progress-of-the-pipeline" title="Permalink to this headline"></a></h2>
+<section id="overall-progress-of-the-pipeline">
+<h2>1. Overall Progress of the Pipeline<a class="headerlink" href="#overall-progress-of-the-pipeline" title="Permalink to this heading"></a></h2>
 <p>To see the general status of the pipeline for a given group:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">progress</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span>
 </pre></div>
@@ -140,9 +148,9 @@
 </pre></div>
 </div>
 <p>The last flag <code class="docutils literal notranslate"><span class="pre">`-W`</span></code> is required when writing an output file from this program, otherwise the program will dryrun and produce no files.</p>
-</div>
-<div class="section" id="checking-errors">
-<h2>2. Checking errors<a class="headerlink" href="#checking-errors" title="Permalink to this headline"></a></h2>
+</section>
+<section id="checking-errors">
+<h2>2. Checking errors<a class="headerlink" href="#checking-errors" title="Permalink to this heading"></a></h2>
 <p>Check what repeat labels are available already using:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">display</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">s</span> <span class="n">labels</span>
 </pre></div>
@@ -160,15 +168,15 @@
 </pre></div>
 </div>
 <p>Note that if you are looking at a specific repeat ID, you can forego the phase (-p) flag, since it is expected this set would appear in the same phase anyway.</p>
-</div>
-<div class="section" id="special-display-options">
-<h2>3. Special Display options<a class="headerlink" href="#special-display-options" title="Permalink to this headline"></a></h2>
+</section>
+<section id="special-display-options">
+<h2>3. Special Display options<a class="headerlink" href="#special-display-options" title="Permalink to this heading"></a></h2>
 <p>Check how many of the datasets in a group have virtual dimensions</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">display</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">s</span> <span class="n">virtuals</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
