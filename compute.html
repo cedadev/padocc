@@ -21,7 +21,9 @@
         <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Validation Module" href="validate.html" />
+    <link rel="prev" title="Scanner Module" href="scan.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -52,6 +54,56 @@
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Tool Source:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Scripts Source</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Pipeline Source:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="init.html">Initialisation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scan.html">Scanning</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Compute</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline.compute.KerchunkConverter"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.convert_to_zarr"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.convert_to_zarr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.grib_to_zarr"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.grib_to_zarr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.hdf5_to_zarr"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.hdf5_to_zarr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.load_individual_ref"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.load_individual_ref()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.ncf3_to_zarr"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.ncf3_to_zarr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.save_individual_ref"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.save_individual_ref()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.tiff_to_zarr"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.tiff_to_zarr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.try_all_drivers"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.try_all_drivers()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.add_download_link"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.add_download_link()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.add_kerchunk_history"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.add_kerchunk_history()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.check_time_attributes"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.check_time_attributes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.clean_attr_array"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.clean_attr_array()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.clean_attrs"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.clean_attrs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.collect_details"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.collect_details()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.combine_and_save"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.combine_and_save()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.construct_virtual_dim"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.construct_virtual_dim()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.correct_metadata"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.correct_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.create_refs"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.create_refs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.data_to_json"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.data_to_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.data_to_parq"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.data_to_parq()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.find_concat_dims"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.find_concat_dims()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.find_identical_dims"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.find_identical_dims()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.get_timings"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.get_timings()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.load_temp_zattrs"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.load_temp_zattrs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.save_metadata"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.save_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.set_filelist"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.set_filelist()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline.compute.ZarrRechunker"><code class="docutils literal notranslate"><span class="pre">ZarrRechunker</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline.compute.compute_config"><code class="docutils literal notranslate"><span class="pre">compute_config()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline.compute.configure_kerchunk"><code class="docutils literal notranslate"><span class="pre">configure_kerchunk()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extras.html">Utils</a></li>
 </ul>
 
         </div>
@@ -332,7 +384,10 @@ Must be able to assess between using Zarr/Kerchunk.</p>
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="scan.html" class="btn btn-neutral float-left" title="Scanner Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="validate.html" class="btn btn-neutral float-right" title="Validation Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

@@ -38,13 +38,15 @@ The pipeline consists of four central phases, with an additional phase for inges
 
 .. toctree::
    :maxdepth: 2
-   :caption: CLI Tools:
+   :caption: CLI Tool Source:
+
    Assessor Source <assess>
    Control Scripts Source <execution-source>
 
 .. toctree::
    :maxdepth: 2
-   :caption: Source:
+   :caption: Pipeline Source:
+   
    Initialisation <init>
    Scanning <scan>
    Compute <compute>
