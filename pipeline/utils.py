@@ -11,6 +11,11 @@ import logging
 from pipeline.errors import MissingVariableError, MissingKerchunkError, ChunkDataError
 
 class BypassSwitch:
+    """Class to represent all bypass switches throughout the pipeline.
+    Requires a switch string which is used to enable/disable specific pipeline 
+    switches stored in this class.
+    """
+
     def __init__(self, switch='DBSCMR'):
         if switch.startswith('+'):
             switch = 'DBSCMR' + switch[1:]
@@ -28,6 +33,7 @@ class BypassSwitch:
         # Removed scanfile and memory skips
 
     def __str__(self):
+        """Return the switch string (letters representing switches)"""
         return self.switch
     
     def help(self):
