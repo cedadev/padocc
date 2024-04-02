@@ -72,7 +72,7 @@ class KerchunkConverter:
             else:
                 raise err
             
-    def try_all_drivers(self, nfile: str, **kwargs) -> dict | None:
+    def try_all_drivers(self, nfile: str, **kwargs) -> dict:
         """
         Safe creation allows for known issues and tries multiple drivers
 
@@ -116,29 +116,33 @@ class KerchunkConverter:
             with open(cache_ref,'w') as f:
                 f.write(json.dumps(ref))
 
-    def load_individual_ref(self, cache_ref: str) -> dict | None:
-        """Wrapper for getting proj_file cache_ref."""
+    def load_individual_ref(self, cache_ref: str) -> dict:
+        """
+        Wrapper for getting proj_file cache_ref contents
+        
+        :returns:   Dictionary of refs if successful, None or raised error otherwise.
+        """
         ref = get_proj_file(cache_ref, None)
         if ref:
             self.loaded_refs = True
         return ref
 
-    def hdf5_to_zarr(self, nfile: str, **kwargs) -> None:
+    def hdf5_to_zarr(self, nfile: str, **kwargs) -> dict:
         """Wrapper for converting NetCDF4/HDF5 type files to Kerchunk"""
         from kerchunk.hdf import SingleHdf5ToZarr
         return SingleHdf5ToZarr(nfile, **kwargs).translate()
 
-    def ncf3_to_zarr(self, nfile: str, **kwargs) -> None:
+    def ncf3_to_zarr(self, nfile: str, **kwargs) -> dict:
         """Wrapper for converting NetCDF3 type files to Kerchunk"""
         from kerchunk.netCDF3 import NetCDF3ToZarr
         return NetCDF3ToZarr(nfile, **kwargs).translate()
 
-    def tiff_to_zarr(self, tfile: str, **kwargs) -> None:
+    def tiff_to_zarr(self, tfile: str, **kwargs) -> dict:
         """Wrapper for converting GeoTiff type files to Kerchunk"""
         from kerchunk.tiff import TiffToZarr
         return TiffToZarr(tfile, **kwargs).translate()
     
-    def grib_to_zarr(self, gfile: str, **kwargs) -> None:
+    def grib_to_zarr(self, gfile: str, **kwargs) -> dict:
         """Wrapper for converting GRIB type files to Kerchunk"""
         from kerchunk.grib2 import GribToZarr
         return GribToZarr(gfile, **kwargs).translate()
@@ -301,11 +305,14 @@ class KerchunkDSProcessor(KerchunkConverter):
             self.detail['special_attrs'] = list(self.special_attrs.keys())
         return self.detail
     
-    def get_timings(self) -> dict | None:
+    def get_timings(self) -> dict:
         """
         Export timed values if refs were all created from scratch.
         Ref loading invalidates timings so returns None if any refs were loaded
         not created.
+
+        :returns:   Dictionary of timing values if successful and refs were not loaded. 
+                    If refs were loaded, timings are invalid so returns None.
         """
         timings = None
         if not self.loaded_refs:

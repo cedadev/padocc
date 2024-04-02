@@ -142,14 +142,14 @@ def mem_to_val(value: str) -> float:
     suff = suffixes[value.split(' ')[1]]
     return float(value.split(' ')[0]) * suff
 
-def get_codes(group: str, workdir: str | None, filename: str, extension='.txt') -> list:
+def get_codes(group: str, workdir: str , filename: str, extension='.txt') -> list:
     """
     Returns a list of the project codes given a filename (repeat id)
 
     :param group:       (str) Name of current group or path to group directory
                         (groupdir) in which case workdir can be left as None.
 
-    :param workdir:     (str | None) Path to working directory. If this is none,
+    :param workdir:     (str) Path to working directory or None. If this is None,
                         group value will be assumed as the groupdir path.
 
     :param filename:    (str) Name of text file to access within group (or path
@@ -169,14 +169,14 @@ def get_codes(group: str, workdir: str | None, filename: str, extension='.txt') 
     else:
         return []
     
-def set_codes(group: str, workdir: str | None, filename: str, contents, extension='.txt', overwrite=0) -> None:
+def set_codes(group: str, workdir: str, filename: str, contents, extension='.txt', overwrite=0) -> None:
     """
     Returns a list of the project codes given a filename (repeat id)
 
     :param group:       (str) Name of current group or path to group directory
                         (groupdir) in which case workdir can be left as None.
 
-    :param workdir:     (str | None) Path to working directory. If this is none,
+    :param workdir:     (str) Path to working directory or None. If this is None,
                         group value will be assumed as the groupdir path.
 
     :param filename:    (str) Name of text file to access within group (or path
@@ -202,7 +202,7 @@ def set_codes(group: str, workdir: str | None, filename: str, contents, extensio
     with open(codefile, ow) as f:
         f.write(contents)
     
-def get_proj_file(proj_dir: str, proj_file: str) -> dict | None:
+def get_proj_file(proj_dir: str, proj_file: str) -> dict:
     """
     Returns the contents of a project file within a project code directory.
 

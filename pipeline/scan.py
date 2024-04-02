@@ -23,10 +23,8 @@ from pipeline.utils import get_attribute, BypassSwitch, get_codes, get_proj_dir,
 from pipeline.errors import *
 from pipeline.compute import KerchunkConverter, KerchunkDSProcessor
 
-def format_float(value: int, logger) -> str | None:
-    """
-    Format byte-value with proper units
-    """
+def format_float(value: int, logger) -> str:
+    """Format byte-value with proper units"""
     logger.debug(f'Formatting value {value} in bytes')
     if value:
         unit_index = 0
