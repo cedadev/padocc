@@ -1,5 +1,5 @@
-sphinx==4.4.0
-sphinx_rtd_theme==1.0.0
+sphinx==7.2.6
+sphinx_rtd_theme==2.0.0
 h5py==3.9.0
 xarray==2023.1.0
 kerchunk==0.2.0

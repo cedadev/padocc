@@ -1,4 +1,4 @@
-# kerchunk-builder
+# PADOCC Package
 
 Now a repository under cedadev group!
 
