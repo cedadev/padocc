@@ -1,4 +1,4 @@
-sphinx==7.2.6
+sphinx==7.1.2
 sphinx_rtd_theme==2.0.0
 h5py==3.9.0
 xarray==2023.1.0
