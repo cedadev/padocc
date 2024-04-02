@@ -67,6 +67,7 @@
 <li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Utils</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-pipeline.utils">Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.utils.BypassSwitch"><code class="docutils literal notranslate"><span class="pre">BypassSwitch</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#pipeline.utils.find_zarrays"><code class="docutils literal notranslate"><span class="pre">find_zarrays()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#pipeline.utils.format_str"><code class="docutils literal notranslate"><span class="pre">format_str()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#pipeline.utils.get_attribute"><code class="docutils literal notranslate"><span class="pre">get_attribute()</span></code></a></li>
@@ -116,6 +117,15 @@
 <h1>Padocc Utility Scripts<a class="headerlink" href="#padocc-utility-scripts" title="Permalink to this heading"></a></h1>
 <section id="module-pipeline.utils">
 <span id="utilities"></span><h2>Utilities<a class="headerlink" href="#module-pipeline.utils" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pipeline.utils.BypassSwitch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.utils.</span></span><span class="sig-name descname"><span class="pre">BypassSwitch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">switch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'DBSCMR'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.utils.BypassSwitch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class to represent all bypass switches throughout the pipeline.
+Requires a switch string which is used to enable/disable specific pipeline 
+switches stored in this class.</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.utils.find_zarrays">
 <span class="sig-prename descclassname"><span class="pre">pipeline.utils.</span></span><span class="sig-name descname"><span class="pre">find_zarrays</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.utils.find_zarrays" title="Permalink to this definition"></a></dt>
