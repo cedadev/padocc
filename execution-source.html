@@ -58,7 +58,19 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="pipeline-source.html">Padocc Source</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Control Scripts Source</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Control Scripts Source</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#group_run.get_group_len"><code class="docutils literal notranslate"><span class="pre">get_group_len()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#group_run.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single_run.assemble_single_process"><code class="docutils literal notranslate"><span class="pre">assemble_single_process()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single_run.blacklisted"><code class="docutils literal notranslate"><span class="pre">blacklisted()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single_run.get_proj_code"><code class="docutils literal notranslate"><span class="pre">get_proj_code()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single_run.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single_run.run_compute"><code class="docutils literal notranslate"><span class="pre">run_compute()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single_run.run_init"><code class="docutils literal notranslate"><span class="pre">run_init()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single_run.run_scan"><code class="docutils literal notranslate"><span class="pre">run_scan()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single_run.run_validation"><code class="docutils literal notranslate"><span class="pre">run_validation()</span></code></a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -85,8 +97,197 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="pipeline-execution">
-<h1>Pipeline Execution<a class="headerlink" href="#pipeline-execution" title="Permalink to this heading"></a></h1>
+  <section id="module-group_run">
+<span id="pipeline-execution"></span><h1>Pipeline Execution<a class="headerlink" href="#module-group_run" title="Permalink to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="group_run.get_group_len">
+<span class="sig-prename descclassname"><span class="pre">group_run.</span></span><span class="sig-name descname"><span class="pre">get_group_len</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workdir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'main'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#group_run.get_group_len" title="Permalink to this definition"></a></dt>
+<dd><p>Implement parallel reads from single ‘group’ file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workdir</strong> – (str) The path of the current pipeline working directory.</p></li>
+<li><p><strong>group</strong> – (str) The name of the dataset group within the pipeline.</p></li>
+<li><p><strong>repeat_id</strong> – (int) Repeat-id subset within the group, default is main.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(int) The number of projects within the specified subset 
+of a group of datasets.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="group_run.main">
+<span class="sig-prename descclassname"><span class="pre">group_run.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#group_run.main" title="Permalink to this definition"></a></dt>
+<dd><p>Assemble sbatch script for parallel running jobs and execute. May include
+allocation of multiple tasks to each job if enabled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>args</strong> – (Object) ArgParse object containing all required parameters
+from default values or specific inputs from command-line.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-single_run"></span><dl class="py function">
+<dt class="sig sig-object py" id="single_run.assemble_single_process">
+<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">assemble_single_process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jobid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#single_run.assemble_single_process" title="Permalink to this definition"></a></dt>
+<dd><p>Process a single task and assemble required parameters. This task may sit within a subset,
+repeat id or larger group, but everything from here is concerned with the processing of 
+a single dataset (task).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> – (obj) Set of command line arguments supplied by argparse.</p></li>
+<li><p><strong>logger</strong> – (obj) Logging object for info/debug/error messages.</p></li>
+<li><p><strong>jobid</strong> – (str) From SLURM_ARRAY_JOB_ID</p></li>
+<li><p><strong>fh</strong> – (str) Path to file for logger I/O when defining new logger.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="single_run.blacklisted">
+<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">blacklisted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#single_run.blacklisted" title="Permalink to this definition"></a></dt>
+<dd><p>Determine if the current project code is blacklisted</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>groupdir</strong> – (str) The path to a group directory within the pipeline</p></li>
+<li><p><strong>proj_code</strong> – (str) The project code in string format (DOI)</p></li>
+<li><p><strong>logger</strong> – (obj) Logging object for info/debug/error messages.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the project code is in the blacklist, false otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="single_run.get_proj_code">
+<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">get_proj_code</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#single_run.get_proj_code" title="Permalink to this definition"></a></dt>
+<dd><p>Get the correct code given a slurm id from a group of project codes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workdir</strong> – (str) The current pipeline working directory.</p></li>
+<li><p><strong>group</strong> – (str) The name of the group which this project code belongs to.</p></li>
+<li><p><strong>pid</strong> – (str) The project code for which to get the index.</p></li>
+<li><p><strong>repeat_id</strong> – (str) The subset within the group (default is main)</p></li>
+<li><p><strong>subset</strong> – (int) The size of the subset within this repeat group.</p></li>
+<li><p><strong>id</strong> – (int) The specific index of this subset within a group.
+i.e subset size of 100, total codes is 1000 so 10 codes per subset.
+an id value of 2 would mean the third group of 10 codes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The project code (DOI) in string format not index format.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="single_run.main">
+<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#single_run.main" title="Permalink to this definition"></a></dt>
+<dd><p>Main function for processing a single job. This could be multiple tasks/datasets within 
+a single job, but everything from here is serialised, i.e run one after another.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>args</strong> – (obj) Set of command line arguments supplied by argparse.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="single_run.run_compute">
+<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">run_compute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#single_run.run_compute" title="Permalink to this definition"></a></dt>
+<dd><p>Setup computation parameters for individual dataset</p>
+<dl class="field-list simple">
+<dt class="field-odd">Params args<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(obj) Set of command line arguments supplied by argparse.</p>
+</dd>
+<dt class="field-even">Params logger<span class="colon">:</span></dt>
+<dd class="field-even"><p>(obj) Logging object for info/debug/error messages.</p>
+</dd>
+<dt class="field-odd">Params fh<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(str) Path to file for logger I/O when defining new logger.</p>
+</dd>
+<dt class="field-even">Params logid<span class="colon">:</span></dt>
+<dd class="field-even"><p>(str) Passed to KerchunkDSProcessor for specifying a logger component.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="single_run.run_init">
+<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">run_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#single_run.run_init" title="Permalink to this definition"></a></dt>
+<dd><p>Start initialisation for single dataset</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> – (obj) Set of command line arguments supplied by argparse.</p></li>
+<li><p><strong>logger</strong> – (obj) Logging object for info/debug/error messages.</p></li>
+<li><p><strong>fh</strong> – (str) Path to file for logger I/O when defining new logger.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="single_run.run_scan">
+<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">run_scan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#single_run.run_scan" title="Permalink to this definition"></a></dt>
+<dd><p>Start scanning process for individual dataset</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> – (obj) Set of command line arguments supplied by argparse.</p></li>
+<li><p><strong>logger</strong> – (obj) Logging object for info/debug/error messages.</p></li>
+<li><p><strong>fh</strong> – (str) Path to file for logger I/O when defining new logger.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="single_run.run_validation">
+<span class="sig-prename descclassname"><span class="pre">single_run.</span></span><span class="sig-name descname"><span class="pre">run_validation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#single_run.run_validation" title="Permalink to this definition"></a></dt>
+<dd><p>Start validation of single dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> – (obj) Set of command line arguments supplied by argparse.</p></li>
+<li><p><strong>logger</strong> – (obj) Logging object for info/debug/error messages.</p></li>
+<li><p><strong>fh</strong> – (str) Path to file for logger I/O when defining new logger.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
