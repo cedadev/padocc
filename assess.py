@@ -9,7 +9,7 @@ import json
 import sys
 from datetime import datetime
 
-from pipeline.logs import init_logger, log_status, FalseLogger
+from pipeline.logs import init_logger, log_status, get_log_status, FalseLogger
 from pipeline.utils import get_attribute, format_str, \
     mem_to_val, get_codes, set_codes, get_proj_file, \
     set_proj_file
@@ -325,11 +325,8 @@ def progress_check(args, logger):
         try:
             if p not in done_set:
                 proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{p}'
-                status_log = f'{proj_dir}/status_log.csv'
-                if os.path.isfile(status_log):
-                    with open(status_log) as f:
-                        current = f.readlines()[-1].strip()
-                else:
+                current = get_log_status(proj_dir)
+                if not current:
                     seek_unknown(proj_dir)
                     if 'unknown' in extras:
                         extras['unknown']['no data'].append(idx)
@@ -399,7 +396,7 @@ def progress_check(args, logger):
                         print(f'    - {format_str(err, status_len+1, concat=True)}: {num_errs} (IDs = {list(pdict[entry][err])})')
                     else:
                         print(f'    - {format_str(err, status_len+1, concat=True)}: {num_errs}')
-    if not args.write:
+    if not args.new_id:
         print()
         print('Pipeline Current:')
         if not args.long and longest_err > 30:
@@ -614,6 +611,7 @@ def assess_main(args):
         for d in glob.glob(f'{args.workdir}/groups/*'):
             if os.path.isdir(d):
                 groups.append(d.split('/')[-1])
+        print(groups)
     elif ',' in args.groupID:
         groups = args.groupID.split(',')
     else:
