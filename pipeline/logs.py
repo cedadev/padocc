@@ -45,6 +45,14 @@ def log_status(phase, proj_dir, status, logger, jobid='', dryrun=''):
         f.write('\n'.join(lines))
     logger.info(f'Updated new status: {phase} - {status}')
 
+def get_log_status(proj_dir):
+    current = {}
+    status_log = f'{proj_dir}/status_log.csv'
+    if os.path.isfile(status_log):
+        with open(status_log) as f:
+            current = f.readlines()[-1].strip()
+    return current
+
 class FalseLogger:
     def __init__(self):
         pass

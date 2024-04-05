@@ -7,8 +7,17 @@ import xarray as xr
 import json
 import fsspec
 import logging
+import math
+import numpy as np
 
 from pipeline.errors import MissingVariableError, MissingKerchunkError, ChunkDataError
+from pipeline.logs import FalseLogger
+
+times = {
+    'scan'    :'10:00', # No prediction possible prior to scanning
+    'compute' :'60:00',
+    'validate':'30:00' # From CMIP experiments - no reliable prediction mechanism possible
+}
 
 class BypassSwitch:
     """Class to represent all bypass switches throughout the pipeline.
@@ -48,7 +57,7 @@ Bypass switch options: \n
   "M" -   Skip memory checks (validate/compute aborts if utilisation estimate exceeds cap).
 """)
   
-def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file') -> xr.Dataset:
+def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file', retry=False) -> xr.Dataset:
     """
     Open kerchunk file from JSON/parquet formats
 
@@ -91,6 +100,13 @@ def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file') -> x
                 ds = xr.open_zarr(mapper, consolidated=False, decode_times=True)
             except OverflowError:
                 ds = None
+            except KeyError as err:
+                if str(err) == 'https' and not retry:
+                    # RemoteProtocol is not https - retry with correct protocol
+                    logger.warning('Found KeyError "https" on opening the Kerchunk file - retrying with local filepaths.')
+                    return open_kerchunk(kfile, logger, isparq=isparq, remote_protocol='file', retry=True)
+                else:
+                    raise err
             except Exception as err:
                 raise err #MissingKerchunkError(message=f'Failed to open kerchunk file {kfile}')
         if not ds:
@@ -208,11 +224,22 @@ def set_codes(group: str, workdir: str, filename: str, contents, extension='.txt
     with open(codefile, ow) as f:
         f.write(contents)
     
+def set_last_run(proj_dir, phase, time, logger=FalseLogger()) -> None:
+    detail = get_proj_file(proj_dir, 'detail-cfg.json')
+    if detail:
+        detail['last_run'] = (phase, time)
+        set_proj_file(proj_dir, 'detail-cfg.json', detail, logger)
+
+def get_last_run(proj_dir) -> str:
+    detail = get_proj_file(proj_dir, 'detail-cfg.json')
+    if detail:
+        return detail['last_run']
+
 def get_proj_file(proj_dir: str, proj_file: str) -> dict:
     """
     Returns the contents of a project file within a project code directory.
 
-    :param proj_code:   (str) The project code in string format (DOI)
+    :param proj_dir:    (str) The project code directory path.
 
     :param proj_file:   (str) Name of a file to access within the project directory.
 
@@ -238,7 +265,7 @@ def set_proj_file(proj_dir: str, proj_file: str, contents: dict, logger: logging
     """
     Overwrite the contents of a project file within a project code directory.
 
-    :param proj_code:   (str) The project code in string format (DOI).
+    :param proj_dir:    (str) The project code directory path.
 
     :param proj_file:   (str) Name of a file to access within the project directory.
 
@@ -274,3 +301,37 @@ def find_zarrays(refs: dict) -> dict:
         if '.zarray' in r:
             zarrays[r] = refs['refs'][r]
     return zarrays
+
+def find_divisor(num, preferences={'range':{'max':10000, 'min':2000}}):
+
+    # Using numpy for this is MUCH SLOWER!
+    divs = [x for x in range(1, int(math.sqrt(num))+1) if num % x == 0]
+    opps = [int(num/x) for x in divs] # get divisors > sqrt(n) by division instead
+    divisors = np.array(list(set(divs + opps)))
+
+    divset = []
+    range_allowed = preferences['range']['max'] - preferences['range']['min']
+    iterations = 0
+    while len(divset) == 0:
+        divset = divisors[np.logical_and(
+            divisors < preferences['range']['max'] + range_allowed*iterations,
+            divisors > preferences['range']['min']/(iterations+1)
+        )]
+        iterations += 1
+
+    divisor = int(np.median(divset))
+    return divisor
+
+def find_closest(num, closest):
+
+    divs = [x for x in range(1, int(math.sqrt(num))+1) if num % x == 0]
+    opps = [int(num/x) for x in divs] # get divisors > sqrt(n) by division instead
+    divisors = np.array(list(set(divs + opps)))
+
+    min_diff = 99999999999
+    closest_div = None
+    for d in divisors:
+        if abs(d-closest) < min_diff:
+            min_diff = abs(d-closest)
+            closest_div = d
+    return closest_div

@@ -33,6 +33,16 @@ class PartialDriverError(KerchunkException):
             self.__class__.__module__ = 'builtins'
     def get_str(self):
         return 'PartialDriverError'
+    
+class RemoteProtocolError(KerchunkException):
+    """All drivers failed (NetCDF3/Hdf5/Tiff) for one or more files within the list"""
+    def __init__(self,filenums=None, verbose=0, proj_code=None, groupdir=None):
+        self.message = f"All drivers failed when performing conversion for files {filenums}"
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'PartialDriverError'
 
 class KerchunkDriverFatalError(KerchunkException):
     """All drivers failed (NetCDF3/Hdf5/Tiff) - run without driver bypass to assess the issue with each driver type."""

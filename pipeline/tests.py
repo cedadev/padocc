@@ -27,3 +27,6 @@ class TestArgs:
         self.groupdir  = None
         self.verbose   = None
         self.mode      = None
+
+        self.proj_code = None
+        self.groupID   = None
