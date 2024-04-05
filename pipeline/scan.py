@@ -19,9 +19,9 @@ import numpy as np
 import re
 
 from pipeline.logs import init_logger, FalseLogger
-from pipeline.utils import get_attribute, BypassSwitch, get_codes, get_proj_dir, get_proj_file, set_codes
+from pipeline.utils import get_attribute, BypassSwitch, get_codes, get_proj_dir, get_proj_file, set_codes, set_proj_file
 from pipeline.errors import *
-from pipeline.compute import KerchunkConverter, KerchunkDSProcessor
+from pipeline.compute import KerchunkConverter, KerchunkDSProcessor, ZarrDSRechunker
 
 def format_float(value: int, logger) -> str:
     """Format byte-value with proper units"""
@@ -86,10 +86,6 @@ def summarise_json(identifier, ctype: str, logger=None, proj_dir=None) -> tuple:
 
     return np.sum(sizes), chunks, vars, ctype
 
-def eval_sizes(files: list) -> list:
-    """Get a list of file sizes on disk from a list of filepaths"""
-    return [os.stat(files[count]).st_size for count in range(len(files))]
-
 def get_seconds(time_allowed: str) -> int:
     """Convert time in MM:SS to seconds"""
     if not time_allowed:
@@ -104,7 +100,7 @@ def format_seconds(seconds: int) -> str:
         mins = f'0{mins}'
     return f'{mins}:00'
 
-def perform_safe_calculations(std_vars: list, cpf: list, volms: list, files: list, logger) -> tuple:
+def perform_safe_calculations(std_vars: list, cpf: list, volms: list, nfiles: int, logger) -> tuple:
     """
     Perform all calculations safely to mitigate errors that arise during data collation.
 
@@ -115,7 +111,7 @@ def perform_safe_calculations(std_vars: list, cpf: list, volms: list, files: lis
 
     :param volms:           (list) The total data size recorded for each input file.
 
-    :param files:           (list) A list of the paths to each file.
+    :param nfiles:          (int) The total number of files for this dataset
 
     :param logger:          (obj) Logging object for info/debug/error messages.
 
@@ -148,15 +144,13 @@ def perform_safe_calculations(std_vars: list, cpf: list, volms: list, files: lis
     else:
         spatial_res = None
 
-    if files and avg_vol:
-        netcdf_data = avg_vol*len(files)
-        num_files = len(files)
+    if nfiles and avg_vol:
+        netcdf_data = avg_vol*nfiles
     else:
         netcdf_data = None
-        num_files = None
 
-    if files and avg_cpf:
-        total_chunks = avg_cpf * len(files)
+    if nfiles and avg_cpf:
+        total_chunks = avg_cpf * nfiles
     else:
         total_chunks = None
 
@@ -165,12 +159,15 @@ def perform_safe_calculations(std_vars: list, cpf: list, volms: list, files: lis
     else:
         addition = None
 
-    if avg_cpf and num_files:
-        kerchunk_data = avg_cpf * num_files * kchunk_const
+    type = 'JSON'
+    if avg_cpf and nfiles:
+        kerchunk_data = avg_cpf * nfiles * kchunk_const
+        if kerchunk_data > 500e6:
+            type = 'parq'
     else:
         kerchunk_data = None
 
-    return avg_cpf, num_vars, avg_chunk, spatial_res, netcdf_data, kerchunk_data, num_files, total_chunks, addition
+    return avg_cpf, num_vars, avg_chunk, spatial_res, netcdf_data, kerchunk_data, total_chunks, addition, type
 
 def write_skip(proj_dir: str, proj_code: str, logger) -> None:
     """
@@ -181,45 +178,35 @@ def write_skip(proj_dir: str, proj_code: str, logger) -> None:
         f.write(json.dumps(details))
     logger.info(f'Skipped scanning - {proj_code}/detail-cfg.json blank file created')
 
-def scan_dataset(args, files: list, logger) -> None:
-    """Main process handler for scanning phase"""
-    proj_code = args.proj_code
-    proj_dir  = args.proj_dir
+def scan_kerchunk(args, logger, nfiles, limiter):
+    """
+    Function to perform scanning with output Kerchunk format.
+    """
+    logger.info('Starting scan process for Kerchunk cloud format')
 
-    detailfile = f'{proj_dir}/detail-cfg.json'
-    cfgfile    = f'{proj_dir}/base-cfg.json'
-    logger.debug(f'Assessment for {proj_code}')
+    success = True
+    mini_ds = KerchunkDSProcessor(
+        args.proj_code,
+        workdir=args.workdir, 
+        thorough=True, forceful=True, # Always run from scratch forcefully to get best time estimates.
+        version_no='trial-', verb=args.verbose, logid='0',
+        groupID=args.groupID, limiter=limiter)
 
-    # Set up conditions, skip for small file count < 5
+    try:
+        mini_ds.create_refs()
+        if not mini_ds.success:
+            success = False
+    except ConcatFatalError as err:
+        return False
+    
     escape, is_varwarn, is_skipwarn = False, False, False
     cpf, volms = [],[]
 
-    if len(files) < 3:
-        write_skip(proj_dir, proj_code, logger)
-        return None
-    
-    # Perform scans for sample (max 5) files
     std_vars   = None
     std_chunks = None
     ctypes   = []
     ctype    = None
-
-    # Create all files in mini-kerchunk set here. Then try an assessment.
-    limiter = int(len(files)/20)
-    limiter = max(2, limiter)
-    limiter = min(100, limiter)
-
-    logger.info(f'Determined {limiter} files to scan')
-
-    mini_ds = KerchunkDSProcessor(
-        args.proj_code,
-        cfg_file=cfgfile, detail_file=detailfile, workdir=args.workdir, 
-        thorough=True, forceful=True, # Always run from scratch forcefully to get best time estimates.
-        version_no='trial-', verb=args.verbose, logid='0',
-        groupID=args.groupID, limiter=limiter)
     
-    mini_ds.create_refs()
-
     logger.info(f'Summarising scan results for {limiter} files')
     for count in range(limiter):
         try:
@@ -250,26 +237,62 @@ def scan_dataset(args, files: list, logger) -> None:
             raise err
         except Exception as err:
             raise err
+        
+    compile_outputs(
+        args, logger, std_vars, cpf, volms, nfiles, 
+        {
+            'convert_time' : mini_ds.convert_time,
+            'concat_time'  : mini_ds.concat_time,
+            'validate_time': mini_ds.validate_time
+        }, 
+        ctypes, escape=escape, is_varwarn=is_varwarn, is_skipwarn=is_skipwarn
+    )
+    return success
 
+def scan_zarr(args, logger, nfiles, limiter):
+    """
+    Function to perform scanning with output Zarr format.
+    """
+
+    logger.info('Starting scan process for Zarr cloud format')
+    mini_ds = ZarrDSRechunker(
+        args.proj_code,
+        workdir=args.workdir, 
+        thorough=True, forceful=True, # Always run from scratch forcefully to get best time estimates.
+        version_no='trial-', verb=args.verbose, logid='0',
+        groupID=args.groupID, limiter=limiter, logger=logger, dryrun=args.dryrun,
+        mem_allowed='500MB')
+
+    mini_ds.create_store()
+    
+    # Most of the outputs are currently blank as summaries don't really work well for Zarr.
+    compile_outputs(
+        args, logger, mini_ds.std_vars, mini_ds.cpf, mini_ds.volm, nfiles,
+        {
+            'convert_time' : mini_ds.convert_time,
+            'concat_time'  : mini_ds.concat_time,
+            'validate_time': mini_ds.validate_time
+        }, 
+        [], override_type='zarr')
+
+def compile_outputs(args, logger, std_vars, cpf, volms, nfiles, timings, ctypes, escape=None, is_varwarn=None, is_skipwarn=None, override_type=None):
     logger.info('Summary complete, compiling outputs')
     (avg_cpf, num_vars, avg_chunk, 
-     spatial_res, netcdf_data, kerchunk_data, num_files, 
-     total_chunks, addition) = perform_safe_calculations(std_vars, cpf, volms, files, logger)
-    
-    c2m = 167 # Memory for each chunk in kerchunk in B
+     spatial_res, netcdf_data, kerchunk_data, 
+     total_chunks, addition, type) = perform_safe_calculations(std_vars, cpf, volms, nfiles, logger)
 
     details = {
         'netcdf_data'      : format_float(netcdf_data, logger), 
         'kerchunk_data'    : format_float(kerchunk_data, logger), 
-        'num_files'        : num_files,
+        'num_files'        : nfiles,
         'chunks_per_file'  : safe_format(avg_cpf,'{value:.1f}'),
         'total_chunks'     : safe_format(total_chunks,'{value:.2f}'),
         'estm_chunksize'   : format_float(avg_chunk,logger),
         'estm_spatial_res' : safe_format(spatial_res,'{value:.2f}') + ' deg',
         'timings'        : {
-            'convert_estm'   : mini_ds.convert_time,
-            'concat_estm'    : mini_ds.concat_time,
-            'validate_estm'  : mini_ds.validate_time,
+            'convert_estm'   : timings['convert_time'],
+            'concat_estm'    : timings['concat_time'],
+            'validate_estm'  : timings['validate_time'],
             'convert_actual' : None,
             'concat_actual'  : None,
             'validate_actual': None,
@@ -278,7 +301,7 @@ def scan_dataset(args, files: list, logger) -> None:
         'addition'         : safe_format(addition,'{value:.3f}') + ' %',
         'var_err'          : is_varwarn,
         'file_err'         : is_skipwarn,
-        'type'             : 'JSON'
+        'type'             : type
     }
 
     if escape:
@@ -287,24 +310,87 @@ def scan_dataset(args, files: list, logger) -> None:
     if len(set(ctypes)) == 1:
         details['driver'] = ctypes[0]
 
-    if avg_cpf and files:
-        if avg_cpf * len(files) * c2m > 500e6:
-            details['type'] = 'parq'
+    if override_type:
+        details['type'] = override_type
+
+    existing_details = get_proj_file(args.proj_dir, 'detail-cfg.json')
+    if existing_details:
+        for entry in details.keys():
+            if details[entry]:
+                existing_details[entry] = details[entry]
     else:
-        details['type'] = 'N/A'
+        existing_details = details
 
     if args.dryrun:
-        logger.info(f'DRYRUN: Skip writing to {proj_dir}/detail-cfg.json')
+        logger.info(f'DRYRUN: Skip writing to detail-cfg.json')
     else:
-        with open(f'{proj_dir}/detail-cfg.json','w') as f:
-            # Replace with dumping dictionary
-            f.write(json.dumps(details))
-        logger.info(f'Written output file {proj_code}/detail-cfg.json')
+        set_proj_file(args.proj_dir, 'detail-cfg.json', existing_details, logger)
+        logger.info(f'Written output file {args.proj_code}/detail-cfg.json')
 
-def scan_config(args, fh=None, logid=None, **kwargs) -> None:
-    """Configure scanning and access main section"""
+def scan_dataset(args, logger) -> None:
+    """Main process handler for scanning phase"""
+    proj_code = args.proj_code
+    proj_dir  = args.proj_dir
 
-    logger = init_logger(args.verbose, args.mode, 'scan',fh=fh, logid=logid)
+    logger.debug(f'Assessment for {proj_code}')
+
+    with open(f'{proj_dir}/allfiles.txt') as f:
+        nfiles = len(list(f.readlines()))
+
+    if nfiles < 3:
+        write_skip(proj_dir, proj_code, logger)
+        return None
+    
+    # Perform scans for sample (max 5) files
+    
+
+    # Create all files in mini-kerchunk set here. Then try an assessment.
+    limiter = int(nfiles/20)
+    limiter = max(2, limiter)
+    limiter = min(100, limiter)
+
+    limiter = 3
+
+    logger.info(f'Determined {limiter} files to scan (out of {nfiles})')
+
+    # Default use kerchunk
+    use_kerchunk = False
+    use_zarr     = False
+    # Allow overrides which will filter through all future processes.
+    if hasattr(args, 'override_type'):
+        if args.override_type == 'zarr':
+            use_zarr = True
+    if not use_zarr:
+        use_kerchunk = True
+
+    if use_kerchunk: # DEBUG temporary.
+        success = scan_kerchunk(args, logger, nfiles, limiter)
+        if not success:
+            use_zarr = True
+
+    if use_zarr:
+        scan_zarr(args, logger, nfiles, limiter)
+
+def scan_config(args, logger, fh=None, logid=None, **kwargs) -> None:
+    """
+    Configure scanning and access main section, ensure a few key variables are set
+    then run scan_dataset.
+    
+    :param args:        (obj) Set of command line arguments supplied by argparse.
+
+    :param logger:      (obj) Logging object for info/debug/error messages. Will create a new 
+                        logger object if not given one.
+
+    :param fh:          (str) Path to file for logger I/O when defining new logger.
+
+    :param logid:       (str) If creating a new logger, will need an id to distinguish this logger
+                        from other single processes (typically n of N total processes.)
+
+    :returns:   None
+    """
+
+    if not logger:
+        logger = init_logger(args.verbose, args.mode, 'scan',fh=fh, logid=logid)
     logger.debug(f'Setting up scanning process')
     
     args.workdir  = get_attribute('WORKDIR', args, 'workdir')
@@ -323,11 +409,8 @@ def scan_config(args, fh=None, logid=None, **kwargs) -> None:
         logger.error(f'No filelist detected - {filelist}')
         return None
 
-    with open(filelist) as f:
-        files = [r.strip() for r in f.readlines()]
-
     if not os.path.isfile(f'{args.proj_dir}/detail-cfg.json') or args.forceful:
-        scan_dataset(args, files, logger)
+        scan_dataset(args, logger)
     else:
         logger.warning(f'Skipped scanning {args.proj_code} - detailed config already exists')
 

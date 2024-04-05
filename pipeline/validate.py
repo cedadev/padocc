@@ -16,23 +16,58 @@ import math
 
 from pipeline.errors import *
 from pipeline.logs import init_logger, SUFFIXES, SUFFIX_LIST
-from pipeline.utils import BypassSwitch, open_kerchunk
+from pipeline.utils import BypassSwitch, open_kerchunk, get_proj_file, get_proj_dir
 from ujson import JSONDecodeError
 from dask.distributed import LocalCluster
+
+class CloudValidator:
+    """
+    Encapsulate all validation testing into a single class. Instantiate for a specific project,
+    the object could then contain all project info (from detail-cfg) opened only once. Also a 
+    copy of the total datasets (from native and cloud sources). Subselections can be passed
+    between class methods along with a variable index (class variables: variable list, dimension list etc.)
+
+    Class logger attribute so this doesn't need to be passed between functions.
+    Bypass switch contained here with all switches.
+    """
+    def __init__(self):
+        pass
 
 ## 1. Array Selection Tools
 
 def find_dimensions(dimlen: int, divisions: int) -> int:
-    """Determine index of slice end position given length of dimension and fraction to assess"""
-    # Round down then add 1
-    slicemax = int(dimlen/divisions)+1
-    return slicemax
+    """
+    Determine index of slice end position given length of dimension and fraction to assess.
 
-def get_vslice(shape: list, dtypes: list, lengths: list, divisions: list, logger):
-    """Assemble dataset slice given the shape of the array and dimensions involved"""
+    :param dimlen:      (int) The length of the specific dimension
+
+    :param divisions:   (int) The number of divisions across this dimensions.
+
+    :returns:   The size of each division for this dimension, given the number of total divisions.
+    """
+    # Round down then add 1
+    divsize = int(dimlen/divisions)+1
+    return divsize
+
+def get_vslice(dimensions: list, dtypes: list, lengths: list, divisions: list, logger) -> list:
+    """
+    Assemble dataset slice given the shape of the array and dimensions involved.
+    
+    :param shape:       (list) The dimension names for an array currently being assessed.
+
+    :param dtypes:      (list) A list of the datatypes corresponding to each dimension for an array.
+
+    :param lengths:     (list) The lengths of each dimension for an array.
+
+    :param divisions:   (list) The number of divisions for each of the dimensions for an array.
+
+    :param logger:      (obj) Logging object for info/debug/error messages.
+
+    :returns:   Slice for this particular division set. Special cases for datetime-like objects.
+    """
 
     vslice = []
-    for x, dim in enumerate(shape):
+    for x, dim in enumerate(dimensions):
         if np.issubdtype(dtypes[x], np.datetime64):
             vslice.append(slice(0,find_dimensions(lengths[x],divisions)))
         elif dim == 1:
@@ -42,16 +77,24 @@ def get_vslice(shape: list, dtypes: list, lengths: list, divisions: list, logger
     logger.debug(f'Slice {vslice}')
     return vslice
 
-def get_concat_dims(xobjs, detailfile=None):
-    """Retrieve the sizes of the concatenation dims"""
-    concat_dims={}
-    if os.path.isfile(detailfile):
-        with open(detailfile) as f:
-            details = json.load(f)
-    # Initialise concat dims
-    if 'concat_dims' in details:
-        for dim in details['concat_dims']:
-            concat_dims[dim] = 0
+def get_concat_dims(xobjs: list, proj_dir) -> dict: # Ingest into class structure
+    """
+    Retrieve the sizes of the concatenation dims.
+
+    :param xobjs:       (list) A list of xarray Dataset objects for files which are currently 
+                        being assessed, from which to find the shapes of concat dimensions.
+
+    :param proj_code:   (str) The project code in string format (DOI)
+
+    :returns:   A dictionary of the concatenation dimensions and their array shapes.
+    """
+    concat_dims = {}
+    details     = get_proj_file(proj_dir, 'detail-cfg.json')
+    if details:
+        # Initialise concat dims
+        if 'concat_dims' in details:
+            for dim in details['concat_dims']:
+                concat_dims[dim] = 0
 
     for ds in xobjs:
         for dim in concat_dims.keys():
@@ -60,8 +103,21 @@ def get_concat_dims(xobjs, detailfile=None):
 
 ## 2. File Selection Tools
 
-def get_netcdf_list(proj_dir: str, logger, thorough=False):
-    """Open document containing paths to all NetCDF files, make selections"""
+def get_netcdf_list(proj_dir: str, logger, thorough=False) -> tuple: # Ingest into class structure
+    """
+    Open document containing paths to all NetCDF files, make selections and return a list of files.
+
+    :param proj_dir:    (str) The project code directory path.
+
+    :param logger:      (obj) Logging object for info/debug/error messages.
+
+    :param thorough:    (bool) If True will select all files for testing, otherwise
+                        standard validation subsetting (0.1% or 3 files) applies.
+    
+    :returns:   A tuple containing a list of all the files as well as a list of indexes to 
+                specific files for testing. The index list should cover at least 3 files,
+                with a maximum of 0.1% of the files selected in the case of > 3000 files.
+    """
     with open(f'{proj_dir}/allfiles.txt') as f:
         xfiles = [r.strip() for r in f.readlines()]
     logger.debug(f'Found {len(xfiles)} files in {proj_dir}/allfiles.txt')
@@ -88,18 +144,26 @@ def get_netcdf_list(proj_dir: str, logger, thorough=False):
         logger.info(f'Selecting a subset of {numfiles}/{len(xfiles)} files')
     return indexes, xfiles
 
-def pick_index(nfiles: list, indexes: list):
-    """Pick index of new netcdf file randomly, try 100 times"""
-    index = random.randint(0,nfiles)
-    count = 0
-    while index in indexes and count < 100:
-        index = random.randint(0,nfiles)
-        count += 1
-    indexes.append(index)
-    return indexes
+def locate_kerchunk(args, logger, get_str=False, remote_protocol='https') -> xr.Dataset:
+    """
+    Gets the name of the latest kerchunk file for this project code.
 
-def locate_kerchunk(args, logger, get_str=False, remote_protocol='https'):
-    """Gets the name of the latest kerchunk file for this project code"""
+    :param args:        (obj) Set of command line arguments supplied by argparse.
+
+    :param logger:      (obj) Logging object for info/debug/error messages.
+
+    :param get_str:     (bool) If True will return the string filename for the selected
+                        Kerchunk file, otherwise the Kerchunk file will be opened as an 
+                        xarray Virtual Dataset.
+
+    :param remote_protocol:     (str) Default 'https' for accessing files post-compute
+                                since these have been reconfigured for remote testing.
+                                Override with 'file' for Kerchunk files with a local 
+                                reference.
+
+    :returns:   Xarray Virtual Dataset from a Kerchunk file, or the string filename
+                of the Kerchunk file if get_str is enabled.
+    """
     files = os.listdir(args.proj_dir) # Get filename only
     kfiles = []
 
@@ -148,23 +212,44 @@ def locate_kerchunk(args, logger, get_str=False, remote_protocol='https'):
         logger.error(f'No Kerchunk file located at {args.proj_dir} and no in-place validation indicated - exiting')
         raise MissingKerchunkError
         
-def mem_to_value(mem):
-    """Convert a memory value i.e 2G into a value"""
-    suffix = mem[-1]
-    return float(mem[:-1]) * SUFFIXES[suffix]
+def mem_to_value(mem) -> float:
+    """
+    Convert a memory value i.e 2G into a value
 
-def value_to_mem(value):
+    :returns:   Int value of e.g. '2G' in bytes.
+    """
+    suffix = mem[-1]
+    return int(float(mem[:-1]) * SUFFIXES[suffix])
+
+def value_to_mem(value) -> str:
+    """
+    Convert a number of bytes i.e 1000000000 into a string
+
+    :returns:   String value of the above (1000000000 -> 1M)
+    """
     suffix_index = -1
     while value > 1000:
         value = value/1000
         suffix_index += 1
     return f'{value:.0f}{SUFFIX_LIST[suffix_index]}'
 
-def open_netcdfs(args, logger, thorough=False, concat_dims='time'):
+def open_netcdfs(args, logger, thorough=False, concat_dims='time') -> list: # Ingest into class structure
     """Returns a single xarray object with one timestep:
-     - Select a single file and a single timestep from that file
-     - Verify that a single timestep can be selected (Yes: return this xarray object, No: select all files and select a single timestep from that)
-     - In all cases, returns a list of xarray objects.
+    
+    1. Select a single file and a single timestep from that file
+    2. Verify that a single timestep can be selected (Yes: return this xarray object, No: select all files and select a single timestep from that)
+    3. In all cases, returns a list of xarray objects.
+
+    :param args:        (obj) Set of command line arguments supplied by argparse.
+
+    :param logger:      (obj) Logging object for info/debug/error messages.
+
+    :param thorough:    (bool) If True will concatenate all selected Datasets to a single
+                        combined dataset, rather than a list of individual separate objects.
+
+    :returns:   A list of the xarray datasets (or a single concatenated dataset), along with a list
+                of indexes to use for selecting a subset of those files, plus a list of filepaths to
+                the original files.
     """
     logger.debug('Performing temporal selections')
     indexes, xfiles = get_netcdf_list(args.proj_dir, logger, thorough=thorough)
@@ -185,9 +270,17 @@ def open_netcdfs(args, logger, thorough=False, concat_dims='time'):
 
 ## 3. Validation Testing
 
-def match_timestamp(xobject, kobject, logger):
-    """Match timestamp of xarray object to kerchunk object
-     - Returns temporally matching kerchunk and xarray objects"""
+def match_timestamp(xobject: xr.Dataset, kobject: xr.Dataset, logger) -> tuple: # Ingest into class structure
+    """Match timestamp of xarray object to kerchunk object.
+    
+    :param xobject:     (obj) An xarray dataset representing the original files opened natively.
+    
+    :param kobject:     (obj) An xarray dataset representing the Kerchunk file constructed by the pipeline.
+    
+    :param logger:      (obj) Logging object for info/debug/error messages.
+    
+    :returns:   A tuple containing subselections of both xarray datasets such that both now have
+                matching timestamps."""
     
     if hasattr(xobject,'time'):
         # Select timestamp 0 from multi-timestamped NetCDF - after shape testing
@@ -210,14 +303,26 @@ def match_timestamp(xobject, kobject, logger):
         logger.debug('Skipped timestamp selection as xobject has no time')
         return kobject, xobject
 
-def compare_data(vname: str, xbox, kerchunk_box, logger, bypass=False):
-    """Compare a NetCDF-derived ND array to a Kerchunk-derived one
-     - Takes a netcdf selection box array of n-dimensions and an equally sized kerchunk_box array
-     - Tests for elementwise equality within selection.
-     - If possible, tests max/mean/min calculations for the selection to ensure cached values are the same.
+def compare_data(vname: str, xbox: xr.Dataset, kerchunk_box: xr.Dataset, logger, bypass=False) -> None: # Ingest into class structure
+    """Compare a NetCDF-derived ND array to a Kerchunk-derived one. This function takes a 
+    netcdf selection box array of n-dimensions and an equally sized kerchunk_box array and
+    tests for elementwise equality within selection. If possible, tests max/mean/min calculations 
+    for the selection to ensure cached values are the same.
 
-     - Expect TypeErrors from summations which are bypassed.
-     - Other errors will exit the run.
+    Expect TypeErrors later from summations which are bypassed. Other errors will exit the run.
+
+    :param vname:           (str) The name of the variable described by this box selection
+
+    :param xbox:            (obj) The native dataset selection
+
+    :param kerchunk_box:    (obj) The cloud-format (Kerchunk) dataset selection
+
+    :param logger:          (obj) Logging object for info/debug/error messages.
+
+    :param bypass:          (bool) Single value flag for bypassing numeric data errors (in the
+                            case of values which cannot be added).
+
+    :returns:   None but will raise error if data comparison fails.
     """
     logger.debug(f'Starting xk comparison')
 
@@ -268,49 +373,86 @@ def compare_data(vname: str, xbox, kerchunk_box, logger, bypass=False):
         logger.error('Validation Error')
         raise ValidationError
 
-def validate_shape_to_tolerance(nfiles: int, xv, dims, xshape, kshape, logger, detailfile=None):
-    """Special case function for validating a shaped array to some tolerance
-    - Alternative to opening N files, only works if each file has roughly the same total shape.
-    - Tolerance is based on the number of files supplied, more files means the tolerance is lower?
+def validate_shape_to_tolerance(nfiles: int, xv: str, dims: tuple, xshape: tuple, kshape: tuple, logger, proj_dir=None) -> None: # Ingest into class structure
     """
+    Special case function for validating a shaped array to some tolerance. This is an alternative to
+    opening N files, only works if each file has roughly the same total shape. Tolerance is based on 
+    the number of files supplied, more files means the tolerance is lower?
+
+    :param nfiles:      (int) The number of native files across the whole dataset.
+
+    :param xv:          (str) The name of the variable within the dataset.
+
+    :param dims:        (tuple) A list of the names of the dimensions in this dataset.
+
+    :param xshape:      (tuple) The shape of the array from the original native files.
+
+    :param kshape:      (tuple) The shape of the array from the cloud formatted dataset.
+
+    :param logger:      (obj) Logging object for info/debug/error messages.
+
+    :param proj_dir:    (str) The project code directory path.
+    """
+    concat_dims = ['time'] # Default value - does not work for all cases.
+
     tolerance = 1/(nfiles*5)
     logger.info(f'Attempting shape bypass using concat-dim tolerance {tolerance*100}%')
-    try:
+    detail = get_proj_file(proj_dir, 'detail-cfg.json')
+    if detail:
         logger.debug('Finding concat dims recorded in details for this proj_code')
-        with open(detailfile) as f:
-            concat_dims = json.load(f)['concat_dims']
-    except KeyError:
-        logger.debug('Unable to determine concat_dims, defaulting to time-only')
-        concat_dims = ['time']
-        check_dims = []
-        for cdim in concat_dims:
-            # Match to index in xobj
-            for index, dim in enumerate(dims):
-                if dim == cdim:
-                    check_dims.append(index)
-        tolerance_error = False
-        general_shape_error = False
-        for cdim in range(len(xshape)):
-            if cdim in check_dims:
-                if abs(xshape[cdim] - kshape[cdim]) / kshape[cdim] > tolerance:
-                    tolerance_error = XKShapeToleranceError(
-                        tolerance=tolerance,
-                        diff=abs(xshape[cdim] - kshape[cdim]) / kshape[cdim],
-                        dim=dims[cdim]
-                    )
-            else:
-                if xshape[cdim] != kshape[cdim]:
-                    general_shape_error = ShapeMismatchError(var=xv, first=kshape, second=xshape)
-        if general_shape_error:
-            raise general_shape_error
-        elif tolerance_error:
-            raise tolerance_error
-        else:
-            pass
+        if 'concat_dims' in detail:
+            concat_dims = detail['concat_dims']
 
-def validate_shapes(xobj, kobj, step: int, nfiles: list, xv: str, logger, proj_code, bypass_shape=False, detailfile=None, concat_dims={}):
-    """Ensure shapes are equivalent across Kerchunk/NetCDF per variable
-     - Accounts for the number of files opened vs how many files in total."""
+    check_dims = []
+    for cdim in concat_dims:
+        # Match to index in xobj
+        for index, dim in enumerate(dims):
+            if dim == cdim:
+                check_dims.append(index)
+    tolerance_error = False
+    general_shape_error = False
+    for cdim in range(len(xshape)):
+        if cdim in check_dims:
+            if abs(xshape[cdim] - kshape[cdim]) / kshape[cdim] > tolerance:
+                tolerance_error = XKShapeToleranceError(
+                    tolerance=tolerance,
+                    diff=abs(xshape[cdim] - kshape[cdim]) / kshape[cdim],
+                    dim=dims[cdim]
+                )
+        else:
+            if xshape[cdim] != kshape[cdim]:
+                general_shape_error = ShapeMismatchError(var=xv, first=kshape, second=xshape)
+    if general_shape_error:
+        raise general_shape_error
+    elif tolerance_error:
+        raise tolerance_error
+    else:
+        pass
+
+def validate_shapes(xobj, kobj, nfiles: int, xv: str, logger, bypass_shape=False, proj_dir=None, concat_dims={}) -> None: # Ingest into class structure
+    """
+    Ensure shapes are equivalent across Kerchunk/NetCDF per variable. Must account for the number 
+    of files opened vs how many files in total.
+    
+    :param xobj:        (obj) The native dataset selection.
+
+    :param kobj:        (obj) The cloud-format (Kerchunk) dataset selection
+
+    :param nfiles:      (int) The number of native files for this whole dataset.
+
+    :param xv:          (str) The name of the variable within the dataset.
+
+    :param logger:      (obj) Logging object for info/debug/error messages.
+
+    :param bypass_shape:    (bool) Switch for bypassing shape errors - diverts to tolerance testing as a backup.
+
+    :param proj_dir:        (str) The project code directory path.
+
+    :param concat_dims:     (dict) Dictionary of concatenation dimensions with their appropriate 
+                            sizes by index. (e.g {'time':100})
+
+    :returns:   None but will raise error if shape validation fails.
+    """
     xshape = list(xobj[xv].shape)
     kshape = list(kobj[xv].shape)
 
@@ -333,14 +475,15 @@ def validate_shapes(xobj, kobj, step: int, nfiles: list, xv: str, logger, proj_c
         # Incorrect dimensions on the shapes of the arrays
         if xshape != kshape and bypass_shape: # Special bypass-shape testing
             logger.info('Attempting special bypass using tolerance feature')
-            validate_shape_to_tolerance(nfiles, xv, xobj[xv].dims, xshape, kshape, logger, detailfile=detailfile)
+            validate_shape_to_tolerance(nfiles, xv, xobj[xv].dims, xshape, kshape, logger, proj_dir=proj_dir)
         else:
             raise ShapeMismatchError(var=xv, first=xshape, second=kshape)
         
-def check_for_nan(box, bypass, logger, label=None):
-    """Special function for assessing if a box selection has non-NaN values within it.
-    
-    - Needs further testing using different data types"""
+def check_for_nan(box, bypass, logger, label=None): # Ingest into class structure
+    """
+    Special function for assessing if a box selection has non-NaN values within it.
+    Needs further testing using different data types.
+    """
     logger.debug(f'Checking nan values for {label}')
 
     def handle_boxissue(err):
@@ -372,7 +515,7 @@ def check_for_nan(box, bypass, logger, label=None):
                 isnan = handle_boxissue(err)
     return isnan
 
-def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: int, logger, bypass=BypassSwitch()):
+def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: int, logger, bypass=BypassSwitch()): # Ingest into class structure - note will need to alter 'scan' and 'compute' for a simplified validation option.
     """Validate this data selection in xvariable/kvariable objects
       - Recursive function tests a growing selection of data until one is found with real data
       - Repeats with exponentially increasing box size (divisions of all data dimensions)
@@ -437,7 +580,7 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
             if not bypass.skip_softfail:
                 raise SoftfailBypassError
 
-def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=BypassSwitch(), depth_default=128, nfiles=2):
+def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=BypassSwitch(), depth_default=128, nfiles=2): # Ingest into class structure
     """Run growing selection test for specified variable from xarray and kerchunk datasets"""
     logger.info(f'{xv} : Starting growbox data tests for {step+1} - {depth_default}')
 
@@ -450,7 +593,7 @@ def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=BypassSwitch(),
     # Attempt 128 divisions within selection - 128, 64, 32, 16, 8, 4, 2, 1
     return validate_selection(xvariable, kvariable, xv, depth_default, depth_default, logger, bypass=bypass)
 
-def validate_timestep(args, xobj, kobj, step: int, nfiles: int, logger, concat_dims={}, index=0):
+def validate_timestep(args, xobj, kobj, step: int, nfiles: int, logger, concat_dims={}, index=0): # Ingest into class structure
     """Run all tests for a single file which may or may not equate to 1 timestep"""
     # Note: step indexed from 0
 
@@ -472,7 +615,7 @@ def validate_timestep(args, xobj, kobj, step: int, nfiles: int, logger, concat_d
         logger.info(f'Passed Variable tests - all required variables are present')
         print()
         for xv in xvars:
-            validate_shapes(xobj, kobj, step, nfiles, xv, logger, args.proj_code,
+            validate_shapes(xobj, kobj, nfiles, xv, logger,
                             bypass_shape=args.bypass.skip_xkshape, 
                             detailfile=f'{args.proj_dir}/detail-cfg.json',
                             concat_dims=concat_dims)
@@ -483,7 +626,7 @@ def validate_timestep(args, xobj, kobj, step: int, nfiles: int, logger, concat_d
             validate_data(xobj, kobj, xv, step, logger, bypass=args.bypass, nfiles=nfiles)
             logger.info(f'{xv} : Passed Data test')
 
-def run_successful(args, logger):
+def run_successful(args, logger): # Ingest into class structure
     """Move kerchunk-1a.json file to complete directory with proper name"""
     # in_progress/<groupID>/<proj_code>/kerchunk_1a.json
     # complete/<groupID>/<proj_code.json
@@ -521,7 +664,7 @@ def run_successful(args, logger):
         os.system(f'mv {kfile} {newfile}')
         os.system(f'touch {kfile}.complete')
 
-def run_backtrack(args, logger):
+def run_backtrack(args, logger): # Ingest into class structure
     """Backtrack progress on all output files. If quality is specified as well, files are removed rather than backtracked"""
 
     if args.groupID:
@@ -549,7 +692,7 @@ def run_backtrack(args, logger):
 
     logger.info(f'{args.proj_code} Successfully backtracked to pre-validation')
     
-def attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims={}, fullset=False):
+def attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims={}, fullset=False): # Ingest into class structure
     """Handler for attempting processing on a timestep multiple times.
     - Handles error conditions"""
     try:
@@ -562,12 +705,24 @@ def attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims={}, ful
     except Exception as err:
         raise err
 
-def validate_dataset(args, fh=None, logid=None, **kwargs):
-    """Perform validation steps for specific dataset defined here
-     - Determine the number of NetCDF files in total
-     - Run validation for a minimum subset of those files
+def validate_dataset(args, logger, fh=None, logid=None, **kwargs): # Ingest into class structure - main function to use.
     """
-    logger = init_logger(args.verbose, args.mode,'validate', fh=fh, logid=logid)
+    Perform validation steps for specific dataset defined here, sets up a local dask cluster to limit
+    memory usage, retrieves the set of xarray objects and the kerchunk dataset, then runs validation
+    on each of the selected indexes (subset of total number of objects).
+
+    :param args:        (obj) Set of command line arguments supplied by argparse.
+
+    :param logger:      (obj) Logging object for info/debug/error messages. Will create a new 
+                        logger object if not given one.
+
+    :param fh:          (str) Path to file for logger I/O when defining new logger.
+
+    :param logid:       (str) If creating a new logger, will need an id to distinguish this logger
+                        from other single processes (typically n of N total processes.)
+    """
+    if not logger:
+        logger = init_logger(args.verbose, args.mode,'validate', fh=fh, logid=logid)
     logger.info(f'Starting tests for {args.proj_code}')
 
     # Experimenting with a local dask cluster for memory limit
@@ -579,10 +734,7 @@ def validate_dataset(args, fh=None, logid=None, **kwargs):
             return None
 
     if not args.proj_dir:
-        if args.groupID:
-            args.proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
-        else:
-            args.proj_dir = f'{args.workdir}/in_progress/{args.proj_code}'
+        args.proj_dir = get_proj_dir(args.proj_code, args.workdir, args.groupID)
 
     xobjs, indexes, xfiles = open_netcdfs(args, logger, thorough=args.quality)
     nfiles = len(xfiles)
@@ -615,7 +767,7 @@ def validate_dataset(args, fh=None, logid=None, **kwargs):
     else:
         ## Set up loop variables
         fullset     = bool(args.quality)
-        concat_dims = get_concat_dims(xobjs, detailfile=f'{args.proj_dir}/detail-cfg.json')
+        concat_dims = get_concat_dims(xobjs, args.proj_dir)
         if not fullset:
             logger.info(f"Attempting file subset validation: {len(indexes)}/{nfiles}")
             for step, index in enumerate(indexes):
