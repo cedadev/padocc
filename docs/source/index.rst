@@ -51,6 +51,7 @@ The pipeline consists of four central phases, with an additional phase for inges
    Scanning <scan>
    Compute <compute>
    Validate <validate>
+   Allocations <allocation>
    Utils <extras>
 
 
