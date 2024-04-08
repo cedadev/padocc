@@ -8,6 +8,7 @@ import glob
 import json
 import sys
 from datetime import datetime
+import re
 
 from pipeline.logs import init_logger, log_status, get_log_status, FalseLogger
 from pipeline.utils import get_attribute, format_str, \
@@ -342,13 +343,13 @@ def progress_check(args, logger):
                     if timediff > 86400: # 1 Day - fixed for now
                         entry[1] = 'JobCancelled'
                         log_status(entry[0], proj_dir, entry[1], FalseLogger())
-                            
+                
                 match_phase = (bool(args.phase) and args.phase == entry[0])
-                match_error = (bool(args.error) and args.error == entry[1])
+                match_error = (bool(args.error) and any([err == entry[1].split(' ')[0] for err in args.error]))
 
                 if bool(args.phase) != (args.phase == entry[0]):
                     total_match = False
-                elif bool(args.error) != (args.error == entry[1] or args.error == entry[1].split(' ')[0]):
+                elif bool(args.error) != (any([err == entry[1].split(' ')[0] for err in args.error])):
                     total_match = False
                 else:
                     total_match = match_phase or match_error
@@ -368,7 +369,7 @@ def progress_check(args, logger):
                         phases[entry[0]][entry[1]] = [idx]
         except KeyboardInterrupt as err:
             raise err
-        except:
+        except Exception as err:
             examine_log(args.workdir, p, entry[0], groupID=args.groupID, repeat_id=args.repeat_id, error=entry[1])
             print(f'Issue with analysis of error log: {p}')
     num_codes  = len(proj_codes)
@@ -605,6 +606,8 @@ def assess_main(args):
 
     if ',' in args.error:
         args.error = args.error.split(',')
+    else:
+        args.error = [args.error]
 
     if args.groupID == 'A':
         groups = []
