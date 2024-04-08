@@ -1,12 +1,13 @@
 #!/bin/bash
 #SBATCH --partition=short-serial-4hr
+#SBATCH --account=short4hr
 #SBATCH --job-name={}_kerchunk
 
 #SBATCH --time={}
 #SBATCH --mem={}
 
-#SBATCH -o /dev/null
-#SBATCH -e /dev/null
+#SBATCH -o {}
+#SBATCH -e {}
 
 module add jaspy
 source {}/bin/activate
