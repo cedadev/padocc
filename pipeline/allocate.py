@@ -45,56 +45,68 @@ def assemble_allocations(args):
     proj_codes = get_codes(args.groupID, args.workdir, f'proj_codes/{args.repeat_id}')
 
     time_estms = {}
-    time_defs_value = int(times[args.phase].split(':')[0])
-    time_bands = {time_defs_value:[]}
+    time_defs_value = int(times[args.phase].split(':')[0])*2
+    time_bands = {}
 
     for p in proj_codes:
         proj_dir       = get_proj_dir(p, args.workdir, args.groupID)
-        current_status = get_log_status(proj_dir)
         detail         = get_proj_file(proj_dir, 'detail-cfg.json')
+
+        lr = [None, None]
+        if 'last_run' in detail:
+            lr = detail['last_run']
         
         # Experimental values for time estimation
         if has_required_timings(detail) and args.phase == 'compute':
             time_estms[p] = 500 + (2.5 + 1.5*detail['timings']['convert_estm'])*detail['num_files']
-
-        elif 'JobCancelled' in current_status:
-            if 'last_run' in detail:
-                lr = detail['last_run']
-                if lr[0] != args.phase:
-                    continue
+        else:
+            if lr[0] == args.phase and args.band_increase:
                 next_band = int(lr[1].split(':')[0]) + time_defs_value
             else:
-                next_band = time_defs_value*2
+                next_band = time_defs_value
 
             if next_band in time_bands:
                 time_bands[next_band].append(p)
             else:
                 time_bands[next_band] = [p]
-        else:
-            time_bands[time_defs_value].append(p)
 
-    bins = binpacking.to_constant_volume(time_estms, 4*3600)
-    print('Allocations:')
-    print(f' - 4hr Jobs (Allocations): {len(bins)}, Datasets: {len(time_estms)} (4hr jobs)')
-    print('Banded Datasets:')
-    for b in time_bands:
-        print(f' - Time Band: {b}m, Datasets: {len(time_bands[b])}')
+    if len(time_estms) > 5 and args.binpack:
+        binsize = int(max(time_estms.values())*1.4/600)*600
+        bins = binpacking.to_constant_volume(time_estms, binsize) # Rounded to 10 mins
+    else:
+        print('Skipped Job Allocations - using Bands-only.')
+        bins = None
+        for pc in time_estms.keys():
+            time_estm = time_estms[pc]/60
+            applied = False
+            for tb in time_bands.keys():
+                if time_estm < tb:
+                    time_bands[tb].append(pc)
+                    applied = True
+                    break
+            if not applied:
+                next_band = time_defs_value
+                i = 2
+                while next_band < time_estm:
+                    next_band = time_defs_value*i
+                    i += 1
+                time_bands[next_band] = [pc]
 
+    allocs = []
     # Create allocations
-    create_allocations(args.groupID, args.workdir, bins, args.repeat_id, dryrun=args.dryrun)
+    if bins:
+        create_allocations(args.groupID, args.workdir, bins, args.repeat_id, dryrun=args.dryrun)
+        if len(bins) > 0:
+            allocs.append(('allocations','240:00',len(bins)))
     # Create array bands
     create_array_bands(args.groupID, args.workdir, time_bands, args.repeat_id, dryrun=args.dryrun)
         
     # Return a list of tuples: [ ('allocations', '240:00', 116), ...] 
-    allocs = []
-    if len(bins) > 0:
-        allocs.append(('allocations','240:00',len(bins)))
 
     if len(time_bands) > 0:
         for b in time_bands:
             allocs.append((f"band_{b}", f'{b}:00', len(time_bands[b])))
 
-    print(allocs)
     return allocs
 
 def create_allocations(groupID, workdir, bins, repeat_id, dryrun=False) -> None:
@@ -115,4 +127,15 @@ def create_allocations(groupID, workdir, bins, repeat_id, dryrun=False) -> None:
             print(f'Writing {len(bset)} to file {idx}.txt')
 
 def create_array_bands(groupID, workdir, bands, repeat_id, dryrun=False):
-    pass
+    bands_path = f'{workdir}/groups/{groupID}/proj_codes/{repeat_id}/'
+    if not os.path.isdir(bands_path):
+        if not dryrun:
+            os.makedirs(bands_path)
+
+    for b in bands:
+        if not dryrun:
+            os.system(f'touch {bands_path}/band_{b}.txt')
+            with open(f'{bands_path}/band_{b}.txt','w') as f:
+                    f.write('\n'.join(bands[b]))
+        else:
+            print(f'Writing {len(bands[b])} to file band_{b}.txt')
