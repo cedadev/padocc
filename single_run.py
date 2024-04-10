@@ -65,6 +65,11 @@ def run_compute(args, logger, fh=None, logid=None, **kwargs) -> None:
     """
     from pipeline.compute import compute_config
     logger.info('Starting compute process')
+
+    if args.bypass.skip_scan:
+        from pipeline.scan import write_skip
+        write_skip(args.proj_dir, args.proj_code, logger)
+
     compute_config(args, logger, fh=fh, logid=logid, **kwargs)
 
 def run_validation(args, logger, fh=None, **kwargs) -> None:
@@ -185,11 +190,8 @@ def assemble_single_process(args, logger=None, jobid='', fh=None, logid=None) ->
 
     if not args.bypass.skip_report:
         log_status(args.phase, args.proj_dir, 'pending', logger, jobid=jobid, dryrun=args.dryrun)
-        if not args.binpack:
+        if 'allocations' not in args.repeat_id:
             set_last_run(args.proj_dir, args.phase, args.time_allowed)
-        else:
-            # Use time estimation here.
-            pass
 
     if jobid != '':
         logger = reset_file_handler(logger, args.verbose, proj_log)
@@ -222,7 +224,7 @@ def main(args) -> None:
     if args.groupID:
         args.groupdir = f'{args.workdir}/groups/{args.groupID}'
         if jobid != '':
-            fh = f'{args.groupdir}/errs/{jobid}_{taskid}_{args.phase}_{args.repeat_id}.log'
+            fh = f'{args.groupdir}/errs/{args.phase}_{args.repeat_id.replace("/","_")}/{jobid}_{taskid}.log'
 
     logger      = init_logger(args.verbose, args.mode, 'main', fh=fh)
     args.bypass = BypassSwitch(switch=args.bypass)
@@ -277,27 +279,31 @@ def main(args) -> None:
             codes = [args.proj_code]
 
     logger.info(f'Identified {len(codes)} dataset(s) to process')
+    quality = bool(args.quality)
     for id, proj_code in enumerate(codes):
+        # Ensures no reset within any child processes.
+        args.quality = quality
+        
         if len(codes) > 1:
             logger.info(f'Starting process for {id+1}/{len(codes)}')
+        if id > 0:
+            logger.info(f'Success (so far): {passes}, Errors (so far): {fails}')
         args.proj_code = proj_code
         args.proj_dir  = get_proj_dir(args.proj_code, args.workdir, args.groupID)
 
         # Create any required logging space - done already for this subset.
 
         try:
-            assemble_single_process(args, jobid=jobid, fh=fh)
+            assemble_single_process(args, jobid=jobid, fh=fh, logid=id)
             passes += 1
         except Exception as err:
             # Capture all errors - any error handled here is a setup error
-            # Implement allocation override here - no error thrown if using allocation.
-
-            # Add error traceback
-            tb = traceback.format_exc()
-            logger.error(tb)
+            # Implement allocation override here - no error thrown if using allocation.d
 
             # Reset file handler back to main.
             if jobid != '':
+                tb = traceback.format_exc()
+                logger.info(tb)
                 logger = reset_file_handler(logger, args.verbose, fh)
             fails += 1
 
@@ -307,7 +313,6 @@ def main(args) -> None:
                     status = err.get_str()
                 except AttributeError:
                     status = type(err).__name__ + ' ' + str(err)
-                    
                 # Messes up the csv if there are commas
                 status = status.replace(',','-')
                 log_status(args.phase, args.proj_dir, status, logger, jobid=jobid, dryrun=args.dryrun)
@@ -347,7 +352,7 @@ if __name__ == '__main__':
     parser.add_argument('-r','--repeat_id', dest='repeat_id',      default='main',     help='Repeat id (1 if first time running, <phase>_<repeat> otherwise)')
 
     # Specialised
-    parser.add_argument('-b','--bypass-errs',   dest='bypass', default='DBSCMR', help=BypassSwitch().help())
+    parser.add_argument('-b','--bypass-errs',   dest='bypass', default='DBSCR', help=BypassSwitch().help())
     parser.add_argument('-n','--new_version',   dest='new_version',              help='If present, create a new version')
     parser.add_argument('-m','--mode',          dest='mode',   default=None,     help='Print or record information (log or std)')
     parser.add_argument('-O','--override_type', dest='override_type',            help='Specify cloud-format output type, overrides any determination by pipeline.')

@@ -9,8 +9,10 @@ import fsspec
 import logging
 import math
 import numpy as np
+import re
 
-from pipeline.errors import MissingVariableError, MissingKerchunkError, ChunkDataError
+from pipeline.errors import MissingVariableError, MissingKerchunkError, ChunkDataError, \
+                            KerchunkDecodeError
 from pipeline.logs import FalseLogger
 
 times = {
@@ -25,9 +27,9 @@ class BypassSwitch:
     switches stored in this class.
     """
 
-    def __init__(self, switch='DBSCMR'):
+    def __init__(self, switch='DBSCR'):
         if switch.startswith('+'):
-            switch = 'DBSCMR' + switch[1:]
+            switch = 'DBSCR' + switch[1:]
         self.switch = switch
         if type(switch) == str:
             switch = list(switch)
@@ -38,6 +40,7 @@ class BypassSwitch:
         self.skip_data_sum = ('C' in switch)
         self.skip_xkshape  = ('X' in switch)
         self.skip_report   = ('R' in switch)
+        self.skip_scan     = ('F' in switch) # Fasttrack
 
         # Removed scanfile and memory skips
 
@@ -101,13 +104,15 @@ def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file', retr
             except OverflowError:
                 ds = None
             except KeyError as err:
-                if str(err) == 'https' and not retry:
+                if re.match('.*https.*',str(err)) and not retry:
                     # RemoteProtocol is not https - retry with correct protocol
                     logger.warning('Found KeyError "https" on opening the Kerchunk file - retrying with local filepaths.')
                     return open_kerchunk(kfile, logger, isparq=isparq, remote_protocol='file', retry=True)
                 else:
                     raise err
             except Exception as err:
+                if 'decode' in str(err):
+                    raise KerchunkDecodeError
                 raise err #MissingKerchunkError(message=f'Failed to open kerchunk file {kfile}')
         if not ds:
             raise ChunkDataError
@@ -163,6 +168,31 @@ def mem_to_val(value: str) -> float:
         'PB': 1000000000000000}
     suff = suffixes[value.split(' ')[1]]
     return float(value.split(' ')[0]) * suff
+
+def get_blacklist(group: str, workdir: str) -> list:
+    """
+    Returns a list of the project codes given a filename (repeat id)
+
+    :param group:       (str) Name of current group or path to group directory
+                        (groupdir) in which case workdir can be left as None.
+
+    :param workdir:     (str) Path to working directory or None. If this is None,
+                        group value will be assumed as the groupdir path.
+
+    :returns: A list of codes if the file is found, an empty list otherwise.
+    """
+    if workdir:
+        codefile = f'{workdir}/groups/{group}/blacklist_codes.txt'
+    else:
+        codefile = f'{group}/blacklist_codes.txt'
+    if os.path.isfile(codefile):
+        with open(codefile) as f:
+            contents = [r.strip().split(',') for r in f.readlines()]
+            if type(contents[0]) != list:
+                contents = [contents]
+            return contents
+    else:
+        return []
 
 def get_codes(group: str, workdir: str , filename: str, extension='.txt') -> list:
     """
