@@ -207,7 +207,7 @@ def locate_kerchunk(args, logger, get_str=False, remote_protocol='https') -> xr.
         if get_str:
             return kfile, True
         else:
-            return open_kerchunk(kfile, logger, remote_protocol='https'), True
+            return open_kerchunk(kfile, logger, remote_protocol='file'), True
     else:
         logger.error(f'No Kerchunk file located at {args.proj_dir} and no in-place validation indicated - exiting')
         raise MissingKerchunkError
@@ -265,7 +265,8 @@ def open_netcdfs(args, logger, thorough=False, concat_dims='time') -> list: # I
             raise NoValidTimeSlicesError(message='Kerchunk', verbose=args.verbose)
         return xobjs, indexes, xfiles
     else:
-        xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim=concat_dims, data_vars='minimal')
+        #xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim=concat_dims, data_vars='minimal')
+        xobj = xr.open_mfdataset(xfiles, combine='nested', concat_dim=concat_dims, data_vars='minimal')
         return xobj, None, xfiles
 
 ## 3. Validation Testing
@@ -326,19 +327,36 @@ def compare_data(vname: str, xbox: xr.Dataset, kerchunk_box: xr.Dataset, logger,
     """
     logger.debug(f'Starting xk comparison')
 
+    logger.debug('1. Flattening Arrays')
+    t1 = datetime.now()
+
+    xbox         = np.array(xbox).flatten()
+    kerchunk_box = np.array(kerchunk_box).flatten()
+
+    logger.debug(f'2. Calculating Tolerance - {(datetime.now()-t1).total_seconds():.2f}s')
     try: # Tolerance 0.1% of mean value for xarray set
         tolerance = np.abs(np.nanmean(kerchunk_box))/1000
     except TypeError: # Type cannot be summed so skip all summations
         tolerance = None
 
+    logger.debug(f'3. Comparing with array_equal - {(datetime.now()-t1).total_seconds():.2f}s')
     testpass = True
     try:
         equality = np.array_equal(xbox, kerchunk_box, equal_nan=True)
     except TypeError as err:
         equality = np.array_equal(xbox, kerchunk_box)
+
     if not equality:
-        logger.warning(f'Failed equality check for {vname}')
-        raise ValidationError
+        logger.debug(f'3a. Comparing directly - {(datetime.now()-t1).total_seconds():.2f}s')
+        equality = False
+        for index in range(xbox.size):
+            v1 = np.array(xbox).flatten()[index]
+            v2 = np.array(xbox).flatten()[index]
+            if v1 != v2:
+                print(v1, v2)
+                raise ValidationError
+            
+    logger.debug(f'4. Comparing Max values - {(datetime.now()-t1).total_seconds():.2f}s')
     try:
         if np.abs(np.nanmax(kerchunk_box) - np.nanmax(xbox)) > tolerance:
             logger.warning(f'Failed maximum comparison for {vname}')
@@ -349,6 +367,7 @@ def compare_data(vname: str, xbox: xr.Dataset, kerchunk_box: xr.Dataset, logger,
             logger.warning(f'Max comparison skipped for non-summable values in {vname}')
         else:
             raise err
+    logger.debug(f'5. Comparing Min values - {(datetime.now()-t1).total_seconds():.2f}s')
     try:
         if np.abs(np.nanmin(kerchunk_box) - np.nanmin(xbox)) > tolerance:
             logger.warning(f'Failed minimum comparison for {vname}')
@@ -359,6 +378,7 @@ def compare_data(vname: str, xbox: xr.Dataset, kerchunk_box: xr.Dataset, logger,
             logger.warning(f'Min comparison skipped for non-summable values in {vname}')
         else:
             raise err
+    logger.debug(f'6. Comparing Mean values - {(datetime.now()-t1).total_seconds():.2f}s')
     try:
         if np.abs(np.nanmean(kerchunk_box) - np.nanmean(xbox)) > tolerance:
             logger.warning(f'Failed mean comparison for {vname}')
@@ -477,15 +497,19 @@ def validate_shapes(xobj, kobj, nfiles: int, xv: str, logger, bypass_shape=False
             logger.info('Attempting special bypass using tolerance feature')
             validate_shape_to_tolerance(nfiles, xv, xobj[xv].dims, xshape, kshape, logger, proj_dir=proj_dir)
         else:
-            raise ShapeMismatchError(var=xv, first=xshape, second=kshape)
+            raise ShapeMismatchError(var=xv, first=kshape, second=xshape)
         
 def check_for_nan(box, bypass, logger, label=None): # Ingest into class structure
     """
     Special function for assessing if a box selection has non-NaN values within it.
     Needs further testing using different data types.
     """
-    logger.debug(f'Checking nan values for {label}')
+    logger.debug(f'Checking nan values for {label}: Dtype: {str(box.dtype)}')
 
+    if not ('float' in str(box.dtype) or 'int' in str(box.dtype)):
+        # Non numeric arrays cannot have NaN values.
+        return False
+    
     def handle_boxissue(err):
         if type(err) == TypeError:
             return False
@@ -564,7 +588,7 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
         try_multiple += 1
 
     if knan != xnan:
-        raise ValidationError('Kerchunk/NetCDF value mismatch - expected NaN, received values')
+        raise NaNComparisonError
         
     if kbox.size >= 1 and not knan:
         # Evaluate kerchunk vs xarray and stop here
@@ -616,8 +640,8 @@ def validate_timestep(args, xobj, kobj, step: int, nfiles: int, logger, concat_d
         print()
         for xv in xvars:
             validate_shapes(xobj, kobj, nfiles, xv, logger,
-                            bypass_shape=args.bypass.skip_xkshape, 
-                            detailfile=f'{args.proj_dir}/detail-cfg.json',
+                            bypass_shape=args.bypass.skip_xkshape,
+                            proj_dir=args.proj_dir,
                             concat_dims=concat_dims)
             logger.info(f'{xv} : Passed Shape test')
         logger.info(f'Passed all Shape tests')
@@ -664,35 +688,32 @@ def run_successful(args, logger): # Ingest into class structure
         os.system(f'mv {kfile} {newfile}')
         os.system(f'touch {kfile}.complete')
 
-def run_backtrack(args, logger): # Ingest into class structure
+def run_backtrack(workdir: str, groupID: str, proj_code: str,logger,  quality=False): # Ingest into class structure
     """Backtrack progress on all output files. If quality is specified as well, files are removed rather than backtracked"""
 
-    if args.groupID:
-        complete_dir = f'{args.workdir}/complete/{args.groupID}'
+    if groupID:
+        complete_dir = f'{workdir}/complete/{groupID}'
     else:
-        complete_dir = f'{args.workdir}/complete/single_runs'
+        complete_dir = f'{workdir}/complete/single_runs'
 
-    if args.proj_dir:
-        proj_dir = args.proj_dir
-    else:
-        proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{args.proj_code}'
+    proj_dir = get_proj_dir(proj_code, workdir, groupID)
 
     logger.info("Removing 'complete' indicator file")
 
     for f in glob.glob(f'{proj_dir}/*complete*'):
         os.remove(f)
-    if args.quality:
+    if quality:
         logger.info("Removing Kerchunk file")
-        for f in glob.glob(f'{complete_dir}/{args.proj_code}*'):
+        for f in glob.glob(f'{complete_dir}/{proj_code}*'):
             os.remove(f)
     else:
         logger.info("Backtracking Kerchunk file")
-        for x, file in enumerate(glob.glob(f'{complete_dir}/{args.proj_code}*')):
+        for x, file in enumerate(glob.glob(f'{complete_dir}/{proj_code}*')):
             os.rename(file, f'{proj_dir}/kerchunk-1{list("abcde")[x]}.json')
 
-    logger.info(f'{args.proj_code} Successfully backtracked to pre-validation')
+    logger.info(f'{proj_code} Successfully backtracked to pre-validation')
     
-def attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims={}, fullset=False): # Ingest into class structure
+def attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims, fullset=False): # Ingest into class structure
     """Handler for attempting processing on a timestep multiple times.
     - Handles error conditions"""
     try:
@@ -725,13 +746,20 @@ def validate_dataset(args, logger, fh=None, logid=None, **kwargs): # Ingest int
         logger = init_logger(args.verbose, args.mode,'validate', fh=fh, logid=logid)
     logger.info(f'Starting tests for {args.proj_code}')
 
-    # Experimenting with a local dask cluster for memory limit
-    cluster = LocalCluster(n_workers=1, threads_per_worker=1, memory_target_fraction=0.95, memory_limit=str(args.memory + 'B'))
+    # Removed for doing local connection tests.
+    #logger.info('Testing Connection to the CEDA Archive')
+    #if not verify_connection(logger):
+       # raise ArchiveConnectError
 
-    if hasattr(args, 'backtrack'):
-        if args.backtrack:
-            run_backtrack(args, logger)
-            return None
+    
+    # Experimenting with a local dask cluster for memory limit
+    #cluster = LocalCluster(n_workers=1, threads_per_worker=1, memory_target_fraction=0.95, memory_limit=str(args.memory + 'B'))
+
+    # Removed Backtrack for now
+    #if hasattr(args, 'backtrack'):
+        #if args.backtrack:
+            #run_backtrack(args, logger)
+            #return None
 
     if not args.proj_dir:
         args.proj_dir = get_proj_dir(args.proj_code, args.workdir, args.groupID)
@@ -763,7 +791,7 @@ def validate_dataset(args, logger, fh=None, logid=None, **kwargs): # Ingest int
         for step, index in enumerate(indexes):
             xobj = xobjs[step]
             logger.info(f'Running tests for selected file: {index} ({step+1}/{len(indexes)})')
-            attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims=concat_dims, index=index)
+            attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims)
     else:
         ## Set up loop variables
         fullset     = bool(args.quality)
@@ -773,7 +801,7 @@ def validate_dataset(args, logger, fh=None, logid=None, **kwargs): # Ingest int
             for step, index in enumerate(indexes):
                 xobj = xobjs[step]
                 logger.info(f'Running tests for selected file: {index} ({step+1}/{len(indexes)})')
-                fullset = attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims=concat_dims)
+                fullset = attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims)
                 if fullset:
                     break
 
@@ -781,11 +809,37 @@ def validate_dataset(args, logger, fh=None, logid=None, **kwargs): # Ingest int
             print()
             logger.info(f"Attempting total validation")
             xobjs, indexes, nfiles = open_netcdfs(args, logger, thorough=True)
-            attempt_timestep(args, xobjs, kobj, 0, 1, logger, xfiles, concat_dims=concat_dims, fullset=True)
+            attempt_timestep(args, xobjs, kobj, 0, 1, logger, concat_dims, fullset=True)
     
     logger.info('All tests passed successfully')
     print()
     run_successful(args, logger)
+
+def verify_connection(logger):
+    """
+    Verify connection to the CEDA archive by opening a test file in Kerchunk and
+    comparing to a known value."""
+
+    kfile = 'https://dap.ceda.ac.uk/badc/cmip6/metadata/kerchunk/pipeline1/CMIP/AS-RCEC/TaiESM1/kr1.0/CMIP6_CMIP_AS-RCEC_TaiESM1_historical_r1i1p1f1_3hr_clt_gn_v20201013_kr1.0.json'
+    validated = False
+    tries = 0
+    while not validated and tries < 5:
+        try:
+            mapper = fsspec.get_mapper('reference://',fo=kfile, backend_kwargs={'compression':None}, remote_protocol='https')
+            ds = xr.open_zarr(mapper, consolidated=False, decode_times=True)
+            value = ds['clt'].sel(lat=slice(51,59), lon=slice(-15,7)).isel(time=slice(0,5)).mean().compute()
+            validated = bool(f"{value:.2f}" == '72.45')
+            if not validated:
+                tries += 1
+                logger.warning(f'Failed data collection')
+        except Exception as err:
+            try:
+                erstr = str(err)
+            except:
+                erstr = 'Unknown'
+            logger.warning(f'Failed once with {erstr}')
+            tries += 0.5
+    return validated
 
 if __name__ == "__main__":
     print('Validation Process for Kerchunk Pipeline - run with single_run.py')
