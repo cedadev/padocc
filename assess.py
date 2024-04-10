@@ -13,7 +13,7 @@ import re
 from pipeline.logs import init_logger, log_status, get_log_status, FalseLogger
 from pipeline.utils import get_attribute, format_str, \
     mem_to_val, get_codes, set_codes, get_proj_file, \
-    set_proj_file
+    set_proj_file, get_blacklist
 import pipeline.errors as errs
 
 # Hints for custom errors - unused
@@ -98,30 +98,29 @@ def examine_log(workdir: str, proj_code: str, phase: str, groupID=None, repeat_i
     if paused == 'E':
         raise KeyboardInterrupt
 
-def merge_old_new(old_codes, new_codes, index_old='', index_new='', reason=None):
+def merge_old_new(old_codes, new_codes, reason=None):
     """Merge an existing list of project codes with a new set
     - Uses indexes if not a 1d list
     """
-
-    merge_dict = {}
-    indices = [index_old, index_new]
-    for ord, codeset in enumerate([old_codes, new_codes]):
-        index = indices[ord]
-        for code in codeset:
-            proj_code = code
-            value = None
-            if index != '':
-                proj_code = code[index]
-            if reason:
-                if ord != 0 and len(code) > 1:
-                    value = reason
-                else:
-                    value = code[1]
+    def convert_to_dict(codes, reason=None):
+        merge_dict = {}
+        for entry in codes:
+            if type(entry) == list:
+                proj_code = entry[0]
+                value     = entry[1]
+            else:
+                proj_code = entry
+                value     = reason
             merge_dict[proj_code] = value
+        return merge_dict
+
+    md = convert_to_dict(old_codes)
+    md.update(convert_to_dict(new_codes, reason=reason))
+
     merged = []
-    for mkey in merge_dict.keys():
-        if merge_dict[mkey]:
-            merged.append(f'{mkey}, {merge_dict[mkey]}')
+    for mkey in md.keys():
+        if md[mkey]:
+            merged.append(f'{mkey}, {md[mkey]}')
         else:
             merged.append(f'{mkey}')
     return merged
@@ -235,8 +234,47 @@ def show_options(args, logger):
         print(f'Total datasets       : {len(proj_codes) - len(blackcodes)}')
     elif 'variable' in args.option: 
         raise NotImplementedError
+    elif 'allocations' in args.option:
+        print('Allocations: ')
+        allocation_files = f'{args.workdir}/groups/{args.groupID}/proj_codes/{args.repeat_id}/allocations/*.txt'
+        tpass, tfail, toot = 0, 0, 0
+        for x in range(len(glob.glob(allocation_files))):
+            allocation = get_codes(args.groupID, args.workdir, f'proj_codes/{args.repeat_id}/allocations/{x}')
+            passes, fails, oots = assess_allocation(allocation, args.workdir, args.groupID, args.phase)
+
+            logger.debug(f'{x+1}. ({x}.txt) Pass: {passes}, Fail: {fails}, Out of Time: {oots}')
+            tpass += passes
+            tfail += fails
+            toot += oots
+        print(f'Allocations - Pass: {tpass}, Fail: {tfail}, Out of Time: {toot}')
+        print()
+        print('Bands:')
+        bandfiles = f'{args.workdir}/groups/{args.groupID}/proj_codes/{args.repeat_id}/band*'
+        for b in glob.glob(bandfiles):
+            with open(b) as f:
+                codes = [r.strip() for r in f.readlines()]
+            passes, fails, oots = assess_allocation(codes, args.workdir, args.groupID, args.phase)
+            bname = b.split('/')[-1]
+            print(f'{bname} - Pass: {passes}, Fail: {fails}, Out of Time: {oots}')
+
+
     else:
         print(f'{args.option} not accepted - use "jobids" or "labels"')
+
+def assess_allocation(codes, workdir, group, phase):
+    passes, fails, oots = 0, 0, 0
+    for proj_code in codes:
+        status = get_log_status(f'{workdir}/in_progress/{group}/{proj_code}')
+        if args.phase in status:
+            if 'complete' in status:
+                passes += 1
+            elif 'pending' in status:
+                oots += 1
+            else:
+                fails += 1
+        else:
+            fails += 1
+    return passes, fails, oots
 
 def cleanup(args, logger):
     cleantype = args.cleanup
@@ -247,7 +285,7 @@ def cleanup(args, logger):
         projset = glob.glob(f'{groupdir}/proj_codes/*')
         for p in projset:
             if 'main' not in p:
-                os.system(f'rm {p}')
+                os.system(f'rm -rf {p}')
         cleaned = True
     if cleantype == 'errors' or cleantype == 'all':
         os.system(f'rm -rf {groupdir}/errs/*')
@@ -433,9 +471,9 @@ def add_to_blacklist(savedcodes, groupdir, reason, logger):
     logger.debug(f'Starting blacklist concatenation')
 
     merged = ''
-    blackcodes = get_codes(groupdir, None, 'blacklist_codes')
+    blackcodes = get_blacklist(groupdir, None)
 
-    merged = merge_old_new(blackcodes, savedcodes, index_old=0, reason=reason)
+    merged = merge_old_new(blackcodes, savedcodes, reason=reason)
     blacklist = '\n'.join([f'{m}' for m in merged])
 
     set_codes(groupdir, None, 'blacklist_codes', blacklist)
