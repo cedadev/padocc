@@ -349,8 +349,6 @@ def scan_dataset(args, logger) -> None:
     limiter = max(2, limiter)
     limiter = min(100, limiter)
 
-    limiter = 3
-
     logger.info(f'Determined {limiter} files to scan (out of {nfiles})')
 
     # Default use kerchunk
