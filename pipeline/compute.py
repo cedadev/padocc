@@ -86,6 +86,9 @@ class KerchunkConverter:
         extension = False
         supported_extensions = list(self.drivers.keys())
 
+        if not os.path.isfile(nfile):
+            raise SourceNotFoundError(sfile=nfile)
+
         self.logger.debug(f'Attempting conversion for 1 {self.ctype} extension')
 
         if not self.ctype:
@@ -237,6 +240,8 @@ class ProjectProcessor:
 
         self.dryrun      = dryrun
         self.updates, self.removals = False, False
+
+        self.loaded_refs = False
 
         if groupID:
             self.proj_dir = f'{self.workdir}/in_progress/{groupID}/{self.proj_code}'
@@ -641,9 +646,10 @@ class KerchunkDSProcessor(ProjectProcessor):
             if 'combine_kwargs' in self.detail:
                 self.combine_kwargs = self.detail['combine_kwargs']
             else:
+                
                 self.determine_dim_specs([
-                    open_kerchunk(refs[0], FalseLogger(), remote_protocol=None),
-                    open_kerchunk(refs[-1], FalseLogger(), remote_protocol=None)
+                    xr.open_zarr(fsspec.get_mapper('reference://', fo=refs[0])),
+                    xr.open_zarr(fsspec.get_mapper('reference://', fo=refs[-1])),
                 ])
 
         t1 = datetime.now()  
@@ -657,8 +663,8 @@ class KerchunkDSProcessor(ProjectProcessor):
 
         if not self.dryrun:
             self.collect_details()
-            with open(self.detailfile,'w') as f:
-                f.write(json.dumps(self.detail))
+            if self.detail:
+                set_proj_file(self.proj_dir, 'detail-cfg.json', self.detail, self.logger)
             self.logger.info("Details updated in detail-cfg.json")
 
     def construct_virtual_dim(self, refs: dict) -> None:
@@ -757,8 +763,10 @@ class KerchunkDSProcessor(ProjectProcessor):
         else:
             self.logger.debug('Found single ref to save')
             mzz = refs[0]
-        # Override global attributes
-        mzz['refs'] = self.add_download_link(mzz['refs'])
+        
+        # This is now done at ingest, post-validation due to Network Issues
+        #mzz['refs'] = self.add_download_link(mzz['refs'])
+        self.detail['links_added'] = False
 
         if not self.dryrun and not self.partial:
             with open(self.outfile,'w') as f:
@@ -872,7 +880,7 @@ class ZarrDSRechunker(ProjectProcessor):
     def __init__(self, proj_code, mem_allowed='100MB',preferences=None, **kwargs) -> None:
         super().__init__(proj_code, **kwargs)
 
-        self.outstore    = f"{self.proj_dir}/zarr-{self.version_no.replace('k','z')}a.zarr"
+        self.outstore    = f"{self.proj_dir}/zarr-z{self.version_no}a.zarr"
         self.tempstore   = f"{self.proj_dir}/zarrcache.zarr"
         self.preferences = preferences
 
@@ -1047,7 +1055,7 @@ def configure_zarr(args, logger, fh=None, logid=None):
         detail['timings']['compute_actual'] = compute_time
     set_proj_file(args.proj_dir, 'detail-cfg.json', detail, logger)
 
-def compute_config(args, logger, fh=None, logid=None, override_type=None, **kwargs) -> None:
+def compute_config(args, logger, fh=None, logid=None, **kwargs) -> None:
     """
     serves as main point of configuration for processing/conversion runs. Can
     set up kerchunk or zarr configurations, check required files are present.
@@ -1085,7 +1093,9 @@ def compute_config(args, logger, fh=None, logid=None, override_type=None, **kwar
     
     # Open the detailfile to check type.
     detail = get_proj_file(args.proj_dir, 'detail-cfg.json')
-    if detail['type'] == 'zarr' or override_type == 'zarr':
+    if 'skipped' in detail:
+        detail['type'] = 'JSON'
+    if detail['type'] == 'zarr' or args.override_type == 'zarr':
         configure_zarr(args, logger)
     else:
         configure_kerchunk(args, logger)
