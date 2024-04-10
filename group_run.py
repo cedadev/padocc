@@ -46,10 +46,7 @@ def deploy_array_job(args, logger, time=None, label=None, group_len=None):
         repeat_id = args.repeat_id
     else:
         group_phase_sbatch = f'{args.groupdir}/sbatch/{args.phase}_{label}.sbatch'
-        if label != 'allocations':
-            repeat_id = f'{args.repeat_id}/{label}.txt'
-        else:
-            repeat_id = f'{args.repeat_id}/{label}'
+        repeat_id = f'{args.repeat_id}/{label}'
 
     master_script      = f'{args.source}/single_run.py'
     template           = 'extensions/templates/phase.sbatch.template'
@@ -72,10 +69,21 @@ def deploy_array_job(args, logger, time=None, label=None, group_len=None):
     if label:
         jobname = f'{label}_{args.phase}_{args.groupID}'
 
+    # Out/Errs
+    outdir = '/dev/null'
+    errdir = f'{args.groupdir}/errs/{args.phase}_{repeat_id.replace("/","_")}/'
+
+    if os.path.isdir(errdir):
+        os.system(f'rm -rf {errdir}')
+    os.makedirs(errdir)
+
+    errdir = errdir + '%A_%a.log'
+
     sb = sbatch.format(
         jobname,                              # Job name
         time,                                 # Time
         mem,                                  # Memory
+        outdir, errdir,
         args.venvpath,
         args.workdir,
         args.groupdir,
@@ -149,18 +157,34 @@ def main(args) -> None:
         init_config(args)
         return None
     
-    # Make Directories - with allocations
-    for dirx in ['sbatch','allocations']: # Add allocations
+    # Make Directories
+    for dirx in ['sbatch','errs']:
         if not os.path.isdir(f'{args.groupdir}/{dirx}'):
             os.makedirs(f'{args.groupdir}/{dirx}')
 
-    # Experimental bin-packing: Not fully implemented 25/03
-    if args.binpack:
+    if not args.time_allowed:
         allocations = assemble_allocations(args)
+
+        # Check allocations and bands before deploying a significant number of jobs.
+        for alloc in allocations:
+            print(f'{alloc[0]}: ({alloc[1]}) - {alloc[2]} Jobs')
+
+        x = input('Deploy the above allocated dataset jobs with these timings? (Y/N) ')
+        if x != 'Y':
+            raise KeyboardInterrupt
+
+
         for alloc in allocations:
             deploy_array_job(args, logger, label=alloc[0], time=alloc[1], group_len=alloc[2])
     else:
-        deploy_array_job(args, logger)    
+        num_datasets = len(get_codes(args.groupID, args.workdir, f'proj_codes/{args.repeat_id}'))
+        print(f'All Datasets: {args.time_allowed} ({num_datasets})')
+        # Always check before deploying a significant number of jobs.
+        x = input('Deploy the above allocated dataset jobs with these timings? (Y/N) ')
+        if x != 'Y':
+            raise KeyboardInterrupt
+
+        deploy_array_job(args, logger)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')
@@ -172,13 +196,14 @@ if __name__ == '__main__':
     parser.add_argument('-e','--environ',dest='venvpath', help='Path to virtual (e)nvironment (excludes /bin/activate)')
     parser.add_argument('-i', '--input', dest='input', help='input file (for init phase)')
     parser.add_argument('-A', '--alloc-bins', dest='binpack',action='store_true', help='input file (for init phase)')
+    parser.add_argument('--allow-band-increase', dest='band_increase',action='store_true', help='Allow automatic banding increase relative to previous runs.')
 
     # Action-based - standard flags
     parser.add_argument('-f','--forceful',dest='forceful',action='store_true', help='Force overwrite of steps if previously done')
     parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Print helpful statements while running')
     parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
     parser.add_argument('-Q','--quality', dest='quality', action='store_true', help='Quality assured checks - thorough run')
-    parser.add_argument('-b','--bypass-errs', dest='bypass', default='DBSCM', help=BypassSwitch().help())
+    parser.add_argument('-b','--bypass-errs', dest='bypass', default='DBSC', help=BypassSwitch().help())
     parser.add_argument('-B','--backtrack', dest='backtrack', action='store_true', help='Backtrack to previous position, remove files that would be created in this job.')
 
     # Environment variables
