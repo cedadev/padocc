@@ -36,6 +36,21 @@ def get_group_len(workdir, group, repeat_id='main') -> int:
         return 0
 
 def deploy_array_job(args, logger, time=None, label=None, group_len=None):
+    """
+    Configure a single array job for deployment.
+
+    :param args:        (obj) Set of command line arguments supplied by argparse.
+
+    :param logger:      (obj) Logging object for message logging.
+
+    :param time:        (str) Time specified by the current allocation/band
+
+    :param label:       (str) Label to apply to the current allocation/band
+
+    :param group_len:   (int) Integer size of allocation/band group.
+
+    :returns: None
+    """
 
     # Establish some group parameters
     if not group_len:
@@ -94,8 +109,11 @@ def deploy_array_job(args, logger, time=None, label=None, group_len=None):
     sb += f' -b {args.bypass}'
     if args.forceful:
         sb += ' -f'
-    if args.verbose:
-        sb += ' -v'
+    verb = ''
+    for level in range(args.verbose):
+        verb += 'v'
+    if verb != '':
+        sb += f' -{verb}'
     if args.quality:
         sb += ' -Q'
     if args.backtrack:
@@ -203,7 +221,7 @@ if __name__ == '__main__':
     parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Print helpful statements while running')
     parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
     parser.add_argument('-Q','--quality', dest='quality', action='store_true', help='Quality assured checks - thorough run')
-    parser.add_argument('-b','--bypass-errs', dest='bypass', default='DBSC', help=BypassSwitch().help())
+    parser.add_argument('-b','--bypass-errs', dest='bypass', default='DBSCL', help=BypassSwitch().help())
     parser.add_argument('-B','--backtrack', dest='backtrack', action='store_true', help='Backtrack to previous position, remove files that would be created in this job.')
 
     # Environment variables
