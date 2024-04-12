@@ -67,7 +67,52 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="init.html">Initialisation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scan.html">Scanning</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Compute</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Compute</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline.compute.KerchunkConverter"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.convert_to_zarr"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.convert_to_zarr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.grib_to_zarr"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.grib_to_zarr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.hdf5_to_zarr"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.hdf5_to_zarr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.load_individual_ref"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.load_individual_ref()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.ncf3_to_zarr"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.ncf3_to_zarr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.save_individual_ref"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.save_individual_ref()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.tiff_to_zarr"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.tiff_to_zarr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkConverter.try_all_drivers"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.try_all_drivers()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.add_download_link"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.add_download_link()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.add_kerchunk_history"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.add_kerchunk_history()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.combine_and_save"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.combine_and_save()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.construct_virtual_dim"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.construct_virtual_dim()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.create_refs"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.create_refs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.data_to_json"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.data_to_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.data_to_parq"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.data_to_parq()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.load_temp_zattrs"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.load_temp_zattrs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.perform_shape_checks"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.perform_shape_checks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.KerchunkDSProcessor.save_metadata"><code class="docutils literal notranslate"><span class="pre">KerchunkDSProcessor.save_metadata()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline.compute.ProjectProcessor"><code class="docutils literal notranslate"><span class="pre">ProjectProcessor</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.ProjectProcessor.check_time_attributes"><code class="docutils literal notranslate"><span class="pre">ProjectProcessor.check_time_attributes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.ProjectProcessor.clean_attr_array"><code class="docutils literal notranslate"><span class="pre">ProjectProcessor.clean_attr_array()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.ProjectProcessor.clean_attrs"><code class="docutils literal notranslate"><span class="pre">ProjectProcessor.clean_attrs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.ProjectProcessor.collect_details"><code class="docutils literal notranslate"><span class="pre">ProjectProcessor.collect_details()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.ProjectProcessor.correct_metadata"><code class="docutils literal notranslate"><span class="pre">ProjectProcessor.correct_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.ProjectProcessor.determine_dim_specs"><code class="docutils literal notranslate"><span class="pre">ProjectProcessor.determine_dim_specs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.ProjectProcessor.find_concat_dims"><code class="docutils literal notranslate"><span class="pre">ProjectProcessor.find_concat_dims()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.ProjectProcessor.find_identical_dims"><code class="docutils literal notranslate"><span class="pre">ProjectProcessor.find_identical_dims()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.ProjectProcessor.get_timings"><code class="docutils literal notranslate"><span class="pre">ProjectProcessor.get_timings()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.ProjectProcessor.set_filelist"><code class="docutils literal notranslate"><span class="pre">ProjectProcessor.set_filelist()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline.compute.ZarrDSRechunker"><code class="docutils literal notranslate"><span class="pre">ZarrDSRechunker</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.compute.ZarrDSRechunker.obtain_file_subset"><code class="docutils literal notranslate"><span class="pre">ZarrDSRechunker.obtain_file_subset()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline.compute.compute_config"><code class="docutils literal notranslate"><span class="pre">compute_config()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline.compute.configure_kerchunk"><code class="docutils literal notranslate"><span class="pre">configure_kerchunk()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="allocation.html">Allocations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extras.html">Utils</a></li>
@@ -97,8 +142,309 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="compute-module">
-<h1>Compute Module<a class="headerlink" href="#compute-module" title="Permalink to this heading"></a></h1>
+  <section id="module-pipeline.compute">
+<span id="compute-module"></span><h1>Compute Module<a class="headerlink" href="#module-pipeline.compute" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkConverter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.compute.</span></span><span class="sig-name descname"><span class="pre">KerchunkConverter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clogger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass_driver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.KerchunkConverter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class for converting a single file to a Kerchunk reference object</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkConverter.convert_to_zarr">
+<span class="sig-name descname"><span class="pre">convert_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkConverter.convert_to_zarr" title="Permalink to this definition"></a></dt>
+<dd><p>Perform conversion to zarr with exceptions for bypassing driver errors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nfile</strong> – (str) Path to a local native file of an appropriate
+type to be converted.</p></li>
+<li><p><strong>extension</strong> – (str) File extension relating to file type if known.
+All extensions/drivers will be tried first, subsequent
+files in the same dataset will use whatever extension
+worked for the first file as a starting point.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The output of performing a driver if successful, None
+if the driver is unsuccessful. Errors will be bypassed
+if the bypass_driver option is selected for this class.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkConverter.grib_to_zarr">
+<span class="sig-name descname"><span class="pre">grib_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkConverter.grib_to_zarr" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper for converting GRIB type files to Kerchunk</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkConverter.hdf5_to_zarr">
+<span class="sig-name descname"><span class="pre">hdf5_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkConverter.hdf5_to_zarr" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper for converting NetCDF4/HDF5 type files to Kerchunk</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkConverter.load_individual_ref">
+<span class="sig-name descname"><span class="pre">load_individual_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkConverter.load_individual_ref" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper for getting proj_file cache_ref contents</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary of refs if successful, None or raised error otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkConverter.ncf3_to_zarr">
+<span class="sig-name descname"><span class="pre">ncf3_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkConverter.ncf3_to_zarr" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper for converting NetCDF3 type files to Kerchunk</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkConverter.save_individual_ref">
+<span class="sig-name descname"><span class="pre">save_individual_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkConverter.save_individual_ref" title="Permalink to this definition"></a></dt>
+<dd><p>Save each individual set of refs created for each file immediately to reduce
+loss of progress in the event of a failure somewhere in processing.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkConverter.tiff_to_zarr">
+<span class="sig-name descname"><span class="pre">tiff_to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkConverter.tiff_to_zarr" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper for converting GeoTiff type files to Kerchunk</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkConverter.try_all_drivers">
+<span class="sig-name descname"><span class="pre">try_all_drivers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkConverter.try_all_drivers" title="Permalink to this definition"></a></dt>
+<dd><p>Safe creation allows for known issues and tries multiple drivers</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dictionary of Kerchunk references if successful, raises error
+otherwise if unsuccessful.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkDSProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.compute.</span></span><span class="sig-name descname"><span class="pre">KerchunkDSProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.KerchunkDSProcessor" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pipeline.compute.ProjectProcessor" title="pipeline.compute.ProjectProcessor"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProjectProcessor</span></code></a></p>
+<p>Kerchunk Dataset Processor Class, capable of processing a single
+dataset’s worth of input files into a single concatenated Kerchunk 
+file.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkDSProcessor.add_download_link">
+<span class="sig-name descname"><span class="pre">add_download_link</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkDSProcessor.add_download_link" title="Permalink to this definition"></a></dt>
+<dd><p>Add the download link to each of the Kerchunk references</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkDSProcessor.add_kerchunk_history">
+<span class="sig-name descname"><span class="pre">add_kerchunk_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attrs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkDSProcessor.add_kerchunk_history" title="Permalink to this definition"></a></dt>
+<dd><p>Add kerchunk variables to the metadata for this dataset, including 
+creation/update date and version/revision number.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkDSProcessor.combine_and_save">
+<span class="sig-name descname"><span class="pre">combine_and_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zattrs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkDSProcessor.combine_and_save" title="Permalink to this definition"></a></dt>
+<dd><p>Concatenation of ref data for different kerchunk schemes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkDSProcessor.construct_virtual_dim">
+<span class="sig-name descname"><span class="pre">construct_virtual_dim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkDSProcessor.construct_virtual_dim" title="Permalink to this definition"></a></dt>
+<dd><p>Construct a Virtual dimension for stacking multiple files 
+where no suitable concatenation dimension is present.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkDSProcessor.create_refs">
+<span class="sig-name descname"><span class="pre">create_refs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkDSProcessor.create_refs" title="Permalink to this definition"></a></dt>
+<dd><p>Organise creation and loading of refs
+- Load existing cached refs
+- Create new refs
+- Combine metadata and global attributes into a single set
+- Coordinate combining and saving of data</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkDSProcessor.data_to_json">
+<span class="sig-name descname"><span class="pre">data_to_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zattrs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkDSProcessor.data_to_json" title="Permalink to this definition"></a></dt>
+<dd><p>Concatenating to JSON-format Kerchunk file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkDSProcessor.data_to_parq">
+<span class="sig-name descname"><span class="pre">data_to_parq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkDSProcessor.data_to_parq" title="Permalink to this definition"></a></dt>
+<dd><p>Concatenating to Parquet-format Kerchunk store</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkDSProcessor.load_temp_zattrs">
+<span class="sig-name descname"><span class="pre">load_temp_zattrs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkDSProcessor.load_temp_zattrs" title="Permalink to this definition"></a></dt>
+<dd><p>Load global attributes from a ‘temporary’ cache file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkDSProcessor.perform_shape_checks">
+<span class="sig-name descname"><span class="pre">perform_shape_checks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkDSProcessor.perform_shape_checks" title="Permalink to this definition"></a></dt>
+<dd><p>Check the shape of each variable for inconsistencies which will
+require a thorough validation process.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.KerchunkDSProcessor.save_metadata">
+<span class="sig-name descname"><span class="pre">save_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zattrs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.KerchunkDSProcessor.save_metadata" title="Permalink to this definition"></a></dt>
+<dd><p>Cache metadata global attributes in a temporary file.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pipeline.compute.ProjectProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.compute.</span></span><span class="sig-name descname"><span class="pre">ProjectProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verb=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version_no='trial-'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_msg='See</span> <span class="pre">individual</span> <span class="pre">files</span> <span class="pre">for</span> <span class="pre">more</span> <span class="pre">details'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass=&lt;pipeline.utils.BypassSwitch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limiter=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctype=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_concat=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_version=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.ProjectProcessor" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Processing for a single Project, using Zarr/Kerchunk/COG, all class
+attributes common to these three processes kept in one place.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.ProjectProcessor.check_time_attributes">
+<span class="sig-name descname"><span class="pre">check_time_attributes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">times</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.ProjectProcessor.check_time_attributes" title="Permalink to this definition"></a></dt>
+<dd><p>Takes dict of time attributes with lists of values
+- Sort time arrays
+- Assume time_coverage_start, time_coverage_end, duration (2 or 3 variables)</p>
+<p>This Class method is common to all zarr-like conversion types.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.ProjectProcessor.clean_attr_array">
+<span class="sig-name descname"><span class="pre">clean_attr_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allzattrs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.ProjectProcessor.clean_attr_array" title="Permalink to this definition"></a></dt>
+<dd><p>Collect global attributes from all refs:
+- Determine which differ between refs and apply changes</p>
+<p>This Class method is common to all zarr-like conversion types.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.ProjectProcessor.clean_attrs">
+<span class="sig-name descname"><span class="pre">clean_attrs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zattrs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.ProjectProcessor.clean_attrs" title="Permalink to this definition"></a></dt>
+<dd><p>Ammend any saved attributes post-combining
+- Not currently implemented, may be unnecessary</p>
+<p>This Class method is common to all zarr-like conversion types.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.ProjectProcessor.collect_details">
+<span class="sig-name descname"><span class="pre">collect_details</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.ProjectProcessor.collect_details" title="Permalink to this definition"></a></dt>
+<dd><p>Collect kwargs for combining and any special attributes - save to detail file.
+Common class method for all conversion types.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.ProjectProcessor.correct_metadata">
+<span class="sig-name descname"><span class="pre">correct_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allzattrs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.ProjectProcessor.correct_metadata" title="Permalink to this definition"></a></dt>
+<dd><p>General function for correcting metadata
+- Combine all existing metadata in standard way (cleaning arrays)
+- Add updates and remove removals specified by configuration</p>
+<p>This Class method is common to all zarr-like conversion types.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.ProjectProcessor.determine_dim_specs">
+<span class="sig-name descname"><span class="pre">determine_dim_specs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">objs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.ProjectProcessor.determine_dim_specs" title="Permalink to this definition"></a></dt>
+<dd><p>Perform identification of identical_dims and concat_dims here.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.ProjectProcessor.find_concat_dims">
+<span class="sig-name descname"><span class="pre">find_concat_dims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds_examples:</span> <span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger=&lt;pipeline.logs.FalseLogger</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.ProjectProcessor.find_concat_dims" title="Permalink to this definition"></a></dt>
+<dd><p>Find dimensions to use when combining for concatenation
+- Dimensions which change over the set of files must be concatenated together
+- Dimensions which do not change (typically lat/lon) are instead identified as identical_dims</p>
+<p>This Class method is common to all conversion types.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.ProjectProcessor.find_identical_dims">
+<span class="sig-name descname"><span class="pre">find_identical_dims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds_examples:</span> <span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger=&lt;pipeline.logs.FalseLogger</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.ProjectProcessor.find_identical_dims" title="Permalink to this definition"></a></dt>
+<dd><p>Find dimensions and variables that are identical across the set of files.
+- Variables which do not change (typically lat/lon) are identified as identical_dims and not concatenated over the set of files.
+- Variables which do change are concatenated as usual.</p>
+<p>This Class method is common to all conversion types.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.ProjectProcessor.get_timings">
+<span class="sig-name descname"><span class="pre">get_timings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#pipeline.compute.ProjectProcessor.get_timings" title="Permalink to this definition"></a></dt>
+<dd><p>Export timed values if refs were all created from scratch.
+Ref loading invalidates timings so returns None if any refs were loaded
+not created - common class method for all conversion types.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary of timing values if successful and refs were not loaded. 
+If refs were loaded, timings are invalid so returns None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.ProjectProcessor.set_filelist">
+<span class="sig-name descname"><span class="pre">set_filelist</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.ProjectProcessor.set_filelist" title="Permalink to this definition"></a></dt>
+<dd><p>Get the list of files from the filelist for this dataset and set
+to ‘filelist’ list - common class method for all conversion types.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pipeline.compute.ZarrDSRechunker">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.compute.</span></span><span class="sig-name descname"><span class="pre">ZarrDSRechunker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem_allowed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'100MB'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preferences</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.ZarrDSRechunker" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pipeline.compute.ProjectProcessor" title="pipeline.compute.ProjectProcessor"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProjectProcessor</span></code></a></p>
+<p>Rechunk input data types directly into zarr using Pangeo Rechunker.
+- If refs already exist from previous Kerchunk runs, can use these to inform rechunker.
+- Otherwise will have to start from scratch.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pipeline.compute.ZarrDSRechunker.obtain_file_subset">
+<span class="sig-name descname"><span class="pre">obtain_file_subset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.ZarrDSRechunker.obtain_file_subset" title="Permalink to this definition"></a></dt>
+<dd><p>Quick function for obtaining a subset of the whole fileset. Originally
+used to open all the files using Xarray for concatenation later.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.compute.compute_config">
+<span class="sig-prename descclassname"><span class="pre">pipeline.compute.</span></span><span class="sig-name descname"><span class="pre">compute_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.compute.compute_config" title="Permalink to this definition"></a></dt>
+<dd><p>serves as main point of configuration for processing/conversion runs. Can
+set up kerchunk or zarr configurations, check required files are present.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> – (obj) Set of command line arguments supplied by argparse.</p></li>
+<li><p><strong>logger</strong> – (obj) Logging object for info/debug/error messages. Will create a new 
+logger object if not given one.</p></li>
+<li><p><strong>fh</strong> – (str) Path to file for logger I/O when defining new logger.</p></li>
+<li><p><strong>logid</strong> – (str) If creating a new logger, will need an id to distinguish this logger
+from other single processes (typically n of N total processes.)</p></li>
+<li><p><strong>overide_type</strong> – (str) Set as JSON/parq/zarr to specify output cloud format type to use.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.compute.configure_kerchunk">
+<span class="sig-prename descclassname"><span class="pre">pipeline.compute.</span></span><span class="sig-name descname"><span class="pre">configure_kerchunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.compute.configure_kerchunk" title="Permalink to this definition"></a></dt>
+<dd><p>Configure all required steps for Kerchunk processing.
+- Check if output files already exist.
+- Configure timings post-run.</p>
+</dd></dl>
+
 </section>
 
 
