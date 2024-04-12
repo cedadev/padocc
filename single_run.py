@@ -15,7 +15,7 @@ import re
 # Pipeline Modules
 from pipeline.logs import init_logger, reset_file_handler, log_status
 from pipeline.utils import get_attribute, BypassSwitch, get_codes, set_last_run, get_proj_dir
-from pipeline.errors import ProjectCodeError, MissingVariableError, BlacklistProjectCode
+from pipeline.errors import ProjectCodeError, MissingVariableError, BlacklistProjectCode, SourceNotFoundError
 
 def run_init(args, logger, fh=None, **kwargs) -> None:
     """
@@ -121,6 +121,8 @@ def get_proj_code(workdir: str, group: str, pid, repeat_id, subset=0, id=0) -> s
     """
     try:
         proj_codes = get_codes(group, workdir, f'proj_codes/{repeat_id}')
+        if not proj_codes:
+            raise SourceNotFoundError(sfile=f'proj_codes/{repeat_id}')
         proj_code = proj_codes[int(id)*subset + pid]
     except:
         raise ProjectCodeError
@@ -165,40 +167,31 @@ def assemble_single_process(args, logger=None, jobid='', fh=None, logid=None) ->
 
     :returns: None
     """
-
     if not logger:
         logger = init_logger(args.verbose, args.mode, f'{args.phase}', fh=fh, logid=logid)
 
     if not args.phase in drivers:
         logger.error(f'"{args.phase}" not recognised, please select from {list(drivers.keys())}') 
         return None
+    logger.info(f"Initialised single process - {datetime.now().strftime('%H:%M:%S %d/%m/%y')}")
 
     logger.debug('Using attributes:')
     logger.debug(f'proj_code: {args.proj_code}')
     logger.debug(f'proj_dir : {args.proj_dir}')
-
-    # Refresh log for this phase
-    proj_log = f'{args.proj_dir}/phase_logs/{args.phase}.log'
-    if not os.path.isdir(f'{args.proj_dir}/phase_logs'):
-        os.makedirs(f'{args.proj_dir}/phase_logs')
-
-    if jobid != '':
-        if os.path.isfile(proj_log):
-            os.system(f'rm {proj_log}')
-        if os.path.isfile(fh):
-            os.system(f'rm {fh}')
 
     if not args.bypass.skip_report:
         log_status(args.phase, args.proj_dir, 'pending', logger, jobid=jobid, dryrun=args.dryrun)
         if 'allocations' not in args.repeat_id:
             set_last_run(args.proj_dir, args.phase, args.time_allowed)
 
-    if jobid != '':
-        logger = reset_file_handler(logger, args.verbose, proj_log)
-        drivers[args.phase](args, logger, fh=proj_log, logid=logid)
-        logger = reset_file_handler(logger, args.verbose, fh)
-    else:
-        drivers[args.phase](args, logger, fh=proj_log, logid=logid)
+    try:
+        drivers[args.phase](args, logger)
+    except Exception as err:
+        logger.error('Exception caught for single process')
+        if jobid != '':
+            tb = traceback.format_exc()
+            logger.info(tb)
+        raise err
 
     if not args.bypass.skip_report:
         log_status(args.phase, args.proj_dir, 'complete', logger, jobid=jobid, dryrun=args.dryrun)
@@ -224,8 +217,10 @@ def main(args) -> None:
     if args.groupID:
         args.groupdir = f'{args.workdir}/groups/{args.groupID}'
         if jobid != '':
+            # Update to expected path.
             fh = f'{args.groupdir}/errs/{args.phase}_{args.repeat_id.replace("/","_")}/{jobid}_{taskid}.log'
 
+    print(fh, jobid)
     logger      = init_logger(args.verbose, args.mode, 'main', fh=fh)
     args.bypass = BypassSwitch(switch=args.bypass)
 
@@ -292,19 +287,13 @@ def main(args) -> None:
         args.proj_dir  = get_proj_dir(args.proj_code, args.workdir, args.groupID)
 
         # Create any required logging space - done already for this subset.
-
+        proj_fh = None
+        if jobid != '':
+            proj_fh = f'{args.proj_dir}/phase_logs/{args.phase}.log'
         try:
-            assemble_single_process(args, jobid=jobid, fh=fh, logid=id)
+            assemble_single_process(args, jobid=jobid, fh=proj_fh, logid=id)
             passes += 1
         except Exception as err:
-            # Capture all errors - any error handled here is a setup error
-            # Implement allocation override here - no error thrown if using allocation.d
-
-            # Reset file handler back to main.
-            if jobid != '':
-                tb = traceback.format_exc()
-                logger.info(tb)
-                logger = reset_file_handler(logger, args.verbose, fh)
             fails += 1
 
             # Report/log status
@@ -316,7 +305,7 @@ def main(args) -> None:
                 # Messes up the csv if there are commas
                 status = status.replace(',','-')
                 log_status(args.phase, args.proj_dir, status, logger, jobid=jobid, dryrun=args.dryrun)
-            elif not args.binpack:
+            elif not args.binpack and args.subset == 1:
                 # Only raise error if we're not bin packing AND skipping the reporting.
                 # If reporting is skipped, the error is not displayed directly but fails are recorded at the end.
                 raise err
@@ -335,9 +324,9 @@ if __name__ == '__main__':
     parser.add_argument('-f','--forceful',dest='forceful',      action='store_true', help='Force overwrite of steps if previously done')
     parser.add_argument('-v','--verbose', dest='verbose',       action='count', default=0, help='Print helpful statements while running')
     parser.add_argument('-d','--dryrun',  dest='dryrun',        action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
-    parser.add_argument('-Q','--quality', dest='quality',       action='store_true', help='Quality assured checks - thorough run')
+    parser.add_argument('-Q','--quality', dest='quality',       action='store_true', help='Create refs from scratch (no loading), use all NetCDF files in validation')
     parser.add_argument('-B','--backtrack',   dest='backtrack', action='store_true', help='Backtrack to previous position, remove files that would be created in this job.')
-    parser.add_argument('-A', '--alloc-bins', dest='binpack',   action='store_true', help='input file (for init phase)')
+    parser.add_argument('-A', '--alloc-bins', dest='binpack',   action='store_true', help='Use binpacking for allocations (otherwise will use banding)')
 
     # Environment variables
     parser.add_argument('-w','--workdir',   dest='workdir',      help='Working directory for pipeline')
@@ -352,7 +341,7 @@ if __name__ == '__main__':
     parser.add_argument('-r','--repeat_id', dest='repeat_id',      default='main',     help='Repeat id (1 if first time running, <phase>_<repeat> otherwise)')
 
     # Specialised
-    parser.add_argument('-b','--bypass-errs',   dest='bypass', default='DBSCR', help=BypassSwitch().help())
+    parser.add_argument('-b','--bypass-errs',   dest='bypass', default='DBSCLR', help=BypassSwitch().help())
     parser.add_argument('-n','--new_version',   dest='new_version',              help='If present, create a new version')
     parser.add_argument('-m','--mode',          dest='mode',   default=None,     help='Print or record information (log or std)')
     parser.add_argument('-O','--override_type', dest='override_type',            help='Specify cloud-format output type, overrides any determination by pipeline.')
