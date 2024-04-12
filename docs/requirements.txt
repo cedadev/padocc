@@ -8,3 +8,4 @@ scipy==1.10.1
 dask==2023.3.1
 binpacking==1.5.2
 distributed==2023.3.1
+rechunker==0.5.2
