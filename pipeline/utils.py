@@ -7,8 +7,19 @@ import xarray as xr
 import json
 import fsspec
 import logging
+import math
+import numpy as np
+import re
 
-from pipeline.errors import MissingVariableError, MissingKerchunkError, ChunkDataError
+from pipeline.errors import MissingVariableError, MissingKerchunkError, ChunkDataError, \
+                            KerchunkDecodeError
+from pipeline.logs import FalseLogger
+
+times = {
+    'scan'    :'10:00', # No prediction possible prior to scanning
+    'compute' :'60:00',
+    'validate':'30:00' # From CMIP experiments - no reliable prediction mechanism possible
+}
 
 class BypassSwitch:
     """Class to represent all bypass switches throughout the pipeline.
@@ -16,9 +27,9 @@ class BypassSwitch:
     switches stored in this class.
     """
 
-    def __init__(self, switch='DBSCMR'):
+    def __init__(self, switch='DBSCLR'):
         if switch.startswith('+'):
-            switch = 'DBSCMR' + switch[1:]
+            switch = 'DBSCLR' + switch[1:]
         self.switch = switch
         if type(switch) == str:
             switch = list(switch)
@@ -29,8 +40,8 @@ class BypassSwitch:
         self.skip_data_sum = ('C' in switch)
         self.skip_xkshape  = ('X' in switch)
         self.skip_report   = ('R' in switch)
-
-        # Removed scanfile and memory skips
+        self.skip_scan     = ('F' in switch) # Fasttrack
+        self.skip_links    = ('L' in switch)
 
     def __str__(self):
         """Return the switch string (letters representing switches)"""
@@ -39,16 +50,21 @@ class BypassSwitch:
     def help(self):
         return str("""
 Bypass switch options: \n
-  "F" - * Skip individual file scanning errors.
   "D" - * Skip driver failures - Pipeline tries different options for NetCDF (default).
-      -   Only need to turn this skip off if all drivers fail (KerchunkFatalDriverError).
-  "B" -   Skip Box compute errors.
+      -   Only need to turn this skip off if all drivers fail (KerchunkDriverFatalError).
+  "B" - * Skip Box compute errors.
   "S" - * Skip Soft fails (NaN-only boxes in validation) (default).
   "C" - * Skip calculation (data sum) errors (time array typically cannot be summed) (default).
-  "M" -   Skip memory checks (validate/compute aborts if utilisation estimate exceeds cap).
+  "X" -   Skip initial shape errors, by attempting XKShape tolerance method (special case.)
+  "R" -   Skip reporting to status_log which becomes visible with assessor. Reporting is skipped
+          by default in single_run.py but overridden when using group_run.py so any serial
+          testing does not by default report the error experienced to the status log for that project.
+  "F" -   Skip scanning (fasttrack) and go straight to compute. Required if running compute before scan
+          is attempted.
+  "L" -   Skip adding links in compute (download links) - this will be required on ingest.
 """)
   
-def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file') -> xr.Dataset:
+def open_kerchunk(kfile: str, logger, isparq=False, retry=False, attempt=1, **kwargs) -> xr.Dataset:
     """
     Open kerchunk file from JSON/parquet formats
 
@@ -76,9 +92,9 @@ def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file') -> x
             backend_kwargs={"consolidated": False, "decode_times": False}
         )
     else:
-        logger.debug('Opening Kerchunk JSON file')
+        logger.info(f'Attempting to open Kerchunk JSON file - attempt {attempt}')
         try:
-            mapper  = fsspec.get_mapper('reference://',fo=kfile, target_options={"compression":None}, remote_protocol=remote_protocol)
+            mapper  = fsspec.get_mapper('reference://',fo=kfile, target_options={"compression":None}, **kwargs)
         except json.JSONDecodeError as err:
             logger.error(f"Kerchunk file {kfile} appears to be empty")
             raise MissingKerchunkError
@@ -91,7 +107,16 @@ def open_kerchunk(kfile: str, logger, isparq=False, remote_protocol='file') -> x
                 ds = xr.open_zarr(mapper, consolidated=False, decode_times=True)
             except OverflowError:
                 ds = None
+            except KeyError as err:
+                if re.match('.*https.*',str(err)) and not retry:
+                    # RemoteProtocol is not https - retry with correct protocol
+                    logger.warning('Found KeyError "https" on opening the Kerchunk file - retrying with local filepaths.')
+                    return open_kerchunk(kfile, logger, isparq=isparq, retry=True)
+                else:
+                    raise err
             except Exception as err:
+                if 'decode' in str(err):
+                    raise KerchunkDecodeError
                 raise err #MissingKerchunkError(message=f'Failed to open kerchunk file {kfile}')
         if not ds:
             raise ChunkDataError
@@ -147,6 +172,31 @@ def mem_to_val(value: str) -> float:
         'PB': 1000000000000000}
     suff = suffixes[value.split(' ')[1]]
     return float(value.split(' ')[0]) * suff
+
+def get_blacklist(group: str, workdir: str) -> list:
+    """
+    Returns a list of the project codes given a filename (repeat id)
+
+    :param group:       (str) Name of current group or path to group directory
+                        (groupdir) in which case workdir can be left as None.
+
+    :param workdir:     (str) Path to working directory or None. If this is None,
+                        group value will be assumed as the groupdir path.
+
+    :returns: A list of codes if the file is found, an empty list otherwise.
+    """
+    if workdir:
+        codefile = f'{workdir}/groups/{group}/blacklist_codes.txt'
+    else:
+        codefile = f'{group}/blacklist_codes.txt'
+    if os.path.isfile(codefile):
+        with open(codefile) as f:
+            contents = [r.strip().split(',') for r in f.readlines()]
+            if type(contents[0]) != list:
+                contents = [contents]
+            return contents
+    else:
+        return []
 
 def get_codes(group: str, workdir: str , filename: str, extension='.txt') -> list:
     """
@@ -208,11 +258,22 @@ def set_codes(group: str, workdir: str, filename: str, contents, extension='.txt
     with open(codefile, ow) as f:
         f.write(contents)
     
+def set_last_run(proj_dir, phase, time, logger=FalseLogger()) -> None:
+    detail = get_proj_file(proj_dir, 'detail-cfg.json')
+    if detail:
+        detail['last_run'] = (phase, time)
+        set_proj_file(proj_dir, 'detail-cfg.json', detail, logger)
+
+def get_last_run(proj_dir) -> str:
+    detail = get_proj_file(proj_dir, 'detail-cfg.json')
+    if detail:
+        return detail['last_run']
+
 def get_proj_file(proj_dir: str, proj_file: str) -> dict:
     """
     Returns the contents of a project file within a project code directory.
 
-    :param proj_code:   (str) The project code in string format (DOI)
+    :param proj_dir:    (str) The project code directory path.
 
     :param proj_file:   (str) Name of a file to access within the project directory.
 
@@ -238,7 +299,7 @@ def set_proj_file(proj_dir: str, proj_file: str, contents: dict, logger: logging
     """
     Overwrite the contents of a project file within a project code directory.
 
-    :param proj_code:   (str) The project code in string format (DOI).
+    :param proj_dir:    (str) The project code directory path.
 
     :param proj_file:   (str) Name of a file to access within the project directory.
 
@@ -274,3 +335,37 @@ def find_zarrays(refs: dict) -> dict:
         if '.zarray' in r:
             zarrays[r] = refs['refs'][r]
     return zarrays
+
+def find_divisor(num, preferences={'range':{'max':10000, 'min':2000}}):
+
+    # Using numpy for this is MUCH SLOWER!
+    divs = [x for x in range(1, int(math.sqrt(num))+1) if num % x == 0]
+    opps = [int(num/x) for x in divs] # get divisors > sqrt(n) by division instead
+    divisors = np.array(list(set(divs + opps)))
+
+    divset = []
+    range_allowed = preferences['range']['max'] - preferences['range']['min']
+    iterations = 0
+    while len(divset) == 0:
+        divset = divisors[np.logical_and(
+            divisors < preferences['range']['max'] + range_allowed*iterations,
+            divisors > preferences['range']['min']/(iterations+1)
+        )]
+        iterations += 1
+
+    divisor = int(np.median(divset))
+    return divisor
+
+def find_closest(num, closest):
+
+    divs = [x for x in range(1, int(math.sqrt(num))+1) if num % x == 0]
+    opps = [int(num/x) for x in divs] # get divisors > sqrt(n) by division instead
+    divisors = np.array(list(set(divs + opps)))
+
+    min_diff = 99999999999
+    closest_div = None
+    for d in divisors:
+        if abs(d-closest) < min_diff:
+            min_diff = abs(d-closest)
+            closest_div = d
+    return closest_div

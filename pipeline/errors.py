@@ -34,6 +34,27 @@ class PartialDriverError(KerchunkException):
     def get_str(self):
         return 'PartialDriverError'
 
+class NaNComparisonError(KerchunkException):
+    """When comparing NaN values between objects - different values found"""
+    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+        self.message = f"NaN values do not match between comparison objects"
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'NaNComparisonError'
+
+ 
+class RemoteProtocolError(KerchunkException):
+    """All drivers failed (NetCDF3/Hdf5/Tiff) for one or more files within the list"""
+    def __init__(self,filenums=None, verbose=0, proj_code=None, groupdir=None):
+        self.message = f"All drivers failed when performing conversion for files {filenums}"
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'PartialDriverError'
+
 class KerchunkDriverFatalError(KerchunkException):
     """All drivers failed (NetCDF3/Hdf5/Tiff) - run without driver bypass to assess the issue with each driver type."""
     def __init__(self,verbose=0, proj_code=None, groupdir=None):
@@ -157,7 +178,7 @@ class VariableMismatchError(KerchunkException):
 class ShapeMismatchError(KerchunkException):
     """Shapes of ND arrays do not match between Kerchunk and Xarray objects - when using a subset of the Netcdf files."""
     def __init__(self, var={}, first={}, second={}, verbose=0, proj_code=None, groupdir=None):
-        self.message = f'Kerchunk/NetCDF mismatch for variable {var} with shapes - K {first} vs N {second}'
+        self.message = f'Kerchunk/NetCDF mismatch for variable {var} with shapes - K {first} vs X {second}'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
@@ -233,3 +254,44 @@ class ConcatFatalError(KerchunkException):
             self.__class__.__module__ = 'builtins'
     def get_str(self):
         return 'ConcatFatalError'
+    
+class SourceNotFoundError(KerchunkException):
+    """Source File could not be located."""
+    def __init__(self, sfile=None, verbose=0, proj_code=None, groupdir=None):
+        self.message = f"Source file could not be located: {sfile}"
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'SourceNotFoundError'
+    
+# Potentially useful but currently unused.
+class ArchiveConnectError(KerchunkException):
+    """Connection to the CEDA Archive could not be established"""
+    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+        self.message = f"Connection verification to the CEDA archive failed - {proj_code}"
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'ArchiveConnectError'
+
+class KerchunkDecodeError(KerchunkException):
+    """Decoding of Kerchunk file failed - likely a time array issue."""
+    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+        self.message = f"Decoding of Kerchunk file failed - likely a time array issue."
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'KerchunkDecodeError'
+    
+class FullsetRequiredError(KerchunkException):
+    """This project must be validated using the full set of files."""
+    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+        self.message = f"This project must be validated by opening the full set of files."
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'FullsetRequiredError'

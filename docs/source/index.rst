@@ -35,6 +35,7 @@ The pipeline consists of four central phases, with an additional phase for inges
    Padocc Flags/Options <execution>
    Assessor Tool Overview <assess-overview>
    Error Codes <errors>
+   Developer's Guide <dev-guide>
 
 .. toctree::
    :maxdepth: 2
@@ -51,6 +52,7 @@ The pipeline consists of four central phases, with an additional phase for inges
    Scanning <scan>
    Compute <compute>
    Validate <validate>
+   Allocations <allocation>
    Utils <extras>
 
 

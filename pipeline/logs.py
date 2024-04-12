@@ -38,12 +38,24 @@ def log_status(phase, proj_dir, status, logger, jobid='', dryrun=''):
         lines = [r.strip() for r in f.readlines()]
 
     # Add new content from most recent run
+    status = status.replace(',', '.').replace('\n','.')
     lines.append(f'{phase},{status},{datetime.now().strftime("%H:%M %D")},{jobid},{dryrun}')
 
     # Save content
     with open(status_log, 'w') as f:
         f.write('\n'.join(lines))
     logger.info(f'Updated new status: {phase} - {status}')
+
+def get_log_status(proj_dir, last=True):
+    current = {}
+    status_log = f'{proj_dir}/status_log.csv'
+    if os.path.isfile(status_log):
+        with open(status_log) as f:
+            current = [r.strip() for r in f.readlines()]
+    if last:
+        return current[-1]
+    else:
+        return current
 
 class FalseLogger:
     def __init__(self):
@@ -77,6 +89,7 @@ def reset_file_handler(logger, verbose, new_log):
 
 def init_logger(verbose, mode, name, fh=None, logid=None):
     """Logger object init and configure with formatting"""
+
     verbose = min(verbose, len(levels)-1)
     if logid != None:
         name = f'{name}_{logid}'
@@ -92,10 +105,17 @@ def init_logger(verbose, mode, name, fh=None, logid=None):
     logger.addHandler(ch)
 
     if fh:
+        fdir = '/'.join(fh.split('/')[:-1])
+        if not os.path.isdir(fdir):
+            os.makedirs(fdir)
+        if os.path.isfile(fh):
+            os.system(f'rm {fh}')
+
+        os.system(f'touch {fh}')
+
         handle = logging.FileHandler(fh)
         handle.setLevel(levels[verbose])
         handle.setFormatter(formatter)
         logger.addHandler(handle)
-        print(fh)
 
     return logger

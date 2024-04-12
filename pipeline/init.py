@@ -250,10 +250,27 @@ def make_directories(args, logger):
 
     logger.info(f'Written as group ID: {args.groupID}')
 
-def init_config(args, fh=None, logid=None, **kwargs):
-    """Main configuration script, load configurations from input sources"""
+def init_config(args, logger, fh=None, logid=None, **kwargs):
+    """
+    Main configuration script, load configurations from input sources, determine
+    input file type and use appropriate functions to instantiate group and project
+    directories.
+    
+    :param args:        (obj) Set of command line arguments supplied by argparse.
 
-    logger = init_logger(args.verbose, args.mode, 'init',fh=fh, logid=logid)
+    :param logger:      (obj) Logging object for info/debug/error messages. Will create a new 
+                        logger object if not given one.
+
+    :param fh:          (str) Path to file for logger I/O when defining new logger.
+
+    :param logid:       (str) If creating a new logger, will need an id to distinguish this logger
+                        from other single processes (typically n of N total processes.)
+
+    :returns:   None
+    """
+
+    if not logger:
+        logger = init_logger(args.verbose, args.mode, 'init',fh=fh, logid=logid)
     logger.info('Starting initialisation')
 
     if not args.input.startswith('/'):

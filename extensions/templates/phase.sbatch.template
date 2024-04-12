@@ -5,8 +5,8 @@
 #SBATCH --time={}
 #SBATCH --mem={}
 
-#SBATCH -o /dev/null
-#SBATCH -e /dev/null
+#SBATCH -o {}
+#SBATCH -e {}
 
 module add jaspy
 source {}/bin/activate
