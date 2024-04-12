@@ -241,7 +241,8 @@ class ProjectProcessor:
         self.dryrun      = dryrun
         self.updates, self.removals = False, False
 
-        self.loaded_refs = False
+        self.loaded_refs      = False
+        self.quality_required = False
 
         if groupID:
             self.proj_dir = f'{self.workdir}/in_progress/{groupID}/{self.proj_code}'
@@ -312,7 +313,7 @@ class ProjectProcessor:
             os.system(f'rm -rf {self.cache}/*')
 
         self.combine_kwargs = {} # Now using concat_dims and identical dims finders.
-        self.create_kwargs  = {'inline_threshold':1000}
+        self.create_kwargs  = {'inline_threshold':1}
         self.pre_kwargs     = {}
 
         self.special_attrs = {}
@@ -373,6 +374,8 @@ class ProjectProcessor:
         self.detail['combine_kwargs'] = self.combine_kwargs
         if self.special_attrs:
             self.detail['special_attrs'] = list(self.special_attrs.keys())
+
+        self.detail['quality_required'] = self.quality_required
         return self.detail
 
     def find_concat_dims(self, ds_examples: list, logger=FalseLogger()) -> None:
@@ -596,6 +599,8 @@ class KerchunkDSProcessor(ProjectProcessor):
     def __init__(self, proj_code, **kwargs):
         super().__init__(proj_code, **kwargs)
 
+        self.var_shapes       = {}
+
     def add_download_link(self, refs: dict) -> dict:
         """
         Add the download link to each of the Kerchunk references
@@ -765,8 +770,11 @@ class KerchunkDSProcessor(ProjectProcessor):
             mzz = refs[0]
         
         # This is now done at ingest, post-validation due to Network Issues
-        #mzz['refs'] = self.add_download_link(mzz['refs'])
-        self.detail['links_added'] = False
+        if not self.bypass.skip_links:
+            mzz['refs'] = self.add_download_link(mzz['refs'])
+            self.detail['links_added'] = True
+        else:
+            self.detail['links_added'] = False
 
         if not self.dryrun and not self.partial:
             with open(self.outfile,'w') as f:
@@ -802,6 +810,20 @@ class KerchunkDSProcessor(ProjectProcessor):
             self.logger.debug('No attributes loaded from temp store')
             return None
         return zattrs
+    
+    def perform_shape_checks(self, ref: dict) -> None:
+        if 'variables' in self.detail:
+            variables = self.detail['variables']
+            checklist = [f'{v}/.zarray' for v in variables]
+        else:
+            checklist = [r for r in ref['refs'].keys() if '.zarray' in r]
+
+        for key in checklist:
+            zarray = json.load(ref['refs'][key])
+            if not self.var_shapes[key]:
+                self.var_shapes[key] = zarray['shape']
+            if self.var_shapes[key] != zarray['shape']:
+                self.quality_required = True
 
     def create_refs(self) -> None:
         """Organise creation and loading of refs
@@ -849,6 +871,8 @@ class KerchunkDSProcessor(ProjectProcessor):
                 refs.append(ref)
                 cache_ref = f'{self.cache}/{x}.json'
                 converter.save_individual_ref(ref, cache_ref, forceful=self.forceful)
+                if not self.quality_required:
+                    self.perform_shape_checks(ref)
 
         self.success = converter.success
         # Compute mean conversion time for this set.
