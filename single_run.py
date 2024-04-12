@@ -220,7 +220,6 @@ def main(args) -> None:
             # Update to expected path.
             fh = f'{args.groupdir}/errs/{args.phase}_{args.repeat_id.replace("/","_")}/{jobid}_{taskid}.log'
 
-    print(fh, jobid)
     logger      = init_logger(args.verbose, args.mode, 'main', fh=fh)
     args.bypass = BypassSwitch(switch=args.bypass)
 
