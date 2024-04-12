@@ -1,6 +1,13 @@
 # Summary of Useful features/additions to Padocc
 A list of features that would be potentially useful to add to Padocc in the future for various applications
 
+## 0. Indexing of Kerchunk files (post-validation)
+An elasticsearch index to hold records/data of all Kerchunk files produced in the pipeline (beyond EODH STAC),
+for all projects i.e CCI, EODH etc.
+See `extensions/templates/index-template.md` for the ideal structure of the index records. `index_cat.py` script
+for adding functionality for pushing to this index as a part of the pipeline. Will need an ID generator function 
+(see cedadev/flight-pipeline) for an example.
+
 ## 1. Validation Improvements - Priority: High
 Running locally seems to always have better success on validation than when using SLURM. This 
 is most likely due to issues when receiving the NetCDF chunks from dap service from within a
