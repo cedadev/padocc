@@ -812,6 +812,10 @@ class KerchunkDSProcessor(ProjectProcessor):
         return zattrs
     
     def perform_shape_checks(self, ref: dict) -> None:
+        """
+        Check the shape of each variable for inconsistencies which will
+        require a thorough validation process.
+        """
         if 'variables' in self.detail:
             variables = self.detail['variables']
             checklist = [f'{v}/.zarray' for v in variables]
