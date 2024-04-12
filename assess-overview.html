@@ -53,12 +53,19 @@
 <li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Assessor Tool Overview</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#overall-progress-of-the-pipeline">1. Overall Progress of the Pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#checking-errors">2. Checking errors</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#special-display-options">3. Special Display options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#progress-of-a-group">1. Progress of a group</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checking-errors">1.1. Checking errors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#display-options">2. Display options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#match-special-attributes">3. Match Special Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#summarise-data">4. Summarise data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#upgrade-kerchunk-version">5. Upgrade Kerchunk version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cleanup">6. Cleanup</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-guide.html">Developer Guide - Adding new functionality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-modes-in-assessor">1. New Modes in Assessor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-processors-for-compute">2. New Processors for Compute</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">CLI Tool Source:</span></p>
 <ul>
@@ -71,6 +78,7 @@
 <li class="toctree-l1"><a class="reference internal" href="scan.html">Scanning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="compute.html">Compute</a></li>
 <li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="allocation.html">Allocations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extras.html">Utils</a></li>
 </ul>
 
@@ -115,13 +123,16 @@
 <dl class="simple">
 <dt>Where the operation can be one of the below options:</dt><dd><ul class="simple">
 <li><p>Progress: Get a general overview of the pipeline; how many datasets have completed or are stuck on each phase.</p></li>
-<li><p>Summarise: Get an assessment of the data processed for this group</p></li>
 <li><p>Display: Display a specific type of information about the pipeline (blacklisted codes, datasets with virtual dimensions or using parquet)</p></li>
+<li><p>Match: Match specific attributes within the <code class="docutils literal notranslate"><span class="pre">detail-cfg.json</span></code> file (and save to a new ID).</p></li>
+<li><p>Summarise: Get an assessment of the data processed for this group</p></li>
+<li><p>Upgrade: Update the version of a set of kerchunk files (includes internal metadata standard updates (timestamped, reason provided).</p></li>
+<li><p>Cleanup: Remove cached files as part of group runs (errs, outs, repeat_ids etc.)</p></li>
 </ul>
 </dd>
 </dl>
-<section id="overall-progress-of-the-pipeline">
-<h2>1. Overall Progress of the Pipeline<a class="headerlink" href="#overall-progress-of-the-pipeline" title="Permalink to this heading"></a></h2>
+<section id="progress-of-a-group">
+<h2>1. Progress of a group<a class="headerlink" href="#progress-of-a-group" title="Permalink to this heading"></a></h2>
 <p>To see the general status of the pipeline for a given group:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">progress</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span>
 </pre></div>
@@ -157,7 +168,7 @@
 <p>The last flag <code class="docutils literal notranslate"><span class="pre">`-W`</span></code> is required when writing an output file from this program, otherwise the program will dryrun and produce no files.</p>
 </section>
 <section id="checking-errors">
-<h2>2. Checking errors<a class="headerlink" href="#checking-errors" title="Permalink to this heading"></a></h2>
+<h2>1.1. Checking errors<a class="headerlink" href="#checking-errors" title="Permalink to this heading"></a></h2>
 <p>Check what repeat labels are available already using:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">display</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">s</span> <span class="n">labels</span>
 </pre></div>
@@ -171,15 +182,55 @@
 </pre></div>
 </div>
 <p>Following from this, you may want to rerun the pipeline for just one type of error previously found:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">progress</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span><span class="n">old_repeat_id</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;type_of_error&quot;</span> <span class="o">-</span><span class="n">p</span> <span class="n">scan</span> <span class="o">-</span><span class="n">n</span> <span class="o">&lt;</span><span class="n">new_repeat_id</span><span class="o">&gt;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">progress</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span><span class="n">old_repeat_id</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;type_of_error&quot;</span> <span class="o">-</span><span class="n">p</span> <span class="n">scan</span> <span class="o">-</span><span class="n">n</span> <span class="o">&lt;</span><span class="n">new_repeat_id</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">W</span>
 </pre></div>
 </div>
-<p>Note that if you are looking at a specific repeat ID, you can forego the phase (-p) flag, since it is expected this set would appear in the same phase anyway.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you are looking at a specific repeat ID, you can forego the phase (-p) flag, since it is expected this set would appear in the same phase anyway.
+The (-W) write flag is also required for any commands that would output data to a file. If the file already exists, you will need to specify an override
+level (-O or -OO) for merging or overwriting existing data (project code lists) respectively.</p>
+</div>
 </section>
-<section id="special-display-options">
-<h2>3. Special Display options<a class="headerlink" href="#special-display-options" title="Permalink to this heading"></a></h2>
+<section id="display-options">
+<h2>2. Display options<a class="headerlink" href="#display-options" title="Permalink to this heading"></a></h2>
 <p>Check how many of the datasets in a group have virtual dimensions</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">display</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">s</span> <span class="n">virtuals</span>
+</pre></div>
+</div>
+</section>
+<section id="match-special-attributes">
+<h2>3. Match Special Attributes<a class="headerlink" href="#match-special-attributes" title="Permalink to this heading"></a></h2>
+<p>Find the project codes where a specific attribute in <code class="docutils literal notranslate"><span class="pre">detail-cfg.json</span></code> matches some given value</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">match</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;links_added:False&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="summarise-data">
+<h2>4. Summarise data<a class="headerlink" href="#summarise-data" title="Permalink to this heading"></a></h2>
+<p>Summarise the Native/Kerchunk data generated (thus far) for an existing group.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">summarise</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="upgrade-kerchunk-version">
+<h2>5. Upgrade Kerchunk version<a class="headerlink" href="#upgrade-kerchunk-version" title="Permalink to this heading"></a></h2>
+<p>Upgrade all kerchunk files (compute-validate stages) to a new version for a given reason. This is the ‘formal’ way of updating the version.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">upgrade</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span><span class="n">codes_to_upgrade</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">R</span> <span class="s2">&quot;Reason for upgrade&quot;</span> <span class="o">-</span><span class="n">W</span> <span class="o">-</span><span class="n">U</span> <span class="s2">&quot;krX.X&quot;</span> <span class="c1"># New version id</span>
+</pre></div>
+</div>
+</section>
+<section id="cleanup">
+<h2>6. Cleanup<a class="headerlink" href="#cleanup" title="Permalink to this heading"></a></h2>
+<dl class="simple">
+<dt>“Clean” or remove specific types of files:</dt><dd><ul class="simple">
+<li><p>Errors/Outputs in the correct places</p></li>
+<li><p>“labels” i.e repeat_ids (including allocations and bands under that repeat_id)</p></li>
+</ul>
+</dd>
+</dl>
+<p>In the below example we will remove every created <code class="docutils literal notranslate"><span class="pre">repeat_id</span></code> (equivalent terminology to ‘label’) except for <code class="docutils literal notranslate"><span class="pre">main</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">cleanup</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">c</span> <span class="n">labels</span>
 </pre></div>
 </div>
 </section>

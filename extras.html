@@ -22,7 +22,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Validation Module" href="validate.html" /> 
+    <link rel="prev" title="Allocation Module" href="allocation.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -53,6 +53,9 @@
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-guide.html">Developer Guide - Adding new functionality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-modes-in-assessor">1. New Modes in Assessor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-processors-for-compute">2. New Processors for Compute</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">CLI Tool Source:</span></p>
 <ul>
@@ -65,12 +68,14 @@
 <li class="toctree-l1"><a class="reference internal" href="scan.html">Scanning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="compute.html">Compute</a></li>
 <li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="allocation.html">Allocations</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Utils</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-pipeline.utils">Utilities</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#pipeline.utils.BypassSwitch"><code class="docutils literal notranslate"><span class="pre">BypassSwitch</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#pipeline.utils.find_zarrays"><code class="docutils literal notranslate"><span class="pre">find_zarrays()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#pipeline.utils.format_str"><code class="docutils literal notranslate"><span class="pre">format_str()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#pipeline.utils.get_attribute"><code class="docutils literal notranslate"><span class="pre">get_attribute()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline.utils.get_blacklist"><code class="docutils literal notranslate"><span class="pre">get_blacklist()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#pipeline.utils.get_codes"><code class="docutils literal notranslate"><span class="pre">get_codes()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#pipeline.utils.get_proj_dir"><code class="docutils literal notranslate"><span class="pre">get_proj_dir()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#pipeline.utils.get_proj_file"><code class="docutils literal notranslate"><span class="pre">get_proj_file()</span></code></a></li>
@@ -119,7 +124,7 @@
 <span id="utilities"></span><h2>Utilities<a class="headerlink" href="#module-pipeline.utils" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="pipeline.utils.BypassSwitch">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.utils.</span></span><span class="sig-name descname"><span class="pre">BypassSwitch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">switch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'DBSCMR'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.utils.BypassSwitch" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pipeline.utils.</span></span><span class="sig-name descname"><span class="pre">BypassSwitch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">switch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'DBSCLR'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.utils.BypassSwitch" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class to represent all bypass switches throughout the pipeline.
 Requires a switch string which is used to enable/disable specific pipeline 
@@ -153,6 +158,25 @@ value of variable from Environment or ParseArgs object, or reports failure.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Value of either environment variable or argparse value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pipeline.utils.get_blacklist">
+<span class="sig-prename descclassname"><span class="pre">pipeline.utils.</span></span><span class="sig-name descname"><span class="pre">get_blacklist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#pipeline.utils.get_blacklist" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a list of the project codes given a filename (repeat id)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group</strong> – (str) Name of current group or path to group directory
+(groupdir) in which case workdir can be left as None.</p></li>
+<li><p><strong>workdir</strong> – (str) Path to working directory or None. If this is None,
+group value will be assumed as the groupdir path.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of codes if the file is found, an empty list otherwise.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -193,7 +217,7 @@ May be redundant in the future if a ‘serial’ directory is added.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>proj_code</strong> – (str) The project code in string format (DOI)</p></li>
+<li><p><strong>proj_dir</strong> – (str) The project code directory path.</p></li>
 <li><p><strong>proj_file</strong> – (str) Name of a file to access within the project directory.</p></li>
 </ul>
 </dd>
@@ -211,7 +235,7 @@ May be redundant in the future if a ‘serial’ directory is added.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pipeline.utils.open_kerchunk">
-<span class="sig-prename descclassname"><span class="pre">pipeline.utils.</span></span><span class="sig-name descname"><span class="pre">open_kerchunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isparq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote_protocol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'file'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dataset</span></span></span><a class="headerlink" href="#pipeline.utils.open_kerchunk" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">pipeline.utils.</span></span><span class="sig-name descname"><span class="pre">open_kerchunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isparq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attempt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dataset</span></span></span><a class="headerlink" href="#pipeline.utils.open_kerchunk" title="Permalink to this definition"></a></dt>
 <dd><p>Open kerchunk file from JSON/parquet formats</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -260,7 +284,7 @@ overwrite the file contents or append to existing values.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>proj_code</strong> – (str) The project code in string format (DOI).</p></li>
+<li><p><strong>proj_dir</strong> – (str) The project code directory path.</p></li>
 <li><p><strong>proj_file</strong> – (str) Name of a file to access within the project directory.</p></li>
 <li><p><strong>contents</strong> – (dict) Dictionary to write into json format config file within
 the project directory.</p></li>
@@ -296,7 +320,7 @@ the project directory.</p></li>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="validate.html" class="btn btn-neutral float-left" title="Validation Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="allocation.html" class="btn btn-neutral float-left" title="Allocation Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>

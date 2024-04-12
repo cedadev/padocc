@@ -23,7 +23,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Pipeline Execution" href="execution-source.html" />
-    <link rel="prev" title="Custom Pipeline Errors" href="errors.html" /> 
+    <link rel="prev" title="Developer Guide - Adding new functionality" href="dev-guide.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -54,6 +54,9 @@
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-guide.html">Developer Guide - Adding new functionality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-modes-in-assessor">1. New Modes in Assessor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-processors-for-compute">2. New Processors for Compute</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">CLI Tool Source:</span></p>
 <ul class="current">
@@ -64,10 +67,12 @@
 <li class="toctree-l2"><a class="reference internal" href="#assess.examine_log"><code class="docutils literal notranslate"><span class="pre">examine_log()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#assess.get_index_of_code"><code class="docutils literal notranslate"><span class="pre">get_index_of_code()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#assess.get_rerun_command"><code class="docutils literal notranslate"><span class="pre">get_rerun_command()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#assess.match_type"><code class="docutils literal notranslate"><span class="pre">match_type()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#assess.merge_old_new"><code class="docutils literal notranslate"><span class="pre">merge_old_new()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#assess.progress_check"><code class="docutils literal notranslate"><span class="pre">progress_check()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#assess.save_selection"><code class="docutils literal notranslate"><span class="pre">save_selection()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#assess.show_options"><code class="docutils literal notranslate"><span class="pre">show_options()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#assess.status_log_display"><code class="docutils literal notranslate"><span class="pre">status_log_display()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#assess.summary_data"><code class="docutils literal notranslate"><span class="pre">summary_data()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#assess.upgrade_version"><code class="docutils literal notranslate"><span class="pre">upgrade_version()</span></code></a></li>
 </ul>
@@ -80,6 +85,7 @@
 <li class="toctree-l1"><a class="reference internal" href="scan.html">Scanning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="compute.html">Compute</a></li>
 <li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="allocation.html">Allocations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extras.html">Utils</a></li>
 </ul>
 
@@ -175,8 +181,15 @@ in serial.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="assess.match_type">
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">match_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.match_type" title="Permalink to this definition"></a></dt>
+<dd><p>Determine all project codes matching a specific type and save
+to a new_id file. Use existing -s flag for type?</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="assess.merge_old_new">
-<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">merge_old_new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_codes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_codes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_old</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_new</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.merge_old_new" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">merge_old_new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_codes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_codes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.merge_old_new" title="Permalink to this definition"></a></dt>
 <dd><p>Merge an existing list of project codes with a new set
 - Uses indexes if not a 1d list</p>
 </dd></dl>
@@ -206,6 +219,12 @@ in serial.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="assess.status_log_display">
+<span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">status_log_display</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.status_log_display" title="Permalink to this definition"></a></dt>
+<dd><p>Display the full status log for a specific project code</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="assess.summary_data">
 <span class="sig-prename descclassname"><span class="pre">assess.</span></span><span class="sig-name descname"><span class="pre">summary_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#assess.summary_data" title="Permalink to this definition"></a></dt>
 <dd><p>Display summary info in terms of data representation</p>
@@ -223,7 +242,7 @@ in serial.</p></li>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="errors.html" class="btn btn-neutral float-left" title="Custom Pipeline Errors" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dev-guide.html" class="btn btn-neutral float-left" title="Developer Guide - Adding new functionality" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="execution-source.html" class="btn btn-neutral float-right" title="Pipeline Execution" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Compute Module &mdash; Padocc Package v1.1 documentation</title>
+  <title>Developer Guide - Adding new functionality &mdash; Padocc Package v1.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -22,8 +22,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Validation Module" href="validate.html" />
-    <link rel="prev" title="Scanner Module" href="scan.html" /> 
+    <link rel="next" title="Assess Module" href="assess.html" />
+    <link rel="prev" title="Custom Pipeline Errors" href="errors.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,16 +47,16 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
 <li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev-guide.html">Developer Guide - Adding new functionality</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-modes-in-assessor">1. New Modes in Assessor</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-processors-for-compute">2. New Processors for Compute</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Developer Guide - Adding new functionality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#new-modes-in-assessor">1. New Modes in Assessor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#new-processors-for-compute">2. New Processors for Compute</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">CLI Tool Source:</span></p>
 <ul>
@@ -64,10 +64,10 @@
 <li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Scripts Source</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Pipeline Source:</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="init.html">Initialisation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scan.html">Scanning</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Compute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compute.html">Compute</a></li>
 <li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="allocation.html">Allocations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extras.html">Utils</a></li>
@@ -87,9 +87,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Compute Module</li>
+      <li class="breadcrumb-item active">Developer Guide - Adding new functionality</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/compute.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/dev-guide.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -97,16 +97,55 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="compute-module">
-<h1>Compute Module<a class="headerlink" href="#compute-module" title="Permalink to this heading"></a></h1>
+  <section id="developer-guide-adding-new-functionality">
+<h1>Developer Guide - Adding new functionality<a class="headerlink" href="#developer-guide-adding-new-functionality" title="Permalink to this heading"></a></h1>
+<p>Several utility functions <code class="docutils literal notranslate"><span class="pre">(pipeline.utils)</span></code> have been configured to make adding new features
+as easy as possible. Some importable functions of key importance:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>get_proj_dir: Gets the project directory string from command line parameters</p></li>
+<li><p>get/set_proj_file: Open any json formatted project file given a project directory and get/set data.</p></li>
+<li><p>format_str: Pretty formatting, sets the string size to a given <code class="docutils literal notranslate"><span class="pre">length</span></code> by concatenating or adding whitespace.</p></li>
+<li><p>get/set_codes: Get a list of project codes from any file or sub-directory file in a groupdir.</p></li>
+<li><p>open_kerchunk: Open a kerchunk file with __protection__ from errors and taking into account different types or conditions.</p></li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Also a quick note on some <code class="docutils literal notranslate"><span class="pre">pipeline.logs</span></code> features.</dt><dd><ul class="simple">
+<li><p>FalseLogger(): Test class for when you don’t care about proper logging (not to be used in production).</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="new-modes-in-assessor">
+<h1>1. New Modes in Assessor<a class="headerlink" href="#new-modes-in-assessor" title="Permalink to this heading"></a></h1>
+<dl class="simple">
+<dt>New modes can be added to the assessor with the following method:</dt><dd><ul class="simple">
+<li><p>Create a new function that takes <code class="docutils literal notranslate"><span class="pre">args</span></code> and <code class="docutils literal notranslate"><span class="pre">logger</span></code> as inputs.</p></li>
+<li><p>Add this function to the <code class="docutils literal notranslate"><span class="pre">operations</span></code> dict, with an appropriate activation string.</p></li>
+<li><p>Add any new command line inputs to ArgParse (try to reuse or expand existing flags where possible)</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="new-processors-for-compute">
+<h1>2. New Processors for Compute<a class="headerlink" href="#new-processors-for-compute" title="Permalink to this heading"></a></h1>
+<dl class="simple">
+<dt>See <code class="docutils literal notranslate"><span class="pre">pipeline.compute.compute_config</span></code> to configure a new type of processor. You will need:</dt><dd><ul class="simple">
+<li><p>A configuration function to ensure all required parameters are set.</p></li>
+<li><p>A processor class (that most likely inherits from <code class="docutils literal notranslate"><span class="pre">pipeline.compute.ProjectProcessor</span></code>)</p></li>
+<li><p>A method of activating that processor (<code class="docutils literal notranslate"><span class="pre">override_type</span></code> option is always available, but could this processor be triggered automatically based on a scan result?)</p></li>
+</ul>
+</dd>
+</dl>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="scan.html" class="btn btn-neutral float-left" title="Scanner Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="validate.html" class="btn btn-neutral float-right" title="Validation Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="errors.html" class="btn btn-neutral float-left" title="Custom Pipeline Errors" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="assess.html" class="btn btn-neutral float-right" title="Assess Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
