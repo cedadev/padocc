@@ -13,7 +13,7 @@ import re
 from pipeline.logs import init_logger, log_status, get_log_status, FalseLogger
 from pipeline.utils import get_attribute, format_str, \
     mem_to_val, get_codes, set_codes, get_proj_file, \
-    set_proj_file, get_blacklist
+    set_proj_file, get_blacklist, get_proj_dir
 import pipeline.errors as errs
 
 # Hints for custom errors - unused
@@ -79,6 +79,7 @@ def examine_log(workdir: str, proj_code: str, phase: str, groupID=None, repeat_i
         proj_dir = f'{workdir}/in_progress/{groupID}/{proj_code}'
 
     phase_log = f'{proj_dir}/phase_logs/{phase}.log'
+    print(phase_log)
     if os.path.isfile(phase_log):
         with open(phase_log) as f:
             log = [r.strip() for r in f.readlines()]
@@ -153,7 +154,7 @@ def save_selection(codes: list, groupdir: str, label: str, logger, overwrite=0, 
             elif overwrite >= 2:
                 print(f'Overwriting with {len(codes)} in existing proj_codes/{label} file')
         if write:
-            print(f'writing {len(codes)} to proj_codes/{label}')
+            print(f'Writing {len(codes)} to proj_codes/{label}')
             set_codes(groupdir, None, f'proj_codes/{label}', codeset)
     else:
         print('No codes identified, no files written')
@@ -398,13 +399,19 @@ def progress_check(args, logger):
                     if args.new_id or args.blacklist:
                         savecodes.append(p)
 
+                merge_errs = True # Debug - add as argument later?
+                if merge_errs:
+                    err_type = entry[1].split(' ')[0]
+                else:
+                    err_type = entry[1]
+
                 if entry[0] == 'complete':
                     complete += 1
                 else:
-                    if entry[1] in phases[entry[0]]:
-                        phases[entry[0]][entry[1]].append(idx)
+                    if err_type in phases[entry[0]]:
+                        phases[entry[0]][err_type].append(idx)
                     else:
-                        phases[entry[0]][entry[1]] = [idx]
+                        phases[entry[0]][err_type] = [idx]
         except KeyboardInterrupt as err:
             raise err
         except Exception as err:
@@ -491,19 +498,12 @@ def upgrade_version(args, logger):
         logger.warning('New version not specified - should be of the format "krX.X"')
         return None
 
-    projfile = f'{args.groupdir}/proj_codes/{args.repeat_id}.txt'
-    if os.path.isfile(projfile):
-        with open(projfile) as f:
-            proj_codes = [r.strip() for r in f.readlines()]
-    else:
-        logger.warning(f'Repeat id {args.repeat_id} not found for {args.groupID}')
-        return None
+    proj_codes = get_codes(args.groupID, args.workdir, f'proj_codes/{args.repeat_id}')
         
     # Upgrade each code
     for code in proj_codes:
         try:
-            proj_dir   = f'{args.workdir}/in_progress/{args.groupID}/{code}'
-            print(f'Upgrading {code} to {args.upgrade}')
+            proj_dir   = get_proj_dir(code, args.workdir, args.groupID)
 
             logger.debug(f'Updating detail-cfg for {code}')
             details = get_proj_file(proj_dir, 'detail-cfg.json')
@@ -626,18 +626,77 @@ def summary_data(args, logger):
         print(f'NetCDF Actual  : {format_float(Tnus, FalseLogger())}')
         print(f'Kerchunk Actual: {format_float(Tkus, FalseLogger())} ({Tcomp})')
 
+def match_type(args, logger):
+    """
+    Determine all project codes matching a specific type and save
+    to a new_id file. Use existing -s flag for type?
+    """
+
+    try:
+        parameter, value = args.option.split(':')
+    except:
+        print(f'Invalid option: {args.option} - must be of the form "parameter:value"')
+
+    if '.' in parameter:
+        parameter = parameter.split('.')
+    else:
+        parameter = [parameter]
+
+    matched = []
+    proj_codes = get_codes(args.groupID, args.workdir, f'proj_codes/{args.repeat_id}')
+    for p in proj_codes:
+        proj_dir = get_proj_dir(p, args.workdir, args.groupID)
+        detail   = get_proj_file(proj_dir, 'detail-cfg.json')
+        try:
+            for part in parameter:
+                detail = detail[part]
+        except KeyError:
+            continue
+
+        if str(detail) == value:
+            # Matched is true
+            matched.append(p)
+
+    # Write matches to new id
+    groupdir = f'{args.workdir}/groups/{args.groupID}'
+    save_selection(matched, groupdir, args.new_id, logger, overwrite=args.overwrite)
+
+def status_log_display(args, logger):
+    """
+    Display the full status log for a specific project code
+    """
+    proj_code  = args.option
+
+    proj_dir   = get_proj_dir(proj_code, args.workdir, args.groupID)
+    status_log = get_log_status(proj_dir, last=False)
+
+    field_lengths = [10, 15, 15, 6, 7]
+    fields        = ['phase','status','dated','jobid','dryrun']
+
+    for x, f in enumerate(fields):
+        print(format_str(f + ',', field_lengths[x]),end='')
+    print()
+    for line in status_log:
+        ln = []
+        for field, entry in enumerate(line.split(',')):
+            ln.append(format_str(entry + ',', field_lengths[field]))
+        print(''.join(ln))
+
+
 operations = {
-    'progress': progress_check,
-    'blacklist': add_to_blacklist,
-    'upgrade': upgrade_version,
-    'summarise': summary_data,
-    'display': show_options,
-    'cleanup': cleanup,
+    'progress':   progress_check,
+    'blacklist':  add_to_blacklist,
+    'upgrade':    upgrade_version,
+    'summarise':  summary_data,
+    'display':    show_options,
+    'cleanup':    cleanup,
+    'match':      match_type,
+    'status_log': status_log_display
 }
 
 def assess_main(args):
     """Main assessment function, different tools diverge from here."""
-
+    print('Starting assessor')
     logger = init_logger(args.verbose, args.mode, 'assessor')
 
     args.workdir  = get_attribute('WORKDIR', args, 'workdir')
@@ -679,7 +738,7 @@ if __name__ == "__main__":
     parser.add_argument('-s','--show-opts', dest='option', help='Show options for jobids, labels')
     parser.add_argument('-c','--clean-up', dest='cleanup', default=None, help='Clean up group directory of errors/outputs/labels')
     parser.add_argument('-U','--upgrade', dest='upgrade', default=None, help='Upgrade to new version')
-    parser.add_argument('-l','--long', dest='long', action='store_true', help='Show long error message (no concatenation past 20 chars.)')
+    parser.add_argument('-l','--long', dest='long', action='store_true', help='Show long error message (no concatenation)')
     # Note this will be replaced with upgrader tool at some point
 
     # Select subgroups and save new repeat groups
@@ -687,7 +746,7 @@ if __name__ == "__main__":
     parser.add_argument('-p','--phase', dest='phase', default=None, help='Pipeline phase to inspect')
     parser.add_argument('-r','--repeat_id', dest='repeat_id', default='main', help='Inspect an existing ID for errors')
     parser.add_argument('-n','--new_id', dest='new_id', default=None, help='Create a new repeat ID, specify selection of codes by phase, error etc.')
-    parser.add_argument('-N','--numbers', dest='numbers', default=0, help='Show project code numbers for quicker reruns across different errors.')
+    parser.add_argument('-N','--numbers', dest='numbers', default=0, help='Show project code IDs for lists of codes less than the N value specified here.')
 
     # Error inspection
     parser.add_argument('-e','--error', dest='error', default='', help='Inspect error of a specific type')
