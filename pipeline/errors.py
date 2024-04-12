@@ -265,19 +265,16 @@ class SourceNotFoundError(KerchunkException):
     def get_str(self):
         return 'SourceNotFoundError'
     
-"""
-
 # Potentially useful but currently unused.
 class ArchiveConnectError(KerchunkException):
     """Connection to the CEDA Archive could not be established"""
     def __init__(self, verbose=0, proj_code=None, groupdir=None):
-        self.message = f"Connection verification to the CEDA archive failed"
+        self.message = f"Connection verification to the CEDA archive failed - {proj_code}"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
     def get_str(self):
         return 'ArchiveConnectError'
-"""
 
 class KerchunkDecodeError(KerchunkException):
     """Decoding of Kerchunk file failed - likely a time array issue."""
@@ -288,3 +285,13 @@ class KerchunkDecodeError(KerchunkException):
             self.__class__.__module__ = 'builtins'
     def get_str(self):
         return 'KerchunkDecodeError'
+    
+class FullsetRequiredError(KerchunkException):
+    """This project must be validated using the full set of files."""
+    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+        self.message = f"This project must be validated by opening the full set of files."
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'FullsetRequiredError'
