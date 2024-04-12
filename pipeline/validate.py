@@ -676,9 +676,11 @@ def validate_timestep(args, xobj, kobj, step: int, nfiles: int, logger, concat_d
         print()
         nr = 0
         for xv in xvars:
-            nr += validate_data(xobj, kobj, xv, step, logger, bypass=args.bypass, nfiles=nfiles)
+            nrv = validate_data(xobj, kobj, xv, step, logger, bypass=args.bypass, nfiles=nfiles)
+            if nrv:
+                nr += nrv/10
             logger.info(f'{xv} : Passed Data test')
-        logger.info(f'Number of retries due to Unreachable Chunk issues: {nr} ({len(xvars)} vars tried)')
+        logger.info(f'Percentage of Unreachable Chunk requests made relative to maximum: PUCRM={nr/len(xvars)} ({len(xvars)} vars tried)')
 
 def run_successful(args, logger): # Ingest into class structure
     """Move kerchunk-1a.json file to complete directory with proper name"""
