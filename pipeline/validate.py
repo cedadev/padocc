@@ -6,17 +6,19 @@ import os
 import xarray as xr
 import json
 from datetime import datetime
-import sys
 import fsspec
+from fsspec.implementations.reference import ReferenceNotReachable
 import random
 import numpy as np
 import glob
 import logging
 import math
+import re
 
 from pipeline.errors import *
-from pipeline.logs import init_logger, SUFFIXES, SUFFIX_LIST
-from pipeline.utils import BypassSwitch, open_kerchunk, get_proj_file, get_proj_dir
+from pipeline.logs import init_logger, SUFFIXES, SUFFIX_LIST, FalseLogger
+from pipeline.utils import BypassSwitch, open_kerchunk, get_proj_file, get_proj_dir, \
+    set_proj_file
 from ujson import JSONDecodeError
 from dask.distributed import LocalCluster
 
@@ -131,7 +133,7 @@ def get_netcdf_list(proj_dir: str, logger, thorough=False) -> tuple: # Ingest i
         if numfiles < 3:
             numfiles = 3
 
-    if numfiles > len(xfiles):
+    if numfiles >= len(xfiles):
         numfiles = len(xfiles)
         indexes = [i for i in range(len(xfiles))]
     else:
@@ -144,7 +146,7 @@ def get_netcdf_list(proj_dir: str, logger, thorough=False) -> tuple: # Ingest i
         logger.info(f'Selecting a subset of {numfiles}/{len(xfiles)} files')
     return indexes, xfiles
 
-def locate_kerchunk(args, logger, get_str=False, remote_protocol='https') -> xr.Dataset:
+def locate_kerchunk(args, logger, get_str=False, attempt=1, remote_protocol='https') -> xr.Dataset:
     """
     Gets the name of the latest kerchunk file for this project code.
 
@@ -180,12 +182,12 @@ def locate_kerchunk(args, logger, get_str=False, remote_protocol='https') -> xr.
     if len(kfiles) > 0:
         # Which kerchunk file from set of options
         kf = sorted(kfiles)[0]
-        logger.info(f'Selected {kf} from {len(kfiles)} available')
+        logger.debug(f'Selected {kf} from {len(kfiles)} available')
         kfile = os.path.join(args.proj_dir, kf)
         if get_str:
             return kfile, False
         else:
-            return open_kerchunk(kfile, logger, remote_protocol=remote_protocol), False
+            return open_kerchunk(kfile, logger, attempt=attempt, remote_protocol=remote_protocol), False
     elif check_complete:
         if not args.forceful:
             logger.error('File already exists and no override is set')
@@ -207,7 +209,7 @@ def locate_kerchunk(args, logger, get_str=False, remote_protocol='https') -> xr.
         if get_str:
             return kfile, True
         else:
-            return open_kerchunk(kfile, logger, remote_protocol='file'), True
+            return open_kerchunk(kfile, logger, attempt=attempt, remote_protocol='file'), True
     else:
         logger.error(f'No Kerchunk file located at {args.proj_dir} and no in-place validation indicated - exiting')
         raise MissingKerchunkError
@@ -259,6 +261,8 @@ def open_netcdfs(args, logger, thorough=False, concat_dims='time') -> list: # I
     xobjs = []
     if not thorough:
         for i in indexes:
+            if not os.path.isfile(xfiles[i]):
+                raise SourceNotFoundError(sfile=xfiles[i])
             xobjs.append(xr.open_dataset(xfiles[i]))
         if len(xobjs) == 0:
             logger.error('No valid timestep objects identified')
@@ -266,7 +270,13 @@ def open_netcdfs(args, logger, thorough=False, concat_dims='time') -> list: # I
         return xobjs, indexes, xfiles
     else:
         #xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim=concat_dims, data_vars='minimal')
-        xobj = xr.open_mfdataset(xfiles, combine='nested', concat_dim=concat_dims, data_vars='minimal')
+        try:
+            xobj = xr.open_mfdataset(xfiles, combine='by_coords', data_vars='minimal')
+        except TypeError:
+            try:
+                xobj = xr.open_mfdataset(xfiles, combine='by_coords', data_vars='minimal', use_cftime=True)
+            except:
+                xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim=concat_dims, data_vars='minimal')
         return xobj, None, xfiles
 
 ## 3. Validation Testing
@@ -350,11 +360,11 @@ def compare_data(vname: str, xbox: xr.Dataset, kerchunk_box: xr.Dataset, logger,
         logger.debug(f'3a. Comparing directly - {(datetime.now()-t1).total_seconds():.2f}s')
         equality = False
         for index in range(xbox.size):
-            v1 = np.array(xbox).flatten()[index]
-            v2 = np.array(xbox).flatten()[index]
+            v1 = xbox[index]
+            v2 = kerchunk_box[index]
             if v1 != v2:
-                print(v1, v2)
-                raise ValidationError
+                logger.error(f'X: {v1}, K: {v2}, idx: {index}')
+        raise ValidationError
             
     logger.debug(f'4. Comparing Max values - {(datetime.now()-t1).total_seconds():.2f}s')
     try:
@@ -508,8 +518,10 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
 
     if not ('float' in str(box.dtype) or 'int' in str(box.dtype)):
         # Non numeric arrays cannot have NaN values.
-        return False
+        return False, np.array(box)
     
+    arr = np.array(box)
+
     def handle_boxissue(err):
         if type(err) == TypeError:
             return False
@@ -520,30 +532,31 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
             else:
                 raise err
 
-    if box.size == 1:
+    if arr.size == 1:
         try:
-            isnan = np.isnan(box)
+            isnan = np.isnan(arr)
         except Exception as err:
             isnan = handle_boxissue(err)
     else:
         try:
-            kb = np.array(box)
-            isnan = np.all(kb!=kb)
+            isnan = np.all(arr!=arr)
         except Exception as err:
             isnan = handle_boxissue(err)
         
-        if not isnan and box.size >= 1:
+        if not isnan and arr.size >= 1:
             try:
-                isnan = np.all(kb == np.mean(kb))
+                isnan = np.all(arr == np.mean(arr))
             except Exception as err:
                 isnan = handle_boxissue(err)
-    return isnan
+    return isnan, arr
 
 def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: int, logger, bypass=BypassSwitch()): # Ingest into class structure - note will need to alter 'scan' and 'compute' for a simplified validation option.
     """Validate this data selection in xvariable/kvariable objects
       - Recursive function tests a growing selection of data until one is found with real data
       - Repeats with exponentially increasing box size (divisions of all data dimensions)
       - Will halt at 1 division which equates to testing all data
+
+    :returns: Number of attempts to connect to all required data.
     """
 
     # Determine number based on 
@@ -580,29 +593,44 @@ def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: 
             return None
 
     try_multiple = 0
+    not_reached = 0
     knan, xnan = False, True
     # Attempt nan checking multiple times due to network issues.
-    while try_multiple < 3 and knan != xnan:
-        knan = check_for_nan(kbox, bypass, logger, label='Kerchunk')
-        xnan = check_for_nan(xbox, bypass, logger, label='Xarray')
+    while try_multiple < 10 and knan != xnan:
+        try:
+            knan, karr = check_for_nan(kbox, bypass, logger, label='Kerchunk')
+            xnan, xarr = check_for_nan(xbox, bypass, logger, label='Xarray')
+        except ReferenceNotReachable as err:
+            not_reached += 1
         try_multiple += 1
 
+    if not_reached != 0 and not_reached == try_multiple:
+        # 50% failed attempts
+        raise ArchiveConnectError
+
+    # Switch and save to np arrays if nans are successful.
     if knan != xnan:
-        raise NaNComparisonError
+        if not_reached == try_multiple:
+            # 100% failed attempts
+            raise ArchiveConnectError
+        else:
+            raise NaNComparisonError
         
+    logger.debug(f'NaN comparison tried: {try_multiple} times')
     if kbox.size >= 1 and not knan:
         # Evaluate kerchunk vs xarray and stop here
         logger.debug(f'Found comparable box-size: {int(kbox.size)} values')
-        compare_data(vname, xbox, kbox, logger, bypass=bypass.skip_data_sum)
+        compare_data(vname, xarr, karr, logger, bypass=bypass.skip_data_sum)
     else:
         logger.debug(f'Attempt {repeat} - slice is Null')
         if currentdiv >= 2:
             # Recursive search for increasing size (decreasing divisions)
-            validate_selection(xvariable, kvariable, vname, divs, int(currentdiv/2), logger, bypass=bypass)
+            not_reached += validate_selection(xvariable, kvariable, vname, divs, int(currentdiv/2), logger, bypass=bypass)
         else:
             logger.warning(f'Failed to find non-NaN slice (tried: {int(math.log2(divs))}, var: {vname})')
             if not bypass.skip_softfail:
                 raise SoftfailBypassError
+    return not_reached
 
 def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=BypassSwitch(), depth_default=128, nfiles=2): # Ingest into class structure
     """Run growing selection test for specified variable from xarray and kerchunk datasets"""
@@ -646,9 +674,11 @@ def validate_timestep(args, xobj, kobj, step: int, nfiles: int, logger, concat_d
             logger.info(f'{xv} : Passed Shape test')
         logger.info(f'Passed all Shape tests')
         print()
+        nr = 0
         for xv in xvars:
-            validate_data(xobj, kobj, xv, step, logger, bypass=args.bypass, nfiles=nfiles)
+            nr += validate_data(xobj, kobj, xv, step, logger, bypass=args.bypass, nfiles=nfiles)
             logger.info(f'{xv} : Passed Data test')
+        logger.info(f'Number of retries due to Unreachable Chunk issues: {nr} ({len(xvars)} vars tried)')
 
 def run_successful(args, logger): # Ingest into class structure
     """Move kerchunk-1a.json file to complete directory with proper name"""
@@ -726,6 +756,15 @@ def attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims, fullse
     except Exception as err:
         raise err
 
+def add_quality(proj_dir: str):
+    """
+    Add quality_required flag to the detail file for
+    this project.
+    """
+    detail = get_proj_file(proj_dir, 'detail-cfg.json')
+    detail['quality_required'] = True
+    set_proj_file(proj_dir, 'detail-cfg.json', detail, FalseLogger())
+
 def validate_dataset(args, logger, fh=None, logid=None, **kwargs): # Ingest into class structure - main function to use.
     """
     Perform validation steps for specific dataset defined here, sets up a local dask cluster to limit
@@ -765,6 +804,7 @@ def validate_dataset(args, logger, fh=None, logid=None, **kwargs): # Ingest int
         args.proj_dir = get_proj_dir(args.proj_code, args.workdir, args.groupID)
 
     xobjs, indexes, xfiles = open_netcdfs(args, logger, thorough=args.quality)
+
     nfiles = len(xfiles)
     if len(xobjs) == 0:
         raise NoValidTimeSlicesError(message='Xarray/NetCDF')
@@ -775,10 +815,45 @@ def validate_dataset(args, logger, fh=None, logid=None, **kwargs): # Ingest int
     with open(detailfile) as f:
         details = json.load(f)
 
+    if 'quality_required' in details:
+        if details['quality_required']:
+            args.quality = True
+
     ## Open kerchunk file
-    kobj, _v = locate_kerchunk(args, logger)
+    remote_protocol = 'https'
+    if 'links_added' in details:
+        if not details['links_added']:
+            remote_protocol = None
+
+    noissue = False
+    attempts = 0
+    kobj = None
+    Err = 'Unknown'
+    while not noissue and attempts < 3:
+        try:
+            kobj, _v = locate_kerchunk(args, logger, attempt=attempts+1,remote_protocol=remote_protocol)
+            noissue = True
+        except ReferenceNotReachable as err:
+            logger.debug(f"ReferenceNotReachable - {attempts+1}")
+            attempts += 1
+            Err = err
+        except TypeError as err:
+            Err = err
+            if re.match('.*ReferenceNotReachable.*', str(err)):
+                attempts += 1
+            else:
+                raise err
+        except Exception as err:
+            logger.error(f"Unhandled exception with opening Kerchunk file - {err}")
+            logger.error('Note this could be a temporary node issue')
+            raise MissingKerchunkError
+
+    if attempts == 3:
+        raise ArchiveConnectError(proj_code=args.proj_code)
+            
     if not kobj:
-        raise MissingKerchunkError
+        logger.error(f'Error fetching Kerchunk - {Err}')
+        raise MissingKerchunkError(message=f'Kerchunk fetching failed for {args.proj_code}')
 
     virtual = False
     if 'virtual_concat' in details:
@@ -803,7 +878,8 @@ def validate_dataset(args, logger, fh=None, logid=None, **kwargs): # Ingest int
                 logger.info(f'Running tests for selected file: {index} ({step+1}/{len(indexes)})')
                 fullset = attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims)
                 if fullset:
-                    break
+                    add_quality(args.proj_dir)
+                    raise FullsetRequiredError
 
         if fullset:
             print()
