@@ -34,5 +34,5 @@ exclude_patterns = []
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
-html_logo = '_images/padocc.png'
+html_logo = '_images/padocc_wt.png'
 html_favicon = '_images/favicon.ico'
