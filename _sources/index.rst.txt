@@ -68,7 +68,9 @@ Acknowledgements
 PADOCC was developed at the Centre for Environmental Data Analysis, supported by the ESA CCI Knowledge Exchange program and contributing to the development of the Earth Observation Data Hub (EODH).
 
 .. image:: _images/ceda.png
+   :width: 300
    :alt: CEDA Logo
 
 .. image:: _images/esa.png
+   :width: 300
    :alt: ESA Logo
