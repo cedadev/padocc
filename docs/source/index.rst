@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Padocc - User Documentation
+PADOCC - User Documentation
 ============================
 
 **padocc** (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package (package name **kerchunk-builder**) for aggregating data to enable methods of access for cloud-based applications.
@@ -26,7 +26,7 @@ The pipeline consists of four central phases, with an additional phase for inges
    :alt: Stages of the Kerchunk Pipeline
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    Introduction <pipeline-overview>
@@ -38,14 +38,14 @@ The pipeline consists of four central phases, with an additional phase for inges
    Developer's Guide <dev-guide>
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: CLI Tool Source:
 
    Assessor Source <assess>
    Control Scripts Source <execution-source>
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Pipeline Source:
    
    Initialisation <init>
@@ -55,11 +55,20 @@ The pipeline consists of four central phases, with an additional phase for inges
    Allocations <allocation>
    Utils <extras>
 
-
-
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+Acknowledgements
+================
+PADOCC was developed at the Centre for Environmental Data Analysis, supported by the ESA CCI Knowledge Exchange program and contributing to the development of the Earth Observation Data Hub (EODH).
+
+.. image:: _images/ceda.png
+   :alt: CEDA Logo
+
+.. image:: _images/esa.png
+   :alt: ESA Logo
