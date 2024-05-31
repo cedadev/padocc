@@ -55,7 +55,9 @@ The pipeline consists of four central phases, with an additional phase for inges
    Allocations <allocation>
    Utils <extras>
 
-Indices and tables
+
+
+Indices and Tables
 ==================
 
 * :ref:`genindex`
@@ -69,6 +71,8 @@ PADOCC was developed at the Centre for Environmental Data Analysis, supported by
 
 .. image:: _images/ceda.png
    :alt: CEDA Logo
+   :width: 300
 
 .. image:: _images/esa.png
    :alt: ESA Logo
+   :width: 300

@@ -11,7 +11,10 @@ import sys
 sys.path.insert(0, os.path.abspath('../../'))
 
 project = 'PADOCC Package'
-copyright = '2024, Daniel Westwood'
+copyright = ('2022-2024, Centre of Environmental Data Analysis Developers,'
+             'Scientific and Technical Facilities Council (STFC),'
+             'UK Research and Innovation (UKRI). '
+             'BSD 2-Clause License. All rights reserved.')
 author = 'Daniel Westwood'
 release = 'v1.1'
 
