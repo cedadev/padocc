@@ -6,7 +6,7 @@
 PADOCC - User Documentation
 ============================
 
-**padocc** (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package (package name **kerchunk-builder**) for aggregating data to enable methods of access for cloud-based applications.
+**padocc** (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package (formerly **kerchunk-builder**) for aggregating data to enable methods of access for cloud-based applications.
 
 The pipeline makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across different datasets simultaneously with validation steps to ensure the outputs are correct.
 
@@ -55,7 +55,9 @@ The pipeline consists of four central phases, with an additional phase for inges
    Allocations <allocation>
    Utils <extras>
 
-Indices and tables
+
+
+Indices and Tables
 ==================
 
 * :ref:`genindex`
@@ -70,7 +72,9 @@ PADOCC was developed at the Centre for Environmental Data Analysis, supported by
 .. image:: _images/ceda.png
    :width: 300
    :alt: CEDA Logo
+   :width: 300
 
 .. image:: _images/esa.png
    :width: 300
    :alt: ESA Logo
+   :width: 300
