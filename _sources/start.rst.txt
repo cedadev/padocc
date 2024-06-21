@@ -3,7 +3,7 @@ Getting Started
 
 .. note::
 
-    Ensure you have local modules enabled such that you have python 3.x installed in your local environment. A version of the pipeline source code exists at ``/gws/nopw/j04/cedaproc/kerchunk_builder`` so please see if this can be used before cloning the repository elsewhere.
+    Ensure you have local modules enabled such that you have python 3.x installed in your local environment. A version of the pipeline source code exists at ``/gws/nopw/j04/cedaproc/padocc`` so please see if this can be used before cloning the repository elsewhere.
 
 Step 0: Git clone the repository
 --------------------------------
