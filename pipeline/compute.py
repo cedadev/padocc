@@ -823,8 +823,12 @@ class KerchunkDSProcessor(ProjectProcessor):
             checklist = [r for r in ref['refs'].keys() if '.zarray' in r]
 
         for key in checklist:
-            zarray = json.load(ref['refs'][key])
-            if not self.var_shapes[key]:
+            try:
+                zarray = json.loads(ref['refs'][key])
+            except AttributeError:
+                zarray = ref['refs'][key]
+            
+            if key not in self.var_shapes:
                 self.var_shapes[key] = zarray['shape']
             if self.var_shapes[key] != zarray['shape']:
                 self.quality_required = True

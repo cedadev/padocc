@@ -152,10 +152,6 @@ def main(args) -> None:
     phase   = args.phase
     group   = args.groupID
 
-    if phase not in phases:
-        logger.error(f'"{phase}" not recognised, please select from {phases}')
-        return None
-
     args.workdir  = get_attribute('WORKDIR', args, 'workdir')
     args.source   = get_attribute('SRCDIR', args, 'source')
     args.venvpath = get_attribute('KVENV', args, 'kvenv')
@@ -173,6 +169,10 @@ def main(args) -> None:
         from pipeline.init import init_config
         logger.info(f'Running init steps as a serial process for {group}')
         init_config(args)
+        return None
+    
+    if phase not in phases:
+        logger.error(f'"{phase}" not recognised, please select from {phases}')
         return None
     
     # Make Directories
