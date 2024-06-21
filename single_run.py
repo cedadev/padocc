@@ -91,12 +91,30 @@ def run_validation(args, logger, fh=None, **kwargs) -> None:
 
     # Note: Validation proved to be unpredictable for timings - not suitable for job allocation.
 
+def run_ingest(args, logger, fh=None, **kwargs) -> None:
+    """
+    Start ingestion for a single dataset - TEMPORARY
+
+    :param args:    (obj) Set of command line arguments supplied by argparse.
+
+    :param logger:  (obj) Logging object for info/debug/error messages.
+
+    :param fh:      (str) Path to file for logger I/O when defining new logger.
+
+    :returns: None
+    
+    """
+    from pipeline.ingest import ingest_config
+    logger.info('Starting ingestion process')
+    ingest_config(args, logger, fh=fh, **kwargs)
+
 # Driver functions map to command line input of 'phase'
 drivers = {
     'init':run_init,
     'scan':run_scan,
     'compute': run_compute,
-    'validate': run_validation
+    'validate': run_validation,
+    'ingest':run_ingest
 }
 
 def get_proj_code(workdir: str, group: str, pid, repeat_id, subset=0, id=0) -> str:

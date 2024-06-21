@@ -2,45 +2,48 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
-from ingest_lib import Ingester
+#from ingest_lib import Ingester
 import glob
 import json
 from pipeline.utils import get_codes, get_proj_file, get_proj_dir
 
-class KerchunkIngester(Ingester):
-    pass
+#class KerchunkIngester(Ingester):
+    #pass
 
 def add_download_link(group, workdir, proj_code):
-        """
-        Add the download link to each of the Kerchunk references
-        """
-        complete_kerchunk = f'{workdir}/complete/{group}/{proj_code}*'
-        kerchunks = glob.glob(complete_kerchunk)
-        if len(kerchunks) == 0:
-            print('No complete kerchunk file found - deal with this somehow')
-            raise NotImplementedError
-        elif len(kerchunks) > 1:
-            print('More than one kerchunk file specified, version number required')
-            raise NotImplementedError
-        else:
-            kfile = kerchunks[0]
-            with open(kfile) as f:
-                refs = json.load(f)
+    """
+    Add the download link to each of the Kerchunk references
+    """
+    complete_kerchunk = f'{workdir}/complete/{group}/{proj_code}*'
+    kerchunks = glob.glob(complete_kerchunk)
+    if len(kerchunks) == 0:
+        print('No complete kerchunk file found - deal with this somehow')
+        raise NotImplementedError
+    elif len(kerchunks) > 1:
+        print('More than one kerchunk file specified, version number required')
+        raise NotImplementedError
+    else:
+        kfile = kerchunks[0]
+        with open(kfile) as f:
+            refs = json.load(f)['refs']
 
-            for key in refs.keys():
-                if len(refs[key]) == 3:
-                    if refs[key][0][0] == '/':
-                        refs[key][0] = 'https://dap.ceda.ac.uk' + refs[key][0]
+        for key in refs.keys():
+            if len(refs[key]) == 3:
+                if refs[key][0][0] == '/':
+                    refs[key][0] = 'https://dap.ceda.ac.uk' + refs[key][0]
 
-            with open(kfile,'w') as f:
-                f.write(json.dumps(refs))
+        with open(kfile,'w') as f:
+            f.write(json.dumps(refs))
             
 
-def ingest_config(args, logger):
+def ingest_config(args, logger, fh=None, **kwargs):
     """
     Configure for ingestion of a set of project codes, currently defined
     by a repeat_id but this could be changed later to apply to all project
     codes fitting some parameters"""
+
+    logger.warning("Ingestion not currently supported")
+    logger.warning("Adding dap links only")
 
     proj_codes = get_codes(args.groupID, args.workdir, f'proj_codes/{args.repeat_id}')
 
