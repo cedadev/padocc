@@ -250,7 +250,7 @@ def make_directories(args, logger):
 
     logger.info(f'Written as group ID: {args.groupID}')
 
-def init_config(args, logger, fh=None, logid=None, **kwargs):
+def init_config(args, logger=None, fh=None, logid=None, **kwargs):
     """
     Main configuration script, load configurations from input sources, determine
     input file type and use appropriate functions to instantiate group and project

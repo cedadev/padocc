@@ -21,7 +21,6 @@ ipython-genutils==0.2.0
 kaitaistruct==0.8
 kerchunk==0.2.3
 llvmlite==0.40.1
-mo-pack==0.2.0
 munkres==1.1.4
 nappy==2.0.2
 nco==1.1.0
