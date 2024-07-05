@@ -10,10 +10,12 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
 # Any Elasticsearch index should also include the group name (possibly part of each record?) for search purposes.
 
-from ceda_elasticsearch_tools import BulkClient
+#from ceda_elasticsearch_tools import BulkClient
 import json
 import os
 
+from client_basic import SimpleClient
+from pipeline.utils import get_codes, get_last_run, get_proj_file, get_proj_dir
 from datetime import datetime
 
 phase = {
@@ -36,18 +38,22 @@ group_template = {
 
 dataset_template = {
     'DRI':None,
-    'group':'CMIP6_rel1_6233',
-    'collection':'CMIP6',
+    'group':None,
+    'collection':None,
     'last_upload':None,
     'phase':None,
-    'status':None,
 
-    'netcdf_data':'Unknown',
-    'kerchunk_data':'Unknown',
-    'num_files':'Unknown',
-    'format':'Unknown',
-    'chunks_per_file':'Unknown'
+    'netcdf_data':'netcdf_data',
+    'kerchunk_data':'kerchunk_data',
+    'num_files':'num_files',
+    'format':'type',
+    'chunks_per_file':'chunks_per_file'
 }
+
+class PadoccClient(SimpleClient):
+
+    def __init__(self, index, **kwargs):
+        super().__init__(index, **kwargs)
 
 def catalog_groups(group_ids,test=None):
     # Determine values for each group
@@ -61,14 +67,37 @@ def catalog_groups(group_ids,test=None):
     pad.add_records(test)
     pass
 
-def catalog_products(groupID):
+def catalog_products(workdir, groupID):
     # Take group ID
     # Catalog all products within the group
     # Create collections within the ES index.
-    pass
+    products = get_codes(groupID, workdir, 'proj_codes/main')
+    for p in products:
+        proj_dir = get_proj_dir(p, workdir, groupID)
+        details  = get_proj_file(proj_dir, 'detail-cfg.json')
+
+        record = dict(dataset_template)
+        for i in record:
+            if record[i]:
+                if record[i] in details:
+                    record[i] = details[record[i]]
+        record['DRI'] = p
+        record['group'] = groupID
+        record['collection'] = ''
+        record['last_upload'] = datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M:%S')
+        try:
+            record['phase'] = details['last_run'][0]
+        except:
+            record['phase'] = 'Unknown'
+
+        # LOCAL PATH TESTING!
+        with open(f'testing/records/{p}_rec.json','w') as f:
+            f.write(json.dumps(record))
 
 
 if __name__ == '__main__':
-    test = group_template
-    test['last_upload'] = datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M:%S')
-    catalog_groups(None, test=[test])
+    #test = group_template
+    #test['last_upload'] = datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M:%S')
+    #catalog_groups(None, test=[test])
+    workdir = '/gws/nopw/j04/cmip6_prep_vol1/kerchunk-pipeline'
+    catalog_products(workdir, 'CMIP6_rel1_6233')
