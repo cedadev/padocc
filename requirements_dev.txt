@@ -1,0 +1,15 @@
+binpacking==1.5.2
+fsspec==2024.3.1
+xarray==2024.3.0
+rechunker==0.5.2
+kerchunk==0.2.5
+h5py==3.11.0
+scipy==1.13.0
+tifffile==2024.5.3
+cfgrib==0.9.11.0
+dask==2024.5.0
+distributed==2024.5.0
+matplotlib==3.8.4
+s3fs==0.4.2
+requests==2.31.0
+git+https://github.com/cedadev/ceda-elastic-py.git
