@@ -9,3 +9,4 @@ docs/build/
 build/
 pipeline.egg-info
 config/es_config.json
+es_settings.json
