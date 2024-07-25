@@ -2,13 +2,13 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
-from ingest_lib import Ingester
+#from ingest_lib import Ingester
 import glob
 import json
 from pipeline.utils import get_codes, get_proj_file, get_proj_dir
 
-class KerchunkIngester(Ingester):
-    pass
+#class KerchunkIngester(Ingester):
+    #pass
 
 def add_download_link(group, workdir, proj_code):
         """
@@ -27,10 +27,14 @@ def add_download_link(group, workdir, proj_code):
             with open(kfile) as f:
                 refs = json.load(f)
 
-            for key in refs.keys():
-                if len(refs[key]) == 3:
-                    if refs[key][0][0] == '/':
-                        refs[key][0] = 'https://dap.ceda.ac.uk' + refs[key][0]
+            r = refs['refs']
+
+            for key in r.keys():
+                if len(r[key]) == 3:
+                    if r[key][0][0] == '/':
+                        r[key][0] = 'https://dap.ceda.ac.uk' + r[key][0]
+
+            refs['refs'] = r
 
             with open(kfile,'w') as f:
                 f.write(json.dumps(refs))

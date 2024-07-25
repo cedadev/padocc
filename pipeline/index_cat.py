@@ -14,10 +14,10 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 import json
 import os
 
-from client_basic import SimpleClient
+from ceda_elastic_py import SimpleClient
 from pipeline.utils import get_codes, get_last_run, get_proj_file, get_proj_dir
 from datetime import datetime
-
+import glob
 phase = {
     'total':None,
     'complete':None,
@@ -72,32 +72,38 @@ def catalog_products(workdir, groupID):
     # Catalog all products within the group
     # Create collections within the ES index.
     products = get_codes(groupID, workdir, 'proj_codes/main')
-    for p in products:
-        proj_dir = get_proj_dir(p, workdir, groupID)
-        details  = get_proj_file(proj_dir, 'detail-cfg.json')
+    product_entries = []
+    if False:
+        for p in products:
+            proj_dir = get_proj_dir(p, workdir, groupID)
+            details  = get_proj_file(proj_dir, 'detail-cfg.json')
 
-        record = dict(dataset_template)
-        for i in record:
-            if record[i]:
-                if record[i] in details:
-                    record[i] = details[record[i]]
-        record['DRI'] = p
-        record['group'] = groupID
-        record['collection'] = ''
-        record['last_upload'] = datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M:%S')
-        try:
-            record['phase'] = details['last_run'][0]
-        except:
-            record['phase'] = 'Unknown'
+            record = dict(dataset_template)
+            for i in record:
+                if record[i]:
+                    if record[i] in details:
+                        record[i] = details[record[i]]
+            record['DRI'] = p
+            record['group'] = groupID
+            record['collection'] = ''
+            record['last_upload'] = datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M:%S')
+            try:
+                record['phase'] = details['last_run'][0]
+            except:
+                record['phase'] = 'Unknown'
 
-        # LOCAL PATH TESTING!
-        with open(f'testing/records/{p}_rec.json','w') as f:
-            f.write(json.dumps(record))
+            # LOCAL PATH TESTING!
+            with open(f'testing/records/{p}_rec.json','w') as f:
+                f.write(json.dumps(record))
+    else:
+        for i in glob.glob('testing/records/*_rec.json'):
+            with open(i) as f:
+                product_entries.append(json.load(f))
+    pc = PadoccClient('padocc-products', es_config='es_settings.json')
+
+    pc.push_records(product_entries)
 
 
 if __name__ == '__main__':
-    #test = group_template
-    #test['last_upload'] = datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M:%S')
-    #catalog_groups(None, test=[test])
     workdir = '/gws/nopw/j04/cmip6_prep_vol1/kerchunk-pipeline'
     catalog_products(workdir, 'CMIP6_rel1_6233')
