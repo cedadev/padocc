@@ -15,9 +15,9 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 import binpacking
 import os
 
-from pipeline.utils import get_codes, get_proj_file, get_proj_dir, times
-from pipeline.errors import MissingKerchunkError
-from pipeline.logs import get_log_status
+from padocc.utils import get_codes, get_proj_file, get_proj_dir, times
+from padocc.errors import MissingKerchunkError
+from padocc.logs import get_log_status
 
 def has_required_timings(detail) -> bool:
     """

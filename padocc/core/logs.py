@@ -4,7 +4,7 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
 import logging
 import os
-from pipeline.errors import MissingVariableError
+from padocc.errors import MissingVariableError
 from datetime import datetime
 
 levels = [
@@ -87,7 +87,7 @@ def reset_file_handler(logger, verbose, new_log):
 
     return logger
 
-def init_logger(verbose, mode, name, fh=None, logid=None):
+def init_logger(verbose, name, fh=None, logid=None):
     """Logger object init and configure with formatting"""
 
     verbose = min(verbose, len(levels)-1)

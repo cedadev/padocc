@@ -11,9 +11,9 @@ import math
 import numpy as np
 import re
 
-from pipeline.errors import MissingVariableError, MissingKerchunkError, ChunkDataError, \
+from padocc.errors import MissingVariableError, MissingKerchunkError, ChunkDataError, \
                             KerchunkDecodeError
-from pipeline.logs import FalseLogger
+from padocc.logs import FalseLogger
 
 times = {
     'scan'    :'10:00', # No prediction possible prior to scanning
@@ -173,160 +173,10 @@ def mem_to_val(value: str) -> float:
     suff = suffixes[value.split(' ')[1]]
     return float(value.split(' ')[0]) * suff
 
-def get_blacklist(group: str, workdir: str) -> list:
-    """
-    Returns a list of the project codes given a filename (repeat id)
-
-    :param group:       (str) Name of current group or path to group directory
-                        (groupdir) in which case workdir can be left as None.
-
-    :param workdir:     (str) Path to working directory or None. If this is None,
-                        group value will be assumed as the groupdir path.
-
-    :returns: A list of codes if the file is found, an empty list otherwise.
-    """
-    if workdir:
-        codefile = f'{workdir}/groups/{group}/blacklist_codes.txt'
-    else:
-        codefile = f'{group}/blacklist_codes.txt'
-    if os.path.isfile(codefile):
-        with open(codefile) as f:
-            contents = [r.strip().split(',') for r in f.readlines()]
-            if type(contents[0]) != list:
-                contents = [contents]
-            return contents
-    else:
-        return []
-
-def get_codes(group: str, workdir: str , filename: str, extension='.txt') -> list:
-    """
-    Returns a list of the project codes given a filename (repeat id)
-
-    :param group:       (str) Name of current group or path to group directory
-                        (groupdir) in which case workdir can be left as None.
-
-    :param workdir:     (str) Path to working directory or None. If this is None,
-                        group value will be assumed as the groupdir path.
-
-    :param filename:    (str) Name of text file to access within group (or path
-                        within the groupdir to the text file
-
-    :param extension:   (str) For the specific case of non-text-files.
-
-    :returns: A list of codes if the file is found, an empty list otherwise.
-    """
-    if workdir:
-        codefile = f'{workdir}/groups/{group}/{filename}{extension}'
-    else:
-        codefile = f'{group}/{filename}.txt'
-    if os.path.isfile(codefile):
-        with open(codefile) as f:
-            return [r.strip() for r in f.readlines()]
-    else:
-        return []
-    
-def set_codes(group: str, workdir: str, filename: str, contents, extension='.txt', overwrite=0) -> None:
-    """
-    Returns a list of the project codes given a filename (repeat id)
-
-    :param group:       (str) Name of current group or path to group directory
-                        (groupdir) in which case workdir can be left as None.
-
-    :param workdir:     (str) Path to working directory or None. If this is None,
-                        group value will be assumed as the groupdir path.
-
-    :param filename:    (str) Name of text file to access within group (or path
-                        within the groupdir to the text file
-    
-    :param contents:    (str) Combined contents to write to the file.
-
-    :param extension:   (str) For the specific case of non-text-files.
-
-    :param overwrite:   (str) Specifier for open() built-in python method, completely
-                        overwrite the file contents or append to existing values.
-
-    :returns: None
-    """
-    codefile = f'{group}/{filename}.txt'
-    if workdir:
-        codefile = f'{workdir}/groups/{group}/{filename}{extension}'
-
-    ow = 'w'
-    if overwrite == 1:
-        ow = 'w+'
-
-    with open(codefile, ow) as f:
-        f.write(contents)
-    
-def set_last_run(proj_dir, phase, time, logger=FalseLogger()) -> None:
-    detail = get_proj_file(proj_dir, 'detail-cfg.json')
-    if detail:
-        detail['last_run'] = (phase, time)
-        set_proj_file(proj_dir, 'detail-cfg.json', detail, logger)
-
-def get_last_run(proj_dir) -> str:
-    detail = get_proj_file(proj_dir, 'detail-cfg.json')
-    if detail:
-        return detail['last_run']
-
-def get_proj_file(proj_dir: str, proj_file: str) -> dict:
-    """
-    Returns the contents of a project file within a project code directory.
-
-    :param proj_dir:    (str) The project code directory path.
-
-    :param proj_file:   (str) Name of a file to access within the project directory.
-
-    :returns: A dictionary of the contents of a json file or None if there are problems.
-    """
-    if not proj_file:
-        projfile = proj_dir
-    else:
-        projfile = f'{proj_dir}/{proj_file}'
-    if os.path.isfile(projfile):
-        try:
-            with open(projfile) as f:
-                contents = json.load(f)
-            return contents
-        except:
-            with open(projfile) as f:
-                print(f.readlines())
-            return None
-    else:
-        return None
-    
-def set_proj_file(proj_dir: str, proj_file: str, contents: dict, logger: logging.Logger) -> None:
-    """
-    Overwrite the contents of a project file within a project code directory.
-
-    :param proj_dir:    (str) The project code directory path.
-
-    :param proj_file:   (str) Name of a file to access within the project directory.
-
-    :param contents:    (dict) Dictionary to write into json format config file within
-                        the project directory.
-
-    :returns: A dictionary of the contents of a json file or None if there are problems.
-    """
-    projfile = f'{proj_dir}/{proj_file}'
-    if not os.path.isfile(projfile):
-        os.system(f'touch {projfile}')
-    try:
-        with open(projfile,'w') as f:
-            f.write(json.dumps(contents))
-        logger.debug(f'{proj_file} updated')
-    except Exception as err:
-        logger.error(f'{proj_file} unable to update - {err}')
-    
-def get_proj_dir(proj_code: str, workdir: str, groupID: str) -> str:
-    """
-    Simple function to assemble the project directory, depends on groupID
-    May be redundant in the future if a 'serial' directory is added.
-    """
-    if groupID:
-        return f'{workdir}/in_progress/{groupID}/{proj_code}'
-    else:
-        return f'{workdir}/in_progress/{proj_code}'
+def extract_file(input_file, prefix=None):
+    with open(input_file) as f:
+        content = [r.strip() for r in f.readlines()]
+    return content
 
 def find_zarrays(refs: dict) -> dict:
     """Quick way of extracting all the zarray components of a ref set."""
