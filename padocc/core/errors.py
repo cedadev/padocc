@@ -1,28 +1,15 @@
 __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
-__copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
+__copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import json
 import os
-
-def upload_err(proj_code, groupdir, error):
-    summ_file = f'{groupdir}/ErrorSummary.json'
-    if os.path.isfile(summ_file):
-        with open(summ_file) as f:
-            summ = json.load(f)
-        summ[proj_code] = error
-        with open(summ_file,'w') as f:
-            f.write(json.dumps(summ))
 
 class KerchunkException(Exception):
     def __init__(self, proj_code, groupdir):
         self.proj_code = proj_code
         self.groupdir  = groupdir
         super().__init__(self.message)
-        if proj_code and groupdir:
-            self.save()
-    def save(self):
-        upload_err(self.proj_code, self.groupdir, self.get_str())
 
 class PartialDriverError(KerchunkException):
     """All drivers failed (NetCDF3/Hdf5/Tiff) for one or more files within the list"""
