@@ -1,13 +1,8 @@
+from .evaluate import EvaluateOperation
+
 from .operations import (
-    LoggedOperation,
-    DirectoryOperation,
-    ProjectOperation,
     GroupOperation,
+    ProjectOperation,
 )
 
-from .filehandlers import (
-    JSONFileHandler,
-    TextFileHandler,
-    CSVFileHandler,
-    LogFileHandler
-)
+from .allocate import create_allocations
