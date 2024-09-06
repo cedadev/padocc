@@ -1,7 +1,8 @@
 from .logs import (
     init_logger, 
     reset_file_handler,
-    FalseLogger
+    FalseLogger,
+    LoggedOperation
 )
 
 from .utils import (
