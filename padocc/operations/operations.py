@@ -139,13 +139,12 @@ class GroupOperation(DirectoryOperation):
         :param bypass:              (BypassSwitch) instance of BypassSwitch class containing multiple
                                     bypass/skip options for specific events. See utils.BypassSwitch.
 
-        :param label:               (str) The label to apply to the logger object.
+        :param label:       (str) The label to apply to the logger object.
 
-        :param fh:                  (str) Path to logfile for logger object generated in this specific process.
+        :param fh:          (str) Path to logfile for logger object generated in this specific process.
 
-        :param logid:               (str) ID of the process within a subset, which is then added to the name
-                                    of the logger - prevents multiple processes with different logfiles getting
-                                    loggers confused.
+        :param logid:       (str) ID of the process within a subset, which is then added to the name
+            of the logger - prevents multiple processes with different logfiles getting loggers confused.
 
         :param verbose:         (int) Level of verbosity for log messages (see core.init_logger).
 
