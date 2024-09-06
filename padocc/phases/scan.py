@@ -369,32 +369,5 @@ class ScanOperation(ProjectOperation):
         self.detail_cfg.set(existing_details)
         self.detail_cfg.save_file()
 
-def scan_config(
-        proj_code,
-        workdir,
-        groupID=None,
-        logger=None, 
-        mode='kerchunk',
-        **kwargs) -> None:
-    """
-    Configure scanning and access main section, ensure a few key variables are set
-    then run scan_dataset.
-    
-    :param args:        (obj) Set of command line arguments supplied by argparse.
-
-    :param logger:      (obj) Logging object for info/debug/error messages. Will create a new 
-                        logger object if not given one.
-
-    :param fh:          (str) Path to file for logger I/O when defining new logger.
-
-    :param logid:       (str) If creating a new logger, will need an id to distinguish this logger
-                        from other single processes (typically n of N total processes.)
-
-    :returns:   None
-    """
-
-    so = ScanOperation(proj_code, workdir, groupID=groupID, logger=logger, **kwargs)
-    so.run(mode=mode)
-
 if __name__ == '__main__':
     print('Kerchunk Pipeline Config Scanner - run using master scripts')
