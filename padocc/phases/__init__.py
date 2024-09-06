@@ -1,24 +1,6 @@
-from .init import (
-    init_config,
-    InitOperation
-)
-
-from .scan import (
-    scan_config,
-    ScanOperation
-)
-
-from .compute import (
-    compute_config,
-    ComputeOperation
-)
-
-from .validate import (
-    validate_config,
-    ValidateOperation
-)
-
-from .ingest import (
-    ingest_config,
-    IngestOperation
-)
+from .init import InitOperation
+from .scan import ScanOperation
+from .compute import KerchunkDS, ZarrDS
+from .validate import ValidateOperation
+from .ingest import IngestOperation
+from .config import Configuration
