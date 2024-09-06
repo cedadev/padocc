@@ -1,1 +1,1 @@
-from .core import errors
+from .phases import Configuration
