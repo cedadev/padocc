@@ -3,7 +3,8 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 from padocc import ProjectOperation
-from padocc.core import LoggedOperation
+from padocc.core import LoggedOperation, FalseLogger
+import logging
 
 from padocc.phases import (
     InitOperation,
@@ -27,20 +28,27 @@ class Configuration(LoggedOperation):
     Lower level classes are still usable, but the config class provides a good
     starting point to run the typical ``run`` processes.
     """
-    def __init__(self, logger=None):
-        super().__init__(logger=logger)
+    def __init__(
+            self, 
+            workdir,
+            logger : logging.logger | FalseLogger = FalseLogger(),
+            **kwargs
+        ) -> None:
+        super().__init__(logger=logger, **kwargs)
+        self.workdir = workdir
 
     def init_config(
-            workdir,
+            self,
             input_file,
             groupID=None,
             **kwargs
         ) -> None:
         
-        io = InitOperation(workdir, groupID=groupID, **kwargs)
+        io = InitOperation(self.workdir, groupID=groupID, **kwargs)
         io.run(input_file)
 
     def scan_config(
+            self,
             proj_code,
             workdir,
             groupID=None,
