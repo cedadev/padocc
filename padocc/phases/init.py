@@ -8,9 +8,9 @@ import json
 import logging
 import glob
 
-from padocc.logs import init_logger, log_status
+from padocc.core import FalseLogger
 from padocc.operations import GroupOperation, ProjectOperation
-from padocc.utils import extract_file
+from padocc.core.utils import extract_file
 
 config = {
     'proj_code': None,
@@ -19,8 +19,12 @@ config = {
     'remove': None
 }
 
-def _get_updates(logger):
-    """Get key-value pairs for updating in final metadata"""
+def _get_updates(
+        logger: logging.logger | FalseLogger = FalseLogger()):
+    """
+    Get key-value pairs for updating in final metadata.
+    """
+
     logger.debug('Getting update key-pairs')
     inp = None
     valsdict = {}
@@ -31,17 +35,22 @@ def _get_updates(logger):
             valsdict[inp] = val
     return valsdict
 
-def _get_removals(logger):
-    """Get attribute names to remove in final metadata"""
+def _get_removals(
+        logger: logging.logger | FalseLogger = FalseLogger()):
+    """
+    Get attribute names to remove in final metadata.
+    """
+
     logger.debug('Getting removals')
     valsarr = []
+    inp = None
     while inp != 'exit':
         inp = input('Attribute: ("exit" to escape):')
         if inp != 'exit':
             valsarr.append(inp)
     return valsarr
 
-def _get_proj_code(path: str, prefix=''):
+def _get_proj_code(path: str, prefix: str = ''):
     """Determine project code from path (prefix removed), appropriate for CMIP6"""
     parts = path.replace(prefix,'').replace('/','_').split('_')
     if '*.' in parts[-1]:
@@ -109,12 +118,13 @@ def _create_csv_from_text(text, logger):
     else:
         self.logger.warn(f'Using existing csv file at {self.groupdir}/datasets.csv')
 
-def _get_input(logger, workdir, forceful=None):
+def _get_input(
+        workdir : str,
+        logger  : logging.logger | FalseLogger = FalseLogger(), 
+        forceful : bool = None):
     """
-    Get command-line inputs for specific project configuration. Init requires the following parameters:
-    - project code
-    - pattern or filelist
-    - workdir
+    Get command-line inputs for specific project configuration. 
+    Init requires the following parameters: proj_code, pattern/filelist, workdir.
     """
 
     # Get basic inputs
@@ -181,18 +191,31 @@ def _get_input(logger, workdir, forceful=None):
 
 class InitOperation(GroupOperation):
 
-    def __init__(self, 
-                 workdir, 
-                 groupID=None, 
-                 logger=None, 
-                 fh=None, 
-                 logid=None,
-                 dryrun=True,
-                 forceful=False,
-                 ):
-        super().__init__(workdir, groupID=groupID, dryrun=dryrun, forceful=forceful)
+    def __init__(
+            self, 
+            workdir : str, 
+            groupID : str = None, 
+            dryrun  : bool = True,
+            forceful: bool = False,
+            **kwargs
+        ) -> None:
+        """
+        Initialise an init operation with setup parameters.
 
-        self._load_logger(logger, 'init', fh=fh, logid=logid)
+        :param workdir:         (str) Path to the current working directory.
+
+        :param groupID:         (str) Name of current dataset group.
+
+        :param dryrun:          (bool) If True will prevent output files being generated
+            or updated and instead will demonstrate commands that would otherwise happen.
+
+        :param forceful:        (bool) Continue with processing even if final output file 
+            already exists.
+
+        :returns None:
+        """
+
+        super().__init__(workdir, groupID=groupID, dryrun=dryrun, forceful=forceful, **kwargs)
 
         self._setup_directories()
 
@@ -201,21 +224,13 @@ class InitOperation(GroupOperation):
         print("Create an instance of me with the following arguments: workdir, groupID")
         print('Then run "init_config" and pass me an input_file and I will create your pipeline group!')
 
-    def run(self, input_file):
+    def run(self, input_file: str):
         """
-        Main configuration script, load configurations from input sources, determine
+        Run initialisation by loading configurations from input sources, determine
         input file type and use appropriate functions to instantiate group and project
         directories.
         
-        :param args:        (obj) Set of command line arguments supplied by argparse.
-
-        :param logger:      (obj) Logging object for info/debug/error messages. Will create a new 
-                            logger object if not given one.
-
-        :param fh:          (str) Path to file for logger I/O when defining new logger.
-
-        :param logid:       (str) If creating a new logger, will need an id to distinguish this logger
-                            from other single processes (typically n of N total processes.)
+        :param input_file:      (str) Path to an input file from which to initialise the project.
 
         :returns:   None
         """
@@ -269,19 +284,26 @@ class InitOperation(GroupOperation):
                 provided_config = json.load(f)
             self._init_project(provided_config)
 
-    def _init_project(self, config):
+    def _init_project(self, config: dict):
+        """
+        Create a first-time ProjectOperation and save created files. 
+        """
         proj_op = ProjectOperation(
-            config['workdir'],
             config['proj_code'],
+            config['workdir'],
             self.groupID,
+            first_time = True,
+            ft_kwargs=config,
             logger=self.logger
         )
 
-        proj_op.base_cfg = config
-        proj_op.configure_filelist(config['pattern'])
         proj_op.save_files()
 
-    def _init_group(self, datasets):
+    def _init_group(self, datasets : list):
+        """
+        Create a new group within the working directory, and all 
+        associated projects.
+        """
 
         self.logger.info('Creating project directories')
         # Group config is the contents of datasets.csv
@@ -330,7 +352,7 @@ class InitOperation(GroupOperation):
             proj_op.save_files()
 
         self.logger.info(f'Created {len(datasets)*6} files, {len(datasets)*2} directories in group {self.groupID}')
-        self.add_proj_codeset['main'] = proj_codes
+        self.add_proj_codeset('main',proj_codes)
         self.logger.info(f'Written as group ID: {self.groupID}')
         self.save_files()
 
