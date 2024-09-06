@@ -25,7 +25,7 @@ class LoggedOperation:
     """
     def __init__(
             self, 
-            logger : logging.logger,
+            logger : logging.logger = None,
             label  : str = None, 
             fh     : str = None, 
             logid  : str = None, 
