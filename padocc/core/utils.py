@@ -1,19 +1,21 @@
 __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
-__copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
+__copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import os
 import xarray as xr
 import json
 import fsspec
-import logging
 import math
 import numpy as np
 import re
 
-from padocc.errors import MissingVariableError, MissingKerchunkError, ChunkDataError, \
-                            KerchunkDecodeError
-from padocc.logs import FalseLogger
+from padocc.core.errors import (
+    MissingVariableError, 
+    MissingKerchunkError, 
+    ChunkDataError,
+    KerchunkDecodeError
+)
 
 times = {
     'scan'    :'10:00', # No prediction possible prior to scanning
@@ -31,7 +33,7 @@ class BypassSwitch:
         if switch.startswith('+'):
             switch = 'DBSCLR' + switch[1:]
         self.switch = switch
-        if type(switch) == str:
+        if isinstance(switch, str):
             switch = list(switch)
         
         self.skip_driver   = ('D' in switch)

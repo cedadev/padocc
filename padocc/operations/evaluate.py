@@ -2,7 +2,7 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
-from .operations import GroupOperation, ProjectOperation
+from padocc.operations import GroupOperation, ProjectOperation
 
 """
 Replacement for assessor tool. Requires the following (public) methods:

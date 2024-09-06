@@ -5,9 +5,8 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 from ingest_lib import Ingester
 import glob
 import json
-from padocc.utils import get_codes, get_proj_file, get_proj_dir
 
-class KerchunkIngester(Ingester):
+class IngestOperation:
     pass
 
 def add_download_link(group, workdir, proj_code):
@@ -35,7 +34,6 @@ def add_download_link(group, workdir, proj_code):
             with open(kfile,'w') as f:
                 f.write(json.dumps(refs))
             
-
 def ingest_config(args, logger):
     """
     Configure for ingestion of a set of project codes, currently defined
