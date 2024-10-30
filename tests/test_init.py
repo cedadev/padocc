@@ -1,14 +1,23 @@
-from padocc import Configuration
+from padocc.operations import GroupOperation
 
-def test_init_basic():
-    infile  = 'tests/data/myfile.csv'
-    groupID = 'padocc-test-suite'
+WORKDIR = 'auto_testdata_dir'
 
-    kwargs = {}
+class TestInit:
 
-    process = Configuration(label='test_init')
+    def test_init_basic(self, wd=WORKDIR):
+        infile  = 'tests/data/myfile.csv'
+        groupID = 'padocc-test-suite'
 
-    process.init_config(infile, groupID=groupID, **kwargs)
+        workdir = wd
+
+        kwargs = {}
+
+        process = GroupOperation(
+            groupID,
+            workdir=workdir,
+            label='test_init')
+
+        process.init_from_file(infile)
 
 if __name__ == '__main__':
-    test_init_basic()
+    TestInit().test_init_basic()
