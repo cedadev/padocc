@@ -156,7 +156,7 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
 
     def run(
             self,
-            mode: str,
+            mode: str = None,
             subset_bypass: bool = False, 
             forceful : bool = None,
             thorough : bool = None,

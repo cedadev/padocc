@@ -630,10 +630,12 @@ class KerchunkDS(ComputeOperation):
         
     def _run(
             self,
-            mode='kerchunk') -> None:
+            **kwargs) -> None:
         """
         ``_run`` hook method called from the ``ProjectOperation.run`` 
-        which this subclass inherits.
+        which this subclass inherits. The kwargs capture the ``mode``
+        parameter from ``ProjectOperation.run`` which is not needed 
+        because we already know we're running for ``Kerchunk``.
         """
         status = self._run_with_timings(self.create_refs)
         self.detail_cfg['cfa'] = cfa_handler(self)

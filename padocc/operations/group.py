@@ -291,6 +291,11 @@ class GroupOperation(
                 f'"{list(COMPUTE.keys())}"'
             )
         
+        # Compute uses separate classes per mode (KerchunkDS, ZarrDS)
+        # So the type of ds that the project operation entails is different.
+        # We then don't need to provide the 'mode' to the .run function because
+        # it is implicit for the DS class.
+
         ds = COMPUTE[mode]
 
         proj_op = ds(
