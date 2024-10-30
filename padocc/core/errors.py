@@ -4,6 +4,58 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import json
 import os
+import logging
+import traceback
+
+from .filehandlers import CSVFileHandler
+
+def error_handler(
+        err : Exception, 
+        logger: logging.Logger, 
+        phase: str,
+        jobid: str = None,
+        dryrun: bool = False,
+        subset_bypass: bool = False, 
+        status_fh: CSVFileHandler = None
+    ):
+
+    """
+    This function should be used at top-level loops over project codes ONLY - 
+    not within the main body of the package.
+
+    1. Single slurm job failed - raise Error
+    2. Single serial job failed - raise Error
+    3. One of a set of tasks failed - print error for that dataset as traceback.
+    """
+
+    def get_status(tb: list) -> str:
+        status = 'Failed - NoLogGiven'
+        for j in range(1, len(tb)):
+            index = (j*-1)
+            if tb[index]:
+                status = 'Failed - ' + tb[index].split(':')[0]
+                break
+        return status
+
+    try:
+        raise err
+    except Exception:
+        tb = traceback.format_exc().split('\n')
+
+        if hasattr(err, 'get_str'):
+            status = err.get_str()
+        else:
+            status = get_status(tb)
+
+    if status_fh is not None:
+        status_fh.update_status(phase, status, jobid=jobid, dryrun=dryrun)
+
+    if subset_bypass:
+        logger.error(tb)
+        return status
+    else:
+        raise err
+
 
 class KerchunkException(Exception):
     def __init__(self, proj_code, groupdir):
@@ -84,8 +136,8 @@ class BlacklistProjectCode(KerchunkException):
 
 class MissingVariableError(KerchunkException):
     """A variable is missing from the environment or set of arguments."""
-    def __init__(self, type='$', verbose=0, proj_code=None, groupdir=None):
-        self.message = f'Missing variable: {type}'
+    def __init__(self, vtype='$', verbose=0, proj_code=None, groupdir=None):
+        self.message = f'Missing variable: {vtype}'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'

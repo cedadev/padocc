@@ -25,13 +25,14 @@ class LoggedOperation:
     """
     def __init__(
             self, 
-            logger : logging.logger = None,
+            logger : logging.Logger = None,
             label  : str = None, 
             fh     : str = None, 
             logid  : str = None, 
             verbose: int = 0
         ) -> None:
 
+        self._logid = logid
         self._verbose = verbose
         if hasattr(self, 'logger'):
             return
@@ -64,11 +65,11 @@ def reset_file_handler(
         logger  : logging.Logger,
         verbose : int, 
         fh : str
-    ) -> logging.logger:
+    ) -> logging.Logger:
     """
     Reset the file handler for an existing logger object.
 
-    :param logger:      (logging.logger) An existing logger object.
+    :param logger:      (logging.Logger) An existing logger object.
 
     :param verbose:     (int) The logging level to reapply.
 
@@ -106,7 +107,7 @@ def init_logger(
         name  : str, 
         fh    : str = None, 
         logid : str = None
-    ) -> logging.logger:
+    ) -> logging.Logger:
     """
     Logger object init and configure with standardised formatting.
     
@@ -123,18 +124,18 @@ def init_logger(
     :returns:       A new logger object.
     
     """
-
     verbose = min(verbose, len(levels)-1)
     if logid is not None:
         name = f'{name}_{logid}'
 
     logger = logging.getLogger(name)
 
-    if fh:
+    if fh is not None:
         return reset_file_handler(logger, verbose, fh)
 
     logger = logging.getLogger(name)
     logger.setLevel(levels[verbose])
+    logger.propagate = False
 
     ch = logging.StreamHandler()
     ch.setLevel(levels[verbose])

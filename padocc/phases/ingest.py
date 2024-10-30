@@ -2,7 +2,7 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
-from ingest_lib import Ingester
+#from ingest_lib import Ingester
 import glob
 import json
 

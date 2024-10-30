@@ -1,33 +1,28 @@
-## Tool for scanning a netcdf file or set of netcdf files for kerchunkability
-
-# Determine total number of netcdf chunks in first file
-# Determine number of netcdf files
-
-# Calculate total number of chunks and output
-
 __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
-__copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
+__copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-from kerchunk.hdf import SingleHdf5ToZarr
-from kerchunk.netCDF3 import NetCDF3ToZarr
-import os, sys
-from datetime import datetime
 import math
 import json
 import numpy as np
 import re
+import logging
 
 from padocc.core import FalseLogger
-from padocc.core.errors import *
-from padocc import ProjectOperation, ComputeOperation
+from padocc.core.errors import ConcatFatalError
+from padocc.core import ProjectOperation
+from padocc.core.utils import BypassSwitch
+from .compute import KerchunkDS
 
-from padocc.operations.filehandlers import JSONFileHandler
+from padocc.core.filehandlers import JSONFileHandler
 
-def _format_float(value: int, logger=FalseLogger) -> str:
-    """Format byte-value with proper units"""
+def _format_float(value: int, logger: logging.Logger = FalseLogger()) -> str:
+    """
+    Format byte-value with proper units.
+    """
+
     logger.debug(f'Formatting value {value} in bytes')
-    if value:
+    if value is not None:
         unit_index = 0
         units = ['','K','M','G','T','P']
         while value > 1000:
@@ -42,7 +37,7 @@ def _safe_format(value: int, fstring: str) -> str:
     - Handles issues by returning '', usually when value is None initially."""
     try:
         return fstring.format(value=value)
-    except:
+    except AttributeError:
         return ''
     
 def _get_seconds(time_allowed: str) -> int:
@@ -59,7 +54,7 @@ def _format_seconds(seconds: int) -> str:
         mins = f'0{mins}'
     return f'{mins}:00'
 
-def _perform_safe_calculations(std_vars: list, cpf: list, volms: list, nfiles: int, logger) -> tuple:
+def _perform_safe_calculations(std_vars: list, cpf: list, volms: list, nfiles: int, logger: logging.Logger = FalseLogger()) -> tuple:
     """
     Perform all calculations safely to mitigate errors that arise during data collation.
 
@@ -130,83 +125,80 @@ def _perform_safe_calculations(std_vars: list, cpf: list, volms: list, nfiles: i
 
 class ScanOperation(ProjectOperation):
 
-    def __init__(self, 
-                 proj_code,
-                 workdir,
-                 groupID=None, 
-                 dryrun=True,
-                 forceful=False,
-                 **kwargs
-                 ):
-        super().__init__(proj_code, workdir, groupID=groupID, dryrun=dryrun, forceful=forceful, **kwargs)
+    def __init__(
+            self, 
+            proj_code : str, 
+            workdir   : str,
+            groupID   : str = None, 
+            label     : str = None,
+            **kwargs,
+        ) -> None:
 
-    @classmethod
-    def help(cls):
-        print('Not set up yet!')
+        self.phase = 'scan'
+        if label is None:
+            label = 'scan-operation'
 
-    def run(self, mode='kerchunk') -> None:
+        super().__init__(
+            proj_code, workdir, groupID=groupID, **kwargs)
+
+    def _run(self, mode: str = 'kerchunk') -> None:
         """Main process handler for scanning phase"""
 
-        self.logger.debug(f'Assessment for {self.proj_code}')
+        self.logger.info(f'Starting scan-{mode} operation for {self.proj_code}')
 
         nfiles = len(self.allfiles)
 
         if nfiles < 3:
             self.detail_cfg = {'skipped':True}
+            self.logger.info('Skip scanning phase >> proceed directly to compute')
             return None
         
 
         # Create all files in mini-kerchunk set here. Then try an assessment.
-        limiter = int(nfiles/20)
-        limiter = max(2, limiter)
-        limiter = min(100, limiter)
+        limiter = min(100, max(2, int(nfiles/20)))
 
         self.logger.info(f'Determined {limiter} files to scan (out of {nfiles})')
 
-        scanners = {
-            'zarr':self.scan_zarr,
-            'kerchunk':self.scan_kerchunk
-        }
+        if mode == 'zarr':
+            self._scan_zarr(limiter=limiter)
+        elif mode == 'kerchunk':
+            self._scan_kerchunk(limiter=limiter)
+        else:
+            self.logger.error('Unrecognised mode - must be one of ["kerchunk","zarr","CFA"]')
+            return 'Failed'
 
-        if mode in scanners:
-            scanners[mode](limiter=limiter)
+        self.update_status('scan','Success',jobid=self._logid, dryrun=self._dryrun)
+        return 'Success'
 
-    def scan_kerchunk(self, limiter=None):
+    def _scan_kerchunk(self, limiter: int = None):
         """
         Function to perform scanning with output Kerchunk format.
         """
         self.logger.info('Starting scan process for Kerchunk cloud format')
 
-        success = True
-
         # Redo this processor call.
-        mini_ds = ComputeOperation(
+        mini_ds = KerchunkDS(
             self.proj_code,
             workdir=self.workdir, 
             groupID=self.groupID,
-            thorough=True, forceful=True, # Always run from scratch forcefully to get best time estimates.
-            verbose=self._verbose, logid='0',
+            thorough=self._thorough, 
+            forceful=self._forceful, # Always run from scratch forcefully to get best time estimates.
+            logger=self.logger,
             limiter=limiter)
 
-        try:
-            mini_ds.create_refs()
-            if not mini_ds.success:
-                success = False
-        except ConcatFatalError as err:
-            return False
+        mini_ds.create_refs()
         
         escape, is_varwarn, is_skipwarn = False, False, False
         cpf, volms = [],[]
 
         std_vars   = None
         std_chunks = None
-        ctypes   = []
-        ctype    = None
+        ctypes   = mini_ds.ctypes
         
-        self.logger.info(f'Summarising scan results for {self.limiter} files')
-        for count in range(self.limiter):
+        self.logger.info(f'Summarising scan results for {limiter} files')
+        for count in range(limiter):
             try:
-                volume, chunks_per_file, varchunks, ctype = self._summarise_json(count)
+                volume, chunks_per_file, varchunks = self._summarise_json(count)
                 vars = sorted(list(varchunks.keys()))
 
                 # Keeping the below options although may be redundant as have already processed the files
@@ -224,9 +216,8 @@ class ScanOperation(ProjectOperation):
 
                 cpf.append(chunks_per_file)
                 volms.append(volume)
-                ctypes.append(ctype)
 
-                self.info(f'Data recorded for file {count+1}')
+                self.logger.info(f'Data recorded for file {count+1}')
             except Exception as err:
                 raise err
             
@@ -240,7 +231,7 @@ class ScanOperation(ProjectOperation):
             ctypes, escape=escape, is_varwarn=is_varwarn, is_skipwarn=is_skipwarn
         )
 
-    def scan_zarr(self, limiter=None):
+    def _scan_zarr(self, limiter=None):
         """
         Function to perform scanning with output Zarr format.
         """
@@ -274,7 +265,7 @@ class ScanOperation(ProjectOperation):
         Open previously written JSON cached files and perform analysis.
         """
 
-        if type(identifier) == dict:
+        if isinstance(identifier, dict):
             # Assume refs passed directly.
             kdict = identifier['refs']
         else:
@@ -290,7 +281,7 @@ class ScanOperation(ProjectOperation):
             self.logger.debug(f'Starting Analysis of references for {identifier}')
 
         if not kdict:
-            return None, None, None, None
+            return None, None, None
 
         # Perform summations, extract chunk attributes
         sizes  = []
@@ -310,7 +301,7 @@ class ScanOperation(ProjectOperation):
                 var = chunkkey.split('/')[0]
                 chunksize = 0
                 if var not in vars:
-                    if type(kdict[chunkkey]) == str:
+                    if isinstance(kdict[chunkkey], str):
                         chunksize = json.loads(kdict[chunkkey])['chunks']
                     else:
                         chunksize = dict(kdict[chunkkey])['chunks']
@@ -323,12 +314,12 @@ class ScanOperation(ProjectOperation):
         self.logger.info('Summary complete, compiling outputs')
         (avg_cpf, num_vars, avg_chunk, 
         spatial_res, netcdf_data, kerchunk_data, 
-        total_chunks, addition, type) = _perform_safe_calculations(std_vars, cpf, volms, self.allfiles.get(), self.logger)
+        total_chunks, addition, type) = _perform_safe_calculations(std_vars, cpf, volms, len(self.allfiles), self.logger)
 
         details = {
             'netcdf_data'      : _format_float(netcdf_data, logger=self.logger), 
             'kerchunk_data'    : _format_float(kerchunk_data, logger=self.logger), 
-            'num_files'        : self.allfiles.get(),
+            'num_files'        : len(self.allfiles),
             'chunks_per_file'  : _safe_format(avg_cpf,'{value:.1f}'),
             'total_chunks'     : _safe_format(total_chunks,'{value:.2f}'),
             'estm_chunksize'   : _format_float(avg_chunk, logger=self.logger),
@@ -358,8 +349,10 @@ class ScanOperation(ProjectOperation):
         if override_type:
             details['type'] = override_type
 
+        details['version_no'] = 1
+
         existing_details = self.detail_cfg.get()
-        if existing_details:
+        if existing_details is not None:
             for entry in details.keys():
                 if details[entry]:
                     existing_details[entry] = details[entry]

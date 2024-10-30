@@ -1,6 +1,9 @@
-from .init import InitOperation
+__author__    = "Daniel Westwood"
+__contact__   = "daniel.westwood@stfc.ac.uk"
+__copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
+
 from .scan import ScanOperation
-from .compute import KerchunkDS, ZarrDS
-from .validate import ValidateOperation
+from .compute import KerchunkDS, ZarrDS, ComputeOperation, cfa_handler
 from .ingest import IngestOperation
-from .config import Configuration
+
+KNOWN_PHASES = ['init', 'scan', 'compute', 'validate']

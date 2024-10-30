@@ -12,7 +12,7 @@ import base64
 
 import rechunker
 
-from padocc import ProjectOperation
+from padocc.core import ProjectOperation
 
 from padocc.core import (
     BypassSwitch,
@@ -34,9 +34,25 @@ from padocc.core.errors import (
 )
 
 from padocc.phases.validate import validate_selection
-from padocc.operations.filehandlers import JSONFileHandler, ZarrStore
+from padocc.core.filehandlers import JSONFileHandler, ZarrStore
 
 CONCAT_MSG = 'See individual files for more details'
+
+def cfa_handler(instance):
+    """
+    Handle the creation of a CFA-netCDF file using the CFAPyX package
+    """
+    try:
+        from cfapyx import CFANetCDF
+
+    except ImportError:
+        return False
+
+    cfa = CFANetCDF(instance.allfiles.get()) # Add instance logger here.
+
+    cfa.create()
+    cfa.write(instance.cfa_path)
+    return True
 
 class KerchunkConverter(LoggedOperation):
     """Class for converting a single file to a Kerchunk reference object. Handles known
@@ -53,8 +69,10 @@ class KerchunkConverter(LoggedOperation):
             logid=None) -> None:
 
         self.success       = True
-        self.bypass_driver = bypass_driver
+        self._bypass_driver = bypass_driver
         self.loaded_refs   = False
+
+        self.ctype = None
 
         self.drivers = {
             'ncf3': self._ncf3_to_zarr,
@@ -71,7 +89,7 @@ class KerchunkConverter(LoggedOperation):
             verbose=verbose
         )
 
-    def run(self, nfile: str, filehandler=None, extension=None,**kwargs) -> dict:
+    def run(self, nfile: str, filehandler=None, extension=None, **kwargs) -> dict:
         """
         Safe creation allows for known issues and tries multiple drivers
 
@@ -87,25 +105,23 @@ class KerchunkConverter(LoggedOperation):
         tdict = None
         if extension:
             tdict = self._convert_kerchunk(nfile, extension, **kwargs)
+            ctype = extension
 
         if not tdict:
             for ctype in supported_extensions:
                 tdict = self._convert_kerchunk(nfile, ctype, **kwargs)
                 if tdict:
+                    self.logger.debug(f'Scan successful with {ctype} driver')
                     break
 
         if not tdict:
             self.logger.error('Scanning failed for all drivers, file type is not Kerchunkable')
             raise KerchunkDriverFatalError
-        else:
-            if extension:
-                self.ctype = extension
-            self.logger.debug(f'Scan successful with {self.ctype} driver')
         
         if filehandler:
             filehandler.set(tdict)
             filehandler.save_file()
-        return tdict
+        return tdict, ctype
 
     def _convert_kerchunk(self, nfile: str, ctype, **kwargs) -> None:
         """
@@ -133,7 +149,7 @@ class KerchunkConverter(LoggedOperation):
                 self.logger.debug(f'Extension {ctype} not valid')
                 return None
         except Exception as err:
-            if self.bypass_driver:
+            if self._bypass_driver:
                 return None
             else:
                 raise err
@@ -168,9 +184,8 @@ class ComputeOperation(ProjectOperation):
             self, 
             proj_code : str, 
             workdir   : str,
-            stage     : str,
-            mode      : str,
-            fmt       : str,
+            groupID   : str = None,
+            stage     : str = 'in_progress',
             thorough    : bool = None,
             version_no  : str = 'trial-', 
             concat_msg  : str = CONCAT_MSG,
@@ -210,9 +225,12 @@ class ComputeOperation(ProjectOperation):
         :returns: None
 
         """
+        self.phase = 'compute'
+
         super().__init__(
             proj_code, 
             workdir, 
+            groupID=groupID,
             thorough=thorough,
             **kwargs)
 
@@ -222,10 +240,9 @@ class ComputeOperation(ProjectOperation):
         self.new_version = new_version
         self.concat_msg  = concat_msg
         self.skip_concat = skip_concat
-        
+
         self.stage = stage
-        self.fmt   = fmt
-        self.mode  = mode
+        self._identify_mode()
 
         self.validate_time = None
         self.concat_time   = None
@@ -239,6 +256,8 @@ class ComputeOperation(ProjectOperation):
         num_files = len(self.allfiles)
 
         self.partial = (limiter and num_files != limiter)
+
+        self._determine_version()
 
         self.limiter = limiter
         if not self.limiter:
@@ -256,8 +275,8 @@ class ComputeOperation(ProjectOperation):
             self.cache, 
             'temp_zattrs',
             self.logger,
-            dryrun=self.dryrun,
-            forceful=self.forceful
+            dryrun=self._dryrun,
+            forceful=self._forceful
         )
 
         if thorough:
@@ -272,7 +291,7 @@ class ComputeOperation(ProjectOperation):
 
         self.logger.debug('Finished all setup steps')
 
-    def run(self, func):
+    def _run_with_timings(self, func):
         """
         Configure all required steps for Kerchunk processing.
         - Check if output files already exist.
@@ -297,6 +316,7 @@ class ComputeOperation(ProjectOperation):
 
         self.detail_cfg.set(detail)
         self.detail_cfg.save_file()
+        return 'Success'
 
     def save_files(self):
         super().save_files()
@@ -309,7 +329,7 @@ class ComputeOperation(ProjectOperation):
     @property
     def outproduct(self):
         if self.stage == 'complete':
-            return f'{self.proj_code}_{self.version_no}.{self.fmt}'
+            return f'{self.proj_code}_{self.mode[0]}r1.{self.version_no}.{self.fmt}'
         else:
             return f'{self.mode}-{self.version_no}a.{self.fmt}'
 
@@ -324,9 +344,9 @@ class ComputeOperation(ProjectOperation):
 
         return self.allfiles[:self.limiter]
 
-    def _determine_version(self) -> bool:
-        if self.forceful:
-            return True
+    def _determine_version(self):
+        if self._forceful:
+            return
         
         found_space = False
         while not found_space:
@@ -335,13 +355,11 @@ class ComputeOperation(ProjectOperation):
                 if self.new_version:
                     self.version_no += 1
                 else:
-                    return False
-                self.logger.error(
-                    'Output product already exists and there is no plan to overwrite or create new version'
-                )
+                    raise ValueError(
+                        'Output product already exists and there is no plan to overwrite or create new version'
+                    )
             else:
                 found_space = True
-        return found_space
 
     def _get_timings(self) -> dict:
         """
@@ -383,7 +401,7 @@ class ComputeOperation(ProjectOperation):
         concat_dims = []
         for dim in ds_examples[0].dims:
             try:
-                validate_selection(ds_examples[0][dim], ds_examples[1][dim], dim, 128, 128, logger, bypass=self.bypass)          
+                validate_selection(ds_examples[0][dim], ds_examples[1][dim], dim, 128, 128, logger, bypass=self._bypass)          
             except ValidationError:
                 self.logger.debug(f'Non-identical dimension: {dim} - if this dimension should be identical across the files, please inspect.')
                 concat_dims.append(dim)
@@ -414,7 +432,7 @@ class ComputeOperation(ProjectOperation):
                     identical_check = False
             if identical_check:
                 try:
-                    validate_selection(ds_examples[0][var], ds_examples[1][var], var, 128, 128, logger, bypass=self.bypass)
+                    validate_selection(ds_examples[0][var], ds_examples[1][var], var, 128, 128, logger, bypass=self._bypass)
                     identical_dims.append(var)
                 except ValidationError:
                     self.logger.debug(f'Non-identical variable: {var} - if this variable should be identical across the files, please rerun.')
@@ -517,7 +535,7 @@ class ComputeOperation(ProjectOperation):
             else:
                 # Unrecognised time variable
                 # Check to see if all the same value
-                if len(set(times[k])) == len(self.listfiles):
+                if len(set(times[k])) == len(self.allfiles):
                     combined[k] = 'See individual files for details'
                 elif len(set(times[k])) == 1:
                     combined[k] = times[k][0]
@@ -592,28 +610,35 @@ class KerchunkDS(ComputeOperation):
             self, 
             proj_code,
             workdir,
-            stage,
+            stage = 'in_progress',
             **kwargs):
-        # Any extra kwargs for kerchunk conversion
-        super().__init__(proj_code, workdir,**kwargs)
 
-        mode = 'kerchunk'
-        stage = stage
-        fmt   = 'json'
+        super().__init__(proj_code, workdir, stage=stage, **kwargs)
+
+    def _identify_mode(self):
+
+        self.mode = 'kerchunk'
+        self.fmt   = 'json'
         self.record_size = None
+
+        self.ctypes = None
 
         if 'type' in self.detail_cfg:
             if self.detail_cfg['type'] != 'JSON':
-                fmt   = 'parq'
+                self.fmt   = 'parq'
                 self.record_size = 167
-
-        super().__init__(proj_code, workdir, stage, mode, fmt, **kwargs)
-
-    def run(self) -> None:
+        
+    def _run(
+            self,
+            mode='kerchunk') -> None:
         """
-        Recommended way of running an operation - includes timers etc.
+        ``_run`` hook method called from the ``ProjectOperation.run`` 
+        which this subclass inherits.
         """
-        super().run(self.create_refs)
+        status = self._run_with_timings(self.create_refs)
+        self.detail_cfg['cfa'] = cfa_handler(self)
+        self.update_status('compute',status,jobid=self._logid, dryrun=self._dryrun)
+        return status
 
     def create_refs(self) -> None:
         """Organise creation and loading of refs
@@ -621,47 +646,55 @@ class KerchunkDS(ComputeOperation):
         - Create new refs
         - Combine metadata and global attributes into a single set
         - Coordinate combining and saving of data"""
-        self.logger.info(f'Starting computation for components of {self.proj_code}')
 
-        if not self.carryon:
-            self.logger.info('Process aborted - no overwrite plan for existing file.')
-            return None
+        self.logger.info(f'Starting computation for components of {self.proj_code}')
 
         refs, allzattrs = [], []
         partials = []
+        ctypes = []
 
-        # Attempt to load existing file - create if not exists already
+        ctype = None
 
         converter = KerchunkConverter(logger=self.logger, 
-                                      bypass_driver=self.bypass.skip_driver,
-                                      ctype=None)
+                                      bypass_driver=self._bypass.skip_driver)
+        
+        listfiles = self.allfiles.get()
 
         t1 = datetime.now()
-        for x, nfile in enumerate(self.listfiles[:self.limiter]):
-            cache_ref = f'{self.cache}/{x}.json'
+        for x, nfile in enumerate(listfiles[:self.limiter]):
             ref = None
-            if not self.thorough:
-                ref = converter.load_individual_ref(cache_ref)
+            CacheFile = JSONFileHandler(self.cache, f'{x}.json', 
+                                            dryrun=self._dryrun, forceful=self._forceful,
+                                            logger=self.logger)
+            if not self._thorough:
+                self.logger.info('Loading cache file')
+                ref = CacheFile.get()
                 if ref:
                     self.logger.info(f'Loaded refs: {x+1}/{self.limiter}')
+
             if not ref:
                 self.logger.info(f'Creating refs: {x+1}/{self.limiter}')
                 try:
-                    ref = converter.run(nfile, **self.create_kwargs)
+                    ref, ctype = converter.run(nfile, extension=ctype, **self.create_kwargs)
                 except KerchunkDriverFatalError as err:
                     if len(refs) == 0:
                         raise err
                     else:
                         partials.append(x)
-            if ref:
-                allzattrs.append(ref['refs']['.zattrs'])
-                refs.append(ref)
-                cache_ref = f'{self.cache}/{x}.json'
-                converter.save_individual_ref(ref, cache_ref, forceful=self.forceful)
-                if not self.quality_required:
-                    self._perform_shape_checks(ref)
+            if not ref:
+                raise KerchunkDriverFatalError()
+            
+            allzattrs.append(ref['refs']['.zattrs'])
+            refs.append(ref)
+
+            if not self.quality_required:
+                self._perform_shape_checks(ref)
+            CacheFile.set(ref)
+            CacheFile.save_file()
+            ctypes.append(ctype)
 
         self.success = converter.success
+        self.ctypes = ctypes
         # Compute mean conversion time for this set.
         self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
 
@@ -711,7 +744,7 @@ class KerchunkDS(ComputeOperation):
             self._data_to_parq(refs)
         self.concat_time = (datetime.now()-t1).total_seconds()/self.limiter
 
-        if not self.dryrun:
+        if not self._dryrun:
             self._collect_details() # Zarr might want this too.
             self.logger.info("Details updated in detail-cfg.json")
 
@@ -794,9 +827,11 @@ class KerchunkDS(ComputeOperation):
         # Already have default options saved to class variables
         if len(refs) > 1:
             self.logger.debug('Concatenating refs using MultiZarrToZarr')
+            
             if self.detail_cfg['virtual_concat']:
                 refs, vdim = self._construct_virtual_dim(refs)
                 self.combine_kwargs['concat_dims'] = [vdim]
+
             try:
                 mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
             except ValueError as err:
@@ -815,7 +850,7 @@ class KerchunkDS(ComputeOperation):
             self.kfile.set(refs[0])
         
         # This is now done at ingest, post-validation due to Network Issues
-        if not self.bypass.skip_links:
+        if not self._bypass.skip_links:
             self.kfile.add_download_link()
             self.detail_cfg['links_added'] = True
         else:
@@ -839,9 +874,10 @@ class KerchunkDS(ComputeOperation):
             checklist = [r for r in ref['refs'].keys() if '.zarray' in r]
 
         for key in checklist:
-            zarray = json.load(ref['refs'][key])
-            if not self.var_shapes[key]:
+            zarray = json.loads(ref['refs'][key])
+            if key not in self.var_shapes:
                 self.var_shapes[key] = zarray['shape']
+
             if self.var_shapes[key] != zarray['shape']:
                 self.quality_required = True
 
@@ -851,17 +887,13 @@ class ZarrDS(ComputeOperation):
             self, 
             proj_code,
             workdir,
-            stage,
+            stage = 'in_progress',
             mem_allowed : str = '100MB',
             preferences = None,
             **kwargs,
         ) -> None:
-
-        # Any extra kwargs for zarr conversion
-        mode = 'zarr'
-        fmt  = '.zarr'
         
-        super().__init__(proj_code, workdir, stage, mode, fmt, **kwargs)
+        super().__init__(proj_code, workdir, stage, *kwargs)
 
         self.tempstore   = ZarrStore(self.dir, "zarrcache.zarr", self.logger, **self.fh_kwargs)
         self.preferences = preferences
@@ -872,11 +904,18 @@ class ZarrDS(ComputeOperation):
         self.filelist    = []
         self.mem_allowed = mem_allowed
 
-    def run(self) -> None:
+    def _identify_mode(self):
+
+        self.mode = 'zarr'
+        self.fmt = '.zarr'
+
+    def _run(self) -> None:
         """
         Recommended way of running an operation - includes timers etc.
         """
-        super().run(self.create_store)
+        status = self._run_with_timings(self.create_store)
+        self.update_status('compute',status,jobid=self._logid, dryrun=self._dryrun)
+        return status
 
     def create_store(self):
 

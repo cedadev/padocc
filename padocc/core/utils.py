@@ -125,7 +125,7 @@ def open_kerchunk(kfile: str, logger, isparq=False, retry=False, attempt=1, **kw
         logger.debug('Successfully opened Kerchunk with virtual xarray ds')
         return ds
 
-def get_attribute(env: str, args, var: str) -> str:
+def get_attribute(env: str, value: str) -> str:
     """
     Assemble environment variable or take from passed argument. Find
     value of variable from Environment or ParseArgs object, or reports failure.
@@ -138,27 +138,39 @@ def get_attribute(env: str, args, var: str) -> str:
 
     :returns: Value of either environment variable or argparse value.
     """
-    try:
-        if getattr(args, var):
-            return getattr(args, var)
-    except AttributeError:
-        pass
-    if os.getenv(env):
-        return os.getenv(env)
+    if value is None:
+        if not os.getenv(env):
+            raise MissingVariableError(vtype=env)
+        else:
+            return os.getenv(env)
     else:
-        print(var)
-        raise MissingVariableError(type=var)
+        if os.getenv(env):
+            print(
+                'Overriding environment workdir with user-defined value:'
+                f'Env : "{os.getenv(env)}"'
+                f'User: "{value}')
+            value = os.getenv(env)
+        return value
 
-def format_str(string: str, length: int, concat=False) -> str:
+def format_str(
+        string: str, 
+        length: int, 
+        concat: bool = False, 
+        shorten: bool = False
+    ) -> str:
     """
     Simple function to format a string to a correct length.
     """
+    if len(string) < length and shorten:
+        return string
+
     string = str(string)
     if len(string) >= length and concat:
         string = string[:length-3] + '...'
     else:
         while len(string) < length:
             string += ' '
+
     return string[:length]
   
 def mem_to_val(value: str) -> float:

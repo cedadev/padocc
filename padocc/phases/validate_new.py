@@ -15,24 +15,31 @@ import logging
 import math
 import re
 
-from padocc.core.errors import *
-from padocc.core.logs import init_logger, SUFFIXES, SUFFIX_LIST, FalseLogger
-from padocc.core.utils import BypassSwitch
-from ujson import JSONDecodeError
-from dask.distributed import LocalCluster
+from padocc.core.errors import (
+    ShapeMismatchError,
+    TrueShapeValidationError,
+    NoValidTimeSlicesError,
+    MissingKerchunkError,
+    ArchiveConnectError,
+    FullsetRequiredError,
+    NoOverwriteError,
+    SourceNotFoundError,
+    ChunkDataError,
+    ValidationError,
+    XKShapeToleranceError,
+    NaNComparisonError,
+    SoftfailBypassError,
+    VariableMismatchError
+)
+from padocc.core import BypassSwitch, FalseLogger
+#from padocc.core.utils import SUFFIXES, SUFFIX_LIST
 
-class CloudValidator:
-    """
-    Encapsulate all validation testing into a single class. Instantiate for a specific project,
-    the object could then contain all project info (from detail-cfg) opened only once. Also a 
-    copy of the total datasets (from native and cloud sources). Subselections can be passed
-    between class methods along with a variable index (class variables: variable list, dimension list etc.)
+SUFFIXES = []
+SUFFIX_LIST = []
 
-    Class logger attribute so this doesn't need to be passed between functions.
-    Bypass switch contained here with all switches.
-    """
-    def __init__(self):
-        pass
+from padocc.core import ProjectOperation
+
+### Public Validation methods visible across PADOCC
 
 ## 1. Array Selection Tools
 
@@ -50,7 +57,12 @@ def find_dimensions(dimlen: int, divisions: int) -> int:
     divsize = int(dimlen/divisions)+1
     return divsize
 
-def get_vslice(dimensions: list, dtypes: list, lengths: list, divisions: list, logger) -> list:
+def get_vslice(
+        dimensions: list, 
+        dtypes: list, 
+        lengths: list, 
+        divisions : list
+    ) -> list:
     """
     Assemble dataset slice given the shape of the array and dimensions involved.
     
@@ -61,8 +73,6 @@ def get_vslice(dimensions: list, dtypes: list, lengths: list, divisions: list, l
     :param lengths:     (list) The lengths of each dimension for an array.
 
     :param divisions:   (list) The number of divisions for each of the dimensions for an array.
-
-    :param logger:      (obj) Logging object for info/debug/error messages.
 
     :returns:   Slice for this particular division set. Special cases for datetime-like objects.
     """
@@ -75,144 +85,8 @@ def get_vslice(dimensions: list, dtypes: list, lengths: list, divisions: list, l
             vslice.append(slice(0,1))
         else:
             vslice.append(slice(0,find_dimensions(dim,divisions)))
-    logger.debug(f'Slice {vslice}')
     return vslice
-
-def get_concat_dims(xobjs: list, proj_dir) -> dict: # Ingest into class structure
-    """
-    Retrieve the sizes of the concatenation dims.
-
-    :param xobjs:       (list) A list of xarray Dataset objects for files which are currently 
-                        being assessed, from which to find the shapes of concat dimensions.
-
-    :param proj_code:   (str) The project code in string format (DOI)
-
-    :returns:   A dictionary of the concatenation dimensions and their array shapes.
-    """
-    concat_dims = {}
-    details     = get_proj_file(proj_dir, 'detail-cfg.json')
-    if details:
-        # Initialise concat dims
-        if 'concat_dims' in details:
-            for dim in details['concat_dims']:
-                concat_dims[dim] = 0
-
-    for ds in xobjs:
-        for dim in concat_dims.keys():
-            concat_dims[dim] += ds[dim].shape[0]
-    return concat_dims
-
-## 2. File Selection Tools
-
-def get_netcdf_list(proj_dir: str, logger, thorough=False) -> tuple: # Ingest into class structure
-    """
-    Open document containing paths to all NetCDF files, make selections and return a list of files.
-
-    :param proj_dir:    (str) The project code directory path.
-
-    :param logger:      (obj) Logging object for info/debug/error messages.
-
-    :param thorough:    (bool) If True will select all files for testing, otherwise
-                        standard validation subsetting (0.1% or 3 files) applies.
-    
-    :returns:   A tuple containing a list of all the files as well as a list of indexes to 
-                specific files for testing. The index list should cover at least 3 files,
-                with a maximum of 0.1% of the files selected in the case of > 3000 files.
-    """
-    with open(f'{proj_dir}/allfiles.txt') as f:
-        xfiles = [r.strip() for r in f.readlines()]
-    logger.debug(f'Found {len(xfiles)} files in {proj_dir}/allfiles.txt')
-
-    # Open full set or a subset of the files for testing
-    if thorough:
-        numfiles = len(xfiles)+1
-        logger.info(f'Selecting all {numfiles-1} files')
-    else:
-        numfiles = int(len(xfiles)/1000)
-        if numfiles < 3:
-            numfiles = 3
-
-    if numfiles >= len(xfiles):
-        numfiles = len(xfiles)
-        indexes = [i for i in range(len(xfiles))]
-    else:
-        indexes = []
-        for f in range(numfiles):
-            testindex = random.randint(0,numfiles-1)
-            while testindex in indexes:
-                testindex = random.randint(0,numfiles-1)
-            indexes.append(testindex)
-        logger.info(f'Selecting a subset of {numfiles}/{len(xfiles)} files')
-    return indexes, xfiles
-
-def locate_kerchunk(args, logger, get_str=False, attempt=1, remote_protocol='https') -> xr.Dataset:
-    """
-    Gets the name of the latest kerchunk file for this project code.
-
-    :param args:        (obj) Set of command line arguments supplied by argparse.
-
-    :param logger:      (obj) Logging object for info/debug/error messages.
-
-    :param get_str:     (bool) If True will return the string filename for the selected
-                        Kerchunk file, otherwise the Kerchunk file will be opened as an 
-                        xarray Virtual Dataset.
-
-    :param remote_protocol:     (str) Default 'https' for accessing files post-compute
-                                since these have been reconfigured for remote testing.
-                                Override with 'file' for Kerchunk files with a local 
-                                reference.
-
-    :returns:   Xarray Virtual Dataset from a Kerchunk file, or the string filename
-                of the Kerchunk file if get_str is enabled.
-    """
-    files = os.listdir(args.proj_dir) # Get filename only
-    kfiles = []
-
-    check_complete = False
-
-    for f in files:
-        if 'complete' in f:
-            check_complete = True
-        elif 'kerchunk' in f and 'complete' not in f:
-            kfiles.append(f)
-        else:
-            pass
-
-    if len(kfiles) > 0:
-        # Which kerchunk file from set of options
-        kf = sorted(kfiles)[0]
-        logger.debug(f'Selected {kf} from {len(kfiles)} available')
-        kfile = os.path.join(args.proj_dir, kf)
-        if get_str:
-            return kfile, False
-        else:
-            return open_kerchunk(kfile, logger, attempt=attempt, remote_protocol=remote_protocol), False
-    elif check_complete:
-        if not args.forceful:
-            logger.error('File already exists and no override is set')
-            raise NoOverwriteError
-        else:
-            logger.info('Locating complete Kerchunk file')
-            if args.groupID:
-                complete_path = f'{args.workdir}/complete/{args.groupID}/{args.proj_code}*.json'
-            else:
-                complete_path = f'{args.workdir}/complete/{args.proj_code}*.json'
-            complete_versions = glob.glob(complete_path)
-            if len(complete_versions) > 0:
-                kfile = complete_versions[-1]
-                logger.info(f'Identified version {kfile.split("_")[-1].replace(".json","")}')
-
-            else:
-                logger.error(f'No complete kerchunk files located at {complete_path}')
-                raise MissingKerchunkError
-        if get_str:
-            return kfile, True
-        else:
-            return open_kerchunk(kfile, logger, attempt=attempt, remote_protocol='file'), True
-    else:
-        logger.error(f'No Kerchunk file located at {args.proj_dir} and no in-place validation indicated - exiting')
-        raise MissingKerchunkError
-        
+       
 def mem_to_value(mem) -> float:
     """
     Convert a memory value i.e 2G into a value
@@ -234,51 +108,7 @@ def value_to_mem(value) -> str:
         suffix_index += 1
     return f'{value:.0f}{SUFFIX_LIST[suffix_index]}'
 
-def open_netcdfs(args, logger, thorough=False, concat_dims='time') -> list: # Ingest into class structure
-    """Returns a single xarray object with one timestep:
-    
-    1. Select a single file and a single timestep from that file
-    2. Verify that a single timestep can be selected (Yes: return this xarray object, No: select all files and select a single timestep from that)
-    3. In all cases, returns a list of xarray objects.
-
-    :param args:        (obj) Set of command line arguments supplied by argparse.
-
-    :param logger:      (obj) Logging object for info/debug/error messages.
-
-    :param thorough:    (bool) If True will concatenate all selected Datasets to a single
-                        combined dataset, rather than a list of individual separate objects.
-
-    :returns:   A list of the xarray datasets (or a single concatenated dataset), along with a list
-                of indexes to use for selecting a subset of those files, plus a list of filepaths to
-                the original files.
-    """
-    logger.debug('Performing temporal selections')
-    indexes, xfiles = get_netcdf_list(args.proj_dir, logger, thorough=thorough)
-
-    if len(indexes) == len(xfiles):
-        thorough = True
-    xobjs = []
-    if not thorough:
-        for i in indexes:
-            if not os.path.isfile(xfiles[i]):
-                raise SourceNotFoundError(sfile=xfiles[i])
-            xobjs.append(xr.open_dataset(xfiles[i]))
-        if len(xobjs) == 0:
-            logger.error('No valid timestep objects identified')
-            raise NoValidTimeSlicesError(message='Kerchunk', verbose=args.verbose)
-        return xobjs, indexes, xfiles
-    else:
-        #xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim=concat_dims, data_vars='minimal')
-        try:
-            xobj = xr.open_mfdataset(xfiles, combine='by_coords', data_vars='minimal')
-        except TypeError:
-            try:
-                xobj = xr.open_mfdataset(xfiles, combine='by_coords', data_vars='minimal', use_cftime=True)
-            except:
-                xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim=concat_dims, data_vars='minimal')
-        return xobj, None, xfiles
-
-## 3. Validation Testing
+## 2. Hypercube Validation
 
 def match_timestamp(xobject: xr.Dataset, kobject: xr.Dataset, logger) -> tuple: # Ingest into class structure
     """Match timestamp of xarray object to kerchunk object.
@@ -334,7 +164,7 @@ def compare_data(vname: str, xbox: xr.Dataset, kerchunk_box: xr.Dataset, logger,
 
     :returns:   None but will raise error if data comparison fails.
     """
-    logger.debug(f'Starting xk comparison')
+    logger.debug(f'Starting data comparison for {vname}')
 
     logger.debug('1. Flattening Arrays')
     t1 = datetime.now()
@@ -513,16 +343,16 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
     Special function for assessing if a box selection has non-NaN values within it.
     Needs further testing using different data types.
     """
-    logger.debug(f'Checking nan values for {label}: Dtype: {str(box.dtype)}')
+    logger.debug(f'Checking nan values for {label}: dtype: {str(box.dtype)}')
 
     if not ('float' in str(box.dtype) or 'int' in str(box.dtype)):
         # Non numeric arrays cannot have NaN values.
-        return False, np.array(box)
+        return False
     
     arr = np.array(box)
 
     def handle_boxissue(err):
-        if type(err) == TypeError:
+        if isinstance(err, TypeError):
             return False
         else:
             if bypass.skip_boxfail:
@@ -547,102 +377,295 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
                 isnan = np.all(arr == np.mean(arr))
             except Exception as err:
                 isnan = handle_boxissue(err)
-    return isnan, arr
 
-def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: int, logger, bypass=BypassSwitch()): # Ingest into class structure - note will need to alter 'scan' and 'compute' for a simplified validation option.
-    """Validate this data selection in xvariable/kvariable objects
-      - Recursive function tests a growing selection of data until one is found with real data
-      - Repeats with exponentially increasing box size (divisions of all data dimensions)
-      - Will halt at 1 division which equates to testing all data
+    return isnan
 
-    :returns: Number of attempts to connect to all required data.
-    """
-
-    # Determine number based on 
-    repeat = int(math.log2(divs) - math.log2(currentdiv))
-
-    logger.debug(f'Attempt {repeat} - {currentdiv} divs for {vname}')
-
+def get_slice(shape, division):
     vslice = []
-    shape = []
-    if divs > 1:
-        shape = xvariable.shape
-        logger.debug(f'Detected shape {shape} for {vname}')
-        dtypes  = [xvariable[xvariable.dims[x]].dtype for x in range(len(xvariable.shape))]
-        lengths = [len(xvariable[xvariable.dims[x]])  for x in range(len(xvariable.shape))]
-        vslice = get_vslice(shape, dtypes, lengths, divs, logger)
+    for s in shape:
+        vslice.append(slice(0, math.ceil(s/division)))
+    return vslice
 
-        xbox = xvariable[tuple(vslice)]
-        kbox = kvariable[tuple(vslice)]
+def validate_selection(
+        test : xr.DataArray, 
+        control : xr.DataArray, 
+        current : int,
+        name    : str,
+        recursion_limit : int = 10, 
+        logger : logging.Logger | FalseLogger = FalseLogger(),
+        bypass : BypassSwitch = BypassSwitch(),
+    ) -> bool:
+    """
+    General purpose validation for a specific variable from multiple sources.
+    Both inputs are expected to be xarray DataArray objects but the control could
+    instead by a NetCDF4 Dataset object. We expect both objects to be of the same size.
+    """
+    if test.size != control.size:
+        raise ValueError(
+            'Validation could not be completed for these objects due to differing'
+            f'sizes - "{test.size}" and "{control.size}"'
+        )
+
+    if current >= recursion_limit:
+        logger.debug('Maximum recursion depth reached')
+        logger.info(f'Validation for {name} not performed')
+        return None
+    
+    vslice = get_slice(test.shape, current)
+    tbox   = test[vslice]
+    cbox   = control[vslice]
+
+    if check_for_nan(cbox):
+        return validate_selection(test, control, current+1, name, recursion_limit=recursion_limit, logger=logger)
     else:
-        xbox = xvariable
-        kbox = kvariable
+        return compare_data(name, tbox, cbox, logger=logger, bypass=bypass)
 
-    # Zero shape means no point running divisions - just perform full check
-    if shape == [] and vslice == []:
-        logger.debug(f'Skipping to full selection (1 division) for {vname}')
-        currentdiv = 1
 
-    # Need to check datatype and do something special here for strings
-    if xbox.dtype == 'object':
-        # Skip all other comparison steps for data types
-        if not np.array_equal(xbox, kbox):
-            raise ValidationError
-        else:
-            return None
+class ValidateOperation(ProjectOperation):
+    """
+    Encapsulate all validation testing into a single class. Instantiate for a specific project,
+    the object could then contain all project info (from detail-cfg) opened only once. Also a 
+    copy of the total datasets (from native and cloud sources). Subselections can be passed
+    between class methods along with a variable index (class variables: variable list, dimension list etc.)
 
-    try_multiple = 0
-    not_reached = 0
-    knan, xnan = False, True
-    # Attempt nan checking multiple times due to network issues.
-    while try_multiple < 10 and knan != xnan:
-        try:
-            knan, karr = check_for_nan(kbox, bypass, logger, label='Kerchunk')
-            xnan, xarr = check_for_nan(xbox, bypass, logger, label='Xarray')
-        except ReferenceNotReachable as err:
-            not_reached += 1
-        try_multiple += 1
+    Class logger attribute so this doesn't need to be passed between functions.
+    Bypass switch contained here with all switches.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    if not_reached != 0 and not_reached == try_multiple:
-        # 50% failed attempts
-        raise ArchiveConnectError
+        self.concat_dims = None
 
-    # Switch and save to np arrays if nans are successful.
-    if knan != xnan:
-        if not_reached == try_multiple:
-            # 100% failed attempts
-            raise ArchiveConnectError
-        else:
-            raise NaNComparisonError
+    def run(self):
+        # Replaces validate timestep
         
-    logger.debug(f'NaN comparison tried: {try_multiple} times')
-    if kbox.size >= 1 and not knan:
-        # Evaluate kerchunk vs xarray and stop here
-        logger.debug(f'Found comparable box-size: {int(kbox.size)} values')
-        compare_data(vname, xarr, karr, logger, bypass=bypass.skip_data_sum)
-    else:
-        logger.debug(f'Attempt {repeat} - slice is Null')
-        if currentdiv >= 2:
-            # Recursive search for increasing size (decreasing divisions)
-            not_reached += validate_selection(xvariable, kvariable, vname, divs, int(currentdiv/2), logger, bypass=bypass)
+        if self.detail_cfg.get('cfa'):
+            # CFA-enabled validation
+            self.perform_cfa_validation()
+
         else:
-            logger.warning(f'Failed to find non-NaN slice (tried: {int(math.log2(divs))}, var: {vname})')
-            if not bypass.skip_softfail:
-                raise SoftfailBypassError
-    return not_reached
+            self.perform_old_validation()
 
-def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=BypassSwitch(), depth_default=128, nfiles=2): # Ingest into class structure
-    """Run growing selection test for specified variable from xarray and kerchunk datasets"""
-    logger.info(f'{xv} : Starting growbox data tests for {step+1} - {depth_default}')
+    def perform_cfa_validation(self):
+        """
+        Perform validation for the selected dataset against the CFA-netCDF version.
+        """
 
-    if nfiles > 1: # Timestep matching not required if only one file
-        kvariable, xvariable = match_timestamp(xobj[xv], kobj[xv], logger)
+        cfa_ds = xr.open_dataset(self.cfa_path, engine='CFA', cfa_options=None) # NotImplemented
+
+        product_ds = xr.open_dataset(self.outfile)
+
+        self._validate_global_attrs(cfa_ds, product_ds)
+        self._validate_global_vars(cfa_ds, product_ds)
+
+        # Validate data from all variables.
+        
+
+    def _get_concat_dims(self, objs):
+        pass
+
+    def _get_file_list(self):
+        pass
+
+    def _open_product(self):
+        """
+        Configuration to open object wrappers in the appropriate way so actions
+        can be applied to all. Any products not usable with Xarray should have 
+        an xarray-wrapper to allow the application of typical methods for comparison.
+        """
+        pass
+
+    def _open_base(self):
+        pass
+
+    def _migrate_product(self): # May be unnecessary
+        pass
+
+    def _backtrack_product(self): # May be unnecessary
+        pass
+
+    def _verify_connection(self):
+        pass
+
+def get_concat_dims(xobjs: list, proj_dir) -> dict: # Ingest into class structure
+    """
+    Retrieve the sizes of the concatenation dims.
+
+    :param xobjs:       (list) A list of xarray Dataset objects for files which are currently 
+                        being assessed, from which to find the shapes of concat dimensions.
+
+    :param proj_code:   (str) The project code in string format (DOI)
+
+    :returns:   A dictionary of the concatenation dimensions and their array shapes.
+    """
+    concat_dims = {}
+    details     = get_proj_file(proj_dir, 'detail-cfg.json')
+    if details:
+        # Initialise concat dims
+        if 'concat_dims' in details:
+            for dim in details['concat_dims']:
+                concat_dims[dim] = 0
+
+    for ds in xobjs:
+        for dim in concat_dims.keys():
+            concat_dims[dim] += ds[dim].shape[0]
+    return concat_dims
+
+## 2. File Selection Tools
+
+def get_netcdf_list(proj_dir: str, logger, thorough=False) -> tuple: # Ingest into class structure
+    """
+    Open document containing paths to all NetCDF files, make selections and return a list of files.
+
+    :param proj_dir:    (str) The project code directory path.
+
+    :param logger:      (obj) Logging object for info/debug/error messages.
+
+    :param thorough:    (bool) If True will select all files for testing, otherwise
+                        standard validation subsetting (0.1% or 3 files) applies.
+    
+    :returns:   A tuple containing a list of all the files as well as a list of indexes to 
+                specific files for testing. The index list should cover at least 3 files,
+                with a maximum of 0.1% of the files selected in the case of > 3000 files.
+    """
+    with open(f'{proj_dir}/allfiles.txt') as f:
+        xfiles = [r.strip() for r in f.readlines()]
+    logger.debug(f'Found {len(xfiles)} files in {proj_dir}/allfiles.txt')
+
+    # Open full set or a subset of the files for testing
+    if thorough:
+        numfiles = len(xfiles)+1
+        logger.info(f'Selecting all {numfiles-1} files')
     else:
-        kvariable = kobj[xv]
-        xvariable = xobj[xv]
+        numfiles = int(len(xfiles)/1000)
+        if numfiles < 3:
+            numfiles = 3
 
-    # Attempt 128 divisions within selection - 128, 64, 32, 16, 8, 4, 2, 1
-    return validate_selection(xvariable, kvariable, xv, depth_default, depth_default, logger, bypass=bypass)
+    if numfiles >= len(xfiles):
+        numfiles = len(xfiles)
+        indexes = [i for i in range(len(xfiles))]
+    else:
+        indexes = []
+        for f in range(numfiles):
+            testindex = random.randint(0,numfiles-1)
+            while testindex in indexes:
+                testindex = random.randint(0,numfiles-1)
+            indexes.append(testindex)
+        logger.info(f'Selecting a subset of {numfiles}/{len(xfiles)} files')
+    return indexes, xfiles
+
+def locate_kerchunk(args, logger, get_str=False, attempt=1, remote_protocol='https') -> xr.Dataset:
+    """
+    Gets the name of the latest kerchunk file for this project code.
+
+    :param args:        (obj) Set of command line arguments supplied by argparse.
+
+    :param logger:      (obj) Logging object for info/debug/error messages.
+
+    :param get_str:     (bool) If True will return the string filename for the selected
+                        Kerchunk file, otherwise the Kerchunk file will be opened as an 
+                        xarray Virtual Dataset.
+
+    :param remote_protocol:     (str) Default 'https' for accessing files post-compute
+                                since these have been reconfigured for remote testing.
+                                Override with 'file' for Kerchunk files with a local 
+                                reference.
+
+    :returns:   Xarray Virtual Dataset from a Kerchunk file, or the string filename
+                of the Kerchunk file if get_str is enabled.
+    """
+    files = os.listdir(args.proj_dir) # Get filename only
+    kfiles = []
+
+    check_complete = False
+
+    for f in files:
+        if 'complete' in f:
+            check_complete = True
+        elif 'kerchunk' in f and 'complete' not in f:
+            kfiles.append(f)
+        else:
+            pass
+
+    if len(kfiles) > 0:
+        # Which kerchunk file from set of options
+        kf = sorted(kfiles)[0]
+        logger.debug(f'Selected {kf} from {len(kfiles)} available')
+        kfile = os.path.join(args.proj_dir, kf)
+        if get_str:
+            return kfile, False
+        else:
+            return open_kerchunk(kfile, logger, attempt=attempt, remote_protocol=remote_protocol), False
+    elif check_complete:
+        if not args.forceful:
+            logger.error('File already exists and no override is set')
+            raise NoOverwriteError
+        else:
+            logger.info('Locating complete Kerchunk file')
+            if args.groupID:
+                complete_path = f'{args.workdir}/complete/{args.groupID}/{args.proj_code}*.json'
+            else:
+                complete_path = f'{args.workdir}/complete/{args.proj_code}*.json'
+            complete_versions = glob.glob(complete_path)
+            if len(complete_versions) > 0:
+                kfile = complete_versions[-1]
+                logger.info(f'Identified version {kfile.split("_")[-1].replace(".json","")}')
+
+            else:
+                logger.error(f'No complete kerchunk files located at {complete_path}')
+                raise MissingKerchunkError
+        if get_str:
+            return kfile, True
+        else:
+            return open_kerchunk(kfile, logger, attempt=attempt, remote_protocol='file'), True
+    else:
+        logger.error(f'No Kerchunk file located at {args.proj_dir} and no in-place validation indicated - exiting')
+        raise MissingKerchunkError
+
+def open_netcdfs(args, logger, thorough=False, concat_dims='time') -> list: # Ingest into class structure
+    """Returns a single xarray object with one timestep:
+    
+    1. Select a single file and a single timestep from that file
+    2. Verify that a single timestep can be selected (Yes: return this xarray object, No: select all files and select a single timestep from that)
+    3. In all cases, returns a list of xarray objects.
+
+    :param args:        (obj) Set of command line arguments supplied by argparse.
+
+    :param logger:      (obj) Logging object for info/debug/error messages.
+
+    :param thorough:    (bool) If True will concatenate all selected Datasets to a single
+                        combined dataset, rather than a list of individual separate objects.
+
+    :returns:   A list of the xarray datasets (or a single concatenated dataset), along with a list
+                of indexes to use for selecting a subset of those files, plus a list of filepaths to
+                the original files.
+    """
+    logger.debug('Performing temporal selections')
+    indexes, xfiles = get_netcdf_list(args.proj_dir, logger, thorough=thorough)
+
+    if len(indexes) == len(xfiles):
+        thorough = True
+    xobjs = []
+    if not thorough:
+        for i in indexes:
+            if not os.path.isfile(xfiles[i]):
+                raise SourceNotFoundError(sfile=xfiles[i])
+            xobjs.append(xr.open_dataset(xfiles[i]))
+        if len(xobjs) == 0:
+            logger.error('No valid timestep objects identified')
+            raise NoValidTimeSlicesError(message='Kerchunk', verbose=args.verbose)
+        return xobjs, indexes, xfiles
+    else:
+        #xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim=concat_dims, data_vars='minimal')
+        try:
+            xobj = xr.open_mfdataset(xfiles, combine='by_coords', data_vars='minimal')
+        except TypeError:
+            try:
+                xobj = xr.open_mfdataset(xfiles, combine='by_coords', data_vars='minimal', use_cftime=True)
+            except:
+                xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim=concat_dims, data_vars='minimal')
+        return xobj, None, xfiles
+
 
 def validate_timestep(args, xobj, kobj, step: int, nfiles: int, logger, concat_dims={}, index=0): # Ingest into class structure
     """Run all tests for a single file which may or may not equate to 1 timestep"""
