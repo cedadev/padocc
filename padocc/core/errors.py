@@ -83,7 +83,6 @@ class NaNComparisonError(KerchunkException):
     def get_str(self):
         return 'NaNComparisonError'
 
- 
 class RemoteProtocolError(KerchunkException):
     """All drivers failed (NetCDF3/Hdf5/Tiff) for one or more files within the list"""
     def __init__(self,filenums=None, verbose=0, proj_code=None, groupdir=None):
@@ -263,6 +262,16 @@ class ValidationError(KerchunkException):
             self.__class__.__module__ = 'builtins'
     def get_str(self):
         return 'ValidationError'
+    
+class ComputeError(KerchunkException):
+    """Compute stage failed - likely due to invalid config/use of the classes"""
+    def __init__(self, message="Invalid configuration for the Compute stage", verbose=0, proj_code=None, groupdir=None):
+        self.message = message
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'ComputeError'
 
 class SoftfailBypassError(KerchunkException):
     """Validation could not be completed because some arrays only contained NaN values which cannot be compared."""
