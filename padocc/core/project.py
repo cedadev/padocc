@@ -7,7 +7,7 @@ import glob
 import logging
 
 from .errors import error_handler
-from .utils import extract_file, BypassSwitch
+from .utils import extract_file, BypassSwitch, apply_substitutions
 from .logs import reset_file_handler
 
 from .mixins import DirectoryMixin, EvaluationsMixin
@@ -267,7 +267,12 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
             )
         
         if pattern.endswith('.txt'):
-            self.allfiles.set(extract_file(pattern)) 
+            content = extract_file(pattern)
+            if 'substitutions' in self.base_cfg:
+                content, status = apply_substitutions('datasets', subs=self.base_cfg['substitutions'], content=content)
+                if status:
+                    self.logger.warning(status)
+            self.allfiles.set(content) 
         else:
             # Pattern is a wildcard set of files
             if 'latest' in pattern:
@@ -279,11 +284,13 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
             self, 
             pattern : str = None, 
             update : str = None, 
-            remove : str = None
+            remove : str = None,
+            substitutions: dict = None,
         ) -> None:
         """
         Create base cfg json file with all required parameters.
         """
+
         self.logger.debug('Constructing the config file.')
         if pattern or update or remove:
             config = {
@@ -292,6 +299,8 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
                 'updates':update,
                 'removals':remove,
             }
+            if substitutions:
+                config['substitutions'] = substitutions
             self.base_cfg.set(config)
 
     @property

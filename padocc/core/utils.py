@@ -233,3 +233,16 @@ def find_closest(num, closest):
             min_diff = abs(d-closest)
             closest_div = d
     return closest_div
+
+def apply_substitutions(subkey: str, subs: dict = None, content: list = None):
+    if not subs:
+        return content, ""
+
+    if subkey not in subs:
+        return content, f"Subkey {subkey} is not valid for substitutions"
+    
+    content = '\n'.join(content)
+    for f, r in subs[subkey].items():
+        content = content.replace(f,r)
+
+    return content.split('\n') , ""

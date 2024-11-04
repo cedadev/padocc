@@ -12,9 +12,9 @@ from padocc.core import (
     FalseLogger,
     LoggedOperation
 )
-from padocc.core.utils import extract_file, times
+from padocc.core.utils import extract_file, times, apply_substitutions
 
-from ..core.project import ProjectOperation
+from padocc.core.project import ProjectOperation
 
 config = {
     'proj_code': None,
@@ -117,7 +117,9 @@ class InitialisationMixin:
         self.logger.info('Creating project directories')
         # Group config is the contents of datasets.csv
         if substitutions:
-            datasets = _apply_substitutions('init_file',subs=substitutions, content=datasets)
+            datasets, status = apply_substitutions('init_file',subs=substitutions, content=datasets)
+        if status:
+            self.logger.warning(status)
 
         self.datasets.set(datasets)
 
@@ -136,8 +138,14 @@ class InitialisationMixin:
             proj_code = ds_values[0]
             pattern   = ds_values[1]
 
-            if ds_values[1].endswith('.txt') and substitutions:
-                pattern = _apply_substitutions('dataset_file', subs=substitutions, content=[pattern])[0]
+            if pattern.endswith('.txt') and substitutions:
+                pattern, status = apply_substitutions('dataset_file', subs=substitutions, content=[pattern])
+                pattern = pattern[0]
+                if status:
+                    self.logger.warning(status)
+
+            if substitutions:
+                cfg_values['substitutions'] = substitutions
 
             cfg_values['pattern'] = pattern
             proj_codes.append(proj_code)
@@ -730,16 +738,5 @@ def _get_input(
 
     return config
 
-def _apply_substitutions(subkey: str, subs: dict = None, content: list = None):
-    if not subs:
-        return content, ""
-
-    if subkey not in subs:
-        return content, f"Subkey {subkey} is not valid for substitutions"
-    
-    content = '\n'.join(content)
-    for f, r in subs[subkey].items():
-        content = content.replace(f,r)
-    return content.split('\n')
 
     
