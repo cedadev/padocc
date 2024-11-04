@@ -19,6 +19,9 @@ class TestInit:
             'dataset_file': {
                 '/home/users/dwest77/cedadev/padocc/':''
             },
+            'datasets': {
+                '/home/users/dwest77/cedadev/padocc/':''
+            },
         }
 
         process = GroupOperation(
