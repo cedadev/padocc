@@ -6,6 +6,10 @@ authors = ["Daniel Westwood <daniel.westwood@stfc.ac.uk>"]
 license = "{file='LICENSE'}"
 readme = "README.md"
 
+include = [
+    { path = "tests/*" }
+]
+
 [tool.poetry.dependencies]
 python = "^3.11"
 binpacking = "^1.5.2"
