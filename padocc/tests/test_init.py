@@ -1,11 +1,11 @@
 from padocc.operations import GroupOperation
 
-WORKDIR = 'auto_testdata_dir'
+WORKDIR = 'padocc/tests/auto_testdata_dir'
 
 class TestInit:
 
     def test_init_basic(self, wd=WORKDIR):
-        infile  = 'tests/data/myfile.csv'
+        infile  = 'padocc/tests/data/myfile.csv'
         groupID = 'padocc-test-suite'
 
         workdir = wd

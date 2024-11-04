@@ -10,6 +10,8 @@ from padocc.core.filehandlers import (
 
 )
 
+WORKDIR = 'padocc/tests/auto_testdata_dir'
+
 testdict = {
     0: 'test0',
     'test':None
@@ -68,7 +70,7 @@ class TestFHs:
         print("Unit Tests: JSON FH")
 
         for dryrun in [True, False]:
-            json_fh = JSONFileHandler('auto_testdata_dir','testjs.json', dryrun=dryrun)
+            json_fh = JSONFileHandler(WORKDIR,'testjs.json', dryrun=dryrun)
 
             json_fh.set(testdict)
 
@@ -86,7 +88,7 @@ class TestFHs:
 
         for dryrun in [True, False]:
 
-            text_fh = TextFileHandler('auto_testdata_dir', 'testtx.txt', dryrun=dryrun)
+            text_fh = TextFileHandler(WORKDIR, 'testtx.txt', dryrun=dryrun)
 
             text_fh.set(testlist)
             if dryrun:
@@ -102,7 +104,7 @@ class TestFHs:
 
         for dryrun in [True, False]:
 
-            csv_fh = CSVFileHandler('auto_testdata_dir', 'test.csv', dryrun=dryrun)
+            csv_fh = CSVFileHandler(WORKDIR, 'test.csv', dryrun=dryrun)
 
             csv_fh.set(testlist)
 

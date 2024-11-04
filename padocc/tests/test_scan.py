@@ -1,6 +1,6 @@
 from padocc.operations import GroupOperation
 
-WORKDIR = 'auto_testdata_dir'
+WORKDIR = 'padocc/tests/auto_testdata_dir'
 
 class TestScan:
     def test_scan_basic(self, workdir=WORKDIR):

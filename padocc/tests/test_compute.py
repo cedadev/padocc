@@ -1,6 +1,6 @@
 from padocc.operations import GroupOperation
 
-WORKDIR = 'auto_testdata_dir'
+WORKDIR = 'padocc/tests/auto_testdata_dir'
 
 class TestCompute:
     def test_compute_basic(self, workdir=WORKDIR):
@@ -15,5 +15,5 @@ class TestCompute:
         process.run('compute', forceful=True)
 
 if __name__ == '__main__':
-    workdir = '/home/users/dwest77/cedadev/padocc/auto_testdata_dir'
+    workdir = '/home/users/dwest77/cedadev/padocc/padocc/tests/auto_testdata_dir'
     TestCompute().test_compute_basic(workdir=workdir)
