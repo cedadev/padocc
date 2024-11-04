@@ -28,7 +28,7 @@ class InitialisationMixin:
     def init_from_stac(self):
         pass
 
-    def init_from_file(self, input_file: str):
+    def init_from_file(self, input_file: str, substitutions: dict = None):
         """
         Run initialisation by loading configurations from input sources, determine
         input file type and use appropriate functions to instantiate group and project
@@ -38,6 +38,9 @@ class InitialisationMixin:
 
         :returns:   None
         """
+
+        substitutions = substitutions or {}
+
         self.logger.info('Starting initialisation')
 
         if not input_file:
@@ -73,7 +76,7 @@ class InitialisationMixin:
                 self.logger.debug('Ingesting csv file')
 
                 group_config = extract_file(input_file)
-            self._init_group(group_config)
+            self._init_group(group_config, substitutions=substitutions)
 
         else:
             # Only base-cfg style files are accepted here.
@@ -105,7 +108,7 @@ class InitialisationMixin:
 
         proj_op.save_files()
 
-    def _init_group(self, datasets : list):
+    def _init_group(self, datasets : list, substitutions: dict = None):
         """
         Create a new group within the working directory, and all 
         associated projects.
@@ -113,6 +116,9 @@ class InitialisationMixin:
 
         self.logger.info('Creating project directories')
         # Group config is the contents of datasets.csv
+        if substitutions:
+            datasets = _apply_substitutions('init_file',subs=substitutions, content=datasets)
+
         self.datasets.set(datasets)
 
         if 'proj_code' in datasets[0]:
@@ -127,8 +133,13 @@ class InitialisationMixin:
             cfg_values = {}
             ds_values  = datasets[index].split(',')
 
-            proj_code               = ds_values[0]
-            cfg_values['pattern']   = ds_values[1]
+            proj_code = ds_values[0]
+            pattern   = ds_values[1]
+
+            if ds_values[1].endswith('.txt') and substitutions:
+                pattern = _apply_substitutions('dataset_file', subs=substitutions, content=[pattern])[0]
+
+            cfg_values['pattern'] = pattern
             proj_codes.append(proj_code)
 
             if len(ds_values) > 2:
@@ -719,5 +730,16 @@ def _get_input(
 
     return config
 
+def _apply_substitutions(subkey: str, subs: dict = None, content: list = None):
+    if not subs:
+        return content, ""
+
+    if subkey not in subs:
+        return content, f"Subkey {subkey} is not valid for substitutions"
+    
+    content = '\n'.join(content)
+    for f, r in subs[subkey].items():
+        content = content.replace(f,r)
+    return content.split('\n')
 
     

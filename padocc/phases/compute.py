@@ -30,7 +30,8 @@ from padocc.core.errors import (
     ConcatFatalError,
     SourceNotFoundError,
     ValidationError,
-    IdenticalVariablesError
+    IdenticalVariablesError,
+    ComputeError
 )
 
 from padocc.phases.validate import validate_selection
@@ -290,6 +291,16 @@ class ComputeOperation(ProjectOperation):
         self.var_shapes    = {}
 
         self.logger.debug('Finished all setup steps')
+
+    def _run(self, mode: str = 'kerchunk'):
+        """
+        Default _run hook for compute operations. A user should aim to use the
+        configuration options to use the Kerchunk or Zarr DS classes rather than
+        the bare parent class. Override this class with a _run parameter for new 
+        DS classes (COG etc.)"""
+
+        self.logger.error('Nothing to do with this class - use KerchunkDS/ZarrDS instead!')
+        raise ComputeError
 
     def _run_with_timings(self, func):
         """
@@ -911,7 +922,7 @@ class ZarrDS(ComputeOperation):
         self.mode = 'zarr'
         self.fmt = '.zarr'
 
-    def _run(self) -> None:
+    def _run(self, **kwargs) -> None:
         """
         Recommended way of running an operation - includes timers etc.
         """

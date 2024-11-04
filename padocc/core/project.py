@@ -177,7 +177,7 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
             self._dryrun = dryrun
 
         try:
-            status = self._run(mode)
+            status = self._run(mode=mode)
             self.save_files()
             return status
         except Exception as err:
