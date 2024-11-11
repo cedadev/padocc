@@ -10,3 +10,20 @@ Currently the Pipeline supports writing JSON/Parquet Kerchunk files for input Ne
 [Documentation hosted at this link](https://cedadev.github.io/kerchunk-builder/)
 
 ![Kerchunk Pipeline](docs/source/_images/pipeline.png)
+
+## Installation
+
+To install this package, clone the repository using git clone (and switch to the MigrationOO branch - `git checkout MigrationOO` if release v1.3 has not been released.)
+
+Then follow the steps below to install the package with the necessary dependencies.
+
+```
+python -m venv .venv
+source .venv/bin/activate
+pip install poetry
+poetry install
+```
+
+## Usage
+
+Please refer to the `tests/` scripts for how to use the `GroupOperation` and `ProjectOperation` classes.
