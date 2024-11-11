@@ -253,10 +253,10 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
 
     def save_files(self):
         # Add all files here.
-        self.base_cfg.save_file()
-        self.detail_cfg.save_file()
-        self.allfiles.save_file()
-        self.status_log.save_file()
+        self.base_cfg.close()
+        self.detail_cfg.close()
+        self.allfiles.close()
+        self.status_log.close()
 
     def _configure_filelist(self):
         pattern = self.base_cfg['pattern']

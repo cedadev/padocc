@@ -121,7 +121,7 @@ class KerchunkConverter(LoggedOperation):
         
         if filehandler:
             filehandler.set(tdict)
-            filehandler.save_file()
+            filehandler.close()
         return tdict, ctype
 
     def _convert_kerchunk(self, nfile: str, ctype, **kwargs) -> None:
@@ -326,12 +326,12 @@ class ComputeOperation(ProjectOperation):
             detail['timings']['compute_actual'] = compute_time
 
         self.detail_cfg.set(detail)
-        self.detail_cfg.save_file()
+        self.detail_cfg.close()
         return 'Success'
 
     def save_files(self):
         super().save_files()
-        self.temp_zattrs.save_file()
+        self.temp_zattrs.close()
 
     @property
     def outpath(self):
@@ -703,7 +703,7 @@ class KerchunkDS(ComputeOperation):
             if not self.quality_required:
                 self._perform_shape_checks(ref)
             CacheFile.set(ref)
-            CacheFile.save_file()
+            CacheFile.close()
             ctypes.append(ctype)
 
         self.success = converter.success
@@ -871,7 +871,7 @@ class KerchunkDS(ComputeOperation):
 
         if not self.partial:
             self.logger.info(f'Written to JSON file - {self.outfile}')
-            self.kfile.save_file()
+            self.kfile.close()
         else:
             self.logger.info(f'Skipped writing to JSON file - {self.outfile}')
 

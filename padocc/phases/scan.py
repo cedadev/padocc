@@ -360,7 +360,7 @@ class ScanOperation(ProjectOperation):
             existing_details = details
 
         self.detail_cfg.set(existing_details)
-        self.detail_cfg.save_file()
+        self.detail_cfg.close()
 
 if __name__ == '__main__':
     print('Kerchunk Pipeline Config Scanner - run using master scripts')

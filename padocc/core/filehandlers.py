@@ -28,7 +28,7 @@ class FileIOMixin(LoggedOperation):
     no attributes passed to either of these.
 
         fh.create_file()
-        fh.save_file()
+        fh.close()
 
     3. Get/set:
 
@@ -126,7 +126,7 @@ class FileIOMixin(LoggedOperation):
         else:
             self.logger.info(f'DRYRUN: Skipped creating "{self._file}"')
 
-    def save_file(self):
+    def close(self):
         """
         Wrapper for _set_content method
         """

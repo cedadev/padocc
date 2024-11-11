@@ -315,11 +315,11 @@ class GroupOperation(
 
     def _save_proj_codes(self):
         for pc in self.proj_codes.keys():
-            self.proj_codes[pc].save_file()
+            self.proj_codes[pc].close()
 
     def save_files(self):
-        self.blacklist_codes.save_file()
-        self.datasets.save_file()
+        self.blacklist_codes.close()
+        self.datasets.close()
         self._save_proj_codes()
 
     def _add_proj_codeset(self, name : str, newcodes : list):
@@ -495,7 +495,7 @@ class GroupOperation(
         ]
 
         sbatch.update(sbatch_contents)
-        sbatch.save_file()
+        sbatch.close()
 
         if self._dryrun:
             self.logger.info('DRYRUN: sbatch command: ')

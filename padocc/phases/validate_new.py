@@ -14,6 +14,8 @@ import glob
 import logging
 import math
 import re
+from functools import reduce
+from itertools import groupby
 
 from padocc.core.errors import (
     ShapeMismatchError,
@@ -37,7 +39,7 @@ from padocc.core import BypassSwitch, FalseLogger
 SUFFIXES = []
 SUFFIX_LIST = []
 
-from padocc.core import ProjectOperation
+from padocc.core import ProjectOperation, LoggedOperation
 
 ### Public Validation methods visible across PADOCC
 
@@ -419,6 +421,211 @@ def validate_selection(
         return validate_selection(test, control, current+1, name, recursion_limit=recursion_limit, logger=logger)
     else:
         return compare_data(name, tbox, cbox, logger=logger, bypass=bypass)
+
+def _count_duplicates(arr: list, source_num: int = None):
+    """
+    Count the number of duplicates in a list
+    compared to the source number - return the values
+    that are not present in all source arrays.
+    """
+
+    freq_items = {}
+    for item in arr:
+        if item in freq_items:
+            freq_items[item] += 1
+        else:
+            freq_items[item] = 1
+
+    if source_num is None:
+        return freq_items
+    else:
+        missing = []
+        for item, value in freq_items.items():
+            if value < source_num:
+                missing.append(item)
+        return missing
+    
+
+class ValidateDatasets(LoggedOperation):
+    def __init__(
+            self, 
+            datasets: list,
+            identifier: str,
+            logger = None,
+            label: str = None,
+            fh: str = None,
+            logid: str = None,
+            verbose: bool = None,
+        ):
+        """
+        Initiator for the ValidateDataset Class.
+        Given a list of xarray.Dataset objects, all methods applied to 
+        all datasets should give the same values as an output - the 
+        outputs should be equivalent.
+        
+        These dataset objects should be identical, just from different sources.
+        """
+
+        self._identifier = identifier
+        self._datasets   = datasets
+
+        super().__init__(
+            logger,
+            label=label,
+            fh=fh,
+            logid=logid,
+            verbose=verbose
+        )
+
+    
+    def __str__(self):
+        return f'<PADOCC Validator: {self._identifier}>'
+
+    def validate_all(self, allowances: dict = None):
+        """
+        Run all validation steps on this set of datasets.
+        """
+
+        allowances = allowances or {}
+        ignore_vars, ignore_dims, ignore_globals = None, None, None
+
+        # Validate global attributes
+        if 'ignore_global_attrs' in allowances:
+            ignore_globals = {'ignore': allowances['ignore_global_attrs']}
+
+        self.validate_global_attrs(allowances=ignore_globals)
+
+        if 'ignore_variables' in allowances:
+            ignore_vars = {'ignore': allowances['ignore_variables']}
+        if 'ignore_dimensions' in allowances:
+            ignore_dims = {'ignore': allowances['ignore_dimensions']}
+
+        # Validate variables/dimensions
+        self.validate_variables(allowances=ignore_vars)
+        self.validate_dimensions(allowances=ignore_dims)
+
+    def validate_variables(self, allowances: dict = None):
+        """
+        Validate variables public method
+        """
+        self._validate_selector(allowances=allowances, selector='variables')
+
+    def validate_dimensions(self, allowances: dict = None):
+        """
+        Validate dimensions public method
+        """
+        self._validate_selector(allowances=allowances, selector='dimensions')
+
+    def _validate_selector(self, allowances: dict = None, selector: str = 'variables'):
+        """
+        Ensure all variables/dimensions are consistent across all datasets.
+        Allowances dict contains configurations for skipping some variables
+        in the case for example of a virtual dimension.
+
+        allowances:
+          ignore: [list to ignore]
+        """
+        ignore_vars = []
+
+        allowances = allowances or {}
+        if f'ignore' in allowances:
+            ignore_vars = allowances['ignore']
+
+        compare_vars = [[] for d in len(self._datasets)]
+        total_list = []
+        for index, d in enumerate(self._datasets):
+            
+            vset = getattr(d, selector)
+            
+            for var in vset:
+                if var in ignore_vars:
+                    continue
+                compare_vars[index].append(var)
+            total_list.extend(compare_vars[index])
+
+        # Check each list has the same number of variables.
+        if len(total_list) != len(compare_vars[0])*len(compare_vars):
+            raise VariableMismatchError(
+                f'The number of {selector} between datasets does not match: '
+                f'Datasets have {[len(c) for c in compare_vars]} {selector} '
+                'respectively.'
+            )
+
+        # Check all variables are present in all datasets.
+        missing = _count_duplicates(total_list, source_num=len(self._datasets))
+        if missing:
+            raise VariableMismatchError(
+                f'Inconsistent {selector} between datasets - {selector} '
+                f'not present in all files: {missing}'
+            )
+        
+        # Check variables appear in the same order in all datasets
+        in_order = True
+        for vset in zip(*compare_vars):
+            vars = groupby(vset)
+            is_equal = next(vars, True) and not next(vars, False)
+            in_order = in_order and is_equal
+
+        # Warning for different ordering only.
+        if not in_order:
+            self.logger.warning(
+                f'{selector} present in a different order between datasets'
+            )
+
+    def validate_global_attrs(self, allowances: dict = None):
+        """
+        Validate the set of global attributes across all datasets
+        """
+
+        allowances = allowances or {}
+        ignore = []
+        if 'ignore' in allowances:
+            ignore = allowances['ignore']
+
+        attrset = []
+        for d in self._datasets:
+            attrset.append(d.attrs)
+
+        self._validate_attrs(attrset, source='global.', ignore=ignore)
+
+
+    def _validate_attrs(self, attrset: list, source: str = '', ignore: list = None):
+        """
+        Ensure all values across the sets of attributes are consistent
+        """
+
+        ignore = ignore or []
+        for attr in attrset[0].keys():
+
+            # Try extracting this attribute from all attribute sets.
+            try:
+                set_of_values = [a[attr] for a in attrset]
+            except IndexError:
+                if attr not in ignore:
+                    raise ValueError(
+                        f'Attribute {source}{attr} not present in all datasets'
+                    )
+                
+            for s in set_of_values[1:]:
+                if not np.all(s == set_of_values[0]):
+                    raise ValueError(
+                        f'Attribute {source}{attr} is not equal across all datasets:'
+                        f'Found values: {set_of_values}'
+                    )
+
+    def validate_shapes(self, allowances: dict = None):
+        """
+        Ensure all variable shapes are consistent across all datasets.
+        Allowances dict contains configurations for skipping some shape tests
+        in the case for example of a virtual dimension.
+        """
+        pass
+
+    def validate_data(self, allowances: dict = None):
+        """
+        Perform data validations using the growbox method for all datasets.
+        """
+        pass
 
 
 class ValidateOperation(ProjectOperation):
