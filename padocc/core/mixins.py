@@ -185,3 +185,17 @@ class EvaluationsMixin:
         Setup for running this specific component interactively.
         """
         return ''
+
+class PropertiesMixin:
+
+    @property
+    def isparq(self) -> bool:
+        """
+        Return True if the project is configured to use parquet.
+        """
+
+        return (self.detail_cfg['type']  == 'parq')
+
+    @property
+    def cloud_format(self) -> bool:
+        return None
