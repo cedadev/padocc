@@ -247,6 +247,7 @@ class GroupOperation(
             self, 
             proj_code,  
             mode=None,
+            subset_bypass=False,
             **kwargs
         ) -> None:
         """
@@ -306,7 +307,7 @@ class GroupOperation(
             version_no=version,
             **kwargs
         )
-        status = proj_op.run()
+        status = proj_op.run(subset_bypass=subset_bypass)
         proj_op.save_files()
         return status
     

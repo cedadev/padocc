@@ -186,6 +186,7 @@ class ListIOMixin(FileIOMixin):
     def __len__(self) -> int:
         """Length of value"""
         content = self.get()
+        self.logger.debug(f'content length: {len(content)}')
         return len(content)
     
     def __iter__(self) -> Generator[str, None, None]:
@@ -238,11 +239,13 @@ class ListIOMixin(FileIOMixin):
         Open the file to get content if it exists
         """
         if self.file_exists():
+            self.logger.debug('Opening existing file')
             with open(self._file) as f:
                 content = [r.strip() for r in f.readlines()]
             self._value = content
 
         else:
+            self.logger.debug('Creating new file')
             self.create_file()
             self._value = []
 

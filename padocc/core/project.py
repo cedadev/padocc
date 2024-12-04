@@ -7,7 +7,7 @@ import glob
 import logging
 
 from .errors import error_handler
-from .utils import extract_file, BypassSwitch, apply_substitutions
+from .utils import extract_file, BypassSwitch, apply_substitutions, phases
 from .logs import reset_file_handler
 
 from .mixins import DirectoryMixin, EvaluationsMixin
@@ -101,6 +101,11 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
             fh=fh,
             logid=logid,
             verbose=verbose)
+    
+        if not os.path.isdir(self.groupdir):
+            raise ValueError(
+                f'The group "{groupID}" has not been initialised - not present in the working directory'
+            )
         
         self.proj_code = proj_code
 
@@ -149,14 +154,41 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
         self._outfile = None
 
     def __str__(self):
-        return f'<PADOCC Project: {self.groupID}>'
+        return f'<PADOCC Project: {self.proj_code} ({self.groupID})>'
     
     def __repr__(self):
         return str(self)
 
+    def info(self, fn=print):
+        """
+        Display some info about this particular project
+        """
+        if self.groupID is not None:
+            fn(f'{self.proj_code} ({self.groupID}):')
+        else:
+            fn(f'{self.proj_code}:')
+        fn(f' > Phase: {self._get_phase()}')
+        fn(f' > Files: {len(self.allfiles)}')
+        fn(f' > Version: {self.get_version()}')
+    
+    def help(self, fn=print):
+        """
+        Public user functions for the project operator.
+        """
+        fn(str(self))
+        fn(' > project.info() - Get some information about this project')
+        fn(' > project.get_version() - Get the version number for the output product')
+        fn(' > project.save_files() - Save all open files related to this project')
+        fn('Properties:')
+        fn(' > project.proj_code - code for this project.')
+        fn(' > project.groupID - group to which this project belongs.')
+        fn(' > project.dir - directory containing the projects files.')
+        fn(' > project.cfa_path - path to the CFA file.')
+        fn(' > project.outfile - path to the output product (Kerchunk/Zarr)')
+
     def run(
             self,
-            mode: str = None,
+            mode: str = 'kerchunk',
             subset_bypass: bool = False, 
             forceful : bool = None,
             thorough : bool = None,
@@ -181,12 +213,12 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
             self.save_files()
             return status
         except Exception as err:
-            
-            return error_handler(
-                err, self.logger, self.phase,
-                jobid=self._logid, dryrun=self._dryrun, 
-                subset_bypass=subset_bypass,
-                status_fh=self.status_log)
+            print(err)
+            #return error_handler(
+                #err, self.logger, self.phase,
+                #jobid=self._logid, dryrun=self._dryrun, 
+                ##subset_bypass=subset_bypass,
+                #status_fh=self.status_log)
 
     def _run(self, **kwargs):
         # Default project operation run.
@@ -210,6 +242,13 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
         return self.detail_cfg['version_no'] or 1
 
     @property
+    def dir(self):
+        if self.groupID:
+            return f'{self.workdir}/in_progress/{self.groupID}/{self.proj_code}'
+        else:
+            return f'{self.workdir}/in_progress/general/{self.proj_code}'
+
+    @property
     def cfa_path(self):
         return f'{self.dir}/{self.proj_code}.nca'
 
@@ -224,9 +263,6 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
     @outfile.setter
     def outfile(self, value : str):
         self._outfile = value
-
-    def __str__(self):
-        return self.proj_code
 
     def dir_exists(self, checkdir : str = None):
         if not checkdir:
@@ -257,6 +293,21 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
         self.detail_cfg.close()
         self.allfiles.close()
         self.status_log.close()
+
+    def _get_phase(self):
+        """
+        Gets the highest phase this project has currently undertaken successfully"""
+
+        max_sid = 0
+        for row in self.status_log:
+            status = row[0]
+            if status != 'Success':
+                continue
+
+            phase = row[1]
+            sid = phases.index(phase)
+            max_sid = max(sid, max_sid)
+        return phases[max_sid]
 
     def _configure_filelist(self):
         pattern = self.base_cfg['pattern']
@@ -302,13 +353,6 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
             if substitutions:
                 config['substitutions'] = substitutions
             self.base_cfg.set(config)
-
-    @property
-    def dir(self):
-        if self.groupID:
-            return f'{self.workdir}/in_progress/{self.groupID}/{self.proj_code}'
-        else:
-            return f'{self.workdir}/in_progress/general/{self.proj_code}'
 
     def _create_dirs(self, first_time : bool = None):
         if not self.dir_exists():

@@ -143,6 +143,8 @@ class InitialisationMixin:
                 pattern = pattern[0]
                 if status:
                     self.logger.warning(status)
+            else:
+                pattern = os.path.abspath(pattern)
 
             if substitutions:
                 cfg_values['substitutions'] = substitutions
