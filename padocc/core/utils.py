@@ -23,6 +23,13 @@ times = {
     'validate':'30:00' # From CMIP experiments - no reliable prediction mechanism possible
 }
 
+phases = [
+    'scan',
+    'compute',
+    'validate',
+    'catalog'
+]
+
 class BypassSwitch:
     """Class to represent all bypass switches throughout the pipeline.
     Requires a switch string which is used to enable/disable specific pipeline 

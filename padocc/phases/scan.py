@@ -130,7 +130,7 @@ class ScanOperation(ProjectOperation):
             proj_code : str, 
             workdir   : str,
             groupID   : str = None, 
-            label     : str = None,
+            label     : str = 'scan',
             **kwargs,
         ) -> None:
 
@@ -139,7 +139,13 @@ class ScanOperation(ProjectOperation):
             label = 'scan-operation'
 
         super().__init__(
-            proj_code, workdir, groupID=groupID, **kwargs)
+            proj_code, workdir, groupID=groupID, label=label,**kwargs)
+
+    def help(self, fn=print):
+        super().help(fn=fn)
+        fn('')
+        fn('Scan Options:')
+        fn(' > project.run() - Run a scan for this project')
 
     def _run(self, mode: str = 'kerchunk') -> None:
         """Main process handler for scanning phase"""
@@ -150,7 +156,7 @@ class ScanOperation(ProjectOperation):
 
         if nfiles < 3:
             self.detail_cfg = {'skipped':True}
-            self.logger.info('Skip scanning phase >> proceed directly to compute')
+            self.logger.info(f'Skip scanning phase (only found {nfiles} files) >> proceed directly to compute')
             return None
         
 
@@ -158,14 +164,17 @@ class ScanOperation(ProjectOperation):
         limiter = min(100, max(2, int(nfiles/20)))
 
         self.logger.info(f'Determined {limiter} files to scan (out of {nfiles})')
+        self.logger.debug(f'Using {mode} scan operations')
 
         if mode == 'zarr':
             self._scan_zarr(limiter=limiter)
         elif mode == 'kerchunk':
             self._scan_kerchunk(limiter=limiter)
         else:
-            self.logger.error('Unrecognised mode - must be one of ["kerchunk","zarr","CFA"]')
-            return 'Failed'
+            self.update_status('scan','ValueError',jobid=self._logid, dryrun=self._dryrun)
+            raise ValueError(
+                f'Unrecognised mode: {mode} - must be one of ["kerchunk","zarr","CFA"]'
+            )
 
         self.update_status('scan','Success',jobid=self._logid, dryrun=self._dryrun)
         return 'Success'

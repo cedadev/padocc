@@ -21,19 +21,6 @@ from padocc.core.utils import BypassSwitch
 from ujson import JSONDecodeError
 from dask.distributed import LocalCluster
 
-class CloudValidator:
-    """
-    Encapsulate all validation testing into a single class. Instantiate for a specific project,
-    the object could then contain all project info (from detail-cfg) opened only once. Also a 
-    copy of the total datasets (from native and cloud sources). Subselections can be passed
-    between class methods along with a variable index (class variables: variable list, dimension list etc.)
-
-    Class logger attribute so this doesn't need to be passed between functions.
-    Bypass switch contained here with all switches.
-    """
-    def __init__(self):
-        pass
-
 ## 1. Array Selection Tools
 
 def find_dimensions(dimlen: int, divisions: int) -> int:

@@ -144,201 +144,6 @@ def match_timestamp(xobject: xr.Dataset, kobject: xr.Dataset, logger) -> tuple: 
     else:
         logger.debug('Skipped timestamp selection as xobject has no time')
         return kobject, xobject
-
-def compare_data(vname: str, xbox: xr.Dataset, kerchunk_box: xr.Dataset, logger, bypass=False) -> None: # Ingest into class structure
-    """Compare a NetCDF-derived ND array to a Kerchunk-derived one. This function takes a 
-    netcdf selection box array of n-dimensions and an equally sized kerchunk_box array and
-    tests for elementwise equality within selection. If possible, tests max/mean/min calculations 
-    for the selection to ensure cached values are the same.
-
-    Expect TypeErrors later from summations which are bypassed. Other errors will exit the run.
-
-    :param vname:           (str) The name of the variable described by this box selection
-
-    :param xbox:            (obj) The native dataset selection
-
-    :param kerchunk_box:    (obj) The cloud-format (Kerchunk) dataset selection
-
-    :param logger:          (obj) Logging object for info/debug/error messages.
-
-    :param bypass:          (bool) Single value flag for bypassing numeric data errors (in the
-                            case of values which cannot be added).
-
-    :returns:   None but will raise error if data comparison fails.
-    """
-    logger.debug(f'Starting data comparison for {vname}')
-
-    logger.debug('1. Flattening Arrays')
-    t1 = datetime.now()
-
-    xbox         = np.array(xbox).flatten()
-    kerchunk_box = np.array(kerchunk_box).flatten()
-
-    logger.debug(f'2. Calculating Tolerance - {(datetime.now()-t1).total_seconds():.2f}s')
-    try: # Tolerance 0.1% of mean value for xarray set
-        tolerance = np.abs(np.nanmean(kerchunk_box))/1000
-    except TypeError: # Type cannot be summed so skip all summations
-        tolerance = None
-
-    logger.debug(f'3. Comparing with array_equal - {(datetime.now()-t1).total_seconds():.2f}s')
-    testpass = True
-    try:
-        equality = np.array_equal(xbox, kerchunk_box, equal_nan=True)
-    except TypeError as err:
-        equality = np.array_equal(xbox, kerchunk_box)
-
-    if not equality:
-        logger.debug(f'3a. Comparing directly - {(datetime.now()-t1).total_seconds():.2f}s')
-        equality = False
-        for index in range(xbox.size):
-            v1 = xbox[index]
-            v2 = kerchunk_box[index]
-            if v1 != v2:
-                logger.error(f'X: {v1}, K: {v2}, idx: {index}')
-        raise ValidationError
-            
-    logger.debug(f'4. Comparing Max values - {(datetime.now()-t1).total_seconds():.2f}s')
-    try:
-        if np.abs(np.nanmax(kerchunk_box) - np.nanmax(xbox)) > tolerance:
-            logger.warning(f'Failed maximum comparison for {vname}')
-            logger.debug('K ' + str(np.nanmax(kerchunk_box)) + ' N ' + str(np.nanmax(xbox)))
-            testpass = False
-    except TypeError as err:
-        if bypass:
-            logger.warning(f'Max comparison skipped for non-summable values in {vname}')
-        else:
-            raise err
-    logger.debug(f'5. Comparing Min values - {(datetime.now()-t1).total_seconds():.2f}s')
-    try:
-        if np.abs(np.nanmin(kerchunk_box) - np.nanmin(xbox)) > tolerance:
-            logger.warning(f'Failed minimum comparison for {vname}')
-            logger.debug('K ' + str(np.nanmin(kerchunk_box)) + ' N ' + str(np.nanmin(xbox)))
-            testpass = False
-    except TypeError as err:
-        if bypass:
-            logger.warning(f'Min comparison skipped for non-summable values in {vname}')
-        else:
-            raise err
-    logger.debug(f'6. Comparing Mean values - {(datetime.now()-t1).total_seconds():.2f}s')
-    try:
-        if np.abs(np.nanmean(kerchunk_box) - np.nanmean(xbox)) > tolerance:
-            logger.warning(f'Failed mean comparison for {vname}')
-            logger.debug('K ' + str(np.nanmean(kerchunk_box)) + ' N ' + str(np.nanmean(xbox)))
-            testpass = False
-    except TypeError as err:
-        if bypass:
-            logger.warning(f'Mean comparison skipped for non-summable values in {vname}')
-        else:
-            raise err
-    if not testpass:
-        logger.error('Validation Error')
-        raise ValidationError
-
-def validate_shape_to_tolerance(nfiles: int, xv: str, dims: tuple, xshape: tuple, kshape: tuple, logger, proj_dir=None) -> None: # Ingest into class structure
-    """
-    Special case function for validating a shaped array to some tolerance. This is an alternative to
-    opening N files, only works if each file has roughly the same total shape. Tolerance is based on 
-    the number of files supplied, more files means the tolerance is lower?
-
-    :param nfiles:      (int) The number of native files across the whole dataset.
-
-    :param xv:          (str) The name of the variable within the dataset.
-
-    :param dims:        (tuple) A list of the names of the dimensions in this dataset.
-
-    :param xshape:      (tuple) The shape of the array from the original native files.
-
-    :param kshape:      (tuple) The shape of the array from the cloud formatted dataset.
-
-    :param logger:      (obj) Logging object for info/debug/error messages.
-
-    :param proj_dir:    (str) The project code directory path.
-    """
-    concat_dims = ['time'] # Default value - does not work for all cases.
-
-    tolerance = 1/(nfiles*5)
-    logger.info(f'Attempting shape bypass using concat-dim tolerance {tolerance*100}%')
-    detail = get_proj_file(proj_dir, 'detail-cfg.json')
-    if detail:
-        logger.debug('Finding concat dims recorded in details for this proj_code')
-        if 'concat_dims' in detail:
-            concat_dims = detail['concat_dims']
-
-    check_dims = []
-    for cdim in concat_dims:
-        # Match to index in xobj
-        for index, dim in enumerate(dims):
-            if dim == cdim:
-                check_dims.append(index)
-    tolerance_error = False
-    general_shape_error = False
-    for cdim in range(len(xshape)):
-        if cdim in check_dims:
-            if abs(xshape[cdim] - kshape[cdim]) / kshape[cdim] > tolerance:
-                tolerance_error = XKShapeToleranceError(
-                    tolerance=tolerance,
-                    diff=abs(xshape[cdim] - kshape[cdim]) / kshape[cdim],
-                    dim=dims[cdim]
-                )
-        else:
-            if xshape[cdim] != kshape[cdim]:
-                general_shape_error = ShapeMismatchError(var=xv, first=kshape, second=xshape)
-    if general_shape_error:
-        raise general_shape_error
-    elif tolerance_error:
-        raise tolerance_error
-    else:
-        pass
-
-def _validate_shapes(xobj, kobj, nfiles: int, xv: str, logger, bypass_shape=False, proj_dir=None, concat_dims={}) -> None: # Ingest into class structure
-    """
-    Ensure shapes are equivalent across Kerchunk/NetCDF per variable. Must account for the number 
-    of files opened vs how many files in total.
-    
-    :param xobj:        (obj) The native dataset selection.
-
-    :param kobj:        (obj) The cloud-format (Kerchunk) dataset selection
-
-    :param nfiles:      (int) The number of native files for this whole dataset.
-
-    :param xv:          (str) The name of the variable within the dataset.
-
-    :param logger:      (obj) Logging object for info/debug/error messages.
-
-    :param bypass_shape:    (bool) Switch for bypassing shape errors - diverts to tolerance testing as a backup.
-
-    :param proj_dir:        (str) The project code directory path.
-
-    :param concat_dims:     (dict) Dictionary of concatenation dimensions with their appropriate 
-                            sizes by index. (e.g {'time':100})
-
-    :returns:   None but will raise error if shape validation fails.
-    """
-    xshape = list(xobj[xv].shape)
-    kshape = list(kobj[xv].shape)
-
-    # Perform dimension adjustments if necessary
-    logger.debug(f'{xv} - raw shapes - K: {kshape}, X: {xshape}')
-    if concat_dims:
-        for index, dim in enumerate(xobj[xv].dims):
-            if dim in concat_dims:
-                xshape[index] = concat_dims[dim]
-    else:           
-        if 'time' in xobj[xv].dims:
-            try:
-                xshape[0] *= nfiles
-            except TypeError:
-                logger.warning(f'{xv} - {nfiles}*{xshape[0]} failed to assign')
-            except:
-                pass
-    logger.debug(f'{xv} - dimension-adjusted shapes - K: {kshape}, X: {xshape}')
-    if xshape != kshape:
-        # Incorrect dimensions on the shapes of the arrays
-        if xshape != kshape and bypass_shape: # Special bypass-shape testing
-            logger.info('Attempting special bypass using tolerance feature')
-            validate_shape_to_tolerance(nfiles, xv, xobj[xv].dims, xshape, kshape, logger, proj_dir=proj_dir)
-        else:
-            raise ShapeMismatchError(var=xv, first=kshape, second=xshape)
         
 def check_for_nan(box, bypass, logger, label=None): # Ingest into class structure
     """
@@ -411,17 +216,39 @@ def _count_duplicates(arr: list, source_num: int = None):
                 missing.append(item)
         return missing
     
+def slice_all_dims(data_arr: xr.DataArray, intval: int):
+    """
+    Slice all dimensions for the DataArray according 
+    to the integer value."""
+    shape = tuple(data_arr.shape)
+
+    for d in shape:
+        if d < 8:
+            continue
+
+        mid = int(d/2)
+        step = int(d/(intval*2))
+        data_arr = data_arr[mid-step:mid+step]
+    return data_arr
+
+def default_preslice(data_arr: xr.DataArray):
+    """
+    Default preslice performs no operations on the
+    data array.
+    """
+    return data_arr
 
 class ValidateDatasets(LoggedOperation):
     """
     ValidateDatasets object for performing validations between two
-    pseudo-identical Xarray Dataset objects
+    pseudo-identical Xarray Dataset objects.
     """
 
     def __init__(
             self, 
             datasets: list,
             identifier: str,
+            preslice_fn: list = None, # Preslice each dataset's DataArrays to make equivalent.
             logger = None,
             label: str = None,
             fh: str = None,
@@ -440,6 +267,11 @@ class ValidateDatasets(LoggedOperation):
         self._identifier = identifier
         self._datasets   = datasets
 
+        self.variables = None
+        self.dimensions = None
+
+        self._preslice_fn = preslice_fn or [default_preslice for d in datasets]
+
         if len(self._datasets) > 2:
             raise NotImplementedError(
                 'Simultaneous Validation of multiple datasets is not supported.'
@@ -455,6 +287,26 @@ class ValidateDatasets(LoggedOperation):
 
     def __str__(self):
         return f'<PADOCC Validator: {self._identifier}>'
+    
+    def test_dataset_var(self, var):
+        """
+        Get a variable DataArray from the test dataset, 
+        performing preslice functions.
+        """
+        return self._dataset_var(var, 0)
+    
+    def control_dataset_var(self, var):
+        """
+        Get a variable DataArray from the control dataset, 
+        performing preslice functions.
+        """
+        return self._dataset_var(var, 1)
+
+    def _dataset_var(self, var, id):
+        """
+        Perform preslice functions on the requested DataArray
+        """
+        return self._preslice_fn[id](self._datasets[id][var])
 
     def validate_metadata(self, allowances: dict = None):
         """
@@ -525,6 +377,8 @@ class ValidateDatasets(LoggedOperation):
                 f'Datasets have {[len(c) for c in compare_vars]} {selector} '
                 'respectively.'
             )
+        
+        setattr(self, selector, set(total_list))
 
         # Check all variables are present in all datasets.
         missing = _count_duplicates(total_list, source_num=len(self._datasets))
@@ -598,8 +452,8 @@ class ValidateDatasets(LoggedOperation):
         vset = self._datasets[0].variables
 
         for v in vset:
-            test = self._datasets[0][v]
-            control = self._datasets[1][v]
+            test = self.test_dataset_var(v)
+            control = self.control_dataset_var(v)
 
             testshape, controlshape = {}, {}
 
@@ -629,19 +483,33 @@ class ValidateDatasets(LoggedOperation):
                         f'Shape mismatch for {v} with dimension {dim} ({ts} != {cs})'
                     )
 
-    def validate_data(self, allowances: dict = None):
+    def validate_data(self):
         """
-        Perform data validations using the growbox method for all datasets.
+        Perform data validations using the growbox method for all variable DataArrays.
         """
-        pass
-        # Validate selection for all DataArrays in the Dataset
+
+        if self.variables is None:
+            self.logger.error(
+                'Unable to validate data, please ensure metadata has been validated first.'
+                'Use `validate_metadata()` method.'
+            )
+            return None
+
+        for var in self.variables:
+            self.logger.info('Validating selection for ')
+            testvar = self.test_dataset_var(var)
+            controlvar = self.control_dataset_var(var)
+
+            # Check access to the source data somehow here
+            # Initiate growbox method - recursive increasing box size.
+            self._validate_selection(var, testvar, controlvar)
 
     def _validate_selection(
             self,
+            var: str,
             test: xr.DataArray,
             control: xr.DataArray,
-            current : int,
-            name    : str,
+            current : int = 1,
             recursion_limit : int = 10, 
         ) -> bool:
         """
@@ -656,26 +524,26 @@ class ValidateDatasets(LoggedOperation):
             )
 
         if current >= recursion_limit:
-            logger.debug('Maximum recursion depth reached')
-            logger.info(f'Validation for {name} not performed')
+            self.logger.debug('Maximum recursion depth reached')
+            self.logger.info(f'Validation for {var} not performed')
             return None
         
-        vslice = get_slice(test.shape, current)
-        tbox   = test[vslice]
-        cbox   = control[vslice]
+        tbox = slice_all_dims(test, current)
+        cbox = slice_all_dims(control, current)
 
         if check_for_nan(cbox):
-            return self._validate_selection(test, control, current+1, name, recursion_limit=recursion_limit)
+            return self._validate_selection(test, control, current+1, var, recursion_limit=recursion_limit)
         else:
-            return self._compare_data(name, tbox, cbox)
+            return self._compare_data(var, tbox, cbox)
 
     def _compare_data(
         self, 
         vname: str, 
-        control: xr.DataArray, 
-        test: xr.DataArray
+        test: xr.DataArray, 
+        control: xr.DataArray
         ) -> None:
-        """Compare a NetCDF-derived ND array to a Kerchunk-derived one. This function takes a 
+        """
+        Compare a NetCDF-derived ND array to a Kerchunk-derived one. This function takes a 
         netcdf selection box array of n-dimensions and an equally sized test array and
         tests for elementwise equality within selection. If possible, tests max/mean/min calculations 
         for the selection to ensure cached values are the same.
@@ -684,11 +552,9 @@ class ValidateDatasets(LoggedOperation):
 
         :param vname:           (str) The name of the variable described by this box selection
 
-        :param control:            (obj) The native dataset selection
+        :param test:            (obj) The cloud-format (Kerchunk) dataset selection
 
-        :param test:    (obj) The cloud-format (Kerchunk) dataset selection
-
-        :param logger:          (obj) Logging object for info/debug/error messages.
+        :param control:         (obj) The native dataset selection
 
         :param bypass:          (bool) Single value flag for bypassing numeric data errors (in the
                                 case of values which cannot be added).
@@ -723,7 +589,7 @@ class ValidateDatasets(LoggedOperation):
                 v1 = control[index]
                 v2 = test[index]
                 if v1 != v2:
-                    logger.error(f'X: {v1}, K: {v2}, idx: {index}')
+                    self.logger.error(f'X: {v1}, K: {v2}, idx: {index}')
             raise ValidationError
                 
         self.logger.debug(f'4. Comparing Max values - {(datetime.now()-t1).total_seconds():.2f}s')
@@ -733,7 +599,7 @@ class ValidateDatasets(LoggedOperation):
                 self.logger.debug('K ' + str(np.nanmax(test)) + ' N ' + str(np.nanmax(control)))
                 testpass = False
         except TypeError as err:
-            if bypass:
+            if self.bypass:
                 self.logger.warning(f'Max comparison skipped for non-summable values in {vname}')
             else:
                 raise err
@@ -744,7 +610,7 @@ class ValidateDatasets(LoggedOperation):
                 self.logger.debug('K ' + str(np.nanmin(test)) + ' N ' + str(np.nanmin(control)))
                 testpass = False
         except TypeError as err:
-            if bypass:
+            if self.bypass:
                 self.logger.warning(f'Min comparison skipped for non-summable values in {vname}')
             else:
                 raise err
@@ -755,14 +621,13 @@ class ValidateDatasets(LoggedOperation):
                 self.logger.debug('K ' + str(np.nanmean(test)) + ' N ' + str(np.nanmean(control)))
                 testpass = False
         except TypeError as err:
-            if bypass:
+            if self.bypass:
                 self.logger.warning(f'Mean comparison skipped for non-summable values in {vname}')
             else:
                 raise err
         if not testpass:
             self.logger.error('Validation Error')
             raise ValidationError
-
 
 class ValidateOperation(ProjectOperation):
     """
@@ -782,11 +647,16 @@ class ValidateOperation(ProjectOperation):
     def _run(self):
         # Replaces validate timestep
 
+        # test = open_product()
+
         if self.detail_cfg.get('cfa'):
             # CFA-enabled validation
-            self._perform_cfa_validation()
+            # control = open_cfa()
+            pass
         else:
-            self._perform_source_validation()
+            # Use default 
+            # Rethink preslice_fn - will need this to be dynamic.
+            pass
 
     def _open_cfa(self):
         """
@@ -811,8 +681,6 @@ class ValidateOperation(ProjectOperation):
                 retry = True,
                 attempt = 3
             )
-
-    def _open_source(self, )
 
     def _perform_cfa_validation(self):
         """

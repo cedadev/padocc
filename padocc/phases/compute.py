@@ -158,7 +158,7 @@ class KerchunkConverter(LoggedOperation):
     def _hdf5_to_zarr(self, nfile: str, **kwargs) -> dict:
         """Wrapper for converting NetCDF4/HDF5 type files to Kerchunk"""
         from kerchunk.hdf import SingleHdf5ToZarr
-        return SingleHdf5ToZarr(nfile, **kwargs).translate()
+        return SingleHdf5ToZarr(nfile,**kwargs).translate()
 
     def _ncf3_to_zarr(self, nfile: str, **kwargs) -> dict:
         """Wrapper for converting NetCDF3 type files to Kerchunk"""
@@ -193,6 +193,7 @@ class ComputeOperation(ProjectOperation):
             limiter     : int = None, 
             skip_concat : bool = False, 
             new_version : bool = None,
+            label : str = 'compute',
             **kwargs
         ) -> None:
         """
@@ -233,6 +234,7 @@ class ComputeOperation(ProjectOperation):
             workdir, 
             groupID=groupID,
             thorough=thorough,
+            label=label,
             **kwargs)
 
         self.logger.debug('Starting variable definitions')
@@ -243,7 +245,8 @@ class ComputeOperation(ProjectOperation):
         self.skip_concat = skip_concat
 
         self.stage = stage
-        self._identify_mode()
+        self.mode = self.detail_cfg['mode'] or 'kerchunk'
+        self.fmt = self.detail_cfg['type'] or 'JSON'
 
         self.validate_time = None
         self.concat_time   = None
@@ -284,13 +287,19 @@ class ComputeOperation(ProjectOperation):
             self.temp_zattrs.set({})
 
         self.combine_kwargs = {} # Now using concat_dims and identical dims finders.
-        self.create_kwargs  = {'inline_threshold':1}
+        self.create_kwargs  = {'inline_threshold':0}
         self.pre_kwargs     = {}
 
         self.special_attrs = {}
         self.var_shapes    = {}
 
         self.logger.debug('Finished all setup steps')
+
+    def help(self, fn=print):
+        super().help(fn=fn)
+        fn('')
+        fn('Compute Options:')
+        fn(' > project.run() - Run compute for this project')
 
     def _run(self, mode: str = 'kerchunk'):
         """
@@ -597,20 +606,16 @@ class ComputeOperation(ProjectOperation):
         # Calculate Partial Validation Estimate here
         t1 = datetime.now()
         self.logger.info("Determining concatenation dimensions")
-        print()
         self._find_concat_dims(objs)
         if self.combine_kwargs['concat_dims'] == []:
             self.logger.info("No concatenation dimensions available - virtual dimension will be constructed.")
         else:
             self.logger.info(f"Found {self.combine_kwargs['concat_dims']} concatenation dimensions.")
-        print()
 
         # Identical (Variables) Dimensions
         self.logger.info("Determining identical variables")
-        print()
         self._find_identical_dims(objs)
         self.logger.info(f"Found {self.combine_kwargs['identical_dims']} identical variables.")
-        print()
 
         # This one only happens for two files so don't need to take a mean
         self.validate_time = (datetime.now()-t1).total_seconds()
@@ -749,7 +754,7 @@ class KerchunkDS(ComputeOperation):
                 ])
 
         t1 = datetime.now()  
-        if self.fmt == 'json':
+        if self.fmt == 'JSON':
             self.logger.info('Concatenating to JSON format Kerchunk file')
             self._data_to_json(refs)
         else:
