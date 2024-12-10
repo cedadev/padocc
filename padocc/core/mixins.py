@@ -197,5 +197,9 @@ class PropertiesMixin:
         return (self.detail_cfg['type']  == 'parq')
 
     @property
-    def cloud_format(self) -> bool:
+    def cloud_format(self) -> str:
+        return None
+    
+    @property
+    def source_format(self) -> str:
         return None
