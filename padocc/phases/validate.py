@@ -14,192 +14,20 @@ import glob
 import logging
 import math
 import re
+from functools import reduce
+from itertools import groupby
 
-from padocc.core.errors import *
-from padocc.core.logs import init_logger, SUFFIXES, SUFFIX_LIST, FalseLogger
-from padocc.core.utils import BypassSwitch
-from ujson import JSONDecodeError
-from dask.distributed import LocalCluster
+from padocc.core.errors import ChunkDataError
+from padocc.core import BypassSwitch, FalseLogger
+from padocc.core.utils import open_kerchunk
 
-## 1. Array Selection Tools
+from padocc.core.filehandlers import JSONFileHandler
 
-def find_dimensions(dimlen: int, divisions: int) -> int:
-    """
-    Determine index of slice end position given length of dimension and fraction to assess.
+SUFFIXES = []
+SUFFIX_LIST = []
 
-    :param dimlen:      (int) The length of the specific dimension
-
-    :param divisions:   (int) The number of divisions across this dimensions.
-
-    :returns:   The size of each division for this dimension, given the number of total divisions.
-    """
-    # Round down then add 1
-    divsize = int(dimlen/divisions)+1
-    return divsize
-
-def get_vslice(dimensions: list, dtypes: list, lengths: list, divisions: list, logger) -> list:
-    """
-    Assemble dataset slice given the shape of the array and dimensions involved.
-    
-    :param shape:       (list) The dimension names for an array currently being assessed.
-
-    :param dtypes:      (list) A list of the datatypes corresponding to each dimension for an array.
-
-    :param lengths:     (list) The lengths of each dimension for an array.
-
-    :param divisions:   (list) The number of divisions for each of the dimensions for an array.
-
-    :param logger:      (obj) Logging object for info/debug/error messages.
-
-    :returns:   Slice for this particular division set. Special cases for datetime-like objects.
-    """
-
-    vslice = []
-    for x, dim in enumerate(dimensions):
-        if np.issubdtype(dtypes[x], np.datetime64):
-            vslice.append(slice(0,find_dimensions(lengths[x],divisions)))
-        elif dim == 1:
-            vslice.append(slice(0,1))
-        else:
-            vslice.append(slice(0,find_dimensions(dim,divisions)))
-    logger.debug(f'Slice {vslice}')
-    return vslice
-
-def get_concat_dims(xobjs: list, proj_dir) -> dict: # Ingest into class structure
-    """
-    Retrieve the sizes of the concatenation dims.
-
-    :param xobjs:       (list) A list of xarray Dataset objects for files which are currently 
-                        being assessed, from which to find the shapes of concat dimensions.
-
-    :param proj_code:   (str) The project code in string format (DOI)
-
-    :returns:   A dictionary of the concatenation dimensions and their array shapes.
-    """
-    concat_dims = {}
-    details     = get_proj_file(proj_dir, 'detail-cfg.json')
-    if details:
-        # Initialise concat dims
-        if 'concat_dims' in details:
-            for dim in details['concat_dims']:
-                concat_dims[dim] = 0
-
-    for ds in xobjs:
-        for dim in concat_dims.keys():
-            concat_dims[dim] += ds[dim].shape[0]
-    return concat_dims
-
-## 2. File Selection Tools
-
-def get_netcdf_list(proj_dir: str, logger, thorough=False) -> tuple: # Ingest into class structure
-    """
-    Open document containing paths to all NetCDF files, make selections and return a list of files.
-
-    :param proj_dir:    (str) The project code directory path.
-
-    :param logger:      (obj) Logging object for info/debug/error messages.
-
-    :param thorough:    (bool) If True will select all files for testing, otherwise
-                        standard validation subsetting (0.1% or 3 files) applies.
-    
-    :returns:   A tuple containing a list of all the files as well as a list of indexes to 
-                specific files for testing. The index list should cover at least 3 files,
-                with a maximum of 0.1% of the files selected in the case of > 3000 files.
-    """
-    with open(f'{proj_dir}/allfiles.txt') as f:
-        xfiles = [r.strip() for r in f.readlines()]
-    logger.debug(f'Found {len(xfiles)} files in {proj_dir}/allfiles.txt')
-
-    # Open full set or a subset of the files for testing
-    if thorough:
-        numfiles = len(xfiles)+1
-        logger.info(f'Selecting all {numfiles-1} files')
-    else:
-        numfiles = int(len(xfiles)/1000)
-        if numfiles < 3:
-            numfiles = 3
-
-    if numfiles >= len(xfiles):
-        numfiles = len(xfiles)
-        indexes = [i for i in range(len(xfiles))]
-    else:
-        indexes = []
-        for f in range(numfiles):
-            testindex = random.randint(0,numfiles-1)
-            while testindex in indexes:
-                testindex = random.randint(0,numfiles-1)
-            indexes.append(testindex)
-        logger.info(f'Selecting a subset of {numfiles}/{len(xfiles)} files')
-    return indexes, xfiles
-
-def locate_kerchunk(args, logger, get_str=False, attempt=1, remote_protocol='https') -> xr.Dataset:
-    """
-    Gets the name of the latest kerchunk file for this project code.
-
-    :param args:        (obj) Set of command line arguments supplied by argparse.
-
-    :param logger:      (obj) Logging object for info/debug/error messages.
-
-    :param get_str:     (bool) If True will return the string filename for the selected
-                        Kerchunk file, otherwise the Kerchunk file will be opened as an 
-                        xarray Virtual Dataset.
-
-    :param remote_protocol:     (str) Default 'https' for accessing files post-compute
-                                since these have been reconfigured for remote testing.
-                                Override with 'file' for Kerchunk files with a local 
-                                reference.
-
-    :returns:   Xarray Virtual Dataset from a Kerchunk file, or the string filename
-                of the Kerchunk file if get_str is enabled.
-    """
-    files = os.listdir(args.proj_dir) # Get filename only
-    kfiles = []
-
-    check_complete = False
-
-    for f in files:
-        if 'complete' in f:
-            check_complete = True
-        elif 'kerchunk' in f and 'complete' not in f:
-            kfiles.append(f)
-        else:
-            pass
-
-    if len(kfiles) > 0:
-        # Which kerchunk file from set of options
-        kf = sorted(kfiles)[0]
-        logger.debug(f'Selected {kf} from {len(kfiles)} available')
-        kfile = os.path.join(args.proj_dir, kf)
-        if get_str:
-            return kfile, False
-        else:
-            return open_kerchunk(kfile, logger, attempt=attempt, remote_protocol=remote_protocol), False
-    elif check_complete:
-        if not args.forceful:
-            logger.error('File already exists and no override is set')
-            raise NoOverwriteError
-        else:
-            logger.info('Locating complete Kerchunk file')
-            if args.groupID:
-                complete_path = f'{args.workdir}/complete/{args.groupID}/{args.proj_code}*.json'
-            else:
-                complete_path = f'{args.workdir}/complete/{args.proj_code}*.json'
-            complete_versions = glob.glob(complete_path)
-            if len(complete_versions) > 0:
-                kfile = complete_versions[-1]
-                logger.info(f'Identified version {kfile.split("_")[-1].replace(".json","")}')
-
-            else:
-                logger.error(f'No complete kerchunk files located at {complete_path}')
-                raise MissingKerchunkError
-        if get_str:
-            return kfile, True
-        else:
-            return open_kerchunk(kfile, logger, attempt=attempt, remote_protocol='file'), True
-    else:
-        logger.error(f'No Kerchunk file located at {args.proj_dir} and no in-place validation indicated - exiting')
-        raise MissingKerchunkError
-        
+from padocc.core import ProjectOperation, LoggedOperation
+       
 def mem_to_value(mem) -> float:
     """
     Convert a memory value i.e 2G into a value
@@ -220,296 +48,22 @@ def value_to_mem(value) -> str:
         value = value/1000
         suffix_index += 1
     return f'{value:.0f}{SUFFIX_LIST[suffix_index]}'
-
-def open_netcdfs(args, logger, thorough=False, concat_dims='time') -> list: # Ingest into class structure
-    """Returns a single xarray object with one timestep:
-    
-    1. Select a single file and a single timestep from that file
-    2. Verify that a single timestep can be selected (Yes: return this xarray object, No: select all files and select a single timestep from that)
-    3. In all cases, returns a list of xarray objects.
-
-    :param args:        (obj) Set of command line arguments supplied by argparse.
-
-    :param logger:      (obj) Logging object for info/debug/error messages.
-
-    :param thorough:    (bool) If True will concatenate all selected Datasets to a single
-                        combined dataset, rather than a list of individual separate objects.
-
-    :returns:   A list of the xarray datasets (or a single concatenated dataset), along with a list
-                of indexes to use for selecting a subset of those files, plus a list of filepaths to
-                the original files.
-    """
-    logger.debug('Performing temporal selections')
-    indexes, xfiles = get_netcdf_list(args.proj_dir, logger, thorough=thorough)
-
-    if len(indexes) == len(xfiles):
-        thorough = True
-    xobjs = []
-    if not thorough:
-        for i in indexes:
-            if not os.path.isfile(xfiles[i]):
-                raise SourceNotFoundError(sfile=xfiles[i])
-            xobjs.append(xr.open_dataset(xfiles[i]))
-        if len(xobjs) == 0:
-            logger.error('No valid timestep objects identified')
-            raise NoValidTimeSlicesError(message='Kerchunk', verbose=args.verbose)
-        return xobjs, indexes, xfiles
-    else:
-        #xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim=concat_dims, data_vars='minimal')
-        try:
-            xobj = xr.open_mfdataset(xfiles, combine='by_coords', data_vars='minimal')
-        except TypeError:
-            try:
-                xobj = xr.open_mfdataset(xfiles, combine='by_coords', data_vars='minimal', use_cftime=True)
-            except:
-                xobj = xr.concat([xr.open_dataset(fx) for fx in xfiles], dim=concat_dims, data_vars='minimal')
-        return xobj, None, xfiles
-
-## 3. Validation Testing
-
-def match_timestamp(xobject: xr.Dataset, kobject: xr.Dataset, logger) -> tuple: # Ingest into class structure
-    """Match timestamp of xarray object to kerchunk object.
-    
-    :param xobject:     (obj) An xarray dataset representing the original files opened natively.
-    
-    :param kobject:     (obj) An xarray dataset representing the Kerchunk file constructed by the pipeline.
-    
-    :param logger:      (obj) Logging object for info/debug/error messages.
-    
-    :returns:   A tuple containing subselections of both xarray datasets such that both now have
-                matching timestamps."""
-    
-    if hasattr(xobject,'time'):
-        # Select timestamp 0 from multi-timestamped NetCDF - after shape testing
-        if xobject.time.size > 1:
-            timestamp = xobject.time[0]
-        else:
-            timestamp = xobject.time
-
-        logger.debug(f'Kerchunk object total time stamps: {kobject.time.size}')
-        try:
-            logger.debug(f'Attempting selection with {timestamp}')
-            ksel = kobject.sel(time=timestamp)
-            xsel = xobject.sel(time=timestamp)
-            assert ksel.time.size == 1 and xsel.time.size == 1
-            logger.debug('Kerchunk timestamp selection was successful')
-            return ksel, xsel
-        except Exception as err:
-            raise ChunkDataError
-    else:
-        logger.debug('Skipped timestamp selection as xobject has no time')
-        return kobject, xobject
-
-def compare_data(vname: str, xbox: xr.Dataset, kerchunk_box: xr.Dataset, logger, bypass=False) -> None: # Ingest into class structure
-    """Compare a NetCDF-derived ND array to a Kerchunk-derived one. This function takes a 
-    netcdf selection box array of n-dimensions and an equally sized kerchunk_box array and
-    tests for elementwise equality within selection. If possible, tests max/mean/min calculations 
-    for the selection to ensure cached values are the same.
-
-    Expect TypeErrors later from summations which are bypassed. Other errors will exit the run.
-
-    :param vname:           (str) The name of the variable described by this box selection
-
-    :param xbox:            (obj) The native dataset selection
-
-    :param kerchunk_box:    (obj) The cloud-format (Kerchunk) dataset selection
-
-    :param logger:          (obj) Logging object for info/debug/error messages.
-
-    :param bypass:          (bool) Single value flag for bypassing numeric data errors (in the
-                            case of values which cannot be added).
-
-    :returns:   None but will raise error if data comparison fails.
-    """
-    logger.debug(f'Starting xk comparison')
-
-    logger.debug('1. Flattening Arrays')
-    t1 = datetime.now()
-
-    xbox         = np.array(xbox).flatten()
-    kerchunk_box = np.array(kerchunk_box).flatten()
-
-    logger.debug(f'2. Calculating Tolerance - {(datetime.now()-t1).total_seconds():.2f}s')
-    try: # Tolerance 0.1% of mean value for xarray set
-        tolerance = np.abs(np.nanmean(kerchunk_box))/1000
-    except TypeError: # Type cannot be summed so skip all summations
-        tolerance = None
-
-    logger.debug(f'3. Comparing with array_equal - {(datetime.now()-t1).total_seconds():.2f}s')
-    testpass = True
-    try:
-        equality = np.array_equal(xbox, kerchunk_box, equal_nan=True)
-    except TypeError as err:
-        equality = np.array_equal(xbox, kerchunk_box)
-
-    if not equality:
-        logger.debug(f'3a. Comparing directly - {(datetime.now()-t1).total_seconds():.2f}s')
-        equality = False
-        for index in range(xbox.size):
-            v1 = xbox[index]
-            v2 = kerchunk_box[index]
-            if v1 != v2:
-                logger.error(f'X: {v1}, K: {v2}, idx: {index}')
-        raise ValidationError
-            
-    logger.debug(f'4. Comparing Max values - {(datetime.now()-t1).total_seconds():.2f}s')
-    try:
-        if np.abs(np.nanmax(kerchunk_box) - np.nanmax(xbox)) > tolerance:
-            logger.warning(f'Failed maximum comparison for {vname}')
-            logger.debug('K ' + str(np.nanmax(kerchunk_box)) + ' N ' + str(np.nanmax(xbox)))
-            testpass = False
-    except TypeError as err:
-        if bypass:
-            logger.warning(f'Max comparison skipped for non-summable values in {vname}')
-        else:
-            raise err
-    logger.debug(f'5. Comparing Min values - {(datetime.now()-t1).total_seconds():.2f}s')
-    try:
-        if np.abs(np.nanmin(kerchunk_box) - np.nanmin(xbox)) > tolerance:
-            logger.warning(f'Failed minimum comparison for {vname}')
-            logger.debug('K ' + str(np.nanmin(kerchunk_box)) + ' N ' + str(np.nanmin(xbox)))
-            testpass = False
-    except TypeError as err:
-        if bypass:
-            logger.warning(f'Min comparison skipped for non-summable values in {vname}')
-        else:
-            raise err
-    logger.debug(f'6. Comparing Mean values - {(datetime.now()-t1).total_seconds():.2f}s')
-    try:
-        if np.abs(np.nanmean(kerchunk_box) - np.nanmean(xbox)) > tolerance:
-            logger.warning(f'Failed mean comparison for {vname}')
-            logger.debug('K ' + str(np.nanmean(kerchunk_box)) + ' N ' + str(np.nanmean(xbox)))
-            testpass = False
-    except TypeError as err:
-        if bypass:
-            logger.warning(f'Mean comparison skipped for non-summable values in {vname}')
-        else:
-            raise err
-    if not testpass:
-        logger.error('Validation Error')
-        raise ValidationError
-
-def validate_shape_to_tolerance(nfiles: int, xv: str, dims: tuple, xshape: tuple, kshape: tuple, logger, proj_dir=None) -> None: # Ingest into class structure
-    """
-    Special case function for validating a shaped array to some tolerance. This is an alternative to
-    opening N files, only works if each file has roughly the same total shape. Tolerance is based on 
-    the number of files supplied, more files means the tolerance is lower?
-
-    :param nfiles:      (int) The number of native files across the whole dataset.
-
-    :param xv:          (str) The name of the variable within the dataset.
-
-    :param dims:        (tuple) A list of the names of the dimensions in this dataset.
-
-    :param xshape:      (tuple) The shape of the array from the original native files.
-
-    :param kshape:      (tuple) The shape of the array from the cloud formatted dataset.
-
-    :param logger:      (obj) Logging object for info/debug/error messages.
-
-    :param proj_dir:    (str) The project code directory path.
-    """
-    concat_dims = ['time'] # Default value - does not work for all cases.
-
-    tolerance = 1/(nfiles*5)
-    logger.info(f'Attempting shape bypass using concat-dim tolerance {tolerance*100}%')
-    detail = get_proj_file(proj_dir, 'detail-cfg.json')
-    if detail:
-        logger.debug('Finding concat dims recorded in details for this proj_code')
-        if 'concat_dims' in detail:
-            concat_dims = detail['concat_dims']
-
-    check_dims = []
-    for cdim in concat_dims:
-        # Match to index in xobj
-        for index, dim in enumerate(dims):
-            if dim == cdim:
-                check_dims.append(index)
-    tolerance_error = False
-    general_shape_error = False
-    for cdim in range(len(xshape)):
-        if cdim in check_dims:
-            if abs(xshape[cdim] - kshape[cdim]) / kshape[cdim] > tolerance:
-                tolerance_error = XKShapeToleranceError(
-                    tolerance=tolerance,
-                    diff=abs(xshape[cdim] - kshape[cdim]) / kshape[cdim],
-                    dim=dims[cdim]
-                )
-        else:
-            if xshape[cdim] != kshape[cdim]:
-                general_shape_error = ShapeMismatchError(var=xv, first=kshape, second=xshape)
-    if general_shape_error:
-        raise general_shape_error
-    elif tolerance_error:
-        raise tolerance_error
-    else:
-        pass
-
-def validate_shapes(xobj, kobj, nfiles: int, xv: str, logger, bypass_shape=False, proj_dir=None, concat_dims={}) -> None: # Ingest into class structure
-    """
-    Ensure shapes are equivalent across Kerchunk/NetCDF per variable. Must account for the number 
-    of files opened vs how many files in total.
-    
-    :param xobj:        (obj) The native dataset selection.
-
-    :param kobj:        (obj) The cloud-format (Kerchunk) dataset selection
-
-    :param nfiles:      (int) The number of native files for this whole dataset.
-
-    :param xv:          (str) The name of the variable within the dataset.
-
-    :param logger:      (obj) Logging object for info/debug/error messages.
-
-    :param bypass_shape:    (bool) Switch for bypassing shape errors - diverts to tolerance testing as a backup.
-
-    :param proj_dir:        (str) The project code directory path.
-
-    :param concat_dims:     (dict) Dictionary of concatenation dimensions with their appropriate 
-                            sizes by index. (e.g {'time':100})
-
-    :returns:   None but will raise error if shape validation fails.
-    """
-    xshape = list(xobj[xv].shape)
-    kshape = list(kobj[xv].shape)
-
-    # Perform dimension adjustments if necessary
-    logger.debug(f'{xv} - raw shapes - K: {kshape}, X: {xshape}')
-    if concat_dims:
-        for index, dim in enumerate(xobj[xv].dims):
-            if dim in concat_dims:
-                xshape[index] = concat_dims[dim]
-    else:           
-        if 'time' in xobj[xv].dims:
-            try:
-                xshape[0] *= nfiles
-            except TypeError:
-                logger.warning(f'{xv} - {nfiles}*{xshape[0]} failed to assign')
-            except:
-                pass
-    logger.debug(f'{xv} - dimension-adjusted shapes - K: {kshape}, X: {xshape}')
-    if xshape != kshape:
-        # Incorrect dimensions on the shapes of the arrays
-        if xshape != kshape and bypass_shape: # Special bypass-shape testing
-            logger.info('Attempting special bypass using tolerance feature')
-            validate_shape_to_tolerance(nfiles, xv, xobj[xv].dims, xshape, kshape, logger, proj_dir=proj_dir)
-        else:
-            raise ShapeMismatchError(var=xv, first=kshape, second=xshape)
         
 def check_for_nan(box, bypass, logger, label=None): # Ingest into class structure
     """
     Special function for assessing if a box selection has non-NaN values within it.
     Needs further testing using different data types.
     """
-    logger.debug(f'Checking nan values for {label}: Dtype: {str(box.dtype)}')
+    logger.debug(f'Checking nan values for {label}: dtype: {str(box.dtype)}')
 
     if not ('float' in str(box.dtype) or 'int' in str(box.dtype)):
         # Non numeric arrays cannot have NaN values.
-        return False, np.array(box)
+        return False
     
     arr = np.array(box)
 
     def handle_boxissue(err):
-        if type(err) == TypeError:
+        if isinstance(err, TypeError):
             return False
         else:
             if bypass.skip_boxfail:
@@ -534,376 +88,809 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
                 isnan = np.all(arr == np.mean(arr))
             except Exception as err:
                 isnan = handle_boxissue(err)
-    return isnan, arr
 
-def validate_selection(xvariable, kvariable, vname: str, divs: int, currentdiv: int, logger, bypass=BypassSwitch()): # Ingest into class structure - note will need to alter 'scan' and 'compute' for a simplified validation option.
-    """Validate this data selection in xvariable/kvariable objects
-      - Recursive function tests a growing selection of data until one is found with real data
-      - Repeats with exponentially increasing box size (divisions of all data dimensions)
-      - Will halt at 1 division which equates to testing all data
+    return isnan
 
-    :returns: Number of attempts to connect to all required data.
+def slice_all_dims(data_arr: xr.DataArray, intval: int):
+    """
+    Slice all dimensions for the DataArray according 
+    to the integer value."""
+    shape = tuple(data_arr.shape)
+
+    slice_applied = []
+    for d in shape:
+        if d < 8:
+            continue
+
+        mid = int(d/2)
+        step = int(d/(intval*2))
+        slice_applied.append(slice(mid-step,mid+step))
+    return slice_applied
+
+def format_slice(slice: list[slice]) -> str:
+    starts = []
+    ends = []
+    for s in slice:
+        starts.append(s.start)
+        ends.append(s.stop)
+    return ','.join(starts), ','.join(ends)
+
+def _recursive_set(source: dict, keyset: list, value):
+    """
+    Method for recursively setting values in a dictionary.
+    """
+    if len(keyset) > 1:
+
+        # Preserve existing values
+        current = {}
+        if keyset[0] in source:
+            current = source[keyset[0]]
+
+        source[keyset[0]] = _recursive_set(current,keyset[1:], value)
+    else:
+        source[keyset[0]] = value
+    return source
+
+class PresliceSet:
+
+    def __init__(self):
+        self._preslice_set = {}
+
+    def add_preslice(self, preslice: list[slice], var: str):
+        self._preslice_set[var] = preslice
+
+    def apply(self, data_arr: xr.DataArray, var: str) -> xr.DataArray:
+        """
+        Apply a preslice operation to a data array"""
+
+        if var not in self._preslice_set:
+            return self._default_preslice(data_arr)
+        else:
+            return data_arr[self._preslice_set[var]]
+
+    def _default_preslice(self, data_arr: xr.DataArray) -> xr.DataArray:
+        """
+        Default preslice performs no operations on the
+        data array.
+        """
+        return data_arr
+
+class Report:
+    """
+    Special report class, capable of utilising recursive
+    dictionary value-setting."""
+    def __init__(self, fh):
+        self._value = fh
+
+    def __setitem__(self, index, value):
+        nest = index.split('.')
+        current = {}
+        if nest[0] in self._value:
+            current = self._value[nest[0]]
+        self._value[nest[0]] = _recursive_set(current, nest[1:], value)
+
+    def __bool__(self):
+        return bool(self._value)
+
+    def __dict__(self):
+        return self._value.get()
+    
+    def __repr__(self):
+        return self._value
+    
+    def __str__(self):
+        return json.dumps(self._value.get(), indent=2)
+
+class ValidateDatasets(LoggedOperation):
+    """
+    ValidateDatasets object for performing validations between two
+    pseudo-identical Xarray Dataset objects.
+
+    4th Dec Note:
+    Validate metadata using single NetCDF(Xarray) vs Kerchunk
+    Validate data using combined NetCDF or CFA vs Kerchunk
+    (for best performance)
     """
 
-    # Determine number based on 
-    repeat = int(math.log2(divs) - math.log2(currentdiv))
-
-    logger.debug(f'Attempt {repeat} - {currentdiv} divs for {vname}')
-
-    vslice = []
-    shape = []
-    if divs > 1:
-        shape = xvariable.shape
-        logger.debug(f'Detected shape {shape} for {vname}')
-        dtypes  = [xvariable[xvariable.dims[x]].dtype for x in range(len(xvariable.shape))]
-        lengths = [len(xvariable[xvariable.dims[x]])  for x in range(len(xvariable.shape))]
-        vslice = get_vslice(shape, dtypes, lengths, divs, logger)
-
-        xbox = xvariable[tuple(vslice)]
-        kbox = kvariable[tuple(vslice)]
-    else:
-        xbox = xvariable
-        kbox = kvariable
-
-    # Zero shape means no point running divisions - just perform full check
-    if shape == [] and vslice == []:
-        logger.debug(f'Skipping to full selection (1 division) for {vname}')
-        currentdiv = 1
-
-    # Need to check datatype and do something special here for strings
-    if xbox.dtype == 'object':
-        # Skip all other comparison steps for data types
-        if not np.array_equal(xbox, kbox):
-            raise ValidationError
-        else:
-            return None
-
-    try_multiple = 0
-    not_reached = 0
-    knan, xnan = False, True
-    # Attempt nan checking multiple times due to network issues.
-    while try_multiple < 10 and knan != xnan:
-        try:
-            knan, karr = check_for_nan(kbox, bypass, logger, label='Kerchunk')
-            xnan, xarr = check_for_nan(xbox, bypass, logger, label='Xarray')
-        except ReferenceNotReachable as err:
-            not_reached += 1
-        try_multiple += 1
-
-    if not_reached != 0 and not_reached == try_multiple:
-        # 50% failed attempts
-        raise ArchiveConnectError
-
-    # Switch and save to np arrays if nans are successful.
-    if knan != xnan:
-        if not_reached == try_multiple:
-            # 100% failed attempts
-            raise ArchiveConnectError
-        else:
-            raise NaNComparisonError
+    def __init__(
+            self, 
+            datasets: list,
+            id: str,
+            dataset_labels: list = None,
+            preslice_fns: list = None, # Preslice each dataset's DataArrays to make equivalent.
+            filehandlers: list[JSONFileHandler] = None,
+            logger = None,
+            label: str = None,
+            fh: str = None,
+            logid: str = None,
+            verbose: int = 0,
+        ):
+        """
+        Initiator for the ValidateDataset Class.
+        Given a list of xarray.Dataset objects, all methods applied to 
+        all datasets should give the same values as an output - the 
+        outputs should be equivalent.
         
-    logger.debug(f'NaN comparison tried: {try_multiple} times')
-    if kbox.size >= 1 and not knan:
-        # Evaluate kerchunk vs xarray and stop here
-        logger.debug(f'Found comparable box-size: {int(kbox.size)} values')
-        compare_data(vname, xarr, karr, logger, bypass=bypass.skip_data_sum)
-    else:
-        logger.debug(f'Attempt {repeat} - slice is Null')
-        if currentdiv >= 2:
-            # Recursive search for increasing size (decreasing divisions)
-            not_reached += validate_selection(xvariable, kvariable, vname, divs, int(currentdiv/2), logger, bypass=bypass)
-        else:
-            logger.warning(f'Failed to find non-NaN slice (tried: {int(math.log2(divs))}, var: {vname})')
-            if not bypass.skip_softfail:
-                raise SoftfailBypassError
-    return not_reached
+        These dataset objects should be identical, just from different sources.
+        """
 
-def validate_data(xobj, kobj, xv: str, step: int, logger, bypass=BypassSwitch(), depth_default=128, nfiles=2): # Ingest into class structure
-    """Run growing selection test for specified variable from xarray and kerchunk datasets"""
-    logger.info(f'{xv} : Starting growbox data tests for {step+1} - {depth_default}')
+        self._id = id
+        self._datasets   = datasets
 
-    if nfiles > 1: # Timestep matching not required if only one file
-        kvariable, xvariable = match_timestamp(xobj[xv], kobj[xv], logger)
-    else:
-        kvariable = kobj[xv]
-        xvariable = xobj[xv]
+        self._labels = dataset_labels or [str(i) for i in range(len(datasets))]
 
-    # Attempt 128 divisions within selection - 128, 64, 32, 16, 8, 4, 2, 1
-    return validate_selection(xvariable, kvariable, xv, depth_default, depth_default, logger, bypass=bypass)
+        self.variables = None
+        self.dimensions = None
 
-def validate_timestep(args, xobj, kobj, step: int, nfiles: int, logger, concat_dims={}, index=0): # Ingest into class structure
-    """Run all tests for a single file which may or may not equate to 1 timestep"""
-    # Note: step indexed from 0
+        self.fhs = filehandlers or [{},{}]
 
-    # Run Variable and Shape validation
+        self._metadata_report = None
+        self._data_report = None
 
-    if 'virtual' in concat_dims:
-        # Assume virtual dimension is first?
-        logger.info("Filtering out virtual dimension for testing")
-        virtual = {concat_dims['virtual']:index}
-        logger.debug(f'Kerchunk index: {index}')
-        kobj = kobj.isel(**virtual)
+        self._preslice_fns = preslice_fns or [PresliceSet() for d in datasets]
 
-    xvars = set(xobj.variables)
-    kvars = set(kobj.variables)
-    if xvars&kvars != xvars: # Overlap of sets - all xvars should be in kvars
-        missing = (xvars^kvars)&xvars 
-        raise VariableMismatchError(missing=missing)
-    else:
-        logger.info(f'Passed Variable tests - all required variables are present')
-        print()
-        for xv in xvars:
-            validate_shapes(xobj, kobj, nfiles, xv, logger,
-                            bypass_shape=args.bypass.skip_xkshape,
-                            proj_dir=args.proj_dir,
-                            concat_dims=concat_dims)
-            logger.info(f'{xv} : Passed Shape test')
-        logger.info(f'Passed all Shape tests')
-        print()
-        nr = 0
-        for xv in xvars:
-            nrv = validate_data(xobj, kobj, xv, step, logger, bypass=args.bypass, nfiles=nfiles)
-            if nrv:
-                nr += nrv/10
-            logger.info(f'{xv} : Passed Data test')
-        logger.info(f'Percentage of Unreachable Chunk requests made relative to maximum: PUCRM={nr/len(xvars)} ({len(xvars)} vars tried)')
+        if len(self._datasets) > 2:
+            raise NotImplementedError(
+                'Simultaneous Validation of multiple datasets is not supported.'
+            )
 
-def run_successful(args, logger): # Ingest into class structure
-    """Move kerchunk-1a.json file to complete directory with proper name"""
-    # in_progress/<groupID>/<proj_code>/kerchunk_1a.json
-    # complete/<groupID>/<proj_code.json
+        super().__init__(
+            logger,
+            label=label,
+            fh=fh,
+            logid=logid,
+            verbose=verbose
+        )
 
-    kfile, in_place = locate_kerchunk(args, logger, get_str=True)
-
-    if in_place:
-        logger.info('Skipped moving files for in-place validation')
-        return None
+    def __str__(self):
+        return f'<PADOCC Validator: {self._id}>'
     
-    if args.groupID:
-        complete_dir = f'{args.workdir}/complete/{args.groupID}'
-    else:
-        complete_dir = f'{args.workdir}/complete/single_runs'
+    @property
+    def pass_fail(self):
+        if self._metadata_report is None or self._data_report is None:
+            return None
+        if self._data_report:
+            return 'Fatal'
+        if self._metadata_report:
+            return 'Warning'
+        return 'Passed'
 
-    if not os.path.isdir(complete_dir):
-        os.makedirs(complete_dir)
+    @property
+    def report(self):
+        if self._metadata_report is None:
+            return None
+        
+        if self._data_report is None:
+            return {
+                'metadata': self._metadata_report
+            }
+        
+        return {
+            'report':{
+                'metadata': self._metadata_report,
+                'data': self._data_report
+            }
+        }
 
-    # Open config file to get correct version
-    version_no = 'kr1.0'
-    detailfile = f'{args.proj_dir}/detail-cfg.json'
-    if os.path.isfile(detailfile):
-        with open(detailfile) as f:
-            details = json.load(f)
-        if 'version_no' in details:
-            version_no = details['version_no']
-            logger.info(f'Found version {version_no} in detail-cfg')
-    else:
-        logger.warning('detail-cfg.json file missing or unreachable - using default version number')
+    def replace_dataset(
+            self, 
+            new_ds: xr.Dataset, 
+            label: str = None, 
+            index: int = None, 
+            dstype: str = None
+        ) -> None:
+        """
+        Replace dataset by type, label or index.
+        """
 
-    newfile = f'{complete_dir}/{args.proj_code}_{version_no}.json'
-    if args.dryrun:
-        logger.info(f'DRYRUN: mv {kfile} {newfile}')
-    else:
-        os.system(f'mv {kfile} {newfile}')
-        os.system(f'touch {kfile}.complete')
+        if label is not None:
+            index = self._labels.index(label)
 
-def run_backtrack(workdir: str, groupID: str, proj_code: str,logger,  quality=False): # Ingest into class structure
-    """Backtrack progress on all output files. If quality is specified as well, files are removed rather than backtracked"""
+        if dstype is not None:
+            types = ['test','control']
+            index = types.index(dstype)
 
-    if groupID:
-        complete_dir = f'{workdir}/complete/{groupID}'
-    else:
-        complete_dir = f'{workdir}/complete/single_runs'
-
-    proj_dir = get_proj_dir(proj_code, workdir, groupID)
-
-    logger.info("Removing 'complete' indicator file")
-
-    for f in glob.glob(f'{proj_dir}/*complete*'):
-        os.remove(f)
-    if quality:
-        logger.info("Removing Kerchunk file")
-        for f in glob.glob(f'{complete_dir}/{proj_code}*'):
-            os.remove(f)
-    else:
-        logger.info("Backtracking Kerchunk file")
-        for x, file in enumerate(glob.glob(f'{complete_dir}/{proj_code}*')):
-            os.rename(file, f'{proj_dir}/kerchunk-1{list("abcde")[x]}.json')
-
-    logger.info(f'{proj_code} Successfully backtracked to pre-validation')
+        if index is not None:
+            self._datasets[index] = new_ds
     
-def attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims, fullset=False): # Ingest into class structure
-    """Handler for attempting processing on a timestep multiple times.
-    - Handles error conditions"""
-    try:
-        validate_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims=concat_dims)
-    except ShapeMismatchError as err:
-        if fullset:
-            raise TrueShapeValidationError
-        else:
-            return True
-    except Exception as err:
-        raise err
+    def replace_preslice(
+            self, 
+            new_preslice: xr.Dataset, 
+            label: str = None, 
+            index: int = None, 
+            dstype: str = None
+        ) -> None:
+        """
+        Replace dataset by type, label or index.
+        """
 
-def add_quality(proj_dir: str):
-    """
-    Add quality_required flag to the detail file for
-    this project.
-    """
-    detail = get_proj_file(proj_dir, 'detail-cfg.json')
-    detail['quality_required'] = True
-    set_proj_file(proj_dir, 'detail-cfg.json', detail, FalseLogger())
+        if label is not None:
+            index = self._labels.index(label)
 
-def validate_dataset(args, logger, fh=None, logid=None, **kwargs): # Ingest into class structure - main function to use.
-    """
-    Perform validation steps for specific dataset defined here, sets up a local dask cluster to limit
-    memory usage, retrieves the set of xarray objects and the kerchunk dataset, then runs validation
-    on each of the selected indexes (subset of total number of objects).
+        if dstype is not None:
+            types = ['test','control']
+            index = types.index(dstype)
 
-    :param args:        (obj) Set of command line arguments supplied by argparse.
+        if index is not None:
+            self._preslice_fns[index] = new_preslice
 
-    :param logger:      (obj) Logging object for info/debug/error messages. Will create a new 
-                        logger object if not given one.
-
-    :param fh:          (str) Path to file for logger I/O when defining new logger.
-
-    :param logid:       (str) If creating a new logger, will need an id to distinguish this logger
-                        from other single processes (typically n of N total processes.)
-    """
-    if not logger:
-        logger = init_logger(args.verbose, args.mode,'validate', fh=fh, logid=logid)
-    logger.info(f'Starting tests for {args.proj_code}')
-
-    # Removed for doing local connection tests.
-    #logger.info('Testing Connection to the CEDA Archive')
-    #if not verify_connection(logger):
-       # raise ArchiveConnectError
-
+    def test_dataset_var(self, var):
+        """
+        Get a variable DataArray from the test dataset, 
+        performing preslice functions.
+        """
+        return self._dataset_var(var, 0)
     
-    # Experimenting with a local dask cluster for memory limit
-    #cluster = LocalCluster(n_workers=1, threads_per_worker=1, memory_target_fraction=0.95, memory_limit=str(args.memory + 'B'))
+    def control_dataset_var(self, var):
+        """
+        Get a variable DataArray from the control dataset, 
+        performing preslice functions.
+        """
+        return self._dataset_var(var, 1)
 
-    # Removed Backtrack for now
-    #if hasattr(args, 'backtrack'):
-        #if args.backtrack:
-            #run_backtrack(args, logger)
-            #return None
+    def _dataset_var(self, var, id):
+        """
+        Perform preslice functions on the requested DataArray
+        """
+        return self._preslice_fn[id].apply(self._datasets[id][var], var)
 
-    if not args.proj_dir:
-        args.proj_dir = get_proj_dir(args.proj_code, args.workdir, args.groupID)
+    def validate_metadata(self, allowances: dict = None) -> dict:
+        """
+        Run all validation steps on this set of datasets.
+        """
 
-    xobjs, indexes, xfiles = open_netcdfs(args, logger, thorough=args.quality)
+        # Reset for new report run
+        self._metadata_report = Report(self.fhs[0])
+        self.logger.info('Initialised metadata report')
 
-    nfiles = len(xfiles)
-    if len(xobjs) == 0:
-        raise NoValidTimeSlicesError(message='Xarray/NetCDF')
-    if indexes == None:
-        args.quality = True
+        allowances = allowances or {}
+        ignore_vars, ignore_dims, ignore_globals = None, None, None
 
-    detailfile = f'{args.proj_dir}/detail-cfg.json'
-    with open(detailfile) as f:
-        details = json.load(f)
+        # Validate global attributes
+        if 'ignore_global_attrs' in allowances:
+            ignore_globals = {'ignore': allowances['ignore_global_attrs']}
 
-    if 'quality_required' in details:
-        if details['quality_required']:
-            args.quality = True
+        self.validate_global_attrs(allowances=ignore_globals)
 
-    ## Open kerchunk file
-    remote_protocol = 'https'
-    if 'links_added' in details:
-        if not details['links_added']:
-            remote_protocol = None
+        if 'ignore_variables' in allowances:
+            ignore_vars = {'ignore': allowances['ignore_variables']}
+        if 'ignore_dimensions' in allowances:
+            ignore_dims = {'ignore': allowances['ignore_dimensions']}
 
-    noissue = False
-    attempts = 0
-    kobj = None
-    Err = 'Unknown'
-    while not noissue and attempts < 3:
-        try:
-            kobj, _v = locate_kerchunk(args, logger, attempt=attempts+1,remote_protocol=remote_protocol)
-            noissue = True
-        except ReferenceNotReachable as err:
-            logger.debug(f"ReferenceNotReachable - {attempts+1}")
-            attempts += 1
-            Err = err
-        except TypeError as err:
-            Err = err
-            if re.match('.*ReferenceNotReachable.*', str(err)):
-                attempts += 1
-            else:
-                raise err
-        except Exception as err:
-            logger.error(f"Unhandled exception with opening Kerchunk file - {err}")
-            logger.error('Note this could be a temporary node issue')
-            raise MissingKerchunkError
+        # Validate variables/dimensions
+        self._validate_variables(allowances=ignore_vars)
+        self._validate_dimensions(allowances=ignore_dims)
 
-    if attempts == 3:
-        raise ArchiveConnectError(proj_code=args.proj_code)
+    def _validate_variables(self, allowances: dict = None):
+        """
+        Validate variables public method
+        """
+        self.logger.info('Performing validation checks: Variables')
+        self._validate_selector(allowances=allowances, selector='variables')
+
+    def _validate_dimensions(self, allowances: dict = None):
+        """
+        Validate dimensions public method
+        """
+        self.logger.info('Performing validation checks: Dimensions')
+        self._validate_selector(allowances=allowances, selector='dims')
+
+    def _validate_selector(self, allowances: dict = None, selector: str = 'variables'):
+        """
+        Ensure all variables/dimensions are consistent across all datasets.
+        Allowances dict contains configurations for skipping some variables
+        in the case for example of a virtual dimension.
+
+        allowances:
+          ignore: [list to ignore]
+        """
+        ignore_sels = []
+        # Determine the set of selectors
+        # Only able to compare two datasets at once
+        test_set    = list(getattr(self._datasets[0], selector))
+        control_set = list(getattr(self._datasets[1], selector))
+        all_selectors = set(control_set) | set(test_set)
+
+        ignore_attrs = {all_s:[] for all_s in all_selectors}
+
+        # Collect ignored selectors and attributes
+        allowances = allowances or {}
+        if 'ignore' in allowances:
+            ignore_sels = allowances['ignore']
+        if 'attributes' in allowances:
+            for scode in allowances['attributes']:
+                s, attr = scode.split('.')
+                ignore_attrs[s].append(attr)
             
-    if not kobj:
-        logger.error(f'Error fetching Kerchunk - {Err}')
-        raise MissingKerchunkError(message=f'Kerchunk fetching failed for {args.proj_code}')
+        misordered = False
+        if len(test_set) != len(control_set):
+            misordered = True
 
-    virtual = False
-    if 'virtual_concat' in details:
-        virtual = details['virtual_concat']
-    
-    if virtual:
-        concat_dims = {'virtual': details['combine_kwargs']['concat_dims'][0]}
-        # Perform virtual attempt
-        logger.info(f"Attempting file subset validation: {len(indexes)}/{nfiles} (virtual dimension)")
-        for step, index in enumerate(indexes):
-            xobj = xobjs[step]
-            logger.info(f'Running tests for selected file: {index} ({step+1}/{len(indexes)})')
-            attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims)
-    else:
-        ## Set up loop variables
-        fullset     = bool(args.quality)
-        concat_dims = get_concat_dims(xobjs, args.proj_dir)
-        if not fullset:
-            logger.info(f"Attempting file subset validation: {len(indexes)}/{nfiles}")
-            for step, index in enumerate(indexes):
-                xobj = xobjs[step]
-                logger.info(f'Running tests for selected file: {index} ({step+1}/{len(indexes)})')
-                fullset = attempt_timestep(args, xobj, kobj, step, nfiles, logger, concat_dims)
-                if fullset:
-                    add_quality(args.proj_dir)
-                    raise FullsetRequiredError
+        self.logger.info(f'Checking {selector}:')
+        for order, s in enumerate(control_set):
+            self.logger.info(f' - {s}')
 
-        if fullset:
-            print()
-            logger.info(f"Attempting total validation")
-            xobjs, indexes, nfiles = open_netcdfs(args, logger, thorough=True)
-            attempt_timestep(args, xobjs, kobj, 0, 1, logger, concat_dims, fullset=True)
-    
-    logger.info('All tests passed successfully')
-    print()
-    run_successful(args, logger)
+            # Check for ignored selectors
+            if s in ignore_sels:
+                self._metadata_report[f'{selector}.{s}'] = {
+                    'type': 'ignored'
+                }
+                continue
+                
+            # Check for correct selector order
+            if not misordered:
+                if test_set[order] != s:
+                    misordered = True
 
-def verify_connection(logger):
-    """
-    Verify connection to the CEDA archive by opening a test file in Kerchunk and
-    comparing to a known value."""
-
-    kfile = 'https://dap.ceda.ac.uk/badc/cmip6/metadata/kerchunk/pipeline1/CMIP/AS-RCEC/TaiESM1/kr1.0/CMIP6_CMIP_AS-RCEC_TaiESM1_historical_r1i1p1f1_3hr_clt_gn_v20201013_kr1.0.json'
-    validated = False
-    tries = 0
-    while not validated and tries < 5:
-        try:
-            mapper = fsspec.get_mapper('reference://',fo=kfile, backend_kwargs={'compression':None}, remote_protocol='https')
-            ds = xr.open_zarr(mapper, consolidated=False, decode_times=True)
-            value = ds['clt'].sel(lat=slice(51,59), lon=slice(-15,7)).isel(time=slice(0,5)).mean().compute()
-            validated = bool(f"{value:.2f}" == '72.45')
-            if not validated:
-                tries += 1
-                logger.warning(f'Failed data collection')
-        except Exception as err:
+            # Find selectors missing from the test set
             try:
-                erstr = str(err)
-            except:
-                erstr = 'Unknown'
-            logger.warning(f'Failed once with {erstr}')
-            tries += 0.5
-    return validated
+                test_s = test_set[test_set.index(s)]
+            except ValueError:
+                # Selector missing from test set
+                self._metadata_report[f'{selector}.{s}'] = {
+                    'type':'missing',
+                    'info':f'missing from {self._labels[0]}'
+                }
+                continue
 
-if __name__ == "__main__":
-    print('Validation Process for Kerchunk Pipeline - run with single_run.py')
+            # Check equality for attributes
+            self._validate_attrs(
+                [
+                    self._datasets[0][s].attrs,
+                    self._datasets[1][s].attrs
+                ], 
+                source=s, ignore=ignore_attrs[s]
+            )
+
+        # Find selectors missing from the control set
+        missing_from_control = set(test_set).difference(control_set)
+        for mc in missing_from_control:
+            self._metadata_report[f'{selector}.{mc}'] = {
+                'type':'missing',
+                'info':f'missing from {self._labels[1]}'
+            }
+        
+        setattr(self, selector, set(all_selectors))
+
+        # Set the selector here for further operations.
+
+        if misordered:
+            self._metadata_report[f'{selector}.all_{selector}'] = {
+                'type': 'order'
+            }
+
+            self.logger.warning(
+                f'{s} present in a different order between datasets - this has been recorded'
+            )
+
+    def validate_global_attrs(self, allowances: dict = None):
+        """
+        Validate the set of global attributes across all datasets
+        """
+
+        allowances = allowances or {}
+        ignore = []
+        if 'ignore' in allowances:
+            ignore = allowances['ignore']
+
+        attrset = []
+        for d in self._datasets:
+            attrset.append(d.attrs)
+
+        self.logger.info('Checking global attributes:')
+        self._validate_attrs(attrset, source='global', ignore=ignore)
+
+    def _validate_attrs(self, attrset: list[dict], source: str = '', ignore: list = None):
+        """
+        Ensure all values across the sets of attributes are consistent - add results
+        to the metadata report.
+        """
+
+        ignore = ignore or []
+        for attr in attrset[0].keys():
+
+            self.logger.debug(f'  > {attr}')
+            # Check for ignored attributes
+            if attr in ignore:
+                self._metadata_report[f'attributes.{source}.{attr}'] = {
+                    'type': 'ignore'
+                }
+                continue
+
+            # Check for missing attributes in any of the sets
+            try:
+                set_of_values = []
+                for index, aset in enumerate(attrset):
+                    set_of_values.append(aset[attr])
+            except KeyError:
+                self._metadata_report[f'attributes.{source}.{attr}'] = {
+                    'type': 'missing',
+                    'info': f'missing from {self._labels[index]}'
+                }
+                continue
+                
+            # Check for non-equal attributes
+            s = set_of_values[0]
+            if not np.all(s == np.array(set_of_values[1:])):
+                self._metadata_report[f'attributes.{source}.{attr}'] = {
+                    'type': 'not_equal'
+                }
+
+    def validate_data(self):
+        """
+        Perform data validations using the growbox method for all variable DataArrays.
+        """
+
+        if self.variables is None:
+            raise ValueError(
+                'Unable to validate data, please ensure metadata has been validated first.'
+                'Use `validate_metadata()` method.'
+            )
+        
+        # Reset for new report run
+        self._data_report = Report(self.fhs[1])
+        self.logger.info('Initialised data report')
+
+        for dim in self.dims:
+            self.logger.debug(f'Validating size of {dim}')
+
+            try:
+                testdim = self._datasets[0].sizes[dim]
+            except KeyError:
+                self.logger.warning(f'{dim} could not be validated for data content')
+                continue
+
+            try:
+                controldim = self._datasets[1].sizes[dim]
+            except KeyError:
+                self.logger.warning(f'{dim} could not be validated for data content')
+                continue
+
+            self._validate_dimlens(
+                dim,
+                testdim,
+                controldim
+            )
+
+        for var in self.variables:
+            self.logger.debug(f'Validating shapes for {var}')
+            try:
+                testvar = self.test_dataset_var(var)
+            except KeyError:
+                self.logger.warning(f'{var} could not be validated for data content')
+                continue
+
+            try:
+                controlvar = self.control_dataset_var(var)
+            except KeyError:
+                self.logger.warning(f'{var} could not be validated for data content')
+                continue
+
+            self._validate_shapes(var, testvar, controlvar)
+
+            # Check access to the source data somehow here
+            # Initiate growbox method - recursive increasing box size.
+            self.logger.debug(f'Validating data for {var}')
+            self._validate_selection(var, testvar, controlvar)
+
+    def _validate_shapes(self,var: str, test, control, ignore=None):
+        """
+        Ensure all variable shapes are consistent across all datasets.
+        Allowances dict contains configurations for skipping some shape tests
+        in the case for example of a virtual dimension.
+        """
+        ignore = ignore or []
+
+        # Check sizes against ignore list
+        if 'size' not in ignore:
+            if test.size != control.size:
+                # Size error
+                self._data_report[f'variables.size_errors.{var}'] = {
+                    self._labels[0]: test.size,
+                    self._labels[1]: control.size
+                }
+
+        # Check dimensions individually
+
+        ignore_dims = []
+        if 'dims' in ignore:
+            ignore_dims = ignore['dims']
+
+        test_dr, control_dr = [],[]
+        dim_error = False
+
+        # Check for consistency of number of dimensions
+        if len(test.dims) != len(control.dims):
+            self._data_report[f'variables.dim_errors.{var}'] = {
+                    self._labels[0]: test.dims,
+                    self._labels[1]: control.dims
+                }
+            self.logger.warning(
+                f'Dimensions inconsistent for {var} - this has been reported'
+            )
+            return
+
+        # Check each dimension, filter for ignores or matching sizes
+        for i in range(len(control.sizes)):
+            if i in ignore_dims:
+                test_dr.append('i')
+                control_dr.append('i')
+                continue
+
+            if test.shape[i] != control.shape[i]:
+                test_dr.append(str(test.shape[i]))
+                control_dr.append(str(control.shape[i]))
+                dim_error = True
+            else:
+                test_dr.append('X')
+                control_dr.append('X')
+        
+        # Record error if present
+        if dim_error:
+            self._data_report[f'variables.dim_size_errors.{var}'] = {
+                    self._labels[0]: ','.join(test_dr),
+                    self._labels[1]: ','.join(control_dr)
+                }
+
+    def _validate_dimlens(self, dim: str, test, control, ignore=None):
+        """
+        Validate dimension lengths are consistent
+        """
+        if ignore:
+            self.logger.debug(f'Skipped {dim}')
+            return
+        
+        if test != control:
+            self._data_report[f'dimensions.size_errors.{dim}'] = {
+                    self._labels[0]: test,
+                    self._labels[1]: control
+                }
+        
+    def _validate_selection(
+            self,
+            var: str,
+            test: xr.DataArray,
+            control: xr.DataArray,
+            current : int = 1,
+            recursion_limit : int = 10, 
+        ) -> bool:
+        """
+        General purpose validation for a specific variable from multiple sources.
+        Both inputs are expected to be xarray DataArray objects but the control could
+        instead by a NetCDF4 Dataset object. We expect both objects to be of the same size.
+        """
+        if test.size != control.size:
+            self.logger.error(
+                'Validation could not be completed for these objects due to differing'
+                f'sizes - "{test.size}" and "{control.size}"'
+            )
+            return
+
+        if current >= recursion_limit:
+            self.logger.debug('Maximum recursion depth reached')
+            self.logger.info(f'Validation for {var} not performed')
+
+            self._data_report[f'data_errors.{var}'] = {
+                'type':'grow_box_exceeded'
+            }
+            return None
+        
+        slice_applied = slice_all_dims(test, current)
+        tbox = test[slice_applied]
+        cbox = control[slice_applied]
+
+        if check_for_nan(cbox):
+            return self._validate_selection(test, control, current+1, var, recursion_limit=recursion_limit)
+        else:
+            return self._compare_data(var, slice_applied, tbox, cbox)
+
+    def _compare_data(
+        self, 
+        vname: str, 
+        slice_applied,
+        test: xr.DataArray, 
+        control: xr.DataArray,
+        ) -> None:
+        """
+        Compare a NetCDF-derived ND array to a Kerchunk-derived one. This function takes a 
+        netcdf selection box array of n-dimensions and an equally sized test array and
+        tests for elementwise equality within selection. If possible, tests max/mean/min calculations 
+        for the selection to ensure cached values are the same.
+
+        Expect TypeErrors later from summations which are bypassed. Other errors will exit the run.
+
+        :param vname:           (str) The name of the variable described by this box selection
+
+        :param test:            (obj) The cloud-format (Kerchunk) dataset selection
+
+        :param control:         (obj) The native dataset selection
+
+        :param bypass:          (bool) Single value flag for bypassing numeric data errors (in the
+                                case of values which cannot be added).
+
+        :returns:   None but will raise error if data comparison fails.
+        """
+        self.logger.debug(f'Starting data comparison for {vname}')
+
+        self.logger.debug('1. Flattening Arrays')
+        t1 = datetime.now()
+
+        control   = np.array(control).flatten()
+        test      = np.array(test).flatten()
+
+        start, stop = format_slice(slice_applied)
+
+        self.logger.debug(f'2. Calculating Tolerance - {(datetime.now()-t1).total_seconds():.2f}s')
+        try: # Tolerance 0.1% of mean value for xarray set
+            tolerance = np.abs(np.nanmean(test))/1000
+        except TypeError: # Type cannot be summed so skip all summations
+            tolerance = None
+
+        self.logger.debug(f'3. Comparing with array_equal - {(datetime.now()-t1).total_seconds():.2f}s')
+        testpass = True
+        try:
+            equality = np.array_equal(control, test, equal_nan=True)
+        except TypeError as err:
+            equality = np.array_equal(control, test)
+
+        errors, bypassed = []
+
+        if not equality:
+            self.logger.debug(f'3a. Comparing directly - {(datetime.now()-t1).total_seconds():.2f}s')
+            equality = False
+            for index in range(control.size):
+                v1 = control[index]
+                v2 = test[index]
+                if v1 != v2:
+                    self.logger.error(f'X: {v1}, K: {v2}, idx: {index}')
+            errors.append('not_equal')
+                
+        self.logger.debug(f'4. Comparing Max values - {(datetime.now()-t1).total_seconds():.2f}s')
+        try:
+            if np.abs(np.nanmax(test) - np.nanmax(control)) > tolerance:
+                self.logger.warning(f'Failed maximum comparison for {vname}')
+                self.logger.debug('K ' + str(np.nanmax(test)) + ' N ' + str(np.nanmax(control)))
+                testpass = False
+                errors.append('max_not_equal')
+        except TypeError as err:
+            self.logger.warning(f'Max comparison skipped for non-summable values in {vname}')
+            bypassed.append('max')
+
+        self.logger.debug(f'5. Comparing Min values - {(datetime.now()-t1).total_seconds():.2f}s')
+        try:
+            if np.abs(np.nanmin(test) - np.nanmin(control)) > tolerance:
+                self.logger.warning(f'Failed minimum comparison for {vname}')
+                self.logger.debug('K ' + str(np.nanmin(test)) + ' N ' + str(np.nanmin(control)))
+                testpass = False
+                errors.append('min_not_equal')
+        except TypeError as err:
+            self.logger.warning(f'Min comparison skipped for non-summable values in {vname}')
+            bypassed.append('min')
+
+        self.logger.debug(f'6. Comparing Mean values - {(datetime.now()-t1).total_seconds():.2f}s')
+        try:
+            if np.abs(np.nanmean(test) - np.nanmean(control)) > tolerance:
+                self.logger.warning(f'Failed mean comparison for {vname}')
+                self.logger.debug('K ' + str(np.nanmean(test)) + ' N ' + str(np.nanmean(control)))
+                testpass = False
+                errors.append('mean_not_equal')
+        except TypeError as err:
+            self.logger.warning(f'Mean comparison skipped for non-summable values in {vname}')
+            bypassed.append('mean')
+
+        if errors:
+            self._data_report[f'data_errors.{vname}'] = {
+                'type':','.join(errors),
+                'topleft':start,
+                'bottomright':stop,
+            }
+        if bypassed:
+            self._data_report[f'bypassed.{vname}'] = ','.join(bypassed)
+
+        self.logger.info(f'Data validation complete for {vname}')
+
+class ValidateOperation(ProjectOperation):
+    """
+    Encapsulate all validation testing into a single class. Instantiate for a specific project,
+    the object could then contain all project info (from detail-cfg) opened only once. Also a 
+    copy of the total datasets (from native and cloud sources). Subselections can be passed
+    between class methods along with a variable index (class variables: variable list, dimension list etc.)
+
+    Class logger attribute so this doesn't need to be passed between functions.
+    Bypass switch contained here with all switches.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.concat_dims = None        
+
+    def _run(self):
+        # Replaces validate timestep
+
+        test   = self._open_product()
+        sample = self._open_sample()
+
+        meta_fh = JSONFileHandler(self.dir, 'metadata_report',logger=self.logger, **self.fh_kwargs)
+        data_fh = JSONFileHandler(self.dir, 'data_report',logger=self.logger, **self.fh_kwargs)
+
+        vd = ValidateDatasets(
+            [test,sample],
+            'validator-padocc',
+            dataset_labels=[self.cloud_format, self.source_format], 
+            filehandlers=[meta_fh, data_fh],
+            logger=self.logger)
+
+        # Run metadata testing
+        vd.validate_metadata()
+
+        # Run data testing
+
+        if self.detail_cfg.get('cfa'):
+            # CFA-enabled validation
+            control = self._open_cfa()
+            vd.replace_dataset(control, label=self.source_format)
+        else:
+            preslice = self._get_preslice(test, sample)
+            vd.replace_preslice(preslice, label=self.cloud_format)
+
+        vd.validate_data()
+
+        # Save report
+        meta_fh.save()
+        data_fh.save()
+
+    def _open_sample(self):
+        """
+        Open a random sample dataset for validation checking.
+        """
+        randomfile = random.randint(0,len(self.allfiles)-1)
+        file = self.allfiles[randomfile]
+        return xr.open_dataset(file)
+
+    def _open_cfa(self):
+        """
+        Open the CFA dataset for this project
+        """
+
+        return xr.open_dataset(self.cfa_path, engine='CFA', cfa_options=None)
+
+    def _open_product(self):
+        """
+        Configuration to open object wrappers in the appropriate way so actions
+        can be applied to all. Any products not usable with Xarray should have 
+        an xarray-wrapper to allow the application of typical methods for comparison.
+        """
+
+        if self.cloud_fmt == 'kerchunk':
+            # Kerchunk opening sequence
+            return open_kerchunk(
+                self.outfile, 
+                self.logger,
+                isparq = self.isparq,
+                retry = True,
+                attempt = 3
+            )
+
+    def _get_preslice(self, test, sample, variables):
+        """Match timestamp of xarray object to kerchunk object.
+        
+        :param test:     (obj) An xarray dataset representing the cloud product.
+        
+        :param sample:   (obj) An xarray dataset representing the source file(s).
+        
+        :returns:   A slice object to apply to the test dataset to map directly
+            to the sample dataset.
+        """
+
+        preslice = PresliceSet()
+        for var in variables:
+            preslice_var = []
+            for dim in sample[var].dims:
+                slice_dim = slice(
+                    np.array(sample[dim][0], dtype=sample[dim].dtype),
+                    np.array(sample[dim][-1], dtype=sample[dim].dtype)
+                )
+                preslice_var.append(slice_dim)
+            preslice.add_preslice(preslice_var, var)
+
+        return preslice
