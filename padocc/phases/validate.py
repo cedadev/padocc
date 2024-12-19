@@ -861,7 +861,7 @@ class ValidateOperation(ProjectOperation):
         an xarray-wrapper to allow the application of typical methods for comparison.
         """
 
-        if self.cloud_fmt == 'kerchunk':
+        if self.cloud_format == 'kerchunk':
             # Kerchunk opening sequence
             return open_kerchunk(
                 self.outfile, 
@@ -870,6 +870,9 @@ class ValidateOperation(ProjectOperation):
                 retry = True,
                 attempt = 3
             )
+        raise NotImplementedError(
+            f'Opening sequence not known for {self.cloud_format}'
+        )
 
     def _get_preslice(self, test, sample, variables):
         """Match timestamp of xarray object to kerchunk object.
