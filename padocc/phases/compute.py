@@ -34,7 +34,7 @@ from padocc.core.errors import (
     ComputeError
 )
 
-from padocc.phases.validate import validate_selection
+from padocc.phases.validate import ValidateDatasets
 from padocc.core.filehandlers import JSONFileHandler, ZarrStore
 
 CONCAT_MSG = 'See individual files for more details'
@@ -427,10 +427,18 @@ class ComputeOperation(ProjectOperation):
 
         This Class method is common to all conversion types.
         """
+
+        raise NotImplementedError
+
         concat_dims = []
         for dim in ds_examples[0].dims:
             try:
-                validate_selection(ds_examples[0][dim], ds_examples[1][dim], dim, 128, 128, logger, bypass=self._bypass)          
+
+                report = ValidateDatasets(
+                    [ds_examples[0][dim], ds_examples[1][dim]],
+                    ['0th','1st']
+                ).validate_data
+                        
             except ValidationError:
                 self.logger.debug(f'Non-identical dimension: {dim} - if this dimension should be identical across the files, please inspect.')
                 concat_dims.append(dim)
@@ -452,6 +460,9 @@ class ComputeOperation(ProjectOperation):
 
         This Class method is common to all conversion types.
         """
+
+        raise NotImplementedError
+
         identical_dims = []
         normal_dims = []
         for var in ds_examples[0].variables:
