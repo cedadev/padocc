@@ -9,13 +9,13 @@ import fsspec
 import xarray as xr
 import numpy as np
 import base64
+import logging
 
 import rechunker
 
 from padocc.core import ProjectOperation
 
 from padocc.core import (
-    BypassSwitch,
     FalseLogger,
     LoggedOperation
 )
@@ -39,7 +39,7 @@ from padocc.core.filehandlers import JSONFileHandler, ZarrStore
 
 CONCAT_MSG = 'See individual files for more details'
 
-def cfa_handler(instance):
+def cfa_handler(instance, logger: logging.logger | FalseLogger = FalseLogger()):
     """
     Handle the creation of a CFA-netCDF file using the CFAPyX package
     """
@@ -49,11 +49,26 @@ def cfa_handler(instance):
     except ImportError:
         return False
 
-    cfa = CFANetCDF(instance.allfiles.get()) # Add instance logger here.
+    try:
+        cfa = CFANetCDF(instance.allfiles.get()) # Add instance logger here.
 
-    cfa.create()
-    cfa.write(instance.cfa_path)
-    return True
+        cfa.create()
+        cfa.write(instance.cfa_path)
+
+        return {
+            'aggregated_dims': cfa.agg_dims,
+            'pure_dims': cfa.pure_dims,
+            'coord_dims': cfa.coord_dims,
+            'aggregated_vars': cfa.aggregated_vars,
+            'scalar_vars': cfa.scalar_vars,
+            'identical_vars': cfa.identical_vars
+        }
+
+    except Exception as err:
+        logger.error(
+            f'Aggregation via CFA failed - {err} - report at https://github.com/cedadev/CFAPyX/issues'
+        )
+        return None
 
 class KerchunkConverter(LoggedOperation):
     """Class for converting a single file to a Kerchunk reference object. Handles known
@@ -188,12 +203,11 @@ class ComputeOperation(ProjectOperation):
             groupID   : str = None,
             stage     : str = 'in_progress',
             thorough    : bool = None,
-            version_no  : str = 'trial-', 
             concat_msg  : str = CONCAT_MSG,
             limiter     : int = None, 
             skip_concat : bool = False, 
-            new_version : bool = None,
             label : str = 'compute',
+            is_trial: bool = True,
             **kwargs
         ) -> None:
         """
@@ -239,14 +253,13 @@ class ComputeOperation(ProjectOperation):
 
         self.logger.debug('Starting variable definitions')
 
-        self.version_no  = version_no
-        self.new_version = new_version
+        self.is_trial = is_trial
         self.concat_msg  = concat_msg
         self.skip_concat = skip_concat
 
         self.stage = stage
-        self.mode = self.detail_cfg['mode'] or 'kerchunk'
-        self.fmt = self.detail_cfg['type'] or 'JSON'
+        self.mode = self.cloud_format
+        self.fmt = self.file_type
 
         self.validate_time = None
         self.concat_time   = None
@@ -266,12 +279,6 @@ class ComputeOperation(ProjectOperation):
         self.limiter = limiter
         if not self.limiter:
             self.limiter = num_files
-
-        if version_no != 'trial-':
-            if 'version_no' in self.detail_cfg:
-                self.version_no = self.detail_cfg['version_no']
-            else:
-                self.version_no = 1
 
         self._setup_cache()
 
@@ -349,9 +356,11 @@ class ComputeOperation(ProjectOperation):
     @property
     def outproduct(self):
         if self.stage == 'complete':
-            return f'{self.proj_code}_{self.mode[0]}r1.{self.version_no}.{self.fmt}'
+            return f'{self.proj_code}.{self.version_no}.{self.fmt}'
         else:
-            return f'{self.mode}-{self.version_no}a.{self.fmt}'
+            vn = f'{self.version_no}a.{self.fmt}'
+            if self._is_trial:
+                vn = f'trial-{vn}'
 
     @property
     def filelist(self):
@@ -639,10 +648,8 @@ class KerchunkDS(ComputeOperation):
 
         self.ctypes = None
 
-        if 'type' in self.detail_cfg:
-            if self.detail_cfg['type'] != 'JSON':
-                self.fmt   = 'parq'
-                self.record_size = 167
+        if self.file_type != 'json':
+            self.record_size = 167
         
     def _run(
             self,
@@ -654,7 +661,10 @@ class KerchunkDS(ComputeOperation):
         because we already know we're running for ``Kerchunk``.
         """
         status = self._run_with_timings(self.create_refs)
-        self.detail_cfg['cfa'] = cfa_handler(self)
+        results = cfa_handler(self)
+        if results is not None:
+            self.base_cfg['data_properties'] = results
+            self.detail_cfg['cfa'] = True
         self.update_status('compute',status,jobid=self._logid, dryrun=self._dryrun)
         return status
 
@@ -744,8 +754,8 @@ class KerchunkDS(ComputeOperation):
         if len(refs) > 1:
             # Pick 2 refs to use when determining dimension info.
             # Concatenation Dimensions
-            if 'combine_kwargs' in self.detail_cfg:
-                self.combine_kwargs = self.detail_cfg['combine_kwargs']
+            if 'combine_kwargs' in self.detail_cfg['kwargs']:
+                self.combine_kwargs = self.detail_cfg['kwargs']['combine_kwargs']
             else:
                 # Determine combine_kwargs
                 self._determine_dim_specs([
@@ -867,13 +877,6 @@ class KerchunkDS(ComputeOperation):
             self.logger.debug('Found single ref to save')
             self.kfile.set(refs[0])
         
-        # This is now done at ingest, post-validation due to Network Issues
-        if not self._bypass.skip_links:
-            self.kfile.add_download_link()
-            self.detail_cfg['links_added'] = True
-        else:
-            self.detail_cfg['links_added'] = False
-
         if not self.partial:
             self.logger.info(f'Written to JSON file - {self.outfile}')
             self.kfile.close()
@@ -885,8 +888,8 @@ class KerchunkDS(ComputeOperation):
         Check the shape of each variable for inconsistencies which will
         require a thorough validation process.
         """
-        if 'variables' in self.detail_cfg:
-            variables = self.detail_cfg['variables']
+        if self.base_cfg['data_properties']['aggregated_vars'] != 'Unknown':
+            variables = self.base_cfg['data_properties']['aggregated_vars']
             checklist = [f'{v}/.zarray' for v in variables]
         else:
             checklist = [r for r in ref['refs'].keys() if '.zarray' in r]
@@ -949,7 +952,7 @@ class ZarrDS(ComputeOperation):
         self.logger.info(f"Retrieved required xarray dataset objects - {(datetime.now()-t1).total_seconds():.2f}s")
 
         # Determine concatenation dimensions
-        if 'concat_dims' not in self.detail_cfg:
+        if self.base_cfg['data_properties']['aggregated_vars'] == 'Unknown':
             # Determine dimension specs for concatenation.
             self._determine_dim_specs([
                 xr.open_dataset(self.filelist[0]),

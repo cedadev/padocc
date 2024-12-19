@@ -825,7 +825,7 @@ class ValidateOperation(ProjectOperation):
 
         # Run data testing
 
-        if self.detail_cfg.get('cfa'):
+        if self.detail_cfg.get(index='cfa'):
             # CFA-enabled validation
             control = self._open_cfa()
             vd.replace_dataset(control, label=self.source_format)

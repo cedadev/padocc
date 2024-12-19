@@ -99,9 +99,9 @@ def _perform_safe_calculations(std_vars: list, cpf: list, volms: list, nfiles: i
         spatial_res = None
 
     if nfiles and avg_vol:
-        netcdf_data = avg_vol*nfiles
+        source_data = avg_vol*nfiles
     else:
-        netcdf_data = None
+        source_data = None
 
     if nfiles and avg_cpf:
         total_chunks = avg_cpf * nfiles
@@ -115,13 +115,13 @@ def _perform_safe_calculations(std_vars: list, cpf: list, volms: list, nfiles: i
 
     type = 'JSON'
     if avg_cpf and nfiles:
-        kerchunk_data = avg_cpf * nfiles * kchunk_const
-        if kerchunk_data > 500e6:
+        cloud_data = avg_cpf * nfiles * kchunk_const
+        if cloud_data > 500e6:
             type = 'parq'
     else:
-        kerchunk_data = None
+        cloud_data = None
 
-    return avg_cpf, num_vars, avg_chunk, spatial_res, netcdf_data, kerchunk_data, total_chunks, addition, type
+    return avg_cpf, num_vars, avg_chunk, spatial_res, source_data, cloud_data, total_chunks, addition, type
 
 class ScanOperation(ProjectOperation):
 
@@ -155,7 +155,7 @@ class ScanOperation(ProjectOperation):
         nfiles = len(self.allfiles)
 
         if nfiles < 3:
-            self.detail_cfg = {'skipped':True}
+            self.detail_cfg.set({'skipped':True})
             self.logger.info(f'Skip scanning phase (only found {nfiles} files) >> proceed directly to compute')
             return None
         
@@ -236,8 +236,9 @@ class ScanOperation(ProjectOperation):
             'validate_time': mini_ds.validate_time
         }
 
-        self._compile_outputs(std_vars, cpf, volms, timings, 
-            ctypes, escape=escape, is_varwarn=is_varwarn, is_skipwarn=is_skipwarn
+        self._compile_outputs(
+            std_vars, cpf, volms, timings, 
+            ctypes, escape=escape, scanned_with='kerchunk'
         )
 
     def _scan_zarr(self, limiter=None):
@@ -318,21 +319,35 @@ class ScanOperation(ProjectOperation):
 
         return np.sum(sizes), chunks, vars
 
-    def _compile_outputs(self, std_vars, cpf, volms, timings, ctypes, escape=None, is_varwarn=None, is_skipwarn=None, override_type=None):
+    def _compile_outputs(
+        self, 
+        std_vars: list[str], 
+        cpf: list[int], 
+        volms: list[str], 
+        timings: dict, 
+        ctypes: list[str], 
+        escape: bool = None, 
+        override_type: str = None, 
+        scanned_with : str = None
+    ) -> None:
 
         self.logger.info('Summary complete, compiling outputs')
         (avg_cpf, num_vars, avg_chunk, 
-        spatial_res, netcdf_data, kerchunk_data, 
+        spatial_res, source_data, cloud_data, 
         total_chunks, addition, type) = _perform_safe_calculations(std_vars, cpf, volms, len(self.allfiles), self.logger)
 
         details = {
-            'netcdf_data'      : _format_float(netcdf_data, logger=self.logger), 
-            'kerchunk_data'    : _format_float(kerchunk_data, logger=self.logger), 
+            'source_data'      : _format_float(source_data, logger=self.logger), 
+            'cloud_data'       : _format_float(cloud_data, logger=self.logger), 
+            'scanned_with'     : scanned_with,
             'num_files'        : len(self.allfiles),
-            'chunks_per_file'  : _safe_format(avg_cpf,'{value:.1f}'),
-            'total_chunks'     : _safe_format(total_chunks,'{value:.2f}'),
-            'estm_chunksize'   : _format_float(avg_chunk, logger=self.logger),
-            'estm_spatial_res' : _safe_format(spatial_res,'{value:.2f}') + ' deg',
+            'chunk_info'     : {
+                'chunks_per_file'  : _safe_format(avg_cpf,'{value:.1f}'),
+                'total_chunks'     : _safe_format(total_chunks,'{value:.2f}'),
+                'estm_chunksize'   : _format_float(avg_chunk, logger=self.logger),
+                'estm_spatial_res' : _safe_format(spatial_res,'{value:.2f}') + ' deg',
+                'addition'         : _safe_format(addition,'{value:.3f}') + ' %',
+            },
             'timings'        : {
                 'convert_estm'   : timings['convert_time'],
                 'concat_estm'    : timings['concat_time'],
@@ -340,33 +355,21 @@ class ScanOperation(ProjectOperation):
                 'convert_actual' : None,
                 'concat_actual'  : None,
                 'validate_actual': None,
-            },
-            'variable_count'   : num_vars,
-            'variables'        : std_vars,
-            'addition'         : _safe_format(addition,'{value:.3f}') + ' %',
-            'var_err'          : is_varwarn,
-            'file_err'         : is_skipwarn,
-            'type'             : type
+            }
         }
 
         if escape:
             details['scan_status'] = 'FAILED'
 
-        if len(set(ctypes)) == 1:
-            details['driver'] = ctypes[0]
+        details['driver'] = '/'.join(set(ctypes))
 
         if override_type:
             details['type'] = override_type
-
-        details['version_no'] = 1
+        else:
+            details['type'] = type
 
         existing_details = self.detail_cfg.get()
-        if existing_details is not None:
-            for entry in details.keys():
-                if details[entry]:
-                    existing_details[entry] = details[entry]
-        else:
-            existing_details = details
+        existing_details.update(details)
 
         self.detail_cfg.set(existing_details)
         self.detail_cfg.close()
