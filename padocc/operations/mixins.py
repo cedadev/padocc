@@ -12,16 +12,9 @@ from padocc.core import (
     FalseLogger,
     LoggedOperation
 )
-from padocc.core.utils import extract_file, times, apply_substitutions
+from padocc.core.utils import extract_file, times, apply_substitutions, file_configs
 
 from padocc.core.project import ProjectOperation
-
-config = {
-    'proj_code': None,
-    'pattern': None,
-    'update': None,
-    'remove': None
-}
 
 class InitialisationMixin:
 
@@ -95,12 +88,15 @@ class InitialisationMixin:
         """
         Create a first-time ProjectOperation and save created files. 
         """
+        default_cfg = file_configs['base_cfg']
+        default_cfg.update(config)
+
         proj_op = ProjectOperation(
             config['proj_code'],
-            config['workdir'],
+            self.workdir,
             self.groupID,
             first_time = True,
-            ft_kwargs=config,
+            ft_kwargs=default_cfg,
             logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful,
@@ -415,6 +411,7 @@ class AllocationsMixin:
             repeat_id,
             band_increase=None,
             binpack=None,
+            **kwargs,
         ) -> list:
         """
         Function for assembling all allocations and bands for packing. Allocations contain multiple processes within
@@ -436,16 +433,15 @@ class AllocationsMixin:
 
         for p in proj_codes:
             proj_op = ProjectOperation(p, self.workdir, groupID=self.groupID, dryrun=self.dryrun, **kwargs)
-            detail  = proj_op.detail_cfg.get()
+            lr      = proj_op.base_cfg['last_run']
+            timings = proj_op.detail_cfg['timings']
+            nfiles  = proj_op.detail_cfg['num_files']
 
             # Determine last run if present for this job
-            lr = [None, None]
-            if 'last_run' in detail:
-                lr = detail['last_run']
             
-            if _has_required_timings(detail) and phase == 'compute':
+            if 'concat_estm' in timings and phase == 'compute':
                 # Calculate time estimation (minutes) - experimentally derived equation
-                time_estms[p] = (500 + (2.5 + 1.5*detail['timings']['convert_estm'])*detail['num_files'])/60 # Changed units to minutes for allocation
+                time_estms[p] = (500 + (2.5 + 1.5*timings['convert_estm'])*nfiles)/60 # Changed units to minutes for allocation
             else:
                 # Increase from previous job run if band increase allowed (previous jobs ran out of time)
                 if lr[0] == phase and band_increase:
@@ -458,10 +454,10 @@ class AllocationsMixin:
                     next_band = time_defs_value
 
                 # Thorough/Quality validation - special case.
-                if 'quality_required' in detail and phase == 'validate':
-                    if detail['quality_required']:
+                #if 'quality_required' in detail and phase == 'validate':
+                    #if detail['quality_required']:
                         # Hardcoded quality time 2 hours
-                        next_band = max(next_band, 120) # Min 2 hours
+                        #next_band = max(next_band, 120) # Min 2 hours
 
                 # Save code to specific band
                 if next_band in time_bands:
@@ -508,19 +504,6 @@ class AllocationsMixin:
 
         # Return list of tuples.
         return allocs
-
-def _has_required_timings(detail) -> bool:
-        """
-        Check if the contents of this projects 'detail' dict has required timing
-        estimates for allocation.
-
-        :returns:   True or False depending on the above condition.
-        """
-        if 'timings' not in detail:
-            return False
-        if 'concat_estm' not in detail['timings']:
-            return False
-        return True
 
 def _create_allocations(groupID: str, workdir: str, bins: list, repeat_id: str, dryrun=False) -> None:
         """
@@ -722,8 +705,6 @@ def _get_input(
 
     config = {
         'proj_code': proj_code,
-        'workdir'  : workdir,
-        'proj_dir' : proj_dir
     }
     do_updates = input('Do you wish to add overrides to metadata values? (y/n): ')
     if do_updates == 'y':
