@@ -30,6 +30,42 @@ phases = [
     'catalog'
 ]
 
+BASE_CFG = {
+    'proj_code':'',
+    'pattern':'',
+    'updates':None,
+    'removals':None,
+    'version_id':'1.1',
+    'data_properties':{
+        'aggregated_dims':'Unknown',
+        'pure_dims': 'Unknown',
+        'coord_dims': 'Unknown',
+        'virtual_dims': 'Unknown',
+        'aggregated_vars': 'Unknown',
+        'scalar_vars':'Unknown',
+        'identical_vars':'Unknown'
+    },
+    'override':{
+        'cloud_type':None,
+        'file_type':None
+    },
+    'last_run': (None, None),
+}
+
+DETAIL_CFG = {
+    'source_data': '',
+    'cloud_data': '',
+    'scanned_with': '',
+    'num_files': '',
+    'timings': None,
+    'chunk_info':None,
+}
+
+file_configs = {
+    'base_cfg':BASE_CFG,
+    'detail_cfg':DETAIL_CFG
+}
+
 class BypassSwitch:
     """Class to represent all bypass switches throughout the pipeline.
     Requires a switch string which is used to enable/disable specific pipeline 

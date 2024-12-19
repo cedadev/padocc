@@ -7,7 +7,7 @@ import glob
 import logging
 
 from .errors import error_handler
-from .utils import extract_file, BypassSwitch, apply_substitutions, phases
+from .utils import extract_file, BypassSwitch, apply_substitutions, phases, file_configs
 from .logs import reset_file_handler
 
 from .mixins import DirectoryMixin, EvaluationsMixin
@@ -124,9 +124,9 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
 
         self.logger.debug(f'Creating operator for project "{self.proj_code}')
         # Project FileHandlers
-        self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', self.logger, **self.fh_kwargs)
-        self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', self.logger, **self.fh_kwargs)
-        self.allfiles   = TextFileHandler(self.dir, 'allfiles', self.logger, **self.fh_kwargs)
+        self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', logger=self.logger, conf=file_configs['base_cfg'], **self.fh_kwargs)
+        self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', logger=self.logger, conf=file_configs['detail_cfg'], **self.fh_kwargs)
+        self.allfiles   = TextFileHandler(self.dir, 'allfiles', logger=self.logger, **self.fh_kwargs)
 
         # ft_kwargs <- stored in base_cfg after this point.
         if first_time:
@@ -239,7 +239,7 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
         """
         Get the current version of the output file.
         """
-        return self.detail_cfg['version_no'] or 1
+        return self.base_cfg['version_no']
 
     @property
     def dir(self):
