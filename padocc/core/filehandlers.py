@@ -141,13 +141,23 @@ class FileIOMixin(LoggedOperation):
 
         self._value = value
 
-    def get(self):
+    def get(self, index: str = None, default: str = None):
         """
-        Get the value of the private ``_value`` attribute.
+        Get the value of the private ``_value`` attribute. Can also get a
+        parameter from this item as you would with a dictionary, if possible
+        for the item type represented by ``_value``.
         """
         self._check_value()
 
-        return self._value
+        if index is None:
+            return self._value
+        
+        try:
+            return self._value.get(index, default)
+        except AttributeError:
+            raise AttributeError(
+                f'Filehandler for {self._file} does not support getting specific items.'
+            )
 
     def _check_save(self) -> bool:
         """
@@ -258,6 +268,18 @@ class ListIOMixin(FileIOMixin):
 class JSONFileHandler(FileIOMixin):
     description = "JSON File handler for padocc config files."
 
+    def __init__(
+            self, 
+            dir: str, 
+            filename: str, 
+            logger: logging.Logger | FalseLogger = None,
+            conf: dict = None, 
+            **kwargs
+        ) -> None:
+
+        self._conf = conf
+        super().__init__(dir, filename, logger=logger, **kwargs)
+
     def __str__(self) -> str:
         """String representation"""
         return yaml.dump(self.get())
@@ -282,8 +304,13 @@ class JSONFileHandler(FileIOMixin):
         if self._value is None:
             self._get_content()
 
+        if self._conf is not None:
+            if index in self._conf:
+                self._apply_conf()
+
         if index in self._value:
             return self._value[index]
+        
         return None
 
     def __setitem__(self, index: str, value) -> None:
@@ -323,8 +350,23 @@ class JSONFileHandler(FileIOMixin):
 
     def _set_content(self):
         if super()._check_save():
+            self._apply_conf()
             with open(self._file,'w') as f:
                 f.write(json.dumps(self._value))
+
+    def _apply_conf(self):
+        """
+        Update value with properties from conf - fill
+        missing values.
+        """
+
+        if self._conf is None:
+            return
+        
+        self._conf.update(self._value)
+
+        self._value = dict(self._conf)
+        self._conf = None
 
 class KerchunkFile(JSONFileHandler):
 
