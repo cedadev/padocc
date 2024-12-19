@@ -39,7 +39,7 @@ from padocc.core.filehandlers import JSONFileHandler, ZarrStore
 
 CONCAT_MSG = 'See individual files for more details'
 
-def cfa_handler(instance, logger: logging.logger | FalseLogger = FalseLogger()):
+def cfa_handler(instance, logger: logging.Logger | FalseLogger = FalseLogger()):
     """
     Handle the creation of a CFA-netCDF file using the CFAPyX package
     """

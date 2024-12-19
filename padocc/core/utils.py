@@ -31,8 +31,8 @@ phases = [
 ]
 
 BASE_CFG = {
-    'proj_code':'',
-    'pattern':'',
+    'proj_code':None,
+    'pattern':None,
     'updates':None,
     'removals':None,
     'version_id':'1.1',
@@ -53,10 +53,10 @@ BASE_CFG = {
 }
 
 DETAIL_CFG = {
-    'source_data': '',
-    'cloud_data': '',
-    'scanned_with': '',
-    'num_files': '',
+    'source_data': None,
+    'cloud_data': None,
+    'scanned_with': None,
+    'num_files': None,
     'timings': None,
     'chunk_info':None,
     'kwargs': None,

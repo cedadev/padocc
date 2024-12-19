@@ -497,7 +497,7 @@ class GroupOperation(
 
         if self._dryrun:
             self.logger.info('DRYRUN: sbatch command: ')
-            print(f'sbatch --array=0-{group_len-1} {sbatch.filepath()}')
+            print(f'sbatch --array=0-{group_length-1} {sbatch.filepath()}')
 
     def _sbatch_kwargs(
             self, time, memory, repeat_id, verbose=None, bypass=None, 
