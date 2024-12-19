@@ -10,7 +10,7 @@ from .errors import error_handler
 from .utils import extract_file, BypassSwitch, apply_substitutions, phases, file_configs
 from .logs import reset_file_handler
 
-from .mixins import DirectoryMixin, EvaluationsMixin
+from .mixins import DirectoryMixin, EvaluationsMixin, PropertiesMixin
 from .filehandlers import (
     JSONFileHandler, 
     CSVFileHandler,
@@ -20,7 +20,10 @@ from .filehandlers import (
 )
 
           
-class ProjectOperation(DirectoryMixin, EvaluationsMixin):
+class ProjectOperation(
+    DirectoryMixin, 
+    EvaluationsMixin,
+    PropertiesMixin):
     """
     PADOCC Project Operation class, able to access project files
     and perform some simple functions. Single-project operations
@@ -234,12 +237,6 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
 
     def create_new_kstore(self, product : str):
         raise NotImplementedError
-
-    def get_version(self):
-        """
-        Get the current version of the output file.
-        """
-        return self.base_cfg['version_no']
 
     @property
     def dir(self):

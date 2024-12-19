@@ -197,6 +197,24 @@ class PropertiesMixin:
             return self.detail_cfg['override'][key]
         
         return None
+    
+    @property
+    def revision(self) -> str:
+
+        if self.cloud_format is None:
+            raise ValueError(
+                'Cloud format not set, revision is unknown'
+            )
+        
+        if self.file_type is not None:
+            return ''.join((self.cloud_format[0],self.file_type[0],self.version_no))
+        else:
+            return ''.join((self.cloud_format[0],self.version_no))
+        
+    @property
+    def version_no(self) -> str:
+
+        return self.base_cfg['version_no']
 
     @property
     def cloud_format(self) -> str:

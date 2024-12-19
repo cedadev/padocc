@@ -59,6 +59,7 @@ DETAIL_CFG = {
     'num_files': '',
     'timings': None,
     'chunk_info':None,
+    'kwargs': None,
 }
 
 file_configs = {
