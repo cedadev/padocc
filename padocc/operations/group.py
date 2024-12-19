@@ -278,13 +278,11 @@ class GroupOperation(
             **kwargs,
         )
 
-        if mode is None:
-            mode = proj_op.get_mode()
-        version = proj_op.get_version()
-        del proj_op
-
+        mode = proj_op.cloud_format
         if mode is None:
             mode = 'kerchunk'
+
+        del proj_op
 
         if mode not in COMPUTE:
             raise ValueError(
@@ -304,7 +302,6 @@ class GroupOperation(
             self.workdir,
             groupID=self.groupID,
             logger=self.logger,
-            version_no=version,
             **kwargs
         )
         status = proj_op.run(subset_bypass=subset_bypass)
