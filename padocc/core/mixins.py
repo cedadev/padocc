@@ -190,13 +190,28 @@ class PropertiesMixin:
 
     def _check_override(self, key, mapper):
         if self.base_cfg['override'][key] is not None:
-            return self.detail_cfg['override'][key]
+            return self.base_cfg['override'][key]
         
         if self.detail_cfg[mapper] is not None:
             self.base_cfg['override'][key] = self.detail_cfg[mapper]
-            return self.detail_cfg['override'][key]
+            self.base_cfg.close()
+            return self.base_cfg['override'][key]
         
         return None
+    
+    @property
+    def outpath(self):
+        return f'{self.dir}/{self.outproduct}'
+    
+    @property
+    def outproduct(self):
+        if self.stage == 'complete':
+            return f'{self.proj_code}.{self.version_no}.{self.file_type}'
+        else:
+            vn = f'{self.version_no}a.{self.file_type}'
+            if self._is_trial:
+                vn = f'trial-{vn}'
+            return vn
     
     @property
     def revision(self) -> str:
@@ -236,7 +251,7 @@ class PropertiesMixin:
     def file_type(self, value):
         
         type_map = {
-            'kerchunk': ['json','parq']
+            'kerchunk': ['json','parq'],
         }
         
         if self.cloud_format in type_map:

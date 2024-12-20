@@ -113,7 +113,7 @@ def _perform_safe_calculations(std_vars: list, cpf: list, volms: list, nfiles: i
     else:
         addition = None
 
-    type = 'JSON'
+    type = 'json'
     if avg_cpf and nfiles:
         cloud_data = avg_cpf * nfiles * kchunk_const
         if cloud_data > 500e6:
@@ -193,9 +193,15 @@ class ScanOperation(ProjectOperation):
             thorough=self._thorough, 
             forceful=self._forceful, # Always run from scratch forcefully to get best time estimates.
             logger=self.logger,
-            limiter=limiter)
+            limiter=limiter,
+            is_trial=True)
 
         mini_ds.create_refs()
+
+        if mini_ds.extra_properties is not None:
+            self.base_cfg['data_properties'].update(mini_ds.extra_properties)
+        
+        self.detail_cfg['kwargs'] = mini_ds.extra_kwargs
         
         escape, is_varwarn, is_skipwarn = False, False, False
         cpf, volms = [],[]
@@ -250,10 +256,10 @@ class ScanOperation(ProjectOperation):
 
         # Need a refactor
         mini_ds = ZarrDSRechunker(
-            args.proj_code,
-            workdir=args.workdir, 
+            self.proj_code,
+            workdir=self.workdir, 
             thorough=True, forceful=True, # Always run from scratch forcefully to get best time estimates.
-            version_no='trial-', verb=args.verbose, logid='0',
+            is_trial=True, verb=args.verbose, logid='0',
             groupID=args.groupID, limiter=limiter, logger=logger, dryrun=args.dryrun,
             mem_allowed='500MB')
 

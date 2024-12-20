@@ -13,7 +13,9 @@ class TestScan:
             label='test_scan_basic',
             verbose=verbose)
 
-        process.run('scan')
+        results = process.run('scan', forceful=True)
+
+        assert results['Success'] == 3
 
     def test_scan_0DAgg(self, workdir=WORKDIR, verbose=1):
         groupID = 'padocc-test-suite'
@@ -25,13 +27,15 @@ class TestScan:
             label='test_scan_0DAgg',
             verbose=verbose)
 
-        process.run()
+        status = process.run(forceful=True, thorough=True)
 
         print(f'Successful scan - results {process.proj_code}:')
-        print(f' > Chunks: {process.detail_cfg["total_chunks"]}')
+        print(f' > Chunks: {process.detail_cfg["chunk_info"]}')
         print(f' > Format: {process.detail_cfg["type"]}')
         print(f' > Driver: {process.detail_cfg["driver"]}')
-        print(f' > Variables: {process.detail_cfg["variable_count"]}')
+        print(f' > Data Properties: {process.base_cfg["data_properties"]}')
+
+        assert status == 'Success'
 
     def test_scan_1DAgg(self, workdir=WORKDIR, verbose=1):
         groupID = 'padocc-test-suite'
@@ -43,13 +47,15 @@ class TestScan:
             label='test_scan_1DAgg',
             verbose=verbose)
 
-        process.run()
+        status = process.run(forceful=True,thorough=True)
 
         print(f'Successful scan - results {process.proj_code}:')
-        print(f' > Chunks: {process.detail_cfg["total_chunks"]}')
+        print(f' > Chunks: {process.detail_cfg["chunk_info"]}')
         print(f' > Format: {process.detail_cfg["type"]}')
         print(f' > Driver: {process.detail_cfg["driver"]}')
-        print(f' > Variables: {process.detail_cfg["variable_count"]}')
+        print(f' > Data Properties: {process.base_cfg["data_properties"]}')
+
+        assert status == 'Success'
 
     def test_scan_3DAgg(self, workdir=WORKDIR, verbose=1):
         groupID = 'padocc-test-suite'
@@ -61,16 +67,18 @@ class TestScan:
             label='test_scan_3DAgg',
             verbose=verbose)
 
-        process.run()
+        status = process.run(forceful=True, thorough=True)
 
         print(f'Successful scan - results {process.proj_code}:')
-        print(f' > Chunks: {process.detail_cfg["total_chunks"]}')
+        print(f' > Chunks: {process.detail_cfg["chunk_info"]}')
         print(f' > Format: {process.detail_cfg["type"]}')
         print(f' > Driver: {process.detail_cfg["driver"]}')
-        print(f' > Variables: {process.detail_cfg["variable_count"]}')
+        print(f' > Data Properties: {process.base_cfg["data_properties"]}')
+
+        assert status == 'Success'
 
 if __name__ == '__main__':
-    TestScan().test_scan_basic(verbose=0)
-    TestScan().test_scan_0DAgg(verbose=0)
-    TestScan().test_scan_1DAgg(verbose=0)
+    TestScan().test_scan_basic(verbose=1)
+    TestScan().test_scan_0DAgg(verbose=1)
+    TestScan().test_scan_1DAgg(verbose=1)
     TestScan().test_scan_3DAgg(verbose=0)

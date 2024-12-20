@@ -35,7 +35,7 @@ BASE_CFG = {
     'pattern':None,
     'updates':None,
     'removals':None,
-    'version_id':'1.1',
+    'version_no':'1.1',
     'data_properties':{
         'aggregated_dims':'Unknown',
         'pure_dims': 'Unknown',
@@ -217,6 +217,10 @@ def format_str(
 
     return string[:length]
   
+def format_tuple(tup: tuple[list[int]]) -> str:
+
+    return f'({",".join([str(t[0]) for t in tup])})'
+
 def mem_to_val(value: str) -> float:
     """
     Convert a value in Bytes to an integer number of bytes

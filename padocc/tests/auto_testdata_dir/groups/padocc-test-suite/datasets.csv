@@ -1,0 +1,3 @@
+0DAgg,padocc/tests/data_creator/0DAgg/*.nc,padocc/tests/data_creator/0DAgg/upd.json,padocc/tests/data_creator/0DAgg/rem.json
+1DAgg,padocc/tests/data_creator/1DAgg/*.nc,,
+3DAgg,padocc/tests/data_creator/3DAgg/*.nc,,

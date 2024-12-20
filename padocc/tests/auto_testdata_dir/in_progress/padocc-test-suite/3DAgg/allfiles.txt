@@ -1,0 +1,8 @@
+/home/users/dwest77/cedadev/padocc/padocc/tests/data_creator/3DAgg/file0.nc
+/home/users/dwest77/cedadev/padocc/padocc/tests/data_creator/3DAgg/file1.nc
+/home/users/dwest77/cedadev/padocc/padocc/tests/data_creator/3DAgg/file2.nc
+/home/users/dwest77/cedadev/padocc/padocc/tests/data_creator/3DAgg/file3.nc
+/home/users/dwest77/cedadev/padocc/padocc/tests/data_creator/3DAgg/file4.nc
+/home/users/dwest77/cedadev/padocc/padocc/tests/data_creator/3DAgg/file5.nc
+/home/users/dwest77/cedadev/padocc/padocc/tests/data_creator/3DAgg/file6.nc
+/home/users/dwest77/cedadev/padocc/padocc/tests/data_creator/3DAgg/file7.nc

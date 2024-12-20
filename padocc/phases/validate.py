@@ -16,12 +16,14 @@ import math
 import re
 from functools import reduce
 from itertools import groupby
+from typing import Union, Optional
 
 from padocc.core.errors import ChunkDataError
 from padocc.core import BypassSwitch, FalseLogger
 from padocc.core.utils import open_kerchunk
 
 from padocc.core.filehandlers import JSONFileHandler
+from padocc.core.utils import format_tuple
 
 SUFFIXES = []
 SUFFIX_LIST = []
@@ -105,14 +107,14 @@ def slice_all_dims(data_arr: xr.DataArray, intval: int):
         mid = int(d/2)
         step = int(d/(intval*2))
         slice_applied.append(slice(mid-step,mid+step))
-    return slice_applied
+    return tuple(slice_applied)
 
 def format_slice(slice: list[slice]) -> str:
     starts = []
     ends = []
     for s in slice:
-        starts.append(s.start)
-        ends.append(s.stop)
+        starts.append(str(s.start))
+        ends.append(str(s.stop))
     return ','.join(starts), ','.join(ends)
 
 def _recursive_set(source: dict, keyset: list, value):
@@ -136,7 +138,7 @@ class PresliceSet:
     def __init__(self):
         self._preslice_set = {}
 
-    def add_preslice(self, preslice: list[slice], var: str):
+    def add_preslice(self, preslice: dict[slice], var: str):
         self._preslice_set[var] = preslice
 
     def apply(self, data_arr: xr.DataArray, var: str) -> xr.DataArray:
@@ -146,7 +148,7 @@ class PresliceSet:
         if var not in self._preslice_set:
             return self._default_preslice(data_arr)
         else:
-            return data_arr[self._preslice_set[var]]
+            return data_arr.sel(**self._preslice_set[var])
 
     def _default_preslice(self, data_arr: xr.DataArray) -> xr.DataArray:
         """
@@ -159,8 +161,10 @@ class Report:
     """
     Special report class, capable of utilising recursive
     dictionary value-setting."""
-    def __init__(self, fh):
-        self._value = fh
+    description = 'Special report class for recursive dictionary value-setting'
+
+    def __init__(self, fh=None):
+        self._value = fh or {}
 
     def __setitem__(self, index, value):
         nest = index.split('.')
@@ -169,6 +173,9 @@ class Report:
             current = self._value[nest[0]]
         self._value[nest[0]] = _recursive_set(current, nest[1:], value)
 
+    def export(self):
+        return self._value
+
     def __bool__(self):
         return bool(self._value)
 
@@ -176,10 +183,10 @@ class Report:
         return self._value.get()
     
     def __repr__(self):
-        return self._value
+        return json.dumps(self._value)
     
     def __str__(self):
-        return json.dumps(self._value.get(), indent=2)
+        return json.dumps(self._value, indent=2)
 
 class ValidateDatasets(LoggedOperation):
     """
@@ -196,9 +203,9 @@ class ValidateDatasets(LoggedOperation):
             self, 
             datasets: list,
             id: str,
+            filehandlers: Optional[Union[list[JSONFileHandler], list[dict]]] = None,
             dataset_labels: list = None,
             preslice_fns: list = None, # Preslice each dataset's DataArrays to make equivalent.
-            filehandlers: list[JSONFileHandler] = None,
             logger = None,
             label: str = None,
             fh: str = None,
@@ -253,7 +260,7 @@ class ValidateDatasets(LoggedOperation):
             return 'Fatal'
         if self._metadata_report:
             return 'Warning'
-        return 'Passed'
+        return 'Success'
 
     @property
     def report(self):
@@ -262,15 +269,34 @@ class ValidateDatasets(LoggedOperation):
         
         if self._data_report is None:
             return {
-                'metadata': self._metadata_report
+                'metadata': self._metadata_report.export()
             }
         
         return {
             'report':{
-                'metadata': self._metadata_report,
-                'data': self._data_report
+                'metadata': self._metadata_report.export(),
+                'data': self._data_report.export()
             }
         }
+
+    def save_report(self, filehandler=None):
+
+        if filehandler is not None:
+            filehandler.set(self.report)
+            filehandler.close()
+            return
+        
+        if isinstance(self.fhs[0], JSONFileHandler):
+            self.fhs[0].set(self._metadata_report.export())
+            self.fhs[0].close()
+
+            self.fhs[1].set(self._data_report.export())
+            self.fhs[1].close()
+            return
+        
+        raise ValueError(
+            'Filehandler not provided to save report'
+        )
 
     def replace_dataset(
             self, 
@@ -332,7 +358,7 @@ class ValidateDatasets(LoggedOperation):
         """
         Perform preslice functions on the requested DataArray
         """
-        return self._preslice_fn[id].apply(self._datasets[id][var], var)
+        return self._preslice_fns[id].apply(self._datasets[id][var], var)
 
     def validate_metadata(self, allowances: dict = None) -> dict:
         """
@@ -340,7 +366,7 @@ class ValidateDatasets(LoggedOperation):
         """
 
         # Reset for new report run
-        self._metadata_report = Report(self.fhs[0])
+        self._metadata_report = Report()
         self.logger.info('Initialised metadata report')
 
         allowances = allowances or {}
@@ -528,28 +554,42 @@ class ValidateDatasets(LoggedOperation):
             )
         
         # Reset for new report run
-        self._data_report = Report(self.fhs[1])
+        self._data_report = Report()
         self.logger.info('Initialised data report')
 
         for dim in self.dims:
             self.logger.debug(f'Validating size of {dim}')
 
             try:
-                testdim = self._datasets[0].sizes[dim]
+                testdim = self.test_dataset_var(dim)
+                test_range = (
+                    testdim.head(1),
+                    testdim.tail(1)
+                )
             except KeyError:
                 self.logger.warning(f'{dim} could not be validated for data content')
                 continue
 
             try:
-                controldim = self._datasets[1].sizes[dim]
+                controldim = self.control_dataset_var(dim)
+                control_range = (
+                    controldim.head(1),
+                    controldim.tail(1)
+                )
             except KeyError:
                 self.logger.warning(f'{dim} could not be validated for data content')
                 continue
 
             self._validate_dimlens(
                 dim,
-                testdim,
-                controldim
+                testdim.size,
+                controldim.size
+            )
+
+            self._validate_dimvalues(
+                dim,
+                test_range,
+                control_range
             )
 
         for var in self.variables:
@@ -632,6 +672,27 @@ class ValidateDatasets(LoggedOperation):
                     self._labels[1]: ','.join(control_dr)
                 }
 
+    def _validate_dimvalues(self, dim: str, test_range, control_range, ignore=None):
+        """
+        Validate that the first and last values of the dimension arrays are equal.
+        """
+        if ignore:
+            self.logger.debug(f'Skipped {dim}')
+            return
+
+        if test_range != control_range:
+            if test_range[0] == test_range[1]:
+                test_range = [test_range[0]]
+                
+            if control_range[0] == control_range[1]:
+                control_range = [control_range[0]]
+            self._data_report[f'dimensions.data_errors.{dim}'] = {
+                    self._labels[0]: format_tuple(
+                        tuple(np.array(test_range, dtype=test_range[0].dtype).tolist())),
+                    self._labels[1]: format_tuple(
+                        tuple(np.array(control_range, dtype=control_range[0].dtype).tolist())),
+                }            
+
     def _validate_dimlens(self, dim: str, test, control, ignore=None):
         """
         Validate dimension lengths are consistent
@@ -661,7 +722,7 @@ class ValidateDatasets(LoggedOperation):
         """
         if test.size != control.size:
             self.logger.error(
-                'Validation could not be completed for these objects due to differing'
+                'Validation could not be completed for these objects due to differing '
                 f'sizes - "{test.size}" and "{control.size}"'
             )
             return
@@ -679,7 +740,7 @@ class ValidateDatasets(LoggedOperation):
         tbox = test[slice_applied]
         cbox = control[slice_applied]
 
-        if check_for_nan(cbox):
+        if check_for_nan(cbox, BypassSwitch(), self.logger):
             return self._validate_selection(test, control, current+1, var, recursion_limit=recursion_limit)
         else:
             return self._compare_data(var, slice_applied, tbox, cbox)
@@ -733,16 +794,11 @@ class ValidateDatasets(LoggedOperation):
         except TypeError as err:
             equality = np.array_equal(control, test)
 
-        errors, bypassed = []
+        errors, bypassed = [], []
 
         if not equality:
             self.logger.debug(f'3a. Comparing directly - {(datetime.now()-t1).total_seconds():.2f}s')
             equality = False
-            for index in range(control.size):
-                v1 = control[index]
-                v2 = test[index]
-                if v1 != v2:
-                    self.logger.error(f'X: {v1}, K: {v2}, idx: {index}')
             errors.append('not_equal')
                 
         self.logger.debug(f'4. Comparing Max values - {(datetime.now()-t1).total_seconds():.2f}s')
@@ -802,9 +858,11 @@ class ValidateOperation(ProjectOperation):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.concat_dims = None        
-
-    def _run(self):
+    def _run(
+            self,
+            mode: str = 'kerchunk',
+            **kwargs
+        ) -> None:
         # Replaces validate timestep
 
         test   = self._open_product()
@@ -815,7 +873,7 @@ class ValidateOperation(ProjectOperation):
 
         vd = ValidateDatasets(
             [test,sample],
-            'validator-padocc',
+            f'validator-padocc-{self.proj_code}',
             dataset_labels=[self.cloud_format, self.source_format], 
             filehandlers=[meta_fh, data_fh],
             logger=self.logger)
@@ -830,14 +888,16 @@ class ValidateOperation(ProjectOperation):
             control = self._open_cfa()
             vd.replace_dataset(control, label=self.source_format)
         else:
-            preslice = self._get_preslice(test, sample)
+            preslice = self._get_preslice(test, sample, test.variables)
             vd.replace_preslice(preslice, label=self.cloud_format)
 
         vd.validate_data()
 
         # Save report
-        meta_fh.save()
-        data_fh.save()
+        vd.save_report()
+
+        self.update_status('validate',vd.pass_fail,jobid=self._logid, dryrun=self._dryrun)
+        return vd.pass_fail
 
     def _open_sample(self):
         """
@@ -864,9 +924,9 @@ class ValidateOperation(ProjectOperation):
         if self.cloud_format == 'kerchunk':
             # Kerchunk opening sequence
             return open_kerchunk(
-                self.outfile, 
+                self.outpath, 
                 self.logger,
-                isparq = self.isparq,
+                isparq = (self.file_type == 'parq'),
                 retry = True,
                 attempt = 3
             )
@@ -887,13 +947,13 @@ class ValidateOperation(ProjectOperation):
 
         preslice = PresliceSet()
         for var in variables:
-            preslice_var = []
+            preslice_var = {}
             for dim in sample[var].dims:
                 slice_dim = slice(
                     np.array(sample[dim][0], dtype=sample[dim].dtype),
                     np.array(sample[dim][-1], dtype=sample[dim].dtype)
                 )
-                preslice_var.append(slice_dim)
+                preslice_var[dim] = slice_dim
             preslice.add_preslice(preslice_var, var)
 
         return preslice

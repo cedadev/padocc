@@ -125,7 +125,7 @@ class ProjectOperation(
     
         self._create_dirs(first_time=first_time)
 
-        self.logger.debug(f'Creating operator for project "{self.proj_code}')
+        self.logger.debug(f'Creating operator for project {self.proj_code}')
         # Project FileHandlers
         self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', logger=self.logger, conf=file_configs['base_cfg'], **self.fh_kwargs)
         self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', logger=self.logger, conf=file_configs['detail_cfg'], **self.fh_kwargs)
@@ -154,7 +154,8 @@ class ProjectOperation(
         self.kstore = None
         self.zstore = None
 
-        self._outfile = None
+        self._is_trial = False
+        self.stage = None
 
     def __str__(self):
         return f'<PADOCC Project: {self.proj_code} ({self.groupID})>'
@@ -216,7 +217,7 @@ class ProjectOperation(
             self.save_files()
             return status
         except Exception as err:
-            print(err)
+            raise err
             #return error_handler(
                 #err, self.logger, self.phase,
                 #jobid=self._logid, dryrun=self._dryrun, 
@@ -248,18 +249,6 @@ class ProjectOperation(
     @property
     def cfa_path(self):
         return f'{self.dir}/{self.proj_code}.nca'
-
-    @property
-    def outfile(self):
-        if self._outfile:
-            return self._outfile
-        
-        # Assemble the outfile
-        return None
-    
-    @outfile.setter
-    def outfile(self, value : str):
-        self._outfile = value
 
     def dir_exists(self, checkdir : str = None):
         if not checkdir:

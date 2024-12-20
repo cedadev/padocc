@@ -7,6 +7,7 @@ def pytest_collection_modifyitems(items):
         "TestInit",
         "TestScan",
         "TestCompute",
+        "TestValidate"
         #"TestCleanup"
     ]
 

@@ -1,0 +1,1 @@
+{"variables": {"size_errors": {"height": {"kerchunk": 1600, "hdf5": 1}, "lat_projection": {"kerchunk": 800, "hdf5": 10}}, "dim_errors": {"height": {"kerchunk": ["lat", "time", "lon"], "hdf5": []}, "lat_projection": {"kerchunk": ["time", "lon", "lat"], "hdf5": ["lat"]}}}}

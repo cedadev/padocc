@@ -10,6 +10,7 @@ import xarray as xr
 import numpy as np
 import base64
 import logging
+from typing import Optional
 
 import rechunker
 
@@ -39,9 +40,14 @@ from padocc.core.filehandlers import JSONFileHandler, ZarrStore
 
 CONCAT_MSG = 'See individual files for more details'
 
-def cfa_handler(instance, logger: logging.Logger | FalseLogger = FalseLogger()):
+def cfa_handler(instance, file_limit: Optional[int] = None):
     """
     Handle the creation of a CFA-netCDF file using the CFAPyX package
+
+    :param instance:    (obj) The reference instance of ProjectOperation 
+        from which to pull project-specific info.
+
+    :param file_limit:  (obj) The file limit to apply to a set of files.
     """
     try:
         from cfapyx import CFANetCDF
@@ -50,10 +56,18 @@ def cfa_handler(instance, logger: logging.Logger | FalseLogger = FalseLogger()):
         return False
 
     try:
-        cfa = CFANetCDF(instance.allfiles.get()) # Add instance logger here.
+
+        instance.logger.info("Starting CFA Computation")
+
+        files = instance.allfiles.get()
+        if file_limit is not None:
+            files = files[:file_limit]
+
+        cfa = CFANetCDF(files) # Add instance logger here.
 
         cfa.create()
-        cfa.write(instance.cfa_path)
+        if file_limit is None:
+            cfa.write(instance.cfa_path)
 
         return {
             'aggregated_dims': cfa.agg_dims,
@@ -65,7 +79,7 @@ def cfa_handler(instance, logger: logging.Logger | FalseLogger = FalseLogger()):
         }
 
     except Exception as err:
-        logger.error(
+        instance.logger.error(
             f'Aggregation via CFA failed - {err} - report at https://github.com/cedadev/CFAPyX/issues'
         )
         return None
@@ -137,6 +151,7 @@ class KerchunkConverter(LoggedOperation):
         if filehandler:
             filehandler.set(tdict)
             filehandler.close()
+
         return tdict, ctype
 
     def _convert_kerchunk(self, nfile: str, ctype, **kwargs) -> None:
@@ -207,7 +222,7 @@ class ComputeOperation(ProjectOperation):
             limiter     : int = None, 
             skip_concat : bool = False, 
             label : str = 'compute',
-            is_trial: bool = True,
+            is_trial: bool = False,
             **kwargs
         ) -> None:
         """
@@ -242,6 +257,7 @@ class ComputeOperation(ProjectOperation):
 
         """
         self.phase = 'compute'
+        self._is_trial = is_trial
 
         super().__init__(
             proj_code, 
@@ -253,17 +269,17 @@ class ComputeOperation(ProjectOperation):
 
         self.logger.debug('Starting variable definitions')
 
-        self.is_trial = is_trial
         self.concat_msg  = concat_msg
         self.skip_concat = skip_concat
 
         self.stage = stage
         self.mode = self.cloud_format
-        self.fmt = self.file_type
 
         self.validate_time = None
         self.concat_time   = None
         self.convert_time  = None
+
+        self._data_properties = None
 
         self.updates, self.removals = False, False
 
@@ -293,7 +309,7 @@ class ComputeOperation(ProjectOperation):
         if thorough:
             self.temp_zattrs.set({})
 
-        self.combine_kwargs = {} # Now using concat_dims and identical dims finders.
+        self.combine_kwargs = {} # Now using agg_dims and identical dims finders.
         self.create_kwargs  = {'inline_threshold':0}
         self.pre_kwargs     = {}
 
@@ -307,6 +323,18 @@ class ComputeOperation(ProjectOperation):
         fn('')
         fn('Compute Options:')
         fn(' > project.run() - Run compute for this project')
+
+    @property
+    def extra_properties(self):
+        return self._data_properties
+    
+    @property
+    def extra_kwargs(self):
+        return {
+            'combine_kwargs': self.combine_kwargs,
+            'create_kwargs': self.create_kwargs,
+            'pre_kwargs': self.pre_kwargs,
+        }
 
     def _run(self, mode: str = 'kerchunk'):
         """
@@ -350,19 +378,6 @@ class ComputeOperation(ProjectOperation):
         self.temp_zattrs.close()
 
     @property
-    def outpath(self):
-        return f'{self.dir}/{self.outproduct}'
-    
-    @property
-    def outproduct(self):
-        if self.stage == 'complete':
-            return f'{self.proj_code}.{self.version_no}.{self.fmt}'
-        else:
-            vn = f'{self.version_no}a.{self.fmt}'
-            if self._is_trial:
-                vn = f'trial-{vn}'
-
-    @property
     def filelist(self):
         """
         Quick function for obtaining a subset of the whole fileset. Originally
@@ -381,8 +396,8 @@ class ComputeOperation(ProjectOperation):
         while not found_space:
 
             if os.path.isfile(self.outpath) or os.path.isdir(self.outpath):
-                if self.new_version:
-                    self.version_no += 1
+                if False:
+                    self.minor_version_increment()
                 else:
                     raise ValueError(
                         'Output product already exists and there is no plan to overwrite or create new version'
@@ -419,79 +434,6 @@ class ComputeOperation(ProjectOperation):
 
         detail['quality_required'] = self.quality_required
         self.detail_cfg.set(detail)
-
-    def _find_concat_dims(self, ds_examples: list, logger=FalseLogger()) -> None:
-        """Find dimensions to use when combining for concatenation
-        - Dimensions which change over the set of files must be concatenated together
-        - Dimensions which do not change (typically lat/lon) are instead identified as identical_dims
-
-        This Class method is common to all conversion types.
-        """
-
-        raise NotImplementedError
-
-        concat_dims = []
-        for dim in ds_examples[0].dims:
-            try:
-
-                report = ValidateDatasets(
-                    [ds_examples[0][dim], ds_examples[1][dim]],
-                    ['0th','1st']
-                ).validate_data
-                        
-            except ValidationError:
-                self.logger.debug(f'Non-identical dimension: {dim} - if this dimension should be identical across the files, please inspect.')
-                concat_dims.append(dim)
-            except SoftfailBypassError as err:
-                self.logger.error(f'Found Empty dimension {dim} across example files - assuming non-stackable')
-                raise err
-            except Exception as err:
-                self.logger.warning('Non validation error is present')
-                raise err
-        if len(concat_dims) == 0:
-            self.detail_cfg['virtual_concat'] = True
-        self.combine_kwargs['concat_dims'] = concat_dims
-
-    def _find_identical_dims(self, ds_examples: list, logger=FalseLogger()) -> None:
-        """
-        Find dimensions and variables that are identical across the set of files.
-        - Variables which do not change (typically lat/lon) are identified as identical_dims and not concatenated over the set of files.
-        - Variables which do change are concatenated as usual.
-
-        This Class method is common to all conversion types.
-        """
-
-        raise NotImplementedError
-
-        identical_dims = []
-        normal_dims = []
-        for var in ds_examples[0].variables:
-            identical_check = True
-            for dim in self.combine_kwargs['concat_dims']:
-                if dim in ds_examples[0][var].dims:
-                    identical_check = False
-            if identical_check:
-                try:
-                    validate_selection(ds_examples[0][var], ds_examples[1][var], var, 128, 128, logger, bypass=self._bypass)
-                    identical_dims.append(var)
-                except ValidationError:
-                    self.logger.debug(f'Non-identical variable: {var} - if this variable should be identical across the files, please rerun.')
-                    normal_dims.append(var)
-                except SoftfailBypassError as err:
-                    self.logger.warning(f'Found Empty variable {var} across example files - assuming non-identical')
-                    normal_dims.append(var)
-                except Exception as err:
-                    self.logger.warning('Unexpected error in checking identical dims')
-                    raise err
-            else:
-                normal_dims.append(var)
-        if len(identical_dims) == len(ds_examples[0].variables):
-            raise IdenticalVariablesError
-        self.combine_kwargs['identical_dims'] = identical_dims
-        if self.combine_kwargs["concat_dims"] == []:
-            self.logger.info(f'No concatenation dimensions identified - {normal_dims} will be concatenated using a virtual dimension')  
-        else:
-            self.logger.debug(f'Found {normal_dims} that vary over concatenation_dimensions: {self.combine_kwargs["concat_dims"]}')          
 
     def _clean_attr_array(self, allzattrs: dict) -> dict:
         """
@@ -618,6 +560,67 @@ class ComputeOperation(ProjectOperation):
             raise ValueError
         return new_zattrs
 
+    def _dims_via_cfa(self):
+    
+        report = cfa_handler(self) 
+        # Don't apply a file limit for scanning.
+        # This function is skipped where the CFA-enabled 
+        # scan has been successful.
+
+        if report is None:
+            raise ValueError('CFA-based dimension determination failed.')
+        
+        self.base_cfg['data_properties'] = report
+        self.base_cfg.close()
+        
+        self.logger.info(report)
+
+        concat_dims = report['aggregated_dims']
+        identical_dims = [c for c in report['coord_dims'] if c not in concat_dims]
+        identicals = tuple(set(
+            report['identical_vars'] + report['scalar_vars'] + tuple(identical_dims) + report['pure_dims']))
+    
+        return concat_dims, identicals, report
+
+    def _dims_via_validator(self) -> tuple[list[str]]:
+
+        test_files = [self.allfiles[0], self.allfiles[-1]]
+
+        datasets = [xr.open_dataset(t) for t in test_files]
+
+        dimensions = datasets[0].dims
+
+        vd = ValidateDatasets(
+            datasets,
+            'scan-dim-check',
+            dataset_labels=('first','last'),
+            logger=FalseLogger()
+        )
+
+        vd.validate_metadata()
+        vd.validate_data()
+
+        vd.save_report(
+            JSONFileHandler(
+                self.dir,
+                'potential_issues.json',
+                logger=self.logger
+            )
+        )
+
+        dims = vd.report['report']['data'].get('dimensions',{})
+
+        vars = vd.report['report']['data'].get('data_errors',{})
+
+        concat_dims = []
+        if 'data_errors' in dims:
+            concat_dims = [dim for dim in dims['data_errors'].keys()]
+
+        # Concat dims will vary across files, identicals will not.
+
+        identical_dims = [dim for dim in dimensions if dim not in vars]
+        return concat_dims, identical_dims
+
     def _determine_dim_specs(self, objs: list) -> None:
         """
         Perform identification of identical_dims and concat_dims here.
@@ -625,8 +628,24 @@ class ComputeOperation(ProjectOperation):
 
         # Calculate Partial Validation Estimate here
         t1 = datetime.now()
-        self.logger.info("Determining concatenation dimensions")
-        self._find_concat_dims(objs)
+        self.logger.info("Starting dimension specs determination")
+
+        try:
+            concat_dims, identical_dims, report = self._dims_via_cfa()
+            self._data_properties = report
+
+        except ValueError as err:
+            self.logger.info('CFA Determination failed - defaulting to Validator-based checks')
+            concat_dims, identical_dims = self._dims_via_validator()
+
+            self._data_properties = {
+                'aggregated_dims': tuple(concat_dims),
+                'coord_dims': tuple(set(concat_dims) | set(identical_dims))
+            }
+
+        self.combine_kwargs['concat_dims'] = concat_dims
+        self.combine_kwargs['identical_dims'] = identical_dims
+
         if self.combine_kwargs['concat_dims'] == []:
             self.logger.info("No concatenation dimensions available - virtual dimension will be constructed.")
         else:
@@ -634,7 +653,6 @@ class ComputeOperation(ProjectOperation):
 
         # Identical (Variables) Dimensions
         self.logger.info("Determining identical variables")
-        self._find_identical_dims(objs)
         self.logger.info(f"Found {self.combine_kwargs['identical_dims']} identical variables.")
 
         # This one only happens for two files so don't need to take a mean
@@ -650,17 +668,6 @@ class KerchunkDS(ComputeOperation):
             **kwargs):
 
         super().__init__(proj_code, workdir, stage=stage, **kwargs)
-
-    def _identify_mode(self):
-
-        self.mode = 'kerchunk'
-        self.fmt   = 'json'
-        self.record_size = None
-
-        self.ctypes = None
-
-        if self.file_type != 'json':
-            self.record_size = 167
         
     def _run(
             self,
@@ -710,6 +717,7 @@ class KerchunkDS(ComputeOperation):
                 ref = CacheFile.get()
                 if ref:
                     self.logger.info(f'Loaded refs: {x+1}/{self.limiter}')
+                ctype = 'Unknown'
 
             if not ref:
                 self.logger.info(f'Creating refs: {x+1}/{self.limiter}')
@@ -734,6 +742,7 @@ class KerchunkDS(ComputeOperation):
 
         self.success = converter.success
         self.ctypes = ctypes
+
         # Compute mean conversion time for this set.
         self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
 
@@ -765,22 +774,22 @@ class KerchunkDS(ComputeOperation):
         if len(refs) > 1:
             # Pick 2 refs to use when determining dimension info.
             # Concatenation Dimensions
-            if 'combine_kwargs' in self.detail_cfg['kwargs']:
+            if self.detail_cfg['kwargs'] is not None and not self._thorough:
                 self.combine_kwargs = self.detail_cfg['kwargs']['combine_kwargs']
             else:
                 # Determine combine_kwargs
                 self._determine_dim_specs([
-                    xr.open_zarr(fsspec.get_mapper('reference://', fo=refs[0])),
-                    xr.open_zarr(fsspec.get_mapper('reference://', fo=refs[-1])),
+                    xr.open_zarr(fsspec.get_mapper('reference://', fo=refs[0]), consolidated=False),
+                    xr.open_zarr(fsspec.get_mapper('reference://', fo=refs[-1]), consolidated=False),
                 ])
 
         t1 = datetime.now()  
-        if self.fmt == 'JSON':
-            self.logger.info('Concatenating to JSON format Kerchunk file')
-            self._data_to_json(refs)
-        else:
+        if self.file_type == 'parq':
             self.logger.info('Concatenating to Parquet format Kerchunk store')
             self._data_to_parq(refs)
+        else:
+            self.logger.info('Concatenating to JSON format Kerchunk file')
+            self._data_to_json(refs)
         self.concat_time = (datetime.now()-t1).total_seconds()/self.limiter
 
         if not self._dryrun:
@@ -872,6 +881,7 @@ class KerchunkDS(ComputeOperation):
                 self.combine_kwargs['concat_dims'] = [vdim]
 
             try:
+                print(self.combine_kwargs)
                 mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
             except ValueError as err:
                 if 'chunk size mismatch' in str(err):
@@ -889,10 +899,10 @@ class KerchunkDS(ComputeOperation):
             self.kfile.set(refs[0])
         
         if not self.partial:
-            self.logger.info(f'Written to JSON file - {self.outfile}')
+            self.logger.info(f'Written to JSON file - {self.outproduct}')
             self.kfile.close()
         else:
-            self.logger.info(f'Skipped writing to JSON file - {self.outfile}')
+            self.logger.info(f'Skipped writing to JSON file - {self.outproduct}')
 
     def _perform_shape_checks(self, ref: dict) -> None:
         """
@@ -935,11 +945,6 @@ class ZarrDS(ComputeOperation):
 
         self.filelist    = []
         self.mem_allowed = mem_allowed
-
-    def _identify_mode(self):
-
-        self.mode = 'zarr'
-        self.fmt = '.zarr'
 
     def _run(self, **kwargs) -> None:
         """

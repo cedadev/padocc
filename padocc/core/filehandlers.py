@@ -77,12 +77,11 @@ class FileIOMixin(LoggedOperation):
         """
         
         self.dir       = dir
-        self.filename  = filename
+        self._file     = filename
 
         self._dryrun   = dryrun
         self._forceful = forceful
         self._value    = None
-        self._file     = None
 
         self._set_file()
 
@@ -331,10 +330,10 @@ class JSONFileHandler(FileIOMixin):
         super().set(dict(value))
 
     def _set_file(self):
-        if '.json' not in self.filename:
-            self._file = f'{self.dir}/{self.filename}.json'
+        if '.json' not in self._file:
+            self._file = f'{self.dir}/{self._file}.json'
         else:
-            self._file = f'{self.dir}/{self.filename}'
+            self._file = f'{self.dir}/{self._file}'
 
     # Get/set routines for the filesystem files.
     def _get_content(self):
@@ -430,10 +429,10 @@ class TextFileHandler(ListIOMixin):
     description = "Text File handler for padocc config files."
 
     def _set_file(self):
-        if '.txt' not in self.filename:
-            self._file = f'{self.dir}/{self.filename}.txt'
+        if '.txt' not in self._file:
+            self._file = f'{self.dir}/{self._file}.txt'
         else:
-            self._file = f'{self.dir}/{self.filename}'
+            self._file = f'{self.dir}/{self._file}'
 
 class LogFileHandler(ListIOMixin):
     description = "Log File handler for padocc phase logs."
@@ -443,13 +442,13 @@ class LogFileHandler(ListIOMixin):
         super().__init__(dir, filename, logger, **kwargs)
 
     def _set_file(self):
-        self._file = f'{self.dir}/{self._extra_path}{self.filename}.log'
+        self._file = f'{self.dir}/{self._extra_path}{self._file}.log'
 
 class CSVFileHandler(ListIOMixin):
     description = "CSV File handler for padocc config files"
     
     def _set_file(self):
-        self._file = f'{self.dir}/{self.filename}.csv'
+        self._file = f'{self.dir}/{self._file}.csv'
 
     def __iter__(self):
         for i in self._value:
