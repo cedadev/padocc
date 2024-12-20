@@ -106,7 +106,6 @@ vars = {
 options = [
     '1DAgg',
     '3DAgg',
-    '0DAgg',
 ]
 
 def main():
@@ -116,7 +115,7 @@ def main():
     for option in range(len(options)):
         for i in range(8):
             
-            print(option, i)
+            print(option, i, options[option])
 
             ignore_attrs = False
             if option == 0:
@@ -128,10 +127,13 @@ def main():
                 vars['lat_projection']['array'] = np.arange(dims['lat']['size'], dtype=dims['lat']['dtype'])*0.7
 
                 vars['rain']['array'] = np.random.rand(dims['time']['size'],dims['lat']['size'],dims['lon']['size'])
+                vars['rain']['dims'] = ('time','lat','lon')
 
             if option == 1:
 
-                tm, lt, ln = list(format(7, '#05b')[2:])
+                # 3D case
+                tm, lt, ln = list(format(i, '#05b')[2:])
+                print(tm, lt, ln)
 
                 time = np.split(np.arange(2),2)[int(tm)]
                 lat = np.split(np.arange(20),2)[int(lt)]
@@ -144,6 +146,7 @@ def main():
                 vars['lat_projection']['array'] = lat*0.7
 
                 vars['rain']['array'] = np.random.rand(dims['time']['size'],dims['lat']['size'],dims['lon']['size'])
+                vars['rain']['dims'] = ('time','lat','lon')
 
             if option == 2:
                 if 'time' in dims:
