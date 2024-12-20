@@ -20,6 +20,23 @@ SUFFIXES = {
     'G': 1000000000
 }
 
+
+class FalseLogger:
+    """
+    Supplementary class where a logger is not wanted but is required for
+    some operations.
+    """
+    def __init__(self):
+        pass
+    def debug(self, message: str):
+        pass
+    def info(self, message: str):
+        pass
+    def warning(self, message: str):
+        pass
+    def error(self, message: str):
+        pass
+
 class LoggedOperation:
     """
     Allows inherritance of logger objects without creating new ones.
@@ -45,22 +62,6 @@ class LoggedOperation:
                 logid=logid)
         else:
             self.logger = logger
-
-class FalseLogger:
-    """
-    Supplementary class where a logger is not wanted but is required for
-    some operations.
-    """
-    def __init__(self):
-        pass
-    def debug(self, message: str):
-        pass
-    def info(self, message: str):
-        pass
-    def warning(self, message: str):
-        pass
-    def error(self, message: str):
-        pass
 
 def reset_file_handler(
         logger  : logging.Logger,
