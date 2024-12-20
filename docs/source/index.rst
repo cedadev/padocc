@@ -33,7 +33,6 @@ The pipeline consists of four central phases, with an additional phase for inges
    Getting Started <start>
    Example CCI Water Vapour <cci_water>
    Padocc Flags/Options <execution>
-   Assessor Tool Overview <assess-overview>
    Error Codes <errors>
    Developer's Guide <dev-guide>
 
@@ -41,19 +40,15 @@ The pipeline consists of four central phases, with an additional phase for inges
    :maxdepth: 1
    :caption: CLI Tool Source:
 
-   Assessor Source <assess>
-   Control Scripts Source <execution-source>
-
 .. toctree::
    :maxdepth: 1
-   :caption: Pipeline Source:
+   :caption: PADOCC Source:
    
    Filehandlers <filehandlers>
    Initialisation <init>
    Scanning <scan>
    Compute <compute>
    Validate <validate>
-   Allocations <allocation>
    Utils <extras>
 
 
