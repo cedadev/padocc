@@ -38,14 +38,15 @@ The pipeline consists of four central phases, with an additional phase for inges
 
 .. toctree::
    :maxdepth: 1
-   :caption: CLI Tool Source:
+   :caption: Operations:
 
 .. toctree::
    :maxdepth: 1
    :caption: PADOCC Source:
    
+   Single Datasets <project>
+   Groups of Datasets <group>
    Filehandlers <filehandlers>
-   Initialisation <init>
    Scanning <scan>
    Compute <compute>
    Validate <validate>
@@ -68,9 +69,7 @@ PADOCC was developed at the Centre for Environmental Data Analysis, supported by
 .. image:: _images/ceda.png
    :width: 300
    :alt: CEDA Logo
-   :width: 300
 
 .. image:: _images/esa.png
    :width: 300
    :alt: ESA Logo
-   :width: 300

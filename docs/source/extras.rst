@@ -13,6 +13,6 @@ Utilities
 Logging
 =======
 
-.. automodule:: pipeline.core.logs
+.. automodule:: padocc.core.logs
     :members:
     :show-inheritance:
