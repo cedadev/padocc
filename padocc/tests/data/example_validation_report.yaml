@@ -1,0 +1,42 @@
+report:
+  metadata: # score: X
+    global:
+      kerchunk_history:
+        type: ignored # 0
+        info: none
+      institution_id:
+        type: not_equal # 2
+        info: none
+      tracking_id:
+        type: missing # 1
+        info: 'missing from kerchunk'
+    variables:
+      sea_surface:
+        type: missing
+
+      all_variables:
+        type: order # 5
+    dimensions:
+    attributes:
+      variables:
+        standard_name:
+          type: missing
+          info: 'missing from kerchunk'
+        all_attributes:
+          type: order
+  data: # Fatal
+    size_errors:
+      sea_surface:
+        info:
+          kerchunk: 1000
+          source: 1024
+    dim_errors:
+      sea_surface:
+        info:
+          kerchunk: "(10,10,10)"
+          source: "(8,8,16)"
+    data_errors:
+      sea_surface:
+        info:
+          topleft: "(a,b,c)"
+          bottomright: "(d,e,f)"

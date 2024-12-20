@@ -1,0 +1,5 @@
+/home/users/dwest77/cedadev/padocc/padocc/tests/data/rain/example2.0.nc
+/home/users/dwest77/cedadev/padocc/padocc/tests/data/rain/example2.1.nc
+/home/users/dwest77/cedadev/padocc/padocc/tests/data/rain/example2.2.nc
+/home/users/dwest77/cedadev/padocc/padocc/tests/data/rain/example2.3.nc
+/home/users/dwest77/cedadev/padocc/padocc/tests/data/rain/example2.4.nc
