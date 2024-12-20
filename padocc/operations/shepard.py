@@ -66,10 +66,9 @@ class ShepardOperator(LoggedOperation):
             try:
                 fconf = self.open_flock(shp)
             except ValueError as err:
-                raise err
-                missed_flocks.append(shp)
+                missed_flocks.append((shp, err))
                 continue
-            
+
             flock = GroupOperation(
                 fconf['groupID'],
                 fconf['workdir'],
@@ -79,8 +78,13 @@ class ShepardOperator(LoggedOperation):
 
             if not flock.datasets.get():
                 flock.init_from_file(fconf['group_file'], substitutions=fconf['substitutions'])
+            else:
+                self.logger.info(f'Skipped existing flock: {fconf["groupID"]}')
 
             shp_flock.append(flock)
+
+        # Handle missed flocks here.
+
         return shp_flock
 
     def open_flock(self, file: str):
@@ -122,7 +126,7 @@ def _get_cmdline_args():
 
     parser = argparse.ArgumentParser(description='Entrypoint for SHEPARD module')
     parser.add_argument('--conf',type=str, help='Config file as part of deployment')
-    parser.add_argument('-v','--verbose', action='count', default=2, help='Set level of verbosity for logs')
+    parser.add_argument('-v','--verbose', action='count', default=0, help='Set level of verbosity for logs')
 
     args = parser.parse_args()
 
