@@ -6,8 +6,6 @@ import logging
 import os
 from typing import Union, Optional
 
-from .utils import FalseLogger
-
 levels = [
     logging.WARN,
     logging.INFO,
