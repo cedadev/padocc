@@ -7,10 +7,10 @@ import glob
 import logging
 
 from .errors import error_handler
-from .utils import extract_file, BypassSwitch, apply_substitutions
+from .utils import extract_file, BypassSwitch, apply_substitutions, phases, file_configs
 from .logs import reset_file_handler
 
-from .mixins import DirectoryMixin, EvaluationsMixin
+from .mixins import DirectoryMixin, EvaluationsMixin, PropertiesMixin
 from .filehandlers import (
     JSONFileHandler, 
     CSVFileHandler,
@@ -20,7 +20,10 @@ from .filehandlers import (
 )
 
           
-class ProjectOperation(DirectoryMixin, EvaluationsMixin):
+class ProjectOperation(
+    DirectoryMixin, 
+    EvaluationsMixin,
+    PropertiesMixin):
     """
     PADOCC Project Operation class, able to access project files
     and perform some simple functions. Single-project operations
@@ -101,6 +104,11 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
             fh=fh,
             logid=logid,
             verbose=verbose)
+    
+        if not os.path.isdir(self.groupdir):
+            raise ValueError(
+                f'The group "{groupID}" has not been initialised - not present in the working directory'
+            )
         
         self.proj_code = proj_code
 
@@ -117,11 +125,11 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
     
         self._create_dirs(first_time=first_time)
 
-        self.logger.debug(f'Creating operator for project "{self.proj_code}')
+        self.logger.debug(f'Creating operator for project {self.proj_code}')
         # Project FileHandlers
-        self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', self.logger, **self.fh_kwargs)
-        self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', self.logger, **self.fh_kwargs)
-        self.allfiles   = TextFileHandler(self.dir, 'allfiles', self.logger, **self.fh_kwargs)
+        self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', logger=self.logger, conf=file_configs['base_cfg'], **self.fh_kwargs)
+        self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', logger=self.logger, conf=file_configs['detail_cfg'], **self.fh_kwargs)
+        self.allfiles   = TextFileHandler(self.dir, 'allfiles', logger=self.logger, **self.fh_kwargs)
 
         # ft_kwargs <- stored in base_cfg after this point.
         if first_time:
@@ -146,17 +154,45 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
         self.kstore = None
         self.zstore = None
 
-        self._outfile = None
+        self._is_trial = False
+        self.stage = None
 
     def __str__(self):
-        return f'<PADOCC Project: {self.groupID}>'
+        return f'<PADOCC Project: {self.proj_code} ({self.groupID})>'
     
     def __repr__(self):
         return str(self)
 
+    def info(self, fn=print):
+        """
+        Display some info about this particular project
+        """
+        if self.groupID is not None:
+            fn(f'{self.proj_code} ({self.groupID}):')
+        else:
+            fn(f'{self.proj_code}:')
+        fn(f' > Phase: {self._get_phase()}')
+        fn(f' > Files: {len(self.allfiles)}')
+        fn(f' > Version: {self.get_version()}')
+    
+    def help(self, fn=print):
+        """
+        Public user functions for the project operator.
+        """
+        fn(str(self))
+        fn(' > project.info() - Get some information about this project')
+        fn(' > project.get_version() - Get the version number for the output product')
+        fn(' > project.save_files() - Save all open files related to this project')
+        fn('Properties:')
+        fn(' > project.proj_code - code for this project.')
+        fn(' > project.groupID - group to which this project belongs.')
+        fn(' > project.dir - directory containing the projects files.')
+        fn(' > project.cfa_path - path to the CFA file.')
+        fn(' > project.outfile - path to the output product (Kerchunk/Zarr)')
+
     def run(
             self,
-            mode: str = None,
+            mode: str = 'kerchunk',
             subset_bypass: bool = False, 
             forceful : bool = None,
             thorough : bool = None,
@@ -181,12 +217,12 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
             self.save_files()
             return status
         except Exception as err:
-            
-            return error_handler(
-                err, self.logger, self.phase,
-                jobid=self._logid, dryrun=self._dryrun, 
-                subset_bypass=subset_bypass,
-                status_fh=self.status_log)
+            raise err
+            #return error_handler(
+                #err, self.logger, self.phase,
+                #jobid=self._logid, dryrun=self._dryrun, 
+                ##subset_bypass=subset_bypass,
+                #status_fh=self.status_log)
 
     def _run(self, **kwargs):
         # Default project operation run.
@@ -203,30 +239,16 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
     def create_new_kstore(self, product : str):
         raise NotImplementedError
 
-    def get_version(self):
-        """
-        Get the current version of the output file.
-        """
-        return self.detail_cfg['version_no'] or 1
+    @property
+    def dir(self):
+        if self.groupID:
+            return f'{self.workdir}/in_progress/{self.groupID}/{self.proj_code}'
+        else:
+            return f'{self.workdir}/in_progress/general/{self.proj_code}'
 
     @property
     def cfa_path(self):
         return f'{self.dir}/{self.proj_code}.nca'
-
-    @property
-    def outfile(self):
-        if self._outfile:
-            return self._outfile
-        
-        # Assemble the outfile
-        return None
-    
-    @outfile.setter
-    def outfile(self, value : str):
-        self._outfile = value
-
-    def __str__(self):
-        return self.proj_code
 
     def dir_exists(self, checkdir : str = None):
         if not checkdir:
@@ -253,10 +275,25 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
 
     def save_files(self):
         # Add all files here.
-        self.base_cfg.save_file()
-        self.detail_cfg.save_file()
-        self.allfiles.save_file()
-        self.status_log.save_file()
+        self.base_cfg.close()
+        self.detail_cfg.close()
+        self.allfiles.close()
+        self.status_log.close()
+
+    def _get_phase(self):
+        """
+        Gets the highest phase this project has currently undertaken successfully"""
+
+        max_sid = 0
+        for row in self.status_log:
+            status = row[0]
+            if status != 'Success':
+                continue
+
+            phase = row[1]
+            sid = phases.index(phase)
+            max_sid = max(sid, max_sid)
+        return phases[max_sid]
 
     def _configure_filelist(self):
         pattern = self.base_cfg['pattern']
@@ -302,13 +339,6 @@ class ProjectOperation(DirectoryMixin, EvaluationsMixin):
             if substitutions:
                 config['substitutions'] = substitutions
             self.base_cfg.set(config)
-
-    @property
-    def dir(self):
-        if self.groupID:
-            return f'{self.workdir}/in_progress/{self.groupID}/{self.proj_code}'
-        else:
-            return f'{self.workdir}/in_progress/general/{self.proj_code}'
 
     def _create_dirs(self, first_time : bool = None):
         if not self.dir_exists():

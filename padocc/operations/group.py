@@ -4,6 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import os
 import logging
+from typing import Optional
 
 from padocc.core import BypassSwitch, FalseLogger
 from padocc.core.utils import format_str, times
@@ -14,6 +15,7 @@ from padocc.phases import (
     ZarrDS, 
     cfa_handler,
     KNOWN_PHASES,
+    ValidateOperation,
 )
 from padocc.core.mixins import DirectoryMixin
 from padocc.core.filehandlers import CSVFileHandler, TextFileHandler
@@ -157,17 +159,19 @@ class GroupOperation(
 
     def run(
             self,
-            phase,
-            mode='kerchunk',
-            repeat_id='main',
-            proj_code=None,
-            subset=None,
+            phase: str,
+            mode: str = 'kerchunk',
+            repeat_id: str = 'main',
+            proj_code: Optional[str] = None,
+            subset: Optional[str] = None,
+            subset_bypass: bool = False,
             **kwargs
-        ):
+        ) -> dict[str]:
 
         phases = {
             'scan': self._scan_config,
             'compute': self._compute_config,
+            'validate': self._validate_config,
         }
 
         jobid = None
@@ -201,7 +205,12 @@ class GroupOperation(
                 logid = jobid
                 fh = 'PhaseLog'
 
-            status = func(proj_code, mode=mode, logid=logid, label=phase, fh=fh, **kwargs)
+            status = func(
+                proj_code, 
+                mode=mode, logid=logid, label=phase, 
+                fh=fh, subset_bypass=subset_bypass,
+                **kwargs)
+            
             if status in results:
                 results[status] += 1
             else:
@@ -212,11 +221,13 @@ class GroupOperation(
             self.logger.info(f'{r}: {results[r]}')
 
         self.save_files()
+        return results
 
     def _scan_config(
             self,
             proj_code,
             mode='kerchunk',
+            subset_bypass=False,
             **kwargs
         ) -> None:
         """
@@ -247,6 +258,7 @@ class GroupOperation(
             self, 
             proj_code,  
             mode=None,
+            subset_bypass=False,
             **kwargs
         ) -> None:
         """
@@ -277,13 +289,11 @@ class GroupOperation(
             **kwargs,
         )
 
-        if mode is None:
-            mode = proj_op.get_mode()
-        version = proj_op.get_version()
-        del proj_op
-
+        mode = proj_op.cloud_format
         if mode is None:
             mode = 'kerchunk'
+
+        del proj_op
 
         if mode not in COMPUTE:
             raise ValueError(
@@ -303,23 +313,56 @@ class GroupOperation(
             self.workdir,
             groupID=self.groupID,
             logger=self.logger,
-            version_no=version,
             **kwargs
         )
-        status = proj_op.run()
+        status = proj_op.run(subset_bypass=subset_bypass)
         proj_op.save_files()
         return status
     
+    def _validate_config(
+            self, 
+            proj_code: str,  
+            mode: str = 'kerchunk',
+            subset_bypass: bool = False,
+            forceful: Optional[bool] = None,
+            thorough: Optional[bool] = None,
+            dryrun: Optional[bool] = None,
+            **kwargs
+        ) -> None:
+
+        self.logger.debug(f"Starting validation for {proj_code}")
+
+        #try:
+        if True:
+            vop = ValidateOperation(
+                proj_code,
+                workdir=self.workdir,
+                groupID=self.groupID,
+                **kwargs)
+        #except TypeError:
+            #raise ValueError(
+            #    f'{proj_code}, {self.groupID}, {self.workdir}'
+            #)
+        
+        status = vop.run(
+            mode=mode, 
+            subset_bypass=subset_bypass,
+            forceful=forceful,
+            thorough=thorough,
+            dryrun=dryrun)
+        return status
+
+
     def add_project(self):
         pass
 
     def _save_proj_codes(self):
         for pc in self.proj_codes.keys():
-            self.proj_codes[pc].save_file()
+            self.proj_codes[pc].close()
 
     def save_files(self):
-        self.blacklist_codes.save_file()
-        self.datasets.save_file()
+        self.blacklist_codes.close()
+        self.datasets.close()
         self._save_proj_codes()
 
     def _add_proj_codeset(self, name : str, newcodes : list):
@@ -495,11 +538,11 @@ class GroupOperation(
         ]
 
         sbatch.update(sbatch_contents)
-        sbatch.save_file()
+        sbatch.close()
 
         if self._dryrun:
             self.logger.info('DRYRUN: sbatch command: ')
-            print(f'sbatch --array=0-{group_len-1} {sbatch.filepath()}')
+            print(f'sbatch --array=0-{group_length-1} {sbatch.filepath()}')
 
     def _sbatch_kwargs(
             self, time, memory, repeat_id, verbose=None, bypass=None, 

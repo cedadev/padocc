@@ -5,7 +5,7 @@ WORKDIR = 'padocc/tests/auto_testdata_dir'
 class TestInit:
 
     def test_init_basic(self, wd=WORKDIR):
-        infile  = 'padocc/tests/data/myfile.csv'
+        infile  = 'padocc/tests/data_creator/Aggs.csv'
         groupID = 'padocc-test-suite'
 
         workdir = wd

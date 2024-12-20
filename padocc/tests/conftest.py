@@ -7,7 +7,8 @@ def pytest_collection_modifyitems(items):
         "TestInit",
         "TestScan",
         "TestCompute",
-        "TestCleanup"
+        "TestValidate"
+        #"TestCleanup"
     ]
 
     sorted_items = items.copy()

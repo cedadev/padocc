@@ -2,6 +2,7 @@
 build_venv/
 kvenv/
 temp/
+padocc/tests/auto_testdata_dir
 testing/
 *__pycache__*
 .vscode/

@@ -28,7 +28,7 @@ class FileIOMixin(LoggedOperation):
     no attributes passed to either of these.
 
         fh.create_file()
-        fh.save_file()
+        fh.close()
 
     3. Get/set:
 
@@ -77,12 +77,11 @@ class FileIOMixin(LoggedOperation):
         """
         
         self.dir       = dir
-        self.filename  = filename
+        self._file     = filename
 
         self._dryrun   = dryrun
         self._forceful = forceful
         self._value    = None
-        self._file     = None
 
         self._set_file()
 
@@ -126,7 +125,7 @@ class FileIOMixin(LoggedOperation):
         else:
             self.logger.info(f'DRYRUN: Skipped creating "{self._file}"')
 
-    def save_file(self):
+    def close(self):
         """
         Wrapper for _set_content method
         """
@@ -141,13 +140,23 @@ class FileIOMixin(LoggedOperation):
 
         self._value = value
 
-    def get(self):
+    def get(self, index: str = None, default: str = None):
         """
-        Get the value of the private ``_value`` attribute.
+        Get the value of the private ``_value`` attribute. Can also get a
+        parameter from this item as you would with a dictionary, if possible
+        for the item type represented by ``_value``.
         """
         self._check_value()
 
-        return self._value
+        if index is None:
+            return self._value
+        
+        try:
+            return self._value.get(index, default)
+        except AttributeError:
+            raise AttributeError(
+                f'Filehandler for {self._file} does not support getting specific items.'
+            )
 
     def _check_save(self) -> bool:
         """
@@ -186,6 +195,7 @@ class ListIOMixin(FileIOMixin):
     def __len__(self) -> int:
         """Length of value"""
         content = self.get()
+        self.logger.debug(f'content length: {len(content)}')
         return len(content)
     
     def __iter__(self) -> Generator[str, None, None]:
@@ -238,11 +248,13 @@ class ListIOMixin(FileIOMixin):
         Open the file to get content if it exists
         """
         if self.file_exists():
+            self.logger.debug('Opening existing file')
             with open(self._file) as f:
                 content = [r.strip() for r in f.readlines()]
             self._value = content
 
         else:
+            self.logger.debug('Creating new file')
             self.create_file()
             self._value = []
 
@@ -254,6 +266,18 @@ class ListIOMixin(FileIOMixin):
 
 class JSONFileHandler(FileIOMixin):
     description = "JSON File handler for padocc config files."
+
+    def __init__(
+            self, 
+            dir: str, 
+            filename: str, 
+            logger: logging.Logger | FalseLogger = None,
+            conf: dict = None, 
+            **kwargs
+        ) -> None:
+
+        self._conf = conf
+        super().__init__(dir, filename, logger=logger, **kwargs)
 
     def __str__(self) -> str:
         """String representation"""
@@ -279,8 +303,13 @@ class JSONFileHandler(FileIOMixin):
         if self._value is None:
             self._get_content()
 
+        if self._conf is not None:
+            if index in self._conf:
+                self._apply_conf()
+
         if index in self._value:
             return self._value[index]
+        
         return None
 
     def __setitem__(self, index: str, value) -> None:
@@ -301,10 +330,10 @@ class JSONFileHandler(FileIOMixin):
         super().set(dict(value))
 
     def _set_file(self):
-        if '.json' not in self.filename:
-            self._file = f'{self.dir}/{self.filename}.json'
+        if '.json' not in self._file:
+            self._file = f'{self.dir}/{self._file}.json'
         else:
-            self._file = f'{self.dir}/{self.filename}'
+            self._file = f'{self.dir}/{self._file}'
 
     # Get/set routines for the filesystem files.
     def _get_content(self):
@@ -320,8 +349,23 @@ class JSONFileHandler(FileIOMixin):
 
     def _set_content(self):
         if super()._check_save():
+            self._apply_conf()
             with open(self._file,'w') as f:
                 f.write(json.dumps(self._value))
+
+    def _apply_conf(self):
+        """
+        Update value with properties from conf - fill
+        missing values.
+        """
+
+        if self._conf is None:
+            return
+        
+        self._conf.update(self._value)
+
+        self._value = dict(self._conf)
+        self._conf = None
 
 class KerchunkFile(JSONFileHandler):
 
@@ -385,10 +429,10 @@ class TextFileHandler(ListIOMixin):
     description = "Text File handler for padocc config files."
 
     def _set_file(self):
-        if '.txt' not in self.filename:
-            self._file = f'{self.dir}/{self.filename}.txt'
+        if '.txt' not in self._file:
+            self._file = f'{self.dir}/{self._file}.txt'
         else:
-            self._file = f'{self.dir}/{self.filename}'
+            self._file = f'{self.dir}/{self._file}'
 
 class LogFileHandler(ListIOMixin):
     description = "Log File handler for padocc phase logs."
@@ -398,13 +442,13 @@ class LogFileHandler(ListIOMixin):
         super().__init__(dir, filename, logger, **kwargs)
 
     def _set_file(self):
-        self._file = f'{self.dir}/{self._extra_path}{self.filename}.log'
+        self._file = f'{self.dir}/{self._extra_path}{self._file}.log'
 
 class CSVFileHandler(ListIOMixin):
     description = "CSV File handler for padocc config files"
     
     def _set_file(self):
-        self._file = f'{self.dir}/{self.filename}.csv'
+        self._file = f'{self.dir}/{self._file}.csv'
 
     def __iter__(self):
         for i in self._value:

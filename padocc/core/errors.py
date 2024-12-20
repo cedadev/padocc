@@ -7,16 +7,18 @@ import os
 import logging
 import traceback
 
+from typing import Optional
+
 from .filehandlers import CSVFileHandler
 
 def error_handler(
         err : Exception, 
         logger: logging.Logger, 
         phase: str,
-        jobid: str = None,
-        dryrun: bool = False,
-        subset_bypass: bool = False, 
-        status_fh: CSVFileHandler = None
+        jobid: Optional[str] = None,
+        dryrun: Optional[bool] = False,
+        subset_bypass: Optional[bool] = False, 
+        status_fh: Optional[CSVFileHandler] = None
     ):
 
     """

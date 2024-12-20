@@ -23,6 +23,50 @@ times = {
     'validate':'30:00' # From CMIP experiments - no reliable prediction mechanism possible
 }
 
+phases = [
+    'scan',
+    'compute',
+    'validate',
+    'catalog'
+]
+
+BASE_CFG = {
+    'proj_code':None,
+    'pattern':None,
+    'updates':None,
+    'removals':None,
+    'version_no':'1.1',
+    'data_properties':{
+        'aggregated_dims':'Unknown',
+        'pure_dims': 'Unknown',
+        'coord_dims': 'Unknown',
+        'virtual_dims': 'Unknown',
+        'aggregated_vars': 'Unknown',
+        'scalar_vars':'Unknown',
+        'identical_vars':'Unknown'
+    },
+    'override':{
+        'cloud_type':None,
+        'file_type':None
+    },
+    'last_run': (None, None),
+}
+
+DETAIL_CFG = {
+    'source_data': None,
+    'cloud_data': None,
+    'scanned_with': None,
+    'num_files': None,
+    'timings': None,
+    'chunk_info':None,
+    'kwargs': None,
+}
+
+file_configs = {
+    'base_cfg':BASE_CFG,
+    'detail_cfg':DETAIL_CFG
+}
+
 class BypassSwitch:
     """Class to represent all bypass switches throughout the pipeline.
     Requires a switch string which is used to enable/disable specific pipeline 
@@ -173,6 +217,13 @@ def format_str(
 
     return string[:length]
   
+def format_tuple(tup: tuple[list[int]]) -> str:
+
+    try:
+        return f'({",".join([str(t[0]) for t in tup])})'
+    except IndexError:
+        return str(tup)
+
 def mem_to_val(value: str) -> float:
     """
     Convert a value in Bytes to an integer number of bytes

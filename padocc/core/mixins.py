@@ -122,12 +122,12 @@ class EvaluationsMixin:
         Set the phase and time of the last run for this project.
         """
         lr = (phase, time)
-        self.detail_cfg['last_run'] = lr
+        self.base_cfg['last_run'] = lr
 
     def get_last_run(self) -> tuple:
         """
         Get the tuple-value for this projects last run."""
-        return self.detail_cfg['last_run']
+        return self.base_cfg['last_run']
 
     def get_last_status(self) -> str:
         """
@@ -185,3 +185,100 @@ class EvaluationsMixin:
         Setup for running this specific component interactively.
         """
         return ''
+
+class PropertiesMixin:
+
+    def _check_override(self, key, mapper):
+        if self.base_cfg['override'][key] is not None:
+            return self.base_cfg['override'][key]
+        
+        if self.detail_cfg[mapper] is not None:
+            self.base_cfg['override'][key] = self.detail_cfg[mapper]
+            self.base_cfg.close()
+            return self.base_cfg['override'][key]
+        
+        return None
+    
+    @property
+    def outpath(self):
+        return f'{self.dir}/{self.outproduct}'
+    
+    @property
+    def outproduct(self):
+        if self.stage == 'complete':
+            return f'{self.proj_code}.{self.version_no}.{self.file_type}'
+        else:
+            vn = f'{self.version_no}a.{self.file_type}'
+            if self._is_trial:
+                vn = f'trial-{vn}'
+            return vn
+    
+    @property
+    def revision(self) -> str:
+
+        if self.cloud_format is None:
+            raise ValueError(
+                'Cloud format not set, revision is unknown'
+            )
+        
+        if self.file_type is not None:
+            return ''.join((self.cloud_format[0],self.file_type[0],self.version_no))
+        else:
+            return ''.join((self.cloud_format[0],self.version_no))
+        
+    @property
+    def version_no(self) -> str:
+
+        return self.base_cfg['version_no']
+
+    @property
+    def cloud_format(self) -> str:
+        return self._check_override('cloud_type','scanned_with')
+
+    @cloud_format.setter
+    def cloud_format(self, value):
+        self.base_cfg['override']['cloud_type'] = value
+
+    @property
+    def file_type(self) -> bool:
+        """
+        Return True if the project is configured to use parquet.
+        """
+
+        return self._check_override('file_type','type')
+    
+    @file_type.setter
+    def file_type(self, value):
+        
+        type_map = {
+            'kerchunk': ['json','parq'],
+        }
+        
+        if self.cloud_format in type_map:
+            if value in type_map[self.cloud_format]:
+                self.base_cfg['override']['file_type'] = value
+            else:
+                raise ValueError(
+                    f'Could not set property "file_type:{value} - accepted '
+                    f'values for format: {self.cloud_format} are {type_map.get(self.cloud_format,None)}.'
+                )
+        else:
+            raise ValueError(
+                f'Could not set property "file_type:{value}" - cloud format '
+                f'{self.cloud_format} does not accept alternate types.'
+            )
+
+    @property
+    def source_format(self) -> str:
+        return self.detail_cfg.get(index='driver', default=None)
+    
+    def minor_version_increment(self):
+        """
+        Use this function for when properties of the cloud file have been changed."""
+        raise NotImplementedError
+    
+    def major_version_increment(self):
+        """
+        Use this function for major changes to the cloud file 
+        - e.g. replacement of source file data."""
+        raise NotImplementedError
