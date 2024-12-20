@@ -1,0 +1,16 @@
+{
+    "workdir":"/Users/daniel.westwood/cedadev/padocc/padocc/tests/auto_testdata_dir",
+    "groupID":"padocc-test-suite",
+    "group_file":"/Users/daniel.westwood/cedadev/padocc/padocc/tests/data_creator/Aggs.csv",
+    "substitutions":{
+        "init_file": {
+            "/home/users/dwest77/cedadev/":"/Users/daniel.westwood/cedadev/"
+        },
+        "dataset_file": {
+            "/home/users/dwest77/cedadev/":"/Users/daniel.westwood/cedadev/"
+        },
+        "datasets": {
+            "/home/users/dwest77/cedadev/":"/Users/daniel.westwood/cedadev/"
+        }
+    }
+}
