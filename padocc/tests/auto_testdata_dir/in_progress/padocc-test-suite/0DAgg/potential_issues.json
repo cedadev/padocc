@@ -1,1 +1,0 @@
-{"report": {"metadata": {}, "data": {"data_errors": {"rain": {"type": "not_equal,max_not_equal,min_not_equal,mean_not_equal", "topleft": "0,0", "bottomright": "10,20"}}}}}

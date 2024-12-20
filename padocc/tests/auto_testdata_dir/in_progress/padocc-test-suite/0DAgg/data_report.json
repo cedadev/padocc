@@ -1,1 +1,0 @@
-{"data_errors": {"height": {"type": "not_equal", "topleft": "", "bottomright": ""}, "rain": {"type": "not_equal,max_not_equal,min_not_equal,mean_not_equal", "topleft": "0,0", "bottomright": "10,20"}}}
