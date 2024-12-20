@@ -67,20 +67,7 @@
 <p class="caption" role="heading"><span class="caption-text">Pipeline Source:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="init.html">Initialisation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Scanning</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.scan.format_float"><code class="docutils literal notranslate"><span class="pre">format_float()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.scan.format_seconds"><code class="docutils literal notranslate"><span class="pre">format_seconds()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.scan.get_seconds"><code class="docutils literal notranslate"><span class="pre">get_seconds()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.scan.perform_safe_calculations"><code class="docutils literal notranslate"><span class="pre">perform_safe_calculations()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.scan.safe_format"><code class="docutils literal notranslate"><span class="pre">safe_format()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.scan.scan_config"><code class="docutils literal notranslate"><span class="pre">scan_config()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.scan.scan_dataset"><code class="docutils literal notranslate"><span class="pre">scan_dataset()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.scan.scan_kerchunk"><code class="docutils literal notranslate"><span class="pre">scan_kerchunk()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.scan.scan_zarr"><code class="docutils literal notranslate"><span class="pre">scan_zarr()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.scan.summarise_json"><code class="docutils literal notranslate"><span class="pre">summarise_json()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.scan.write_skip"><code class="docutils literal notranslate"><span class="pre">write_skip()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Scanning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="compute.html">Compute</a></li>
 <li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="allocation.html">Allocations</a></li>
@@ -111,108 +98,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-pipeline.scan">
-<span id="scanner-module"></span><h1>Scanner Module<a class="headerlink" href="#module-pipeline.scan" title="Permalink to this heading"></a></h1>
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.format_float">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">format_float</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#pipeline.scan.format_float" title="Permalink to this definition"></a></dt>
-<dd><p>Format byte-value with proper units</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.format_seconds">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">format_seconds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seconds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#pipeline.scan.format_seconds" title="Permalink to this definition"></a></dt>
-<dd><p>Convert time in seconds to MM:SS</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.get_seconds">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">get_seconds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_allowed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#pipeline.scan.get_seconds" title="Permalink to this definition"></a></dt>
-<dd><p>Convert time in MM:SS to seconds</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.perform_safe_calculations">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">perform_safe_calculations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">std_vars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#pipeline.scan.perform_safe_calculations" title="Permalink to this definition"></a></dt>
-<dd><p>Perform all calculations safely to mitigate errors that arise during data collation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>std_vars</strong> – (list) A list of the variables collected, which should be the same across
-all input files.</p></li>
-<li><p><strong>cpf</strong> – (list) The chunks per file recorded for each input file.</p></li>
-<li><p><strong>volms</strong> – (list) The total data size recorded for each input file.</p></li>
-<li><p><strong>nfiles</strong> – (int) The total number of files for this dataset</p></li>
-<li><p><strong>logger</strong> – (obj) Logging object for info/debug/error messages.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Average values of: chunks per file (cpf), number of variables (num_vars), chunk size (avg_chunk),
-spatial resolution of each chunk assuming 2:1 ratio lat/lon (spatial_res), totals of NetCDF and Kerchunk estimate
-data amounts, number of files, total number of chunks and the addition percentage.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.safe_format">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">safe_format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fstring</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#pipeline.scan.safe_format" title="Permalink to this definition"></a></dt>
-<dd><p>Attempt to format a string given some fstring template.
-- Handles issues by returning ‘’, usually when value is None initially.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.scan_config">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">scan_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.scan.scan_config" title="Permalink to this definition"></a></dt>
-<dd><p>Configure scanning and access main section, ensure a few key variables are set
-then run scan_dataset.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>args</strong> – (obj) Set of command line arguments supplied by argparse.</p></li>
-<li><p><strong>logger</strong> – (obj) Logging object for info/debug/error messages. Will create a new 
-logger object if not given one.</p></li>
-<li><p><strong>fh</strong> – (str) Path to file for logger I/O when defining new logger.</p></li>
-<li><p><strong>logid</strong> – (str) If creating a new logger, will need an id to distinguish this logger
-from other single processes (typically n of N total processes.)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>None</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.scan_dataset">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">scan_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.scan.scan_dataset" title="Permalink to this definition"></a></dt>
-<dd><p>Main process handler for scanning phase</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.scan_kerchunk">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">scan_kerchunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfiles</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limiter</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.scan.scan_kerchunk" title="Permalink to this definition"></a></dt>
-<dd><p>Function to perform scanning with output Kerchunk format.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.scan_zarr">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">scan_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfiles</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limiter</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.scan.scan_zarr" title="Permalink to this definition"></a></dt>
-<dd><p>Function to perform scanning with output Zarr format.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.summarise_json">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">summarise_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#pipeline.scan.summarise_json" title="Permalink to this definition"></a></dt>
-<dd><p>Open previously written JSON cached files and perform analysis.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.scan.write_skip">
-<span class="sig-prename descclassname"><span class="pre">pipeline.scan.</span></span><span class="sig-name descname"><span class="pre">write_skip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.scan.write_skip" title="Permalink to this definition"></a></dt>
-<dd><p>Quick function to write a ‘skipped’ detail file.</p>
-</dd></dl>
-
+  <section id="scanner-module">
+<h1>Scanner Module<a class="headerlink" href="#scanner-module" title="Permalink to this heading"></a></h1>
 </section>
 
 

@@ -66,18 +66,7 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Pipeline Source:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Initialisation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.init.get_input"><code class="docutils literal notranslate"><span class="pre">get_input()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.init.get_proj_code"><code class="docutils literal notranslate"><span class="pre">get_proj_code()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.init.get_removals"><code class="docutils literal notranslate"><span class="pre">get_removals()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.init.get_updates"><code class="docutils literal notranslate"><span class="pre">get_updates()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.init.init_config"><code class="docutils literal notranslate"><span class="pre">init_config()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.init.load_from_input_file"><code class="docutils literal notranslate"><span class="pre">load_from_input_file()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.init.make_directories"><code class="docutils literal notranslate"><span class="pre">make_directories()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.init.make_filelist"><code class="docutils literal notranslate"><span class="pre">make_filelist()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.init.text_file_to_csv"><code class="docutils literal notranslate"><span class="pre">text_file_to_csv()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Initialisation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scan.html">Scanning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="compute.html">Compute</a></li>
 <li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
@@ -109,79 +98,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-pipeline.init">
-<span id="initialisation-module"></span><h1>Initialisation Module<a class="headerlink" href="#module-pipeline.init" title="Permalink to this heading"></a></h1>
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.init.get_input">
-<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">get_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.get_input" title="Permalink to this definition"></a></dt>
-<dd><p>Get command-line inputs for specific project configuration</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.init.get_proj_code">
-<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">get_proj_code</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.get_proj_code" title="Permalink to this definition"></a></dt>
-<dd><p>Determine project code from path (prefix removed), appropriate for CMIP6</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.init.get_removals">
-<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">get_removals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.get_removals" title="Permalink to this definition"></a></dt>
-<dd><p>Get attribute names to remove in final metadata</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.init.get_updates">
-<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">get_updates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.get_updates" title="Permalink to this definition"></a></dt>
-<dd><p>Get key-value pairs for updating in final metadata</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.init.init_config">
-<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">init_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.init_config" title="Permalink to this definition"></a></dt>
-<dd><p>Main configuration script, load configurations from input sources, determine
-input file type and use appropriate functions to instantiate group and project
-directories.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>args</strong> – (obj) Set of command line arguments supplied by argparse.</p></li>
-<li><p><strong>logger</strong> – (obj) Logging object for info/debug/error messages. Will create a new 
-logger object if not given one.</p></li>
-<li><p><strong>fh</strong> – (str) Path to file for logger I/O when defining new logger.</p></li>
-<li><p><strong>logid</strong> – (str) If creating a new logger, will need an id to distinguish this logger
-from other single processes (typically n of N total processes.)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>None</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.init.load_from_input_file">
-<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">load_from_input_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.load_from_input_file" title="Permalink to this definition"></a></dt>
-<dd><p>Configure project directory and base config from input file</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.init.make_directories">
-<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">make_directories</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.make_directories" title="Permalink to this definition"></a></dt>
-<dd><p>Set up directory structure for working directory</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.init.make_filelist">
-<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">make_filelist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.make_filelist" title="Permalink to this definition"></a></dt>
-<dd><p>Create list of files associated with this project</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.init.text_file_to_csv">
-<span class="sig-prename descclassname"><span class="pre">pipeline.init.</span></span><span class="sig-name descname"><span class="pre">text_file_to_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.init.text_file_to_csv" title="Permalink to this definition"></a></dt>
-<dd><p>Convert text file list of patterns to a csv for a set of projects</p>
-</dd></dl>
-
+  <section id="initialisation-module">
+<h1>Initialisation Module<a class="headerlink" href="#initialisation-module" title="Permalink to this heading"></a></h1>
 </section>
 
 

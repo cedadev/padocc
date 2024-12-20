@@ -1,0 +1,455 @@
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User guide (module) &mdash; PADOCC Package v1.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=3dd8cc91"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            PADOCC Package
+              <img src="_static/padocc_wt.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-guide.html">Developer Guide - Adding new functionality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-modes-in-assessor">1. New Modes in Assessor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-processors-for-compute">2. New Processors for Compute</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Tool Source:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Scripts Source</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Pipeline Source:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="init.html">Initialisation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scan.html">Scanning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compute.html">Compute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="allocation.html">Allocations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extras.html">Utils</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PADOCC Package</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">User guide (module)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/user_guide.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="user-guide-module">
+<h1>User guide (module)<a class="headerlink" href="#user-guide-module" title="Permalink to this heading"></a></h1>
+<p>As of <code class="docutils literal notranslate"><span class="pre">padocc</span> <span class="pre">1.3</span></code>, the recommended way to access projects/groups and perform analyses of specific features is to directly import padocc components following this guide.
+There is also a guide for using the Command-Line Interface (padocc_cli) which you can find linked from the documentation homepage.</p>
+<section id="manipulating-a-group">
+<h2>Manipulating a Group<a class="headerlink" href="#manipulating-a-group" title="Permalink to this heading"></a></h2>
+<p>Any operation to be applied to a specific group can be accessed via the <code class="docutils literal notranslate"><span class="pre">GroupOperation</span></code> class, imported as below from padocc’s <code class="docutils literal notranslate"><span class="pre">operations</span></code> module.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padocc.operations</span> <span class="kn">import</span> <span class="n">GroupOperation</span>
+
+<span class="n">my_group</span> <span class="o">=</span> <span class="n">GroupOperation</span><span class="p">(</span>
+    <span class="s1">&#39;my_group&#39;</span><span class="p">,</span>
+    <span class="n">workdir</span><span class="o">=</span><span class="s1">&#39;workdir&#39;</span><span class="p">,</span> <span class="c1"># The directory to create pipeline files.</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span> <span class="c1"># INFO.</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Alternatively to using an integer value for the logs, you can specify a specific logging level provided it is one of <code class="docutils literal notranslate"><span class="pre">logging.INFO</span></code>, <code class="docutils literal notranslate"><span class="pre">logging.WARN</span></code> or <code class="docutils literal notranslate"><span class="pre">logging.DEBUG</span></code>.</p>
+<p>Some examples of basic features of the group can be found below:</p>
+<section id="examples-of-using-the-groupoperation-class-manipulating-a-group">
+<h3>Examples of using the <code class="docutils literal notranslate"><span class="pre">GroupOperation</span></code> class - Manipulating a Group<a class="headerlink" href="#examples-of-using-the-groupoperation-class-manipulating-a-group" title="Permalink to this heading"></a></h3>
+<p>Any operation to be applied to a specific group can be accessed via the <code class="docutils literal notranslate"><span class="pre">GroupOperation</span></code> class, imported as below from padocc’s <code class="docutils literal notranslate"><span class="pre">operations</span></code> module.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padocc.operations</span> <span class="kn">import</span> <span class="n">GroupOperation</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">my_group</span> <span class="o">=</span> <span class="n">GroupOperation</span><span class="p">(</span>
+    <span class="s1">&#39;my_group&#39;</span><span class="p">,</span>
+    <span class="n">workdir</span><span class="o">=</span><span class="s1">&#39;../../auto_testdata_dir&#39;</span><span class="p">,</span> <span class="c1"># The directory to create pipeline files.</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">my_group</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;PADOCC Group: my_group&gt;
+</pre></div>
+</div>
+</div>
+</div>
+<p>Get some general information about the group:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">my_group</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Group: my_group
+General Methods:
+ &gt; group.run() - Run a specific operation across part of the group.
+ &gt; group.init_from_file() - Initialise the group based on an input csv file
+ &gt; group.init_from_stac() - Initialise the group based on a STAC index
+ &gt; group.add_project() - Add an new project/dataset to this group
+ &gt; group.save_files() - Save any changes to any files in the group as part of an operation
+ &gt; group.check_writable() - Check if all directories are writable for this group.
+Assessment methods:
+ &gt; group.summary_data() - Get a printout summary of data representations in this group
+ &gt; group.remove_projects() - Remove projects fitting some parameters from this group
+ &gt; group.progress_display() - Get a human-readable display of progress within the group.
+ &gt; group.progress_repr() - Get a dict version of the progress report (for AirFlow)
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">my_group</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Group: my_group
+ - Workdir: ../../auto_testdata_dir
+ - Groupdir: ../../auto_testdata_dir/groups/my_group
+ - forceful: False
+ - thorough: False
+ - dryrun: False
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="initialise-the-group-from-a-file">
+<h3>Initialise the group from a file<a class="headerlink" href="#initialise-the-group-from-a-file" title="Permalink to this heading"></a></h3>
+<p>The group has been created but contains no data currently, so we need to fill it from either a file or STAC index.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">csv_file</span> <span class="o">=</span> <span class="s1">&#39;../../tests/data/myfile.csv&#39;</span>
+<span class="n">my_group</span><span class="o">.</span><span class="n">init_from_file</span><span class="p">(</span><span class="n">csv_file</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO [group-operation]: Starting initialisation
+INFO [group-operation]: Copying input file from relative path - resolved to /home/users/dwest77/cedadev/padocc/docs/source
+INFO [group-operation]: Creating project directories
+INFO [group-operation]: Creating directories/filelists for 1/2
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING [group-operation]: &quot;../../auto_testdata_dir/in_progress/my_group/padocc-test-1&quot; already exists.
+WARNING [group-operation]: &quot;../../auto_testdata_dir/in_progress/my_group/padocc-test-1/phase_logs&quot; already exists.
+INFO [group-operation]: Updated new status: init - Success
+INFO [group-operation]: Creating directories/filelists for 2/2
+WARNING [group-operation]: &quot;../../auto_testdata_dir/in_progress/my_group/padocc-test-2&quot; already exists.
+WARNING [group-operation]: &quot;../../auto_testdata_dir/in_progress/my_group/padocc-test-2/phase_logs&quot; already exists.
+INFO [group-operation]: Updated new status: init - Success
+INFO [group-operation]: Created 12 files, 4 directories in group my_group
+INFO [group-operation]: Written as group ID: my_group
+</pre></div>
+</div>
+</div>
+</div>
+<p>The group has now been initialised. The CSV file we loaded contains two ‘projects’ which will each produce a single dataset object at the end of the pipeline. This is an aggregation of multiple data files into a single product. We can view the contents of the CSV file the group was loaded with as below:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">my_group</span><span class="o">.</span><span class="n">datasets</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>padocc-test-1,/home/users/dwest77/cedadev/padocc/tests/data/test1.txt,,
+padocc-test-2,/home/users/dwest77/cedadev/padocc/tests/data/test2.txt,,
+</pre></div>
+</div>
+</div>
+</div>
+<p>Each project came with a file listing all the data files under that project, in this case there are 5 netCDF files in each project, which we can find using:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">project</span> <span class="o">=</span> <span class="n">my_group</span><span class="o">.</span><span class="n">get_project</span><span class="p">(</span><span class="s1">&#39;padocc-test-1&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">project</span><span class="o">.</span><span class="n">allfiles</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/users/dwest77/cedadev/padocc/tests/data/rain/example1.0.nc
+/home/users/dwest77/cedadev/padocc/tests/data/rain/example1.1.nc
+/home/users/dwest77/cedadev/padocc/tests/data/rain/example1.2.nc
+/home/users/dwest77/cedadev/padocc/tests/data/rain/example1.3.nc
+/home/users/dwest77/cedadev/padocc/tests/data/rain/example1.4.nc
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="run-a-group-operation">
+<h3>Run a group operation<a class="headerlink" href="#run-a-group-operation" title="Permalink to this heading"></a></h3>
+<p>We can now run a process on the group as a whole via the <code class="docutils literal notranslate"><span class="pre">run</span></code> method. There are three main phases that form the central section of the pipeline; <code class="docutils literal notranslate"><span class="pre">scan</span></code>, <code class="docutils literal notranslate"><span class="pre">compute</span></code> and <code class="docutils literal notranslate"><span class="pre">validate</span></code>. These can be run individually (recommended) or if you are running for a single project you may run all steps with <code class="docutils literal notranslate"><span class="pre">all</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">my_group</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="s1">&#39;scan&#39;</span><span class="p">,</span> 
+    <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;kerchunk&#39;</span><span class="p">,</span> <span class="c1"># Default format</span>
+    <span class="n">repeat_id</span><span class="o">=</span><span class="s1">&#39;main&#39;</span><span class="p">,</span> <span class="c1"># All projects</span>
+    <span class="n">proj_code</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>   <span class="c1"># Or run a specific project.</span>
+    <span class="n">forceful</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO [group-operation]: Starting operation: 1/2 (padocc-test-1)
+INFO [project-operation_0]: Starting scan-kerchunk operation for padocc-test-1
+INFO [project-operation_0]: Starting scan-kerchunk operation for padocc-test-1
+INFO [project-operation_0]: Determined 2 files to scan (out of 5)
+INFO [project-operation_0]: Determined 2 files to scan (out of 5)
+INFO [project-operation_0]: Starting scan process for Kerchunk cloud format
+INFO [project-operation_0]: Starting scan process for Kerchunk cloud format
+INFO [project-operation_0]: Starting computation for components of padocc-test-1
+INFO [project-operation_0]: Starting computation for components of padocc-test-1
+INFO [project-operation_0]: Loading cache file
+INFO [project-operation_0]: Loading cache file
+INFO [project-operation_0]: Loaded refs: 1/2
+INFO [project-operation_0]: Loaded refs: 1/2
+INFO [project-operation_0]: Loading cache file
+INFO [project-operation_0]: Loading cache file
+INFO [project-operation_0]: Loaded refs: 2/2
+INFO [project-operation_0]: Loaded refs: 2/2
+INFO [project-operation_0]: Starting concatenation of refs
+INFO [project-operation_0]: Starting concatenation of refs
+/home/users/dwest77/cedadev/padocc/.local/lib/python3.11/site-packages/xarray/backends/zarr.py:1097: RuntimeWarning: Failed to open Zarr store with consolidated metadata, but successfully read with non-consolidated metadata. This is typically much slower for opening a dataset. To silence this warning, consider:
+1. Consolidating metadata in this existing store with zarr.consolidate_metadata().
+2. Explicitly setting consolidated=False, to avoid trying to read consolidate metadata, or
+3. Explicitly setting consolidated=True, to raise an error in this case instead of falling back to try reading non-consolidated metadata.
+  ds = open_dataset(
+/home/users/dwest77/cedadev/padocc/.local/lib/python3.11/site-packages/xarray/backends/zarr.py:1097: RuntimeWarning: Failed to open Zarr store with consolidated metadata, but successfully read with non-consolidated metadata. This is typically much slower for opening a dataset. To silence this warning, consider:
+1. Consolidating metadata in this existing store with zarr.consolidate_metadata().
+2. Explicitly setting consolidated=False, to avoid trying to read consolidate metadata, or
+3. Explicitly setting consolidated=True, to raise an error in this case instead of falling back to try reading non-consolidated metadata.
+  ds = open_dataset(
+INFO [project-operation_0]: Determining concatenation dimensions
+INFO [project-operation_0]: Determining concatenation dimensions
+INFO [project-operation_0]: Found [&#39;time&#39;] concatenation dimensions.
+INFO [project-operation_0]: Found [&#39;time&#39;] concatenation dimensions.
+INFO [project-operation_0]: Determining identical variables
+INFO [project-operation_0]: Determining identical variables
+INFO [project-operation_0]: Found [&#39;latitude&#39;, &#39;longitude&#39;] identical variables.
+INFO [project-operation_0]: Found [&#39;latitude&#39;, &#39;longitude&#39;] identical variables.
+INFO [project-operation_0]: Concatenating to JSON format Kerchunk file
+INFO [project-operation_0]: Concatenating to JSON format Kerchunk file
+INFO [project-operation_0]: Skipped writing to JSON file - None
+INFO [project-operation_0]: Skipped writing to JSON file - None
+INFO [project-operation_0]: Details updated in detail-cfg.json
+INFO [project-operation_0]: Details updated in detail-cfg.json
+INFO [project-operation_0]: Summarising scan results for 2 files
+INFO [project-operation_0]: Summarising scan results for 2 files
+INFO [project-operation_0]: Data recorded for file 1
+INFO [project-operation_0]: Data recorded for file 1
+INFO [project-operation_0]: Data recorded for file 2
+INFO [project-operation_0]: Data recorded for file 2
+INFO [project-operation_0]: Summary complete, compiling outputs
+INFO [project-operation_0]: Summary complete, compiling outputs
+INFO [project-operation_0]: Updated new status: scan - Success
+INFO [project-operation_0]: Updated new status: scan - Success
+INFO [group-operation]: Starting operation: 2/2 (padocc-test-2)
+INFO [project-operation_1]: Starting scan-kerchunk operation for padocc-test-2
+INFO [project-operation_1]: Determined 2 files to scan (out of 5)
+INFO [project-operation_1]: Starting scan process for Kerchunk cloud format
+INFO [project-operation_1]: Starting computation for components of padocc-test-2
+INFO [project-operation_1]: Loading cache file
+INFO [project-operation_1]: Loaded refs: 1/2
+INFO [project-operation_1]: Loading cache file
+INFO [project-operation_1]: Loaded refs: 2/2
+INFO [project-operation_1]: Starting concatenation of refs
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/users/dwest77/cedadev/padocc/.local/lib/python3.11/site-packages/xarray/backends/zarr.py:1097: RuntimeWarning: Failed to open Zarr store with consolidated metadata, but successfully read with non-consolidated metadata. This is typically much slower for opening a dataset. To silence this warning, consider:
+1. Consolidating metadata in this existing store with zarr.consolidate_metadata().
+2. Explicitly setting consolidated=False, to avoid trying to read consolidate metadata, or
+3. Explicitly setting consolidated=True, to raise an error in this case instead of falling back to try reading non-consolidated metadata.
+  ds = open_dataset(
+/home/users/dwest77/cedadev/padocc/.local/lib/python3.11/site-packages/xarray/backends/zarr.py:1097: RuntimeWarning: Failed to open Zarr store with consolidated metadata, but successfully read with non-consolidated metadata. This is typically much slower for opening a dataset. To silence this warning, consider:
+1. Consolidating metadata in this existing store with zarr.consolidate_metadata().
+2. Explicitly setting consolidated=False, to avoid trying to read consolidate metadata, or
+3. Explicitly setting consolidated=True, to raise an error in this case instead of falling back to try reading non-consolidated metadata.
+  ds = open_dataset(
+INFO [project-operation_1]: Determining concatenation dimensions
+INFO [project-operation_1]: Found [&#39;time&#39;] concatenation dimensions.
+INFO [project-operation_1]: Determining identical variables
+INFO [project-operation_1]: Found [&#39;latitude&#39;, &#39;longitude&#39;] identical variables.
+INFO [project-operation_1]: Concatenating to JSON format Kerchunk file
+INFO [project-operation_1]: Skipped writing to JSON file - None
+INFO [project-operation_1]: Details updated in detail-cfg.json
+INFO [project-operation_1]: Summarising scan results for 2 files
+INFO [project-operation_1]: Data recorded for file 1
+INFO [project-operation_1]: Data recorded for file 2
+INFO [project-operation_1]: Summary complete, compiling outputs
+INFO [project-operation_1]: Updated new status: scan - Success
+INFO [group-operation]: Pipeline execution finished
+INFO [group-operation]: Success: 2
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The first step is to scan part of the existing data to assess viability for the chosen mode of aggregation. In this example, two of the files for each project were converted to kerchunk and combined to ensure the whole dataset can be converted. A detailed file with scan results has been created, which we can access using the same project object as we previously created.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">project</span> <span class="o">=</span> <span class="n">my_group</span><span class="o">.</span><span class="n">get_project</span><span class="p">(</span><span class="s1">&#39;padocc-test-1&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">project</span><span class="o">.</span><span class="n">detail_cfg</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>addition: 0.064 %
+chunks_per_file: &#39;4.0&#39;
+driver: hdf5
+estm_chunksize: 260.28 KB
+estm_spatial_res: 254.56 deg
+kerchunk_data: 3.34 KB
+netcdf_data: 5.21 MB
+num_files: 5
+timings:
+  concat_actual: null
+  concat_estm: 0.014077
+  convert_actual: null
+  convert_estm: 0.014628
+  validate_actual: null
+  validate_estm: 0.00494
+total_chunks: &#39;20.00&#39;
+type: JSON
+variable_count: 4
+variables:
+- latitude
+- longitude
+- p
+- time
+version_no: 1
+</pre></div>
+</div>
+</div>
+</div>
+<p>There is a significant amount of information present here. The inportant elements are the estimates for the size of the kerchunk file which will be created, the <code class="docutils literal notranslate"><span class="pre">type</span></code> which can be <code class="docutils literal notranslate"><span class="pre">JSON</span></code> or <code class="docutils literal notranslate"><span class="pre">PARQ</span></code> for kerchunk.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024, Centre of Environmental Data Analysis Developers,Scientific and Technical Facilities Council (STFC),UK Research and Innovation (UKRI). BSD 2-Clause License. All rights reserved..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>  
+
+  <style>
+    /* Sidebar header (and topbar for mobile) */
+    .wy-side-nav-search, .wy-nav-top {
+      background: #e92603;
+    }
+
+    .caption-text, .header h1 {
+        color: #ef4d5a
+    }
+
+    .note {
+        background: #BEEF9E
+    }
+    .admonition-title {
+        background: #335145
+    }
+
+    .wy-nav-side {
+        background: #001711;
+    }
+
+  </style>
+
+
+</body>
+</html>

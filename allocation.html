@@ -70,13 +70,7 @@
 <li class="toctree-l1"><a class="reference internal" href="scan.html">Scanning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="compute.html">Compute</a></li>
 <li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Allocations</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.allocate.assemble_allocations"><code class="docutils literal notranslate"><span class="pre">assemble_allocations()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.allocate.create_allocations"><code class="docutils literal notranslate"><span class="pre">create_allocations()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.allocate.create_array_bands"><code class="docutils literal notranslate"><span class="pre">create_array_bands()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pipeline.allocate.has_required_timings"><code class="docutils literal notranslate"><span class="pre">has_required_timings()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Allocations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extras.html">Utils</a></li>
 </ul>
 
@@ -104,59 +98,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-pipeline.allocate">
-<span id="allocation-module"></span><h1>Allocation Module<a class="headerlink" href="#module-pipeline.allocate" title="Permalink to this heading"></a></h1>
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.allocate.assemble_allocations">
-<span class="sig-prename descclassname"><span class="pre">pipeline.allocate.</span></span><span class="sig-name descname"><span class="pre">assemble_allocations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.allocate.assemble_allocations" title="Permalink to this definition"></a></dt>
-<dd><p>Function for assembling all allocations and bands for packing. Allocations contain multiple processes within
-a single SLURM job such that the estimates for time sum to less than the time allowed for that SLURM job. Bands
-are single process per job, based on a default time plus any previous attempts (use –allow-band-increase flag
-to enable band increases with successive attempts if previous jobs timed out)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>A list of tuple objects such that each tuple represents an array to submit to slurm with
-the attributes (label, time, number_of_datasets). Note: The list of datasets to apply in
-each array job is typcially saved under proj_codes/&lt;repeat_id&gt;/&lt;label&gt;.txt (allocations use
-allocations/&lt;x&gt;.txt in place of the label)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.allocate.create_allocations">
-<span class="sig-prename descclassname"><span class="pre">pipeline.allocate.</span></span><span class="sig-name descname"><span class="pre">create_allocations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pipeline.allocate.create_allocations" title="Permalink to this definition"></a></dt>
-<dd><p>Create allocation files (N project codes to each file) for later job runs.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>None</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.allocate.create_array_bands">
-<span class="sig-prename descclassname"><span class="pre">pipeline.allocate.</span></span><span class="sig-name descname"><span class="pre">create_array_bands</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">groupID</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bands</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.allocate.create_array_bands" title="Permalink to this definition"></a></dt>
-<dd><p>Create band-files (under repeat_id) for this set of datasets.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>None</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pipeline.allocate.has_required_timings">
-<span class="sig-prename descclassname"><span class="pre">pipeline.allocate.</span></span><span class="sig-name descname"><span class="pre">has_required_timings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">detail</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#pipeline.allocate.has_required_timings" title="Permalink to this definition"></a></dt>
-<dd><p>Check if the contents of this projects ‘detail’ dict has required timing
-estimates for allocation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>True or False depending on the above condition.</p>
-</dd>
-</dl>
-</dd></dl>
-
+  <section id="allocation-module">
+<h1>Allocation Module<a class="headerlink" href="#allocation-module" title="Permalink to this heading"></a></h1>
 </section>
 
 
