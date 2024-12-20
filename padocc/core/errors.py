@@ -7,7 +7,7 @@ import os
 import logging
 import traceback
 
-from typing import Optional
+from typing import Optional, Union
 
 from .filehandlers import CSVFileHandler
 
@@ -15,9 +15,9 @@ def error_handler(
         err : Exception, 
         logger: logging.Logger, 
         phase: str,
+        dryrun: bool = False,
+        subset_bypass: bool = False,
         jobid: Optional[str] = None,
-        dryrun: Optional[bool] = False,
-        subset_bypass: Optional[bool] = False, 
         status_fh: Optional[CSVFileHandler] = None
     ):
 
@@ -60,14 +60,22 @@ def error_handler(
 
 
 class KerchunkException(Exception):
-    def __init__(self, proj_code, groupdir):
+    def __init__(self, proj_code: Union[str,None], groupdir: Union[str,None]) -> None:
         self.proj_code = proj_code
         self.groupdir  = groupdir
-        super().__init__(self.message)
+        if hasattr(self, 'message'):
+            msg = getattr(self,'message')
+        super().__init__(msg)
 
 class PartialDriverError(KerchunkException):
     """All drivers failed (NetCDF3/Hdf5/Tiff) for one or more files within the list"""
-    def __init__(self,filenums=None, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            filenums: Union[int,None] = None, 
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = f"All drivers failed when performing conversion for files {filenums}"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -77,7 +85,12 @@ class PartialDriverError(KerchunkException):
 
 class NaNComparisonError(KerchunkException):
     """When comparing NaN values between objects - different values found"""
-    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self, 
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = f"NaN values do not match between comparison objects"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -87,7 +100,14 @@ class NaNComparisonError(KerchunkException):
 
 class RemoteProtocolError(KerchunkException):
     """All drivers failed (NetCDF3/Hdf5/Tiff) for one or more files within the list"""
-    def __init__(self,filenums=None, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            filenums: Union[int,None] = None, 
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+
         self.message = f"All drivers failed when performing conversion for files {filenums}"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -97,7 +117,12 @@ class RemoteProtocolError(KerchunkException):
 
 class KerchunkDriverFatalError(KerchunkException):
     """All drivers failed (NetCDF3/Hdf5/Tiff) - run without driver bypass to assess the issue with each driver type."""
-    def __init__(self,verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = "All drivers failed when performing conversion"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -107,7 +132,12 @@ class KerchunkDriverFatalError(KerchunkException):
 
 class IdenticalVariablesError(KerchunkException):
     """All variables found to be suitably identical between files as to not stack or concatenate"""
-    def __init__(self,verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = "All variables are identical across files"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -117,7 +147,15 @@ class IdenticalVariablesError(KerchunkException):
     
 class XKShapeToleranceError(KerchunkException):
     """Attempted validation using a tolerance for shape mismatch on concat-dims, shape difference exceeds tolerance allowance."""
-    def __init__(self,tolerance=0, diff=0, dim='',verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            tolerance: int = 0, 
+            diff: int = 0,
+            dim: str = '',
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = f"Shape difference ({diff}) exceeds allowed tolerance ({tolerance}) for dimension ({dim})"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -127,7 +165,12 @@ class XKShapeToleranceError(KerchunkException):
 
 class BlacklistProjectCode(KerchunkException):
     """The project code you are trying to run for is on the list of project codes to ignore."""
-    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = 'Project Code listed in blacklist for bad data - will not be processed.'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -137,7 +180,13 @@ class BlacklistProjectCode(KerchunkException):
 
 class MissingVariableError(KerchunkException):
     """A variable is missing from the environment or set of arguments."""
-    def __init__(self, vtype='$', verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            vtype: str = "$",
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = f'Missing variable: {vtype}'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -147,7 +196,14 @@ class MissingVariableError(KerchunkException):
 
 class ExpectTimeoutError(KerchunkException):
     """The process is expected to time out given timing estimates."""
-    def __init__(self, required=0, current='', verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            required: int = 0,
+            current: str = '',
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = f'Scan requires minimum {required} - current {current}'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -157,7 +213,14 @@ class ExpectTimeoutError(KerchunkException):
     
 class ExpectMemoryError(KerchunkException):
     """The process is expected to run out of memory given size estimates."""
-    def __init__(self, required='', current='', verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            required: int = 0,
+            current: str = '',
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = f'Scan requires minimum {required} - current {current}'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -167,7 +230,12 @@ class ExpectMemoryError(KerchunkException):
 
 class ProjectCodeError(KerchunkException):
     """Could not find the correct project code from the list of project codes for this run."""
-    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = f'Project Code Extraction Failed'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -177,7 +245,13 @@ class ProjectCodeError(KerchunkException):
 
 class FilecapExceededError(KerchunkException):
     """During scanning, could not find suitable files within the set of files specified."""
-    def __init__(self, nfiles=0, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            nfiles: int = 0,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = f'Filecap exceeded: {nfiles} files attempted'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -187,7 +261,12 @@ class FilecapExceededError(KerchunkException):
 
 class ChunkDataError(KerchunkException):
     """Overflow Error from pandas during decoding of chunk information, most likely caused by bad data retrieval."""
-    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = f'Decoding resulted in overflow - received chunk data contains junk (attempted 3 times)'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -197,7 +276,13 @@ class ChunkDataError(KerchunkException):
 
 class NoValidTimeSlicesError(KerchunkException):
     """Unable to find any time slices to test within the object."""
-    def __init__(self, message='Kerchunk', verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            message: str = 'kerchunk',
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
         self.message = f'No valid timeslices found for {message}'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -207,7 +292,15 @@ class NoValidTimeSlicesError(KerchunkException):
 
 class VariableMismatchError(KerchunkException):
     """During testing, variables present in the NetCDF file are not present in Kerchunk"""
-    def __init__(self, missing={}, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            missing: Union[dict, None] = None,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+        missing = missing or {}
+
         self.message = f'Missing variables {missing} in Kerchunk file'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -217,7 +310,20 @@ class VariableMismatchError(KerchunkException):
 
 class ShapeMismatchError(KerchunkException):
     """Shapes of ND arrays do not match between Kerchunk and Xarray objects - when using a subset of the Netcdf files."""
-    def __init__(self, var={}, first={}, second={}, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self, 
+            var: Union[dict,None] = None,
+            first: Union[dict,None] = None, 
+            second: Union[dict,None] = None,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+
+        var = var or {}
+        first = first or {}
+        second = second or {}
+
         self.message = f'Kerchunk/NetCDF mismatch for variable {var} with shapes - K {first} vs X {second}'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -227,8 +333,15 @@ class ShapeMismatchError(KerchunkException):
 
 class TrueShapeValidationError(KerchunkException):
     """Shapes of ND arrays do not match between Kerchunk and Xarray objects - when using the complete set of files."""
-    def __init__(self, message='Kerchunk', verbose=0, proj_code=None, groupdir=None):
-        self.message = f'Kerchunk/NetCDF mismatch with shapes using full dataset - check logs'
+    def __init__(
+            self,
+            message: str = 'kerchunk',
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+
+        self.message = f'{message} mismatch with shapes using full dataset - check logs'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
@@ -237,7 +350,13 @@ class TrueShapeValidationError(KerchunkException):
 
 class NoOverwriteError(KerchunkException):
     """Output file already exists and the process does not have forceful overwrite (-f) set."""
-    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+
         self.message = 'Output file already exists and forceful overwrite not set.'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -247,8 +366,13 @@ class NoOverwriteError(KerchunkException):
 
 class MissingKerchunkError(KerchunkException):
     """Kerchunk file not found."""
-    def __init__(self, message="No suitable kerchunk file found for validation.", verbose=0, proj_code=None, groupdir=None):
-        self.message = message
+    def __init__(
+            self, 
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+        self.message = "No suitable kerchunk file found."
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
@@ -257,8 +381,13 @@ class MissingKerchunkError(KerchunkException):
 
 class ValidationError(KerchunkException):
     """One or more checks within validation have failed - most likely elementwise comparison of data."""
-    def __init__(self, message="Fatal comparison failure for Kerchunk/NetCDF", verbose=0, proj_code=None, groupdir=None):
-        self.message = message
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+        self.message = "Fatal Validation Error"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
@@ -267,8 +396,13 @@ class ValidationError(KerchunkException):
     
 class ComputeError(KerchunkException):
     """Compute stage failed - likely due to invalid config/use of the classes"""
-    def __init__(self, message="Invalid configuration for the Compute stage", verbose=0, proj_code=None, groupdir=None):
-        self.message = message
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+        self.message = "Invalid configuration for the Compute stage"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
@@ -277,8 +411,14 @@ class ComputeError(KerchunkException):
 
 class SoftfailBypassError(KerchunkException):
     """Validation could not be completed because some arrays only contained NaN values which cannot be compared."""
-    def __init__(self, message="Kerchunk validation failed softly with no bypass - rerun with bypass flag", verbose=0, proj_code=None, groupdir=None):
-        self.message = message
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+
+        self.message = "Kerchunk validation failed softly with no bypass - rerun with bypass flag"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
@@ -287,8 +427,14 @@ class SoftfailBypassError(KerchunkException):
     
 class ConcatenationError(KerchunkException):
     """Variables could not be concatenated over time and are not duplicates - no known solution"""
-    def __init__(self, message="Variables could not be concatenated over time and are not duplicates - no known solution", verbose=0, proj_code=None, groupdir=None):
-        self.message = message
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+
+        self.message = "Variables could not be concatenated over time and are not duplicates - no known solution"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
@@ -297,7 +443,16 @@ class ConcatenationError(KerchunkException):
     
 class ConcatFatalError(KerchunkException):
     """Chunk sizes differ between refs - files cannot be concatenated"""
-    def __init__(self, var=None, chunk1=None, chunk2=None, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self, 
+            var: Union[str,None] = None, 
+            chunk1: Union[int,None] = None, 
+            chunk2: Union[int,None] = None, 
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+
         self.message = f"Chunk sizes differ between refs for {var}: {chunk1} - {chunk2} - files cannot be concatenated"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -307,7 +462,14 @@ class ConcatFatalError(KerchunkException):
     
 class SourceNotFoundError(KerchunkException):
     """Source File could not be located."""
-    def __init__(self, sfile=None, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            sfile: Union[str, None],
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+
         self.message = f"Source file could not be located: {sfile}"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -318,7 +480,13 @@ class SourceNotFoundError(KerchunkException):
 # Potentially useful but currently unused.
 class ArchiveConnectError(KerchunkException):
     """Connection to the CEDA Archive could not be established"""
-    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+
         self.message = f"Connection verification to the CEDA archive failed - {proj_code}"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -328,7 +496,13 @@ class ArchiveConnectError(KerchunkException):
 
 class KerchunkDecodeError(KerchunkException):
     """Decoding of Kerchunk file failed - likely a time array issue."""
-    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+
         self.message = f"Decoding of Kerchunk file failed - likely a time array issue."
         super().__init__(proj_code, groupdir)
         if verbose < 1:
@@ -338,7 +512,13 @@ class KerchunkDecodeError(KerchunkException):
     
 class FullsetRequiredError(KerchunkException):
     """This project must be validated using the full set of files."""
-    def __init__(self, verbose=0, proj_code=None, groupdir=None):
+    def __init__(
+            self,
+            verbose: int = 0, 
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+        
         self.message = f"This project must be validated by opening the full set of files."
         super().__init__(proj_code, groupdir)
         if verbose < 1:

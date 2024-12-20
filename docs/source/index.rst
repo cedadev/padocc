@@ -48,6 +48,7 @@ The pipeline consists of four central phases, with an additional phase for inges
    :maxdepth: 1
    :caption: Pipeline Source:
    
+   Filehandlers <filehandlers>
    Initialisation <init>
    Scanning <scan>
    Compute <compute>

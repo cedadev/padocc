@@ -1,8 +1,8 @@
-Custom Pipeline Errors
+Padocc Filehandlers
 ======================
 
 **A summary of the custom errors that are experienced through running the pipeline.**
 
-.. automodule:: padocc.core.errors
+.. automodule:: padocc.core.filehandlers
     :members:
     :show-inheritance:

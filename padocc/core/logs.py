@@ -4,6 +4,9 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import logging
 import os
+from typing import Union, Optional
+
+from .utils import FalseLogger
 
 levels = [
     logging.WARN,
@@ -25,10 +28,10 @@ class LoggedOperation:
     """
     def __init__(
             self, 
-            logger : logging.Logger = None,
-            label  : str = None, 
-            fh     : str = None, 
-            logid  : str = None, 
+            logger : Union[logging.Logger,FalseLogger, None] = None,
+            label  : Union[str,None] = None, 
+            fh     : Union[str,None] = None, 
+            logid  : Union[str,None] = None, 
             verbose: int = 0
         ) -> None:
 

@@ -8,6 +8,7 @@ import yaml
 from datetime import datetime
 import logging
 from typing import Generator
+from typing import Optional, Union
 
 from padocc.core import LoggedOperation, FalseLogger
 
@@ -41,12 +42,12 @@ class FileIOMixin(LoggedOperation):
             self, 
             dir : str, 
             filename : str, 
-            logger   : logging.Logger | FalseLogger = None, 
-            label    : str = None,
-            fh       : str = None,
-            logid    : str = None,
-            dryrun   : bool = None,
-            forceful : bool = None,
+            logger   : Optional[Union[logging.Logger,FalseLogger]] = None, 
+            label    : Union[str,None] = None,
+            fh       : Optional[str] = None,
+            logid    : Optional[str] = None,
+            dryrun   : Optional[bool] = None,
+            forceful : bool = False,
             verbose  : int = 0
         ) -> None:
         """
@@ -93,7 +94,7 @@ class FileIOMixin(LoggedOperation):
             logid=logid,
             verbose=verbose)
 
-    def __contains__(self, item) -> bool:
+    def __contains__(self, item: object) -> bool:
         """
         Enables checking 'if x in fh'.
         """
@@ -132,15 +133,21 @@ class FileIOMixin(LoggedOperation):
         self.logger.debug(f'Saving file {self._file}')
         self._set_content()
 
-    def set(self, value):
+    def set(self, value: object, index: Union[object,None] = None):
         """
         Reset the whole value of the private ``_value`` attribute.
         """
         self._check_value()
 
-        self._value = value
+        if index is not None:
+            self._value[index] = value
+        else:
+            self._value = value
 
-    def get(self, index: str = None, default: str = None):
+    def get(
+            self, 
+            index: object = None, 
+            default: object = None):
         """
         Get the value of the private ``_value`` attribute. Can also get a
         parameter from this item as you would with a dictionary, if possible
@@ -151,12 +158,23 @@ class FileIOMixin(LoggedOperation):
         if index is None:
             return self._value
         
+        # Issue #1
         try:
             return self._value.get(index, default)
         except AttributeError:
             raise AttributeError(
                 f'Filehandler for {self._file} does not support getting specific items.'
             )
+        
+    def _set_file(self):
+        raise NotImplementedError(
+            'Set file not implemented for FileIO Mixin - please use a filehandler.'
+        )
+    
+    def _get_content(self):
+        raise NotImplementedError(
+            'Get content not implemented for FileIO Mixin - please use a filehandler.'
+        )
 
     def _check_save(self) -> bool:
         """
@@ -200,11 +218,12 @@ class ListIOMixin(FileIOMixin):
     
     def __iter__(self) -> Generator[str, None, None]:
         """Iterator for the set of values"""
+        # Issue #2
         for i in self._value:
             if i is not None:
                 yield i
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: object):
         """
         Override FileIOMixin class for getting index
         """
@@ -218,7 +237,7 @@ class ListIOMixin(FileIOMixin):
 
         return self._value[index]
     
-    def __setitem__(self, index: int, value) -> None:
+    def __setitem__(self, index: object, value: object) -> None:
         """
         Enables setting items in filehandlers 'fh[0] = 1'
         """
@@ -232,11 +251,11 @@ class ListIOMixin(FileIOMixin):
 
         self._value[index] = value
 
-    def append(self, newvalue) -> None:
+    def append(self, newvalue: object) -> None:
         """Add a new value to the internal list"""
         self._value.append(newvalue)
 
-    def set(self, value: list):
+    def set(self, value: object):
         """
         Extends the set function of the parent, creates a copy
         of the input list so the original parameter is preserved.
@@ -272,11 +291,11 @@ class JSONFileHandler(FileIOMixin):
             dir: str, 
             filename: str, 
             logger: logging.Logger | FalseLogger = None,
-            conf: dict = None, 
+            conf: Union[dict,None] = None, 
             **kwargs
         ) -> None:
 
-        self._conf = conf
+        self._conf = conf or {}
         super().__init__(dir, filename, logger=logger, **kwargs)
 
     def __str__(self) -> str:
@@ -323,37 +342,37 @@ class JSONFileHandler(FileIOMixin):
             self._value[index] = value
         return None
 
-    def set(self, value: dict):
+    def set(self, value: object, index: Union[object,None] = None) -> None:
         """
         Wrapper to create a detached dict copy
         """
-        super().set(dict(value))
+        super().set(dict(value), index=index)
 
-    def _set_file(self):
+    def _set_file(self) -> None:
         if '.json' not in self._file:
             self._file = f'{self.dir}/{self._file}.json'
         else:
             self._file = f'{self.dir}/{self._file}'
 
     # Get/set routines for the filesystem files.
-    def _get_content(self):
+    def _get_content(self) -> None:
         if self.file_exists():
             try:
                 with open(self._file) as f:
                     self._value = json.load(f)
             except json.decoder.JSONDecodeError:
-                self._value={}
+                self._value = {}
         else:
             self.create_file()
             self._value = {}
 
-    def _set_content(self):
+    def _set_content(self) -> None:
         if super()._check_save():
             self._apply_conf()
             with open(self._file,'w') as f:
                 f.write(json.dumps(self._value))
 
-    def _apply_conf(self):
+    def _apply_conf(self) -> None:
         """
         Update value with properties from conf - fill
         missing values.
@@ -368,8 +387,16 @@ class JSONFileHandler(FileIOMixin):
         self._conf = None
 
 class KerchunkFile(JSONFileHandler):
+    """
+    Filehandler for Kerchunk file, enables substitution/replacement
+    for local/remote links, and updating content.
+    """
 
-    def add_download_link(self) -> dict:
+    def add_download_link(
+            self,
+            sub: str = '/',
+            replace: str = 'https://dap.ceda.ac.uk'
+        ) -> None:
         """
         Add the download link to this Kerchunk File
         """
@@ -377,12 +404,12 @@ class KerchunkFile(JSONFileHandler):
 
         for key in refs.keys():
             if len(refs[key]) == 3:
-                if refs[key][0][0] == '/':
-                    refs[key][0] = 'https://dap.ceda.ac.uk' + refs[key][0]
+                if refs[key][0][0] == sub:
+                    refs[key][0] = replace + refs[key][0]
 
         self.set(refs)
 
-    def add_kerchunk_history(self, version_no) -> dict:
+    def add_kerchunk_history(self, version_no: str) -> None:
         """
         Add kerchunk variables to the metadata for this dataset, including 
         creation/update date and version/revision number.
@@ -415,7 +442,11 @@ class KerchunkFile(JSONFileHandler):
         self.set(attrs, index='refs')
 
 class ZarrStore(FileIOMixin):
-    def clear(self):
+    """
+    Filehandler for Zarr store in Padocc - enables Filesystem
+    operations on component files.
+    """
+    def clear(self) -> None:
         if not self._dryrun:
             os.system(f'rm -rf {self._file}')
         else:
@@ -426,6 +457,9 @@ class ZarrStore(FileIOMixin):
         self._file = f'{self.dir}/{self.filename}'
 
 class TextFileHandler(ListIOMixin):
+    """
+    Filehandler for text files.
+    """
     description = "Text File handler for padocc config files."
 
     def _set_file(self):
@@ -435,22 +469,32 @@ class TextFileHandler(ListIOMixin):
             self._file = f'{self.dir}/{self._file}'
 
 class LogFileHandler(ListIOMixin):
+    """Log File handler for padocc phase logs."""
     description = "Log File handler for padocc phase logs."
 
-    def __init__(self, dir, filename, logger, extra_path, **kwargs):
+    def __init__(
+            self, 
+            dir: str, 
+            filename: str, 
+            extra_path: str = '',
+            logger: Union[logging.Logger, FalseLogger, None] = None, 
+            **kwargs
+        ) -> None:
+
         self._extra_path = extra_path
         super().__init__(dir, filename, logger, **kwargs)
 
-    def _set_file(self):
+    def _set_file(self) -> None:
         self._file = f'{self.dir}/{self._extra_path}{self._file}.log'
 
 class CSVFileHandler(ListIOMixin):
+    """CSV File handler for padocc config files"""
     description = "CSV File handler for padocc config files"
     
-    def _set_file(self):
+    def _set_file(self) -> None:
         self._file = f'{self.dir}/{self._file}.csv'
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[str]:
         for i in self._value:
             if i is not None:
                 yield i.replace(' ','').split(',')
@@ -459,7 +503,7 @@ class CSVFileHandler(ListIOMixin):
             self, 
             phase: str, 
             status: str,
-            jobid : str = '',
+            jobid : Optional[str] = None,
             dryrun: bool = False
         ) -> None:
 
