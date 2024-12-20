@@ -4,6 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import os
 import logging
+from typing import Optional
 
 from padocc.core import BypassSwitch, FalseLogger
 from padocc.core.utils import format_str, times
@@ -14,6 +15,7 @@ from padocc.phases import (
     ZarrDS, 
     cfa_handler,
     KNOWN_PHASES,
+    ValidateOperation,
 )
 from padocc.core.mixins import DirectoryMixin
 from padocc.core.filehandlers import CSVFileHandler, TextFileHandler
@@ -157,17 +159,19 @@ class GroupOperation(
 
     def run(
             self,
-            phase,
-            mode='kerchunk',
-            repeat_id='main',
-            proj_code=None,
-            subset=None,
+            phase: str,
+            mode: str = 'kerchunk',
+            repeat_id: str = 'main',
+            proj_code: Optional[str] = None,
+            subset: Optional[str] = None,
+            subset_bypass: bool = False,
             **kwargs
-        ):
+        ) -> dict[str]:
 
         phases = {
             'scan': self._scan_config,
             'compute': self._compute_config,
+            'validate': self._validate_config,
         }
 
         jobid = None
@@ -201,7 +205,12 @@ class GroupOperation(
                 logid = jobid
                 fh = 'PhaseLog'
 
-            status = func(proj_code, mode=mode, logid=logid, label=phase, fh=fh, **kwargs)
+            status = func(
+                proj_code, 
+                mode=mode, logid=logid, label=phase, 
+                fh=fh, subset_bypass=subset_bypass,
+                **kwargs)
+            
             if status in results:
                 results[status] += 1
             else:
@@ -212,11 +221,13 @@ class GroupOperation(
             self.logger.info(f'{r}: {results[r]}')
 
         self.save_files()
+        return results
 
     def _scan_config(
             self,
             proj_code,
             mode='kerchunk',
+            subset_bypass=False,
             **kwargs
         ) -> None:
         """
@@ -308,6 +319,40 @@ class GroupOperation(
         proj_op.save_files()
         return status
     
+    def _validate_config(
+            self, 
+            proj_code: str,  
+            mode: str = 'kerchunk',
+            subset_bypass: bool = False,
+            forceful: Optional[bool] = None,
+            thorough: Optional[bool] = None,
+            dryrun: Optional[bool] = None,
+            **kwargs
+        ) -> None:
+
+        self.logger.debug(f"Starting validation for {proj_code}")
+
+        #try:
+        if True:
+            vop = ValidateOperation(
+                proj_code,
+                workdir=self.workdir,
+                groupID=self.groupID,
+                **kwargs)
+        #except TypeError:
+            #raise ValueError(
+            #    f'{proj_code}, {self.groupID}, {self.workdir}'
+            #)
+        
+        status = vop.run(
+            mode=mode, 
+            subset_bypass=subset_bypass,
+            forceful=forceful,
+            thorough=thorough,
+            dryrun=dryrun)
+        return status
+
+
     def add_project(self):
         pass
 
