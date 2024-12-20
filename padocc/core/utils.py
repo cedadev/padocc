@@ -219,7 +219,10 @@ def format_str(
   
 def format_tuple(tup: tuple[list[int]]) -> str:
 
-    return f'({",".join([str(t[0]) for t in tup])})'
+    try:
+        return f'({",".join([str(t[0]) for t in tup])})'
+    except IndexError:
+        return str(tup)
 
 def mem_to_val(value: str) -> float:
     """
