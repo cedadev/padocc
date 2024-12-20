@@ -7,7 +7,7 @@ import os
 import yaml
 from datetime import datetime
 import logging
-from typing import Generator
+from typing import Iterator
 from typing import Optional, Union
 
 from padocc.core import LoggedOperation, FalseLogger
@@ -216,7 +216,7 @@ class ListIOMixin(FileIOMixin):
         self.logger.debug(f'content length: {len(content)}')
         return len(content)
     
-    def __iter__(self) -> Generator[str, None, None]:
+    def __iter__(self) -> Iterator[str]:
         """Iterator for the set of values"""
         # Issue #2
         for i in self._value:
@@ -308,7 +308,7 @@ class JSONFileHandler(FileIOMixin):
 
         return len(self._value.keys())
     
-    def __iter__(self) -> Generator[str, None, None]:
+    def __iter__(self) -> Iterator[str]:
         """Iterate over set of keys."""
         self._check_value()
 
@@ -494,7 +494,7 @@ class CSVFileHandler(ListIOMixin):
     def _set_file(self) -> None:
         self._file = f'{self.dir}/{self._file}.csv'
 
-    def __iter__(self) -> Generator[str]:
+    def __iter__(self) -> Iterator[str]:
         for i in self._value:
             if i is not None:
                 yield i.replace(' ','').split(',')
