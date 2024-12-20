@@ -145,7 +145,7 @@ class ProjectOperation(
             self.phase_logs[phase] = LogFileHandler(
                 self.dir,
                 phase, 
-                self.logger, 
+                logger=self.logger, 
                 extra_path='phase_logs/', 
                 **self.fh_kwargs
             )

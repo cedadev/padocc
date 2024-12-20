@@ -352,7 +352,6 @@ class GroupOperation(
             dryrun=dryrun)
         return status
 
-
     def add_project(self):
         pass
 
