@@ -2,5 +2,5 @@
 Scanner Module
 ==============
 
-.. automodule:: pipeline.scan
+.. automodule:: padocc.phases.scan
     :members:

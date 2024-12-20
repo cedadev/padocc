@@ -5,7 +5,7 @@ Padocc Utility Scripts
 Utilities
 =========
 
-.. automodule:: pipeline.utils 
+.. automodule:: padocc.core.utils
     :members:
     :show-inheritance:
 
@@ -13,6 +13,6 @@ Utilities
 Logging
 =======
 
-.. automodule:: pipeline.logs
+.. automodule:: pipeline.core.logs
     :members:
     :show-inheritance:

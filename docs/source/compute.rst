@@ -2,6 +2,6 @@
 Compute Module
 ==============
 
-.. automodule:: pipeline.compute
+.. automodule:: padocc.phases.compute
     :members:
     :show-inheritance:

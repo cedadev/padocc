@@ -2,5 +2,5 @@
 Validation Module
 =================
 
-.. automodule:: pipeline.validate
+.. automodule:: padocc.phases.validate
     :members:
