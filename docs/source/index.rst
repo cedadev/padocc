@@ -51,9 +51,7 @@ The pipeline consists of four central phases, with an additional phase for inges
    Compute <compute>
    Validate <validate>
    Utils <extras>
-
-
-
+   
 Indices and Tables
 ==================
 
