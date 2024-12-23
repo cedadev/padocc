@@ -4,7 +4,7 @@ from padocc.phases import ScanOperation
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 
 class TestScan:
-    def test_scan_basic(self, workdir=WORKDIR, verbose=1):
+    def test_scan_basic(self, workdir=WORKDIR, verbose=2):
         groupID = 'padocc-test-suite'
 
         process = GroupOperation(

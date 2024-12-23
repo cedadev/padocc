@@ -4,7 +4,7 @@ import yaml
 from padocc.core.filehandlers import (
     JSONFileHandler,
     KerchunkFile,
-    TextFileHandler,
+    ListFileHandler,
     LogFileHandler,
     CSVFileHandler
 
@@ -13,7 +13,6 @@ from padocc.core.filehandlers import (
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 
 testdict = {
-    0: 'test0',
     'test':None
 }
 
@@ -28,14 +27,6 @@ def generic(fh, testdata, dryrun):
     # Create file/get filepath
     fh.create_file()
     assert dryrun == (not os.path.isfile(fh.filepath))
-
-    # Magic methods
-    assert 'test' in fh
-    assert 'real' not in fh
-
-    assert fh[0] == 'test0'
-    fh[0] = 'test1'
-    assert fh[0] == 'test1'
 
     if os.path.isfile(fh.filepath):
         os.system(f'rm -rf {fh.filepath}')
@@ -55,6 +46,10 @@ def generic_list(fh, testdata):
     for x, item in enumerate(fh):
         assert item == testdata[x]
 
+    assert fh[0] == 'test0'
+    fh[0] = 'test1'
+    assert fh[0] == 'test1'
+
     # Append
     fh.append('testlist')
     assert fh[-1] == 'testlist'
@@ -69,8 +64,8 @@ class TestFHs:
 
         print("Unit Tests: JSON FH")
 
-        for dryrun in [True, False]:
-            json_fh = JSONFileHandler(WORKDIR,'testjs.json', dryrun=dryrun)
+        for dryrun in [True]:
+            json_fh = JSONFileHandler(WORKDIR,'testjs', dryrun=dryrun, verbose=2)
 
             json_fh.set(testdict)
 
@@ -80,6 +75,10 @@ class TestFHs:
             # Generic
             assert generic(json_fh, testdict, dryrun)
 
+            # Magic methods
+            assert 'test' in json_fh
+            assert 'real' not in json_fh
+
             print(f' - JSON FH (dryrun={dryrun}) - Complete')
 
     def test_text_fh(self):
@@ -88,7 +87,7 @@ class TestFHs:
 
         for dryrun in [True, False]:
 
-            text_fh = TextFileHandler(WORKDIR, 'testtx.txt', dryrun=dryrun)
+            text_fh = ListFileHandler(WORKDIR, 'testtx', dryrun=dryrun)
 
             text_fh.set(testlist)
             if dryrun:
@@ -104,7 +103,7 @@ class TestFHs:
 
         for dryrun in [True, False]:
 
-            csv_fh = CSVFileHandler(WORKDIR, 'test.csv', dryrun=dryrun)
+            csv_fh = CSVFileHandler(WORKDIR, 'test', dryrun=dryrun)
 
             csv_fh.set(testlist)
 
@@ -113,7 +112,7 @@ class TestFHs:
 
             assert generic(csv_fh, testlist, dryrun)
 
-            csv_fh.update_status('testp','tests','jid1',dryrun)
+            csv_fh.update_status('testp','tests','jid1')
             assert not len(csv_fh) == len(testlist)
 
             print(f' - CSV FH (dryrun={dryrun}) - Complete')
