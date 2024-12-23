@@ -175,7 +175,7 @@ class FileIOMixin(LoggedOperation):
 
         self._file, self._extension = filename.split('.')
 
-class ListIOMixin(FileIOMixin):
+class ListFileHandler(FileIOMixin):
     """
     Filehandler for string-based Lists in Padocc
     """
@@ -193,9 +193,6 @@ class ListIOMixin(FileIOMixin):
         self._value: list    = init_value or []
         self._extension: str = extension or 'txt'
 
-        if self._value is not None:
-            self._set_value_in_file()
-
     def append(self, newvalue: str) -> None:
         """Add a new value to the internal list"""
         self._obtain_value()
@@ -207,7 +204,7 @@ class ListIOMixin(FileIOMixin):
         Reset the value as a whole for this 
         filehandler.
         """
-        self._value = value
+        self._value = list(value)
 
     def __contains__(self, item: str) -> bool:
         """
@@ -219,6 +216,8 @@ class ListIOMixin(FileIOMixin):
 
     def __str__(self) -> str:
         """String representation"""
+        self._obtain_value()
+
         return '\n'.join(self._value)
     
     def __repr__(self) -> str:
@@ -227,11 +226,15 @@ class ListIOMixin(FileIOMixin):
     
     def __len__(self) -> int:
         """Length of value"""
+        self._obtain_value()
+
         self.logger.debug(f'content length: {len(self._value)}')
         return len(self._value)
     
     def __iter__(self) -> Iterator[str]:
         """Iterator for the set of values"""
+        self._obtain_value()
+
         for i in self._value:
             if i is not None:
                 yield i
@@ -243,6 +246,14 @@ class ListIOMixin(FileIOMixin):
         self._obtain_value()
 
         return self._value[index]
+    
+    def get(self) -> list:
+        """
+        Get the current value
+        """
+        self._obtain_value()
+
+        return self._value
     
     def __setitem__(self, index: int, value: str) -> None:
         """
@@ -256,7 +267,7 @@ class ListIOMixin(FileIOMixin):
         """
         Obtain the value for this filehandler.
         """
-        if self._value is None:
+        if self._value == []:
             self._obtain_value_from_file()
 
     def _obtain_value_from_file(self) -> None:
@@ -268,18 +279,28 @@ class ListIOMixin(FileIOMixin):
             self.create_file()
 
         with open(self.filepath) as f:
-            self.value = [r.strip() for r in f.readlines()]
+            self._value = [r.strip() for r in f.readlines()]
 
     def _set_value_in_file(self) -> None:
         """
         On initialisation or close, set the value
         in the file.
         """
+        if self._dryrun or self._value == []:
+            self.logger.debug("Skipped setting value in file")
+            return
+
         if not self.file_exists():
             self.create_file()
 
         with open(self.filepath,'w') as f:
             f.write('\n'.join(self._value))
+
+    def close(self) -> None:
+        """
+        Save the content of the filehandler
+        """
+        self._set_value_in_file()
 
 class JSONFileHandler(FileIOMixin):
     """JSON File handler for padocc config files."""
@@ -293,19 +314,16 @@ class JSONFileHandler(FileIOMixin):
             **kwargs
         ) -> None:
 
-        super().__init__(dir, filename,**kwargs)
+        super().__init__(dir, filename, **kwargs)
         self._conf: dict  = conf or {}
         self._value: dict = init_value or {}
-        self.extension: str = 'json'
-
-        if self._value is not None:
-            self._set_value_in_file()
+        self._extension: str = 'json'
 
     def set(self, value: dict) -> None:
         """
         Set the value of the whole dictionary.
         """
-        self._value = value
+        self._value = dict(value)
 
     def __contains__(self, key: str):
         """
@@ -350,14 +368,27 @@ class JSONFileHandler(FileIOMixin):
         
         return None
     
+    def create_file(self) -> None:
+        """JSON files require entry of a single dict on creation"""
+        super().create_file()
+
+        if not self._dryrun:
+            with open(self.filepath,'w') as f:
+                f.write(json.dumps({}))
+    
     def get(
             self, 
-            index: str, 
+            index: Union[str,None] = None, 
             default: Union[str,None] = None
         ) -> Union[str,dict,None]:
         """
         Safe method to get a value from this filehandler
         """
+        self._obtain_value()
+
+        if index is None:
+            return self._value
+
         return self._value.get(index, default)
 
     def __setitem__(self, index: str, value: str) -> None:
@@ -374,7 +405,7 @@ class JSONFileHandler(FileIOMixin):
         """
         Obtain the value for this filehandler.
         """
-        if self._value is None:
+        if self._value == {}:
             self._obtain_value_from_file()
 
         if index is None:
@@ -394,18 +425,26 @@ class JSONFileHandler(FileIOMixin):
             return
 
         with open(self.filepath) as f:
-            self.value = json.load(f)
+            self._value = json.load(f)
 
     def _set_value_in_file(self) -> None:
         """
         On initialisation or close, set the value
         in the file.
         """
+        if self._dryrun or self._value == {}:
+            self.logger.debug("Skipped setting value in file")
+            return
+        
+        self._apply_conf()
+
         if not self.file_exists():
             self.create_file()
 
         with open(self.filepath,'w') as f:
-            f.write(json.dumps(f))
+            f.write(json.dumps(self._value))
+
+    
 
     def _apply_conf(self) -> None:
         """
@@ -420,6 +459,12 @@ class JSONFileHandler(FileIOMixin):
 
         self._value = dict(self._conf)
         self._conf = {}
+
+    def close(self) -> None:
+        """
+        Save the content of the filehandler
+        """
+        self._set_value_in_file()
 
 class KerchunkFile(JSONFileHandler):
     """
@@ -618,7 +663,7 @@ class KerchunkStore(GenericStore):
         """
         raise NotImplementedError
 
-class LogFileHandler(ListIOMixin):
+class LogFileHandler(ListFileHandler):
     """Log File handler for padocc phase logs."""
     description = "Log File handler for padocc phase logs."
 
@@ -639,7 +684,7 @@ class LogFileHandler(ListIOMixin):
     def file(self) -> str:
         return f'{self._extra_path}{self._file}.{self._extension}'
 
-class CSVFileHandler(ListIOMixin):
+class CSVFileHandler(ListFileHandler):
     """CSV File handler for padocc config files"""
     description = "CSV File handler for padocc config files"
     
@@ -678,10 +723,6 @@ class CSVFileHandler(ListIOMixin):
         
         :param jobid:   (str) The jobID of this run if present.
         """
-
-        if self._dryrun:
-            self.logger.info("Skipped updating status")
-            return
 
         status = status.replace(',', '.').replace('\n','.')
         addition = f'{phase},{status},{datetime.now().strftime("%H:%M %D")},{jobid}'
