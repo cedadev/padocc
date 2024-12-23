@@ -171,12 +171,12 @@ class ScanOperation(ProjectOperation):
         elif mode == 'kerchunk':
             self._scan_kerchunk(limiter=limiter)
         else:
-            self.update_status('scan','ValueError',jobid=self._logid, dryrun=self._dryrun)
+            self.update_status('scan','ValueError',jobid=self._logid)
             raise ValueError(
                 f'Unrecognised mode: {mode} - must be one of ["kerchunk","zarr","CFA"]'
             )
 
-        self.update_status('scan','Success',jobid=self._logid, dryrun=self._dryrun)
+        self.update_status('scan','Success',jobid=self._logid)
         return 'Success'
 
     def _scan_kerchunk(self, limiter: int = None):
@@ -291,7 +291,7 @@ class ScanOperation(ProjectOperation):
                 'forceful':self._forceful,
             }
 
-            fh = JSONFileHandler(self.dir, f'cache/{identifier}.json', self.logger, **fh_kwargs)
+            fh = JSONFileHandler(self.dir, f'cache/{identifier}', self.logger, **fh_kwargs)
             kdict = fh['refs']
 
             self.logger.debug(f'Starting Analysis of references for {identifier}')

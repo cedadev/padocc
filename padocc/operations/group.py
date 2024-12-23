@@ -18,7 +18,7 @@ from padocc.phases import (
     ValidateOperation,
 )
 from padocc.core.mixins import DirectoryMixin
-from padocc.core.filehandlers import CSVFileHandler, TextFileHandler
+from padocc.core.filehandlers import CSVFileHandler, ListFileHandler
 
 from .mixins import AllocationsMixin, InitialisationMixin, EvaluationsMixin
 
@@ -106,7 +106,7 @@ class GroupOperation(
         self.blacklist_codes = CSVFileHandler(
             self.groupdir,
             'blacklist_codes',
-            self.logger,
+            logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful,
         )
@@ -114,7 +114,7 @@ class GroupOperation(
         self.datasets = CSVFileHandler(
             self.groupdir,
             'datasets',
-            self.logger,
+            logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful,
         )
@@ -365,15 +365,14 @@ class GroupOperation(
         self._save_proj_codes()
 
     def _add_proj_codeset(self, name : str, newcodes : list):
-        self.proj_codes[name] = TextFileHandler(
+        self.proj_codes[name] = ListFileHandler(
             self.proj_codes_dir,
             name,
-            self.logger,
+            init_value=newcodes,
+            logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful
         )
-
-        self.proj_codes[name].set(newcodes)
 
     def check_writable(self):
         if not os.access(self.workdir, os.W_OK):
@@ -487,7 +486,7 @@ class GroupOperation(
             sbatch_file = f'{phase}_{joblabel}.sbatch'
             repeat_id = f'{repeat_id}/{joblabel}'
 
-        sbatch = TextFileHandler(sbatch_dir, sbatch_file, self.logger, dryrun=self._dryrun, forceful=self._forceful)
+        sbatch = ListFileHandler(sbatch_dir, sbatch_file, self.logger, dryrun=self._dryrun, forceful=self._forceful)
 
         master_script = f'{source}/single_run.py'
 
@@ -591,14 +590,14 @@ class GroupOperation(
             # Running for the first time
             self._add_proj_codeset(
                 'main', 
-                self.datasets.get()
+                self.datasets
             )
             
         for p in proj_codes:
-            self.proj_codes[p] = TextFileHandler(
+            self.proj_codes[p] = ListFileHandler(
                 self.proj_codes_dir, 
                 p, 
-                self.logger,
+                logger=self.logger,
                 dryrun=self._dryrun,
                 forceful=self._forceful,
             )

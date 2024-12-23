@@ -9,8 +9,6 @@ import traceback
 
 from typing import Optional, Union
 
-from .filehandlers import CSVFileHandler
-
 def error_handler(
         err : Exception, 
         logger: logging.Logger, 
@@ -18,7 +16,7 @@ def error_handler(
         dryrun: bool = False,
         subset_bypass: bool = False,
         jobid: Optional[str] = None,
-        status_fh: Optional[CSVFileHandler] = None
+        status_fh: Optional[object] = None
     ):
 
     """
@@ -50,7 +48,7 @@ def error_handler(
             status = get_status(tb)
 
     if status_fh is not None:
-        status_fh.update_status(phase, status, jobid=jobid, dryrun=dryrun)
+        status_fh.update_status(phase, status, jobid=jobid)
 
     if subset_bypass:
         logger.error(tb)

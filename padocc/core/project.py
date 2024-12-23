@@ -14,7 +14,7 @@ from .mixins import DirectoryMixin, EvaluationsMixin, PropertiesMixin
 from .filehandlers import (
     JSONFileHandler, 
     CSVFileHandler,
-    TextFileHandler,
+    ListFileHandler,
     LogFileHandler,
     KerchunkFile
 )
@@ -129,7 +129,7 @@ class ProjectOperation(
         # Project FileHandlers
         self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', logger=self.logger, conf=file_configs['base_cfg'], **self.fh_kwargs)
         self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', logger=self.logger, conf=file_configs['detail_cfg'], **self.fh_kwargs)
-        self.allfiles   = TextFileHandler(self.dir, 'allfiles', logger=self.logger, **self.fh_kwargs)
+        self.allfiles   = ListFileHandler(self.dir, 'allfiles', logger=self.logger, **self.fh_kwargs)
 
         # ft_kwargs <- stored in base_cfg after this point.
         if first_time:
@@ -138,7 +138,7 @@ class ProjectOperation(
             self._configure_filelist()
 
         # ProjectOperation attributes
-        self.status_log = CSVFileHandler(self.dir, 'status_log', self.logger, **self.fh_kwargs)
+        self.status_log = CSVFileHandler(self.dir, 'status_log', logger=self.logger, **self.fh_kwargs)
 
         self.phase_logs = {}
         for phase in ['scan', 'compute', 'validate']:
@@ -217,12 +217,11 @@ class ProjectOperation(
             self.save_files()
             return status
         except Exception as err:
-            raise err
-            #return error_handler(
-                #err, self.logger, self.phase,
-                #jobid=self._logid, dryrun=self._dryrun, 
-                ##subset_bypass=subset_bypass,
-                #status_fh=self.status_log)
+            return error_handler(
+                err, self.logger, self.phase,
+                jobid=self._logid, dryrun=self._dryrun, 
+                subset_bypass=subset_bypass,
+                status_fh=self.status_log)
 
     def _run(self, **kwargs):
         # Default project operation run.
@@ -232,7 +231,7 @@ class ProjectOperation(
         self.kfile = KerchunkFile(
             self.dir,
             product,
-            self.logger,
+            logger=self.logger,
             **self.fh_kwargs
         )
 
@@ -268,10 +267,9 @@ class ProjectOperation(
             self, 
             phase : str, 
             status: str, 
-            jobid : str = '', 
-            dryrun: str = ''
+            jobid : str = ''
         ) -> None: 
-        self.status_log.update_status(phase, status, jobid=jobid, dryrun=dryrun)
+        self.status_log.update_status(phase, status, jobid=jobid)
 
     def save_files(self):
         # Add all files here.
@@ -315,7 +313,7 @@ class ProjectOperation(
             if 'latest' in pattern:
                 pattern = pattern.replace('latest', os.readlink(pattern))
 
-            self.allfiles.set(glob.glob(pattern))
+            self.allfiles.set(sorted(glob.glob(pattern)))
 
     def _setup_config(
             self, 

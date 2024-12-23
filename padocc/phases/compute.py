@@ -301,7 +301,7 @@ class ComputeOperation(ProjectOperation):
         self.temp_zattrs = JSONFileHandler(
             self.cache, 
             'temp_zattrs',
-            self.logger,
+            logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful
         )
@@ -603,7 +603,7 @@ class ComputeOperation(ProjectOperation):
         vd.save_report(
             JSONFileHandler(
                 self.dir,
-                'potential_issues.json',
+                'potential_issues',
                 logger=self.logger
             )
         )
@@ -683,7 +683,7 @@ class KerchunkDS(ComputeOperation):
         if results is not None:
             self.base_cfg['data_properties'] = results
             self.detail_cfg['cfa'] = True
-        self.update_status('compute',status,jobid=self._logid, dryrun=self._dryrun)
+        self.update_status('compute',status,jobid=self._logid)
         return status
 
     def create_refs(self) -> None:
@@ -709,7 +709,7 @@ class KerchunkDS(ComputeOperation):
         t1 = datetime.now()
         for x, nfile in enumerate(listfiles[:self.limiter]):
             ref = None
-            CacheFile = JSONFileHandler(self.cache, f'{x}.json', 
+            CacheFile = JSONFileHandler(self.cache, f'{x}', 
                                             dryrun=self._dryrun, forceful=self._forceful,
                                             logger=self.logger)
             if not self._thorough:
@@ -937,7 +937,7 @@ class ZarrDS(ComputeOperation):
         
         super().__init__(proj_code, workdir, stage, *kwargs)
 
-        self.tempstore   = ZarrStore(self.dir, "zarrcache.zarr", self.logger, **self.fh_kwargs)
+        self.tempstore   = ZarrStore(self.dir, "zarrcache.zarr", logger=self.logger, **self.fh_kwargs)
         self.preferences = preferences
 
         if self.thorough or self.forceful:
@@ -951,7 +951,7 @@ class ZarrDS(ComputeOperation):
         Recommended way of running an operation - includes timers etc.
         """
         status = self._run_with_timings(self.create_store)
-        self.update_status('compute',status,jobid=self._logid, dryrun=self._dryrun)
+        self.update_status('compute',status,jobid=self._logid)
         return status
 
     def create_store(self):

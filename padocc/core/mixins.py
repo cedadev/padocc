@@ -206,9 +206,9 @@ class PropertiesMixin:
     @property
     def outproduct(self):
         if self.stage == 'complete':
-            return f'{self.proj_code}.{self.version_no}.{self.file_type}'
+            return f'{self.proj_code}.{self.version_no}'
         else:
-            vn = f'{self.version_no}a.{self.file_type}'
+            vn = f'{self.version_no}a'
             if self._is_trial:
                 vn = f'trial-{vn}'
             return vn
