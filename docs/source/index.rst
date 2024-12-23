@@ -14,43 +14,50 @@ Vast amounts of archival data in a variety of formats can be processed using the
 
 Currently supported input file formats:
  - NetCDF/HDF
- - GeoTiff (**coming soon**)
- - GRIB (**coming soon**)
+ - GeoTiff
+ - GRIB
  - MetOffice (**future**)
 
-*padocc* is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr.
+*padocc* is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr. 
+Additionally, PADOCC creates CF-compliant aggregation files as part of the standard workflow, which means you get CFA-netCDF files as standard!
+You can find out more about Climate Forecast Aggregations `here <https://cedadev.github.io/CFAPyX/>_`, these files are denoted with the extension ``.nca`` and can be opened using xarray with ``engine="CFA"`` if you have the ``CFAPyX`` package installed.
 
-The pipeline consists of four central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. This is not part of the code-base of the pipeline currently but could be added in a future update.
+The pipeline consists of three central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. 
+These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system.
+For further information around configuring PADOCC for parallel deployment please contact `daniel.westwood@stfc.ac.uk <daniel.westwood@stfc.ac.uk>_`.
 
-.. image:: _images/pipeline.png
-   :alt: Stages of the Kerchunk Pipeline
+The ingestion/cataloging phase is not currently implemented for public use but may be added in a future update.
+
+.. image:: _images/padocc.png
+   :alt: Stages of the PADOCC workflow
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
 
-   Introduction <pipeline-overview>
+   Introduction <introduction>
+   Inspiration <inspiration>
    Getting Started <start>
-   Example CCI Water Vapour <cci_water>
-   Padocc Flags/Options <execution>
-   Error Codes <errors>
+   Example Operation <cci_water>
+   A Deep Dive <deep_details>
    Developer's Guide <dev-guide>
 
 .. toctree::
    :maxdepth: 1
    :caption: Operations:
 
+   The Project Operator <projects>
+   The Group Operator <groups>
+   SHEPARD <shepard>
+
 .. toctree::
    :maxdepth: 1
    :caption: PADOCC Source:
    
-   Single Datasets <project>
-   Groups of Datasets <group>
-   Filehandlers <filehandlers>
-   Scanning <scan>
-   Compute <compute>
-   Validate <validate>
-   Utils <extras>
+   Projects <project_source>
+   Groups <group_source>
+   Filehandlers, Logs, and Utilities <misc_source>
+   phases <phases>
    
 Indices and Tables
 ==================
