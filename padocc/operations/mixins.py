@@ -181,6 +181,20 @@ class InitialisationMixin:
         self.logger.info(f'Written as group ID: {self.groupID}')
         self.save_files()
 
+class ModifiersMixin:
+
+    def add_project(self):
+        """
+        Add a project to this group
+        """
+        pass
+
+    def remove_project(self):
+        """
+        Remove a project from this group
+        """
+        pass
+
 """
 Replacement for assessor tool. Requires the following (public) methods:
  - progress (progress_check)

@@ -223,11 +223,15 @@ class ProjectOperation(
                 subset_bypass=subset_bypass,
                 status_fh=self.status_log)
 
-    def _run(self, **kwargs):
+    def move_to(self, new_directory: str) -> None:
+        """
+        Move all associated files across to new directory."""
+
+    def _run(self, **kwargs) -> None:
         # Default project operation run.
         self.logger.info("Nothing to run with this setup!")
 
-    def create_new_kfile(self, product : str):
+    def create_new_kfile(self, product : str) -> None:
         self.kfile = KerchunkFile(
             self.dir,
             product,
@@ -235,7 +239,7 @@ class ProjectOperation(
             **self.fh_kwargs
         )
 
-    def create_new_kstore(self, product : str):
+    def create_new_kstore(self, product: str) -> None:
         raise NotImplementedError
 
     @property
