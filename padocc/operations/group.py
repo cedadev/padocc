@@ -4,7 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import os
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 from padocc.core import BypassSwitch, FalseLogger
 from padocc.core.utils import format_str, times
@@ -272,9 +272,11 @@ class GroupOperation(
             repeat_id: str = 'main',
             proj_code: Optional[str] = None,
             subset: Optional[str] = None,
-            subset_bypass: bool = False,
+            bypass: Union[BypassSwitch,None] = None,
             **kwargs
         ) -> dict[str]:
+
+        bypass = bypass or BypassSwitch()
 
         phases = {
             'scan': self._scan_config,
@@ -316,7 +318,7 @@ class GroupOperation(
             status = func(
                 proj_code, 
                 mode=mode, logid=logid, label=phase, 
-                fh=fh, subset_bypass=subset_bypass,
+                fh=fh, bypass=bypass,
                 **kwargs)
             
             if status in results:
@@ -333,9 +335,9 @@ class GroupOperation(
 
     def _scan_config(
             self,
-            proj_code,
-            mode='kerchunk',
-            subset_bypass=False,
+            proj_code: str,
+            mode: str = 'kerchunk',
+            bypass: Union[BypassSwitch,None] = None,
             **kwargs
         ) -> None:
         """
@@ -357,16 +359,17 @@ class GroupOperation(
 
         so = ScanOperation(
             proj_code, self.workdir, groupID=self.groupID,
-            verbose=self._verbose, **kwargs, dryrun=self._dryrun)
-        status = so.run(mode=mode, subset_bypass=False)
+            verbose=self._verbose, bypass=bypass, 
+            dryrun=self._dryrun, **kwargs)
+        status = so.run(mode=mode)
         so.save_files()
         return status
 
     def _compute_config(
             self, 
-            proj_code,  
-            mode=None,
-            subset_bypass=False,
+            proj_code: str,
+            mode: str = 'kerchunk',
+            bypass: Union[BypassSwitch,None] = None,
             **kwargs
         ) -> None:
         """
@@ -394,6 +397,7 @@ class GroupOperation(
             self.workdir,
             groupID=self.groupID,
             logger=self.logger,
+            bypass=bypass
             **kwargs,
         )
 
@@ -423,7 +427,7 @@ class GroupOperation(
             logger=self.logger,
             **kwargs
         )
-        status = proj_op.run(subset_bypass=subset_bypass)
+        status = proj_op.run()
         proj_op.save_files()
         return status
     
@@ -431,7 +435,7 @@ class GroupOperation(
             self, 
             proj_code: str,  
             mode: str = 'kerchunk',
-            subset_bypass: bool = False,
+            bypass: Union[BypassSwitch,None] = None,
             forceful: Optional[bool] = None,
             thorough: Optional[bool] = None,
             dryrun: Optional[bool] = None,
@@ -440,21 +444,20 @@ class GroupOperation(
 
         self.logger.debug(f"Starting validation for {proj_code}")
 
-        #try:
-        if True:
+        try:
             vop = ValidateOperation(
                 proj_code,
                 workdir=self.workdir,
                 groupID=self.groupID,
+                bypass=bypass
                 **kwargs)
-        #except TypeError:
-            #raise ValueError(
-            #    f'{proj_code}, {self.groupID}, {self.workdir}'
-            #)
+        except TypeError:
+            raise ValueError(
+                f'{proj_code}, {self.groupID}, {self.workdir}'
+            )
         
         status = vop.run(
             mode=mode, 
-            subset_bypass=subset_bypass,
             forceful=forceful,
             thorough=thorough,
             dryrun=dryrun)

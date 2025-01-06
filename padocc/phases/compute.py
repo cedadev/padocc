@@ -26,12 +26,9 @@ from padocc.core.utils import (
 
 from padocc.core.errors import (
     PartialDriverError,
-    SoftfailBypassError,
     KerchunkDriverFatalError,
     ConcatFatalError,
     SourceNotFoundError,
-    ValidationError,
-    IdenticalVariablesError,
     ComputeError
 )
 
