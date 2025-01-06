@@ -1,5 +1,5 @@
-Inspiration for the Aggregation Pipeline
-========================================
+Inspiration for Cloud Formats and Aggregations
+==============================================
 
 Data Archives
 -------------
@@ -36,7 +36,7 @@ functions similarly as a pointer to chunks of data in another location, however 
 rather than having each chunk as a separate file. 
 
 PADOCC supports an additional format called CFA, which takes elements of both of these methods. CFA files store references to portions of the array, rather than ranges of bytes of compressed/uncompressed data like with Kerchunk. 
-These references are stored in NetCDF instead of JSON metadata files, which has the advantage of lazily-loaded references from a single file. Read more about CF Aggregations `here <https://cedadev.github.io/CFAPyX/>_`. 
+These references are stored in NetCDF instead of JSON metadata files, which has the advantage of lazily-loaded references from a single file. Read more about CF Aggregations `here <https://cedadev.github.io/CFAPyX/>`_. 
 
 A workflow for data conversion
 ------------------------------
@@ -44,7 +44,7 @@ A workflow for data conversion
 PADOCC is a tool being actively developed at CEDA to enable large-scale conversion of archival data to some of these new cloud formats, to address the issues above.
 Originally created as part of the ESA Climate Change Initiative project, PADOCC is steadily growing into an essential part of the CEDA ingestion pipeline.
 New datasets deposited into the CEDA archive will soon be automatically converted by PADOCC and represented as part of the growing STAC catalog collection at CEDA.
-Use of the catalogs is facilitated by the `CEDA DataPoint <https://cedadev.github.io/datapoint/>_` package, which auto-configures for multiple different file types.
+Use of the catalogs is facilitated by the `CEDA DataPoint <https://cedadev.github.io/datapoint/>`_ package, which auto-configures for multiple different file types.
 
 The result of this new data architecture will be that users of CEDA data can discover and access data through our packages much faster and more efficiently than before,
 without the need to learn to use many new formats. All the nuances of each dataset are handled by DataPoint, and use products created by PADOCC to facilitate fast search/access

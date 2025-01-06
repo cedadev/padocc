@@ -13,6 +13,10 @@ If you need to clone the repository, either simply clone the main branch of the 
 
     git clone git@github.com:cedadev/padocc.git
 
+.. note::
+
+    The instructions below are specific to version 1.3 and later. To obtain documentation for pre-1.3, please contact `daniel.westwood@stfc.ac.uk <daniel.westwood@stfc.ac.uk>`_.
+
 Step 1: Set up Virtual Environment
 ----------------------------------
 
@@ -22,7 +26,7 @@ Step 1 is to create a virtual environment and install the necessary packages wit
 
     python -m venv name_of_venv;
     source name_of_venv/bin/activate;
-    pip install -r requirements.txt;
+    pip install ./;
 
 
 Step 2: Environment configuration
@@ -32,11 +36,10 @@ Create a config file to set necessary environment variables. (Suggested to place
 .. code-block:: console
 
     export WORKDIR = /path/to/kerchunk-pipeline
-    export SRCDIR  = /gws/nopw/j04/cedaproc/kerchunk_builder/kerchunk-builder
-    export KVENV   = $SRCDIR/kvenv
+    export KVENV   = /path/to/virtual/environment/venv
 
 
-Now you should be set up to run the pipeline properly. For any of the pipeline scripts, running ```python <script>.py -h # or --help``` will bring up a list of options to use for that script as well as the required parameters.
+Now you should be set up to run the pipeline properly.
 
 Step 3: Assembling pipeline inputs
 ----------------------------------
@@ -49,7 +52,6 @@ In order to successfully run the pipeline you need the following input files:
 
 It is also helpful to create a setup/config bash script to set all your environment variables which include:
  - WORKDIR: The working directory for the pipeline (where to store all the cache files)
- - SRCDIR: Path to the kerchunk-builder repo where it has been cloned.
  - KVENV: Path to a virtual environment for the pipeline.
 
 Step 4: Commands to run the pipeline
@@ -72,19 +74,19 @@ Some useful option/flags to add:
     -d # dryrun
        #  - Skip creating any new files in this phase
 
-The pipeline is run using the ``single_run.py`` or ``group_run.py`` scripts as a command-line interface (CLI) tool.
+The pipeline is now run using the entrypoint script ``padocc`` as a command-line interface (CLI) tool.
 
 .. code-block:: python
 
     # 4.1 Initialise from your CSV file:
-    python group_run.py init <group_name> -i path/to/file.csv
+    padocc init -G <group_name> -i path/to/file.csv
 
     # 4.2 Perform scanning of netcdf files:
-    python group_run.py scan <group_name>
+    padocc scan -G <group_name>
 
 .. note::
 
-    You should check after every ``scan``, ``compute`` and ``validate`` that your SLURM jobs are running properly:
+    For Jasmin users with SLURM access, you should check after every ``scan``, ``compute`` and ``validate`` that your SLURM jobs are running properly:
     
     ``squeue -u <jasmin_username>``
 
@@ -93,47 +95,18 @@ The pipeline is run using the ``single_run.py`` or ``group_run.py`` scripts as a
 .. code-block:: python
 
     # 4.3 Perform computation (example options: ignore cache and show debug messages):
-    python group_run.py compute <group_name> -vQ
+    padocc compute -G <group_name> -vT
 
     # 4.4 Perform validation (example options: using repeat_id long, set time and memory to specific values, forceful overwrite if outputs already present):
-    python group_run.py validate <group_name> -r long -t 120:00 -M 4G -vf
+    padocc validate -G <group_name> -r long -t 120:00 -M 4G -vf
 
 Step 5: Assess pipeline results
 -------------------------------
 
 5.1 General progress
 --------------------
-To see the general status of the pipeline for a given group:
-::
 
-    python assess.py <group> progress
+.. note::
 
-An example use case is to write out all datasets that require scanning to a new label (repeat_label):
-::
-    
-    python assess.py <group> progress -p scan -r <label_for_scan_subgroup> -W
+    This section will be filled with the full release version of padocc v1.3
 
-The last flag ```-W``` is required when writing an output file from this program, otherwise the program will dryrun and produce no files.
-
-5.2 Check errors
-----------------
-
-Check what repeat labels are available already using
-::
-
-    python assess.py <group> errors -s labels
-
-Show what jobs have previously run
-::
-
-    python assess.py <group> errors -s jobids
-
-For showing all errors from a previous job run
-::
-
-    python assess.py <group> errors -j <jobid>
-
-For selecting a specific type of error to investigate (-i) and examine the full log for each example (-E)
-::
-
-    python assess.py test errors -j <jobid> -i "type_of_error" -E
