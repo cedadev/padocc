@@ -49,7 +49,7 @@ class DirectoryMixin(LoggedOperation):
 
     def values(self):
         print(f' - forceful: {bool(self._forceful)}')
-        print(f' - thorough: {bool(self._thorough)}')
+        print(f' - verbose: {bool(self._verbose)}')
         print(f' - dryrun: {bool(self._dryrun)}')
 
     @property
@@ -188,7 +188,7 @@ class EvaluationsMixin:
 
 class PropertiesMixin:
 
-    def _check_override(self, key, mapper):
+    def _check_override(self, key, mapper) -> str:
         if self.base_cfg['override'][key] is not None:
             return self.base_cfg['override'][key]
         
@@ -206,12 +206,12 @@ class PropertiesMixin:
     @property
     def outproduct(self):
         if self.stage == 'complete':
-            return f'{self.proj_code}.{self.version_no}'
+            return f'{self.proj_code}.{self.revision}.{self.file_type}'
         else:
-            vn = f'{self.version_no}a'
+            vn = f'{self.revision}a'
             if self._is_trial:
                 vn = f'trial-{vn}'
-            return vn
+            return f'{vn}.{self.file_type}'
     
     @property
     def revision(self) -> str:
@@ -240,9 +240,9 @@ class PropertiesMixin:
         self.base_cfg['override']['cloud_type'] = value
 
     @property
-    def file_type(self) -> bool:
+    def file_type(self) -> str:
         """
-        Return True if the project is configured to use parquet.
+        Return the file type for this project.
         """
 
         return self._check_override('file_type','type')

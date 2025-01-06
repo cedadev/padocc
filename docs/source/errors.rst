@@ -1,8 +1,0 @@
-Custom Pipeline Errors
-======================
-
-**A summary of the custom errors that are experienced through running the pipeline.**
-
-.. automodule:: padocc.core.errors
-    :members:
-    :show-inheritance:

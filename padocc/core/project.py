@@ -6,6 +6,8 @@ import os
 import glob
 import logging
 
+from typing import Union
+
 from .errors import error_handler
 from .utils import extract_file, BypassSwitch, apply_substitutions, phases, file_configs
 from .logs import reset_file_handler
@@ -193,7 +195,7 @@ class ProjectOperation(
     def run(
             self,
             mode: str = 'kerchunk',
-            subset_bypass: bool = False, 
+            bypass: Union[BypassSwitch,None] = None,
             forceful : bool = None,
             thorough : bool = None,
             dryrun : bool = None,
@@ -203,6 +205,8 @@ class ProjectOperation(
         subclasses act as plugins for this function, and require a
         ``_run`` method called from here. This means all error handling
         with status logs and log files can be dealt with here."""
+
+        self._bypass = bypass or self._bypass
 
         # Reset flags given specific runs
         if forceful is not None:
@@ -220,7 +224,7 @@ class ProjectOperation(
             return error_handler(
                 err, self.logger, self.phase,
                 jobid=self._logid, dryrun=self._dryrun, 
-                subset_bypass=subset_bypass,
+                subset_bypass=self._bypass.skip_subsets,
                 status_fh=self.status_log)
 
     def move_to(self, new_directory: str) -> None:
