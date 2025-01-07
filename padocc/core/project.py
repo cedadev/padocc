@@ -199,6 +199,7 @@ class ProjectOperation(
             forceful : bool = None,
             thorough : bool = None,
             dryrun : bool = None,
+            **kwargs
         ) -> str:
         """
         Main function for running any project operation. All 
@@ -217,7 +218,7 @@ class ProjectOperation(
             self._dryrun = dryrun
 
         try:
-            status = self._run(mode=mode)
+            status = self._run(mode=mode, **kwargs)
             self.save_files()
             return status
         except Exception as err:

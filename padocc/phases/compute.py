@@ -344,7 +344,7 @@ class ComputeOperation(ProjectOperation):
         self.logger.error('Nothing to do with this class - use KerchunkDS/ZarrDS instead!')
         raise ComputeError
 
-    def _run_with_timings(self, func) -> str:
+    def _run_with_timings(self, func, **kwargs) -> str:
         """
         Configure all required steps for Kerchunk processing.
         - Check if output files already exist.
@@ -353,7 +353,7 @@ class ComputeOperation(ProjectOperation):
 
         # Timed func call
         t1 = datetime.now()
-        func()
+        func(**kwargs)
         compute_time = (datetime.now()-t1).total_seconds()
 
         timings      = self._get_timings()
@@ -669,6 +669,7 @@ class KerchunkDS(ComputeOperation):
         
     def _run(
             self,
+            check_dimensions: bool = False,
             **kwargs) -> str:
         """
         ``_run`` hook method called from the ``ProjectOperation.run`` 
@@ -676,7 +677,7 @@ class KerchunkDS(ComputeOperation):
         parameter from ``ProjectOperation.run`` which is not needed 
         because we already know we're running for ``Kerchunk``.
         """
-        status = self._run_with_timings(self.create_refs)
+        status = self._run_with_timings(self.create_refs, check_dimensions=check_dimensions)
         results = cfa_handler(self)
         if results is not None:
             self.base_cfg['data_properties'] = results
@@ -684,7 +685,7 @@ class KerchunkDS(ComputeOperation):
         self.update_status('compute',status,jobid=self._logid)
         return status
 
-    def create_refs(self) -> None:
+    def create_refs(self, check_dimensions: bool = False) -> None:
         """Organise creation and loading of refs
         - Load existing cached refs
         - Create new refs
@@ -734,6 +735,10 @@ class KerchunkDS(ComputeOperation):
 
             if not self.quality_required:
                 self._perform_shape_checks(ref)
+
+            if check_dimensions:
+                refs = self._perform_dimensions_checks(ref)
+
             CacheFile.set(ref)
             CacheFile.close()
             ctypes.append(ctype)
@@ -920,6 +925,17 @@ class KerchunkDS(ComputeOperation):
 
             if self.var_shapes[key] != zarray['shape']:
                 self.quality_required = True
+
+    def _perform_dimension_checks(self, ref: dict) -> dict:
+        """
+        Perform dimensional corrections, developed in 
+        response to issues with CCI lakes datasets.
+        """
+
+        raise NotImplementedError(
+            'This feature is not implemented in pre-release v1.3a'
+        )
+
 
 class ZarrDS(ComputeOperation):
 

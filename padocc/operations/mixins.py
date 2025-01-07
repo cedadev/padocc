@@ -17,6 +17,9 @@ from padocc.core.utils import extract_file, times, apply_substitutions, file_con
 from padocc.core.project import ProjectOperation
 
 class InitialisationMixin:
+    """
+    Mixin container class for initialisation
+    routines for groups via input files."""
 
     def init_from_stac(self):
         pass
