@@ -8,11 +8,13 @@ import numpy as np
 import re
 import logging
 
+from typing import Union
+
 from padocc.core import FalseLogger
 from padocc.core.errors import ConcatFatalError
 from padocc.core import ProjectOperation
 from padocc.core.utils import BypassSwitch
-from .compute import KerchunkDS
+from .compute import KerchunkDS, cfa_handler
 
 from padocc.core.filehandlers import JSONFileHandler
 
@@ -170,6 +172,8 @@ class ScanOperation(ProjectOperation):
             self._scan_zarr(limiter=limiter)
         elif mode == 'kerchunk':
             self._scan_kerchunk(limiter=limiter)
+        elif mode == 'cfa':
+            self._scan_cfa(limiter=limiter)
         else:
             self.update_status('scan','ValueError',jobid=self._logid)
             raise ValueError(
@@ -179,7 +183,7 @@ class ScanOperation(ProjectOperation):
         self.update_status('scan','Success',jobid=self._logid)
         return 'Success'
 
-    def _scan_kerchunk(self, limiter: int = None):
+    def _scan_kerchunk(self, limiter: Union[int,None] = None):
         """
         Function to perform scanning with output Kerchunk format.
         """
@@ -247,7 +251,19 @@ class ScanOperation(ProjectOperation):
             ctypes, escape=escape, scanned_with='kerchunk'
         )
 
-    def _scan_zarr(self, limiter=None):
+    def _scan_cfa(self, limiter: Union[int,None] = None):
+        """
+        Function to perform scanning with output CFA format.
+        """
+        self.logger.info('Starting scan process for CFA cloud format')
+
+        # Redo this processor call.
+        results = cfa_handler(self, file_limit=limiter)
+
+        # Record results here
+        print(results)
+
+    def _scan_zarr(self, limiter: Union[int,None] = None):
         """
         Function to perform scanning with output Zarr format.
         """

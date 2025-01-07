@@ -287,7 +287,8 @@ class ComputeOperation(ProjectOperation):
 
         self.partial = (limiter and num_files != limiter)
 
-        self._determine_version()
+        # Perform this later
+        #self._determine_version()
 
         self.limiter = limiter
         if not self.limiter:
@@ -343,7 +344,7 @@ class ComputeOperation(ProjectOperation):
         self.logger.error('Nothing to do with this class - use KerchunkDS/ZarrDS instead!')
         raise ComputeError
 
-    def _run_with_timings(self, func):
+    def _run_with_timings(self, func) -> str:
         """
         Configure all required steps for Kerchunk processing.
         - Check if output files already exist.
@@ -668,7 +669,7 @@ class KerchunkDS(ComputeOperation):
         
     def _run(
             self,
-            **kwargs) -> None:
+            **kwargs) -> str:
         """
         ``_run`` hook method called from the ``ProjectOperation.run`` 
         which this subclass inherits. The kwargs capture the ``mode``
@@ -943,7 +944,7 @@ class ZarrDS(ComputeOperation):
         self.filelist    = []
         self.mem_allowed = mem_allowed
 
-    def _run(self, **kwargs) -> None:
+    def _run(self, **kwargs) -> str:
         """
         Recommended way of running an operation - includes timers etc.
         """
@@ -1052,6 +1053,18 @@ class ZarrDS(ComputeOperation):
             volume += self.combined_ds[var].nbytes
 
         return concat_dim_rechunk, dim_sizes, cpf/self.limiter, volume/self.limiter
+
+class CfaDS(ComputeOperation):
+
+    def _run(self, **kwargs) -> str:
+        """
+        Integration of CFA Converter to 
+        Padocc Operation class."""
+        if cfa_handler(self):
+            return 'Success'
+        return 'Fatal'
+    
+        # Deal with setting proper values here in specific files.
 
 if __name__ == '__main__':
     print('Serial Processor for Kerchunk Pipeline - run with single_run.py')

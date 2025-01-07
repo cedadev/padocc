@@ -287,7 +287,7 @@ class ListFileHandler(FileIOMixin):
         in the file.
         """
         if self._dryrun or self._value == []:
-            self.logger.debug("Skipped setting value in file")
+            self.logger.debug(f"Skipped setting value in {self.file}")
             return
 
         if not self.file_exists():
@@ -433,7 +433,7 @@ class JSONFileHandler(FileIOMixin):
         in the file.
         """
         if self._dryrun or self._value == {}:
-            self.logger.debug("Skipped setting value in file")
+            self.logger.debug(f"Skipped setting value in {self.file}")
             return
         
         self._apply_conf()

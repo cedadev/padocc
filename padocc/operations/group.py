@@ -13,7 +13,7 @@ from padocc.phases import (
     ScanOperation,
     KerchunkDS, 
     ZarrDS, 
-    cfa_handler,
+    CfaDS,
     KNOWN_PHASES,
     ValidateOperation,
 )
@@ -25,7 +25,7 @@ from .mixins import AllocationsMixin, InitialisationMixin, EvaluationsMixin
 COMPUTE = {
     'kerchunk':KerchunkDS,
     'zarr':ZarrDS,
-    'cfa': cfa_handler,
+    'cfa': CfaDS,
 }
 
 class GroupOperation(
@@ -126,7 +126,15 @@ class GroupOperation(
     
     def __repr__(self):
         return str(self)
+    
+    def __getitem__(self, index: int) -> ProjectOperation:
+        """
+        Indexable group allows access to individual projects
+        """
 
+        proj_code = self.proj_codes['main'][index]
+        return self.get_project(proj_code)
+    
     @property
     def proj_codes_dir(self):
         return f'{self.groupdir}/proj_codes'
@@ -272,7 +280,7 @@ class GroupOperation(
             repeat_id: str = 'main',
             proj_code: Optional[str] = None,
             subset: Optional[str] = None,
-            bypass: Union[BypassSwitch,None] = None,
+            bypass: Union[BypassSwitch, None] = None,
             **kwargs
         ) -> dict[str]:
 
@@ -397,11 +405,11 @@ class GroupOperation(
             self.workdir,
             groupID=self.groupID,
             logger=self.logger,
-            bypass=bypass
+            bypass=bypass,
             **kwargs,
         )
 
-        mode = proj_op.cloud_format
+        mode = mode or proj_op.cloud_format
         if mode is None:
             mode = 'kerchunk'
 

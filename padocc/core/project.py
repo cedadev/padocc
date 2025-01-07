@@ -321,7 +321,7 @@ class ProjectOperation(
             if 'latest' in pattern:
                 pattern = pattern.replace('latest', os.readlink(pattern))
 
-            self.allfiles.set(sorted(glob.glob(pattern)))
+            self.allfiles.set(sorted(glob.glob(pattern, recursive=True)))
 
     def _setup_config(
             self, 
