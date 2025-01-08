@@ -24,7 +24,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="CCI Water Vapour Example" href="cci_water.html" />
-    <link rel="prev" title="Overview of Pipeline Phases" href="pipeline-overview.html" /> 
+    <link rel="prev" title="Phases of the PADOCC Pipeline" href="phases.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -49,7 +49,8 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phases.html">Steps to Run Padocc</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#step-0-git-clone-the-repository">Step 0: Git clone the repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#step-1-set-up-virtual-environment">Step 1: Set up Virtual Environment</a></li>
@@ -58,30 +59,25 @@
 <li class="toctree-l2"><a class="reference internal" href="#step-4-commands-to-run-the-pipeline">Step 4: Commands to run the pipeline</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#step-5-assess-pipeline-results">Step 5: Assess pipeline results</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#general-progress">5.1 General progress</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#check-errors">5.2 Check errors</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a></li>
-<li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example Operation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deep_dive.html">A Deep Dive</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dev-guide.html">Developer Guide - Adding new functionality</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-modes-in-assessor">1. New Modes in Assessor</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-processors-for-compute">2. New Processors for Compute</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">CLI Tool Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Scripts Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="groups.html">The Group Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Pipeline Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">PADOCC Source:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="init.html">Initialisation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="scan.html">Scanning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="compute.html">Compute</a></li>
-<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
-<li class="toctree-l1"><a class="reference internal" href="allocation.html">Allocations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="extras.html">Utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="project_source.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
 
         </div>
@@ -120,13 +116,17 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">git</span><span class="nd">@github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">cedadev</span><span class="o">/</span><span class="n">padocc</span><span class="o">.</span><span class="n">git</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The instructions below are specific to version 1.3 and later. To obtain documentation for pre-1.3, please contact <a class="reference external" href="mailto:daniel&#46;westwood&#37;&#52;&#48;stfc&#46;ac&#46;uk">daniel<span>&#46;</span>westwood<span>&#64;</span>stfc<span>&#46;</span>ac<span>&#46;</span>uk</a>.</p>
+</div>
 </section>
 <section id="step-1-set-up-virtual-environment">
 <h2>Step 1: Set up Virtual Environment<a class="headerlink" href="#step-1-set-up-virtual-environment" title="Permalink to this heading"></a></h2>
 <p>Step 1 is to create a virtual environment and install the necessary packages with pip. This can be done inside the local repo you’ve cloned as <code class="docutils literal notranslate"><span class="pre">local</span></code> or <code class="docutils literal notranslate"><span class="pre">kvenv</span></code> which will be ignored by the repository, or you can create a venv elsewhere in your home directory i.e <code class="docutils literal notranslate"><span class="pre">~/venvs/build_venv</span></code>. If you are using the pipeline version in <code class="docutils literal notranslate"><span class="pre">cedaproc</span></code> there should already be a virtual environment set up.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python -m venv name_of_venv;</span>
 <span class="go">source name_of_venv/bin/activate;</span>
-<span class="go">pip install -r requirements.txt;</span>
+<span class="go">pip install ./;</span>
 </pre></div>
 </div>
 </section>
@@ -134,11 +134,10 @@
 <h2>Step 2: Environment configuration<a class="headerlink" href="#step-2-environment-configuration" title="Permalink to this heading"></a></h2>
 <p>Create a config file to set necessary environment variables. (Suggested to place these in the local <cite>config/</cite> folder as this will be ignored by git). Eg:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export WORKDIR = /path/to/kerchunk-pipeline</span>
-<span class="go">export SRCDIR  = /gws/nopw/j04/cedaproc/kerchunk_builder/kerchunk-builder</span>
-<span class="go">export KVENV   = $SRCDIR/kvenv</span>
+<span class="go">export KVENV   = /path/to/virtual/environment/venv</span>
 </pre></div>
 </div>
-<p>Now you should be set up to run the pipeline properly. For any of the pipeline scripts, running <code class="docutils literal notranslate"><span class="pre">`python</span> <span class="pre">&lt;script&gt;.py</span> <span class="pre">-h</span> <span class="pre">#</span> <span class="pre">or</span> <span class="pre">--help`</span></code> will bring up a list of options to use for that script as well as the required parameters.</p>
+<p>Now you should be set up to run the pipeline properly.</p>
 </section>
 <section id="step-3-assembling-pipeline-inputs">
 <h2>Step 3: Assembling pipeline inputs<a class="headerlink" href="#step-3-assembling-pipeline-inputs" title="Permalink to this heading"></a></h2>
@@ -157,7 +156,6 @@
 </dd>
 <dt>It is also helpful to create a setup/config bash script to set all your environment variables which include:</dt><dd><ul class="simple">
 <li><p>WORKDIR: The working directory for the pipeline (where to store all the cache files)</p></li>
-<li><p>SRCDIR: Path to the kerchunk-builder repo where it has been cloned.</p></li>
 <li><p>KVENV: Path to a virtual environment for the pipeline.</p></li>
 </ul>
 </dd>
@@ -180,25 +178,25 @@
    <span class="c1">#  - Skip creating any new files in this phase</span>
 </pre></div>
 </div>
-<p>The pipeline is run using the <code class="docutils literal notranslate"><span class="pre">single_run.py</span></code> or <code class="docutils literal notranslate"><span class="pre">group_run.py</span></code> scripts as a command-line interface (CLI) tool.</p>
+<p>The pipeline is now run using the entrypoint script <code class="docutils literal notranslate"><span class="pre">padocc</span></code> as a command-line interface (CLI) tool.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 4.1 Initialise from your CSV file:</span>
-<span class="n">python</span> <span class="n">group_run</span><span class="o">.</span><span class="n">py</span> <span class="n">init</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">i</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">file</span><span class="o">.</span><span class="n">csv</span>
+<span class="n">padocc</span> <span class="n">init</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">i</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">file</span><span class="o">.</span><span class="n">csv</span>
 
 <span class="c1"># 4.2 Perform scanning of netcdf files:</span>
-<span class="n">python</span> <span class="n">group_run</span><span class="o">.</span><span class="n">py</span> <span class="n">scan</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span>
+<span class="n">padocc</span> <span class="n">scan</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span>
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>You should check after every <code class="docutils literal notranslate"><span class="pre">scan</span></code>, <code class="docutils literal notranslate"><span class="pre">compute</span></code> and <code class="docutils literal notranslate"><span class="pre">validate</span></code> that your SLURM jobs are running properly:</p>
+<p>For Jasmin users with SLURM access, you should check after every <code class="docutils literal notranslate"><span class="pre">scan</span></code>, <code class="docutils literal notranslate"><span class="pre">compute</span></code> and <code class="docutils literal notranslate"><span class="pre">validate</span></code> that your SLURM jobs are running properly:</p>
 <p><code class="docutils literal notranslate"><span class="pre">squeue</span> <span class="pre">-u</span> <span class="pre">&lt;jasmin_username&gt;</span></code></p>
 <p>And once the SLURM jobs are complete you should check error logs to see which jobs were successful and which failed for different reasons. See Step 5 for details on how to run the <strong>Assessor</strong> [assess.py] script.</p>
 </div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 4.3 Perform computation (example options: ignore cache and show debug messages):</span>
-<span class="n">python</span> <span class="n">group_run</span><span class="o">.</span><span class="n">py</span> <span class="n">compute</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">vQ</span>
+<span class="n">padocc</span> <span class="n">compute</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">vT</span>
 
 <span class="c1"># 4.4 Perform validation (example options: using repeat_id long, set time and memory to specific values, forceful overwrite if outputs already present):</span>
-<span class="n">python</span> <span class="n">group_run</span><span class="o">.</span><span class="n">py</span> <span class="n">validate</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">r</span> <span class="n">long</span> <span class="o">-</span><span class="n">t</span> <span class="mi">120</span><span class="p">:</span><span class="mi">00</span> <span class="o">-</span><span class="n">M</span> <span class="mi">4</span><span class="n">G</span> <span class="o">-</span><span class="n">vf</span>
+<span class="n">padocc</span> <span class="n">validate</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">r</span> <span class="n">long</span> <span class="o">-</span><span class="n">t</span> <span class="mi">120</span><span class="p">:</span><span class="mi">00</span> <span class="o">-</span><span class="n">M</span> <span class="mi">4</span><span class="n">G</span> <span class="o">-</span><span class="n">vf</span>
 </pre></div>
 </div>
 </section>
@@ -207,33 +205,9 @@
 </section>
 <section id="general-progress">
 <h2>5.1 General progress<a class="headerlink" href="#general-progress" title="Permalink to this heading"></a></h2>
-<p>To see the general status of the pipeline for a given group:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">progress</span>
-</pre></div>
-</div>
-<p>An example use case is to write out all datasets that require scanning to a new label (repeat_label):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">progress</span> <span class="o">-</span><span class="n">p</span> <span class="n">scan</span> <span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span><span class="n">label_for_scan_subgroup</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">W</span>
-</pre></div>
-</div>
-<p>The last flag <code class="docutils literal notranslate"><span class="pre">`-W`</span></code> is required when writing an output file from this program, otherwise the program will dryrun and produce no files.</p>
-</section>
-<section id="check-errors">
-<h2>5.2 Check errors<a class="headerlink" href="#check-errors" title="Permalink to this heading"></a></h2>
-<p>Check what repeat labels are available already using</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">errors</span> <span class="o">-</span><span class="n">s</span> <span class="n">labels</span>
-</pre></div>
-</div>
-<p>Show what jobs have previously run</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">errors</span> <span class="o">-</span><span class="n">s</span> <span class="n">jobids</span>
-</pre></div>
-</div>
-<p>For showing all errors from a previous job run</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">errors</span> <span class="o">-</span><span class="n">j</span> <span class="o">&lt;</span><span class="n">jobid</span><span class="o">&gt;</span>
-</pre></div>
-</div>
-<p>For selecting a specific type of error to investigate (-i) and examine the full log for each example (-E)</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">assess</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">errors</span> <span class="o">-</span><span class="n">j</span> <span class="o">&lt;</span><span class="n">jobid</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">i</span> <span class="s2">&quot;type_of_error&quot;</span> <span class="o">-</span><span class="n">E</span>
-</pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This section will be filled with the full release version of padocc v1.3</p>
 </div>
 </section>
 </section>
@@ -242,7 +216,7 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="pipeline-overview.html" class="btn btn-neutral float-left" title="Overview of Pipeline Phases" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="phases.html" class="btn btn-neutral float-left" title="Phases of the PADOCC Pipeline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="cci_water.html" class="btn btn-neutral float-right" title="CCI Water Vapour Example" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

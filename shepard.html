@@ -5,7 +5,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scanner Module &mdash; PADOCC Package v1.1 documentation</title>
+  <title>The SHEPARD Module &mdash; PADOCC Package v1.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -23,8 +23,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Compute Module" href="compute.html" />
-    <link rel="prev" title="Initialisation Module" href="init.html" /> 
+    <link rel="next" title="ProjectOperation Core and Mixin Behaviours" href="project_source.html" />
+    <link rel="prev" title="Groups in PADOCC" href="groups.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -49,29 +49,26 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phases.html">Steps to Run Padocc</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a></li>
-<li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example Operation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deep_dive.html">A Deep Dive</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dev-guide.html">Developer Guide - Adding new functionality</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-modes-in-assessor">1. New Modes in Assessor</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-processors-for-compute">2. New Processors for Compute</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">CLI Tool Source:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Scripts Source</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Pipeline Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="init.html">Initialisation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Scanning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="compute.html">Compute</a></li>
-<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
-<li class="toctree-l1"><a class="reference internal" href="allocation.html">Allocations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="extras.html">Utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="groups.html">The Group Operator</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">SHEPARD</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">PADOCC Source:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="project_source.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
 
         </div>
@@ -88,9 +85,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Scanner Module</li>
+      <li class="breadcrumb-item active">The SHEPARD Module</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/scan.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/shepard.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -98,16 +95,27 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="scanner-module">
-<h1>Scanner Module<a class="headerlink" href="#scanner-module" title="Permalink to this heading"></a></h1>
+  <section id="the-shepard-module">
+<h1>The SHEPARD Module<a class="headerlink" href="#the-shepard-module" title="Permalink to this heading"></a></h1>
+<p>The latest development in the PADOCC package is the SHEPARD Module (coming in 2025).</p>
+<p>SHEPARD (Serial Handler for Enabling PADOCC Aggregations via Recurrent Deployment) is a component
+designed as an entrypoint script within the PADOCC environment to automate the operation of the pipeline.
+Groups of datasets (called <code class="docutils literal notranslate"><span class="pre">flocks</span></code>) can be created by producing input files and placing them in a persistent
+directory accessible to a deployment of PADOCC. The deployment operates an hourly check in this directory,
+and picks up any added files or any changes to existing files. The groups specified can then be automatically
+run through all sections of the pipeline.</p>
+<p>The deployment of SHEPARD at CEDA involves a Kubernetes Pod that has access to the JASMIN filesystem as well as
+the capability to deploy to JASMIN’s LOTUS cluster for job submissions. The idea will be for SHEPARD to run
+continuously, slowly processing large sections of the CEDA archive and creating cloud formats that can be utilised
+by other packages like DataPoint (see the Inspiration tab) that provide fast access to data.</p>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="init.html" class="btn btn-neutral float-left" title="Initialisation Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="compute.html" class="btn btn-neutral float-right" title="Compute Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="groups.html" class="btn btn-neutral float-left" title="Groups in PADOCC" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="project_source.html" class="btn btn-neutral float-right" title="ProjectOperation Core and Mixin Behaviours" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

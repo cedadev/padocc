@@ -23,7 +23,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Overview of Pipeline Phases" href="pipeline-overview.html" /> 
+    <link rel="next" title="Inspiration for Cloud Formats and Aggregations" href="inspiration.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -48,29 +48,26 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phases.html">Steps to Run Padocc</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a></li>
-<li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example Operation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deep_dive.html">A Deep Dive</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dev-guide.html">Developer Guide - Adding new functionality</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-modes-in-assessor">1. New Modes in Assessor</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-processors-for-compute">2. New Processors for Compute</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">CLI Tool Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Scripts Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="groups.html">The Group Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Pipeline Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">PADOCC Source:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="init.html">Initialisation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="scan.html">Scanning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="compute.html">Compute</a></li>
-<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
-<li class="toctree-l1"><a class="reference internal" href="allocation.html">Allocations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="extras.html">Utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="project_source.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
 
         </div>
@@ -99,51 +96,53 @@
              
   <section id="padocc-user-documentation">
 <h1>PADOCC - User Documentation<a class="headerlink" href="#padocc-user-documentation" title="Permalink to this heading"></a></h1>
-<p><strong>padocc</strong> (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package (formerly <strong>kerchunk-builder</strong>) for aggregating data to enable methods of access for cloud-based applications.</p>
+<p><strong>padocc</strong> (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package for aggregating data to enable methods of access for cloud-based applications.</p>
 <p>The pipeline makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across different datasets simultaneously with validation steps to ensure the outputs are correct.</p>
 <p>Vast amounts of archival data in a variety of formats can be processed using the package’s group mechanics and automatic deployment to a job submission system.</p>
 <dl class="simple">
 <dt>Currently supported input file formats:</dt><dd><ul class="simple">
 <li><p>NetCDF/HDF</p></li>
-<li><p>GeoTiff (<strong>coming soon</strong>)</p></li>
-<li><p>GRIB (<strong>coming soon</strong>)</p></li>
+<li><p>GeoTiff</p></li>
+<li><p>GRIB</p></li>
 <li><p>MetOffice (<strong>future</strong>)</p></li>
 </ul>
 </dd>
 </dl>
-<p><em>padocc</em> is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr.</p>
-<p>The pipeline consists of four central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. This is not part of the code-base of the pipeline currently but could be added in a future update.</p>
-<img alt="Stages of the Kerchunk Pipeline" src="_images/pipeline.png" />
+<p><em>padocc</em> is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr.
+Additionally, PADOCC creates CF-compliant aggregation files as part of the standard workflow, which means you get CFA-netCDF files as standard!
+You can find out more about Climate Forecast Aggregations <a class="reference external" href="https://cedadev.github.io/CFAPyX/">here</a>, these files are denoted with the extension <code class="docutils literal notranslate"><span class="pre">.nca</span></code> and can be opened using xarray with <code class="docutils literal notranslate"><span class="pre">engine=&quot;CFA&quot;</span></code> if you have the <code class="docutils literal notranslate"><span class="pre">CFAPyX</span></code> package installed.</p>
+<p>The pipeline consists of three central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files.
+These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system.
+For further information around configuring PADOCC for parallel deployment please contact <a class="reference external" href="mailto:daniel&#46;westwood&#37;&#52;&#48;stfc&#46;ac&#46;uk">daniel<span>&#46;</span>westwood<span>&#64;</span>stfc<span>&#46;</span>ac<span>&#46;</span>uk</a>.</p>
+<p>The ingestion/cataloging phase is not currently implemented for public use but may be added in a future update.</p>
+<img alt="Stages of the PADOCC workflow" src="_images/pipeline.png" />
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="pipeline-overview.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phases.html">Steps to Run Padocc</a></li>
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example CCI Water Vapour</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution.html">Padocc Flags/Options</a></li>
-<li class="toctree-l1"><a class="reference internal" href="assess-overview.html">Assessor Tool Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="errors.html">Error Codes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example Operation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deep_dive.html">A Deep Dive</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dev-guide.html">Developer Guide - Adding new functionality</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-modes-in-assessor">1. New Modes in Assessor</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-processors-for-compute">2. New Processors for Compute</a></li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">CLI Tool Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="assess.html">Assessor Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="execution-source.html">Control Scripts Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="groups.html">The Group Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD</a></li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Pipeline Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">PADOCC Source:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="init.html">Initialisation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="scan.html">Scanning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="compute.html">Compute</a></li>
-<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
-<li class="toctree-l1"><a class="reference internal" href="allocation.html">Allocations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="extras.html">Utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="project_source.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
 </div>
 </section>
@@ -158,13 +157,15 @@
 <section id="acknowledgements">
 <h1>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this heading"></a></h1>
 <p>PADOCC was developed at the Centre for Environmental Data Analysis, supported by the ESA CCI Knowledge Exchange program and contributing to the development of the Earth Observation Data Hub (EODH).</p>
+<a class="reference internal image-reference" href="_images/ceda.png"><img alt="CEDA Logo" src="_images/ceda.png" style="width: 300px;" /></a>
+<a class="reference internal image-reference" href="_images/esa.png"><img alt="ESA Logo" src="_images/esa.png" style="width: 300px;" /></a>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="pipeline-overview.html" class="btn btn-neutral float-right" title="Overview of Pipeline Phases" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="inspiration.html" class="btn btn-neutral float-right" title="Inspiration for Cloud Formats and Aggregations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

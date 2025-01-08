@@ -6,7 +6,7 @@
 PADOCC - User Documentation
 ============================
 
-**padocc** (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package (formerly **kerchunk-builder**) for aggregating data to enable methods of access for cloud-based applications.
+**padocc** (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package for aggregating data to enable methods of access for cloud-based applications.
 
 The pipeline makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across different datasets simultaneously with validation steps to ensure the outputs are correct.
 
@@ -14,49 +14,50 @@ Vast amounts of archival data in a variety of formats can be processed using the
 
 Currently supported input file formats:
  - NetCDF/HDF
- - GeoTiff (**coming soon**)
- - GRIB (**coming soon**)
+ - GeoTiff
+ - GRIB
  - MetOffice (**future**)
 
-*padocc* is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr.
+*padocc* is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr. 
+Additionally, PADOCC creates CF-compliant aggregation files as part of the standard workflow, which means you get CFA-netCDF files as standard!
+You can find out more about Climate Forecast Aggregations `here <https://cedadev.github.io/CFAPyX/>`_, these files are denoted with the extension ``.nca`` and can be opened using xarray with ``engine="CFA"`` if you have the ``CFAPyX`` package installed.
 
-The pipeline consists of four central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. This is not part of the code-base of the pipeline currently but could be added in a future update.
+The pipeline consists of three central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. 
+These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system.
+For further information around configuring PADOCC for parallel deployment please contact `daniel.westwood@stfc.ac.uk <daniel.westwood@stfc.ac.uk>`_.
+
+The ingestion/cataloging phase is not currently implemented for public use but may be added in a future update.
 
 .. image:: _images/pipeline.png
-   :alt: Stages of the Kerchunk Pipeline
+   :alt: Stages of the PADOCC workflow
 
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
 
-   Introduction <pipeline-overview>
+   Inspiration <inspiration>
+   Steps to Run Padocc <phases>
    Getting Started <start>
-   Example CCI Water Vapour <cci_water>
-   Padocc Flags/Options <execution>
-   Assessor Tool Overview <assess-overview>
-   Error Codes <errors>
+   Example Operation <cci_water>
+   A Deep Dive <deep_dive>
    Developer's Guide <dev-guide>
 
 .. toctree::
    :maxdepth: 1
-   :caption: CLI Tool Source:
+   :caption: Operations:
 
-   Assessor Source <assess>
-   Control Scripts Source <execution-source>
+   The Project Operator <projects>
+   The Group Operator <groups>
+   SHEPARD <shepard>
 
 .. toctree::
    :maxdepth: 1
-   :caption: Pipeline Source:
+   :caption: PADOCC Source:
    
-   Initialisation <init>
-   Scanning <scan>
-   Compute <compute>
-   Validate <validate>
-   Allocations <allocation>
-   Utils <extras>
-
-
-
+   Projects <project_source>
+   Groups <group_source>
+   Filehandlers, Logs, and Utilities <misc_source>
+   
 Indices and Tables
 ==================
 
@@ -72,9 +73,7 @@ PADOCC was developed at the Centre for Environmental Data Analysis, supported by
 .. image:: _images/ceda.png
    :width: 300
    :alt: CEDA Logo
-   :width: 300
 
 .. image:: _images/esa.png
    :width: 300
    :alt: ESA Logo
-   :width: 300
