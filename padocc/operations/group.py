@@ -253,7 +253,6 @@ class GroupOperation(
 
         group_A.logger.info("Unmerge operation complete")
 
-        
     def values(self):
         print(f'Group: {self.groupID}')
         print(f' - Workdir: {self.workdir}')
@@ -457,7 +456,7 @@ class GroupOperation(
                 proj_code,
                 workdir=self.workdir,
                 groupID=self.groupID,
-                bypass=bypass
+                bypass=bypass,
                 **kwargs)
         except TypeError:
             raise ValueError(

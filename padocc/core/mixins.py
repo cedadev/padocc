@@ -233,7 +233,7 @@ class PropertiesMixin:
 
     @property
     def cloud_format(self) -> str:
-        return self._check_override('cloud_type','scanned_with')
+        return self._check_override('cloud_type','scanned_with') or 'kerchunk'
 
     @cloud_format.setter
     def cloud_format(self, value):
