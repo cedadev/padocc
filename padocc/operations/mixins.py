@@ -17,6 +17,9 @@ from padocc.core.utils import extract_file, times, apply_substitutions, file_con
 from padocc.core.project import ProjectOperation
 
 class InitialisationMixin:
+    """
+    Mixin container class for initialisation
+    routines for groups via input files."""
 
     def init_from_stac(self):
         pass
@@ -114,8 +117,8 @@ class InitialisationMixin:
         # Group config is the contents of datasets.csv
         if substitutions:
             datasets, status = apply_substitutions('init_file',subs=substitutions, content=datasets)
-        if status:
-            self.logger.warning(status)
+            if status:
+                self.logger.warning(status)
 
         self.datasets.set(datasets)
 
@@ -131,16 +134,19 @@ class InitialisationMixin:
             cfg_values = {}
             ds_values  = datasets[index].split(',')
 
-            proj_code = ds_values[0]
-            pattern   = ds_values[1]
+            proj_code = ds_values[0].replace(' ','')
+            pattern   = ds_values[1].replace(' ','')
 
             if pattern.endswith('.txt') and substitutions:
                 pattern, status = apply_substitutions('dataset_file', subs=substitutions, content=[pattern])
                 pattern = pattern[0]
                 if status:
                     self.logger.warning(status)
-            else:
+            elif pattern.endswith('.csv'):
                 pattern = os.path.abspath(pattern)
+            else:
+                # Dont expand pattern if its not a csv
+                pass
 
             if substitutions:
                 cfg_values['substitutions'] = substitutions
@@ -180,6 +186,20 @@ class InitialisationMixin:
         self._add_proj_codeset('main',proj_codes)
         self.logger.info(f'Written as group ID: {self.groupID}')
         self.save_files()
+
+class ModifiersMixin:
+
+    def add_project(self):
+        """
+        Add a project to this group
+        """
+        pass
+
+    def remove_project(self):
+        """
+        Remove a project from this group
+        """
+        pass
 
 """
 Replacement for assessor tool. Requires the following (public) methods:

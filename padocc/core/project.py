@@ -6,6 +6,8 @@ import os
 import glob
 import logging
 
+from typing import Union
+
 from .errors import error_handler
 from .utils import extract_file, BypassSwitch, apply_substitutions, phases, file_configs
 from .logs import reset_file_handler
@@ -14,7 +16,7 @@ from .mixins import DirectoryMixin, EvaluationsMixin, PropertiesMixin
 from .filehandlers import (
     JSONFileHandler, 
     CSVFileHandler,
-    TextFileHandler,
+    ListFileHandler,
     LogFileHandler,
     KerchunkFile
 )
@@ -129,7 +131,7 @@ class ProjectOperation(
         # Project FileHandlers
         self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', logger=self.logger, conf=file_configs['base_cfg'], **self.fh_kwargs)
         self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', logger=self.logger, conf=file_configs['detail_cfg'], **self.fh_kwargs)
-        self.allfiles   = TextFileHandler(self.dir, 'allfiles', logger=self.logger, **self.fh_kwargs)
+        self.allfiles   = ListFileHandler(self.dir, 'allfiles', logger=self.logger, **self.fh_kwargs)
 
         # ft_kwargs <- stored in base_cfg after this point.
         if first_time:
@@ -138,14 +140,14 @@ class ProjectOperation(
             self._configure_filelist()
 
         # ProjectOperation attributes
-        self.status_log = CSVFileHandler(self.dir, 'status_log', self.logger, **self.fh_kwargs)
+        self.status_log = CSVFileHandler(self.dir, 'status_log', logger=self.logger, **self.fh_kwargs)
 
         self.phase_logs = {}
         for phase in ['scan', 'compute', 'validate']:
             self.phase_logs[phase] = LogFileHandler(
                 self.dir,
                 phase, 
-                self.logger, 
+                logger=self.logger, 
                 extra_path='phase_logs/', 
                 **self.fh_kwargs
             )
@@ -193,16 +195,19 @@ class ProjectOperation(
     def run(
             self,
             mode: str = 'kerchunk',
-            subset_bypass: bool = False, 
+            bypass: Union[BypassSwitch,None] = None,
             forceful : bool = None,
             thorough : bool = None,
             dryrun : bool = None,
+            **kwargs
         ) -> str:
         """
         Main function for running any project operation. All 
         subclasses act as plugins for this function, and require a
         ``_run`` method called from here. This means all error handling
         with status logs and log files can be dealt with here."""
+
+        self._bypass = bypass or self._bypass
 
         # Reset flags given specific runs
         if forceful is not None:
@@ -213,30 +218,33 @@ class ProjectOperation(
             self._dryrun = dryrun
 
         try:
-            status = self._run(mode=mode)
+            status = self._run(mode=mode, **kwargs)
             self.save_files()
             return status
         except Exception as err:
-            raise err
-            #return error_handler(
-                #err, self.logger, self.phase,
-                #jobid=self._logid, dryrun=self._dryrun, 
-                ##subset_bypass=subset_bypass,
-                #status_fh=self.status_log)
+            return error_handler(
+                err, self.logger, self.phase,
+                jobid=self._logid, dryrun=self._dryrun, 
+                subset_bypass=self._bypass.skip_subsets,
+                status_fh=self.status_log)
 
-    def _run(self, **kwargs):
+    def move_to(self, new_directory: str) -> None:
+        """
+        Move all associated files across to new directory."""
+
+    def _run(self, **kwargs) -> None:
         # Default project operation run.
         self.logger.info("Nothing to run with this setup!")
 
-    def create_new_kfile(self, product : str):
+    def create_new_kfile(self, product : str) -> None:
         self.kfile = KerchunkFile(
             self.dir,
             product,
-            self.logger,
+            logger=self.logger,
             **self.fh_kwargs
         )
 
-    def create_new_kstore(self, product : str):
+    def create_new_kstore(self, product: str) -> None:
         raise NotImplementedError
 
     @property
@@ -268,10 +276,9 @@ class ProjectOperation(
             self, 
             phase : str, 
             status: str, 
-            jobid : str = '', 
-            dryrun: str = ''
+            jobid : str = ''
         ) -> None: 
-        self.status_log.update_status(phase, status, jobid=jobid, dryrun=dryrun)
+        self.status_log.update_status(phase, status, jobid=jobid)
 
     def save_files(self):
         # Add all files here.
@@ -315,7 +322,7 @@ class ProjectOperation(
             if 'latest' in pattern:
                 pattern = pattern.replace('latest', os.readlink(pattern))
 
-            self.allfiles.set(glob.glob(pattern))
+            self.allfiles.set(sorted(glob.glob(pattern, recursive=True)))
 
     def _setup_config(
             self, 

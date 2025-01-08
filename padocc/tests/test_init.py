@@ -27,7 +27,8 @@ class TestInit:
         process = GroupOperation(
             groupID,
             workdir=workdir,
-            label='test_init')
+            label='test_init',
+            verbose=2)
 
         process.init_from_file(infile, substitutions=substitutions)
 

@@ -858,6 +858,8 @@ class ValidateOperation(ProjectOperation):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.phase = 'validate'
+
     def _run(
             self,
             mode: str = 'kerchunk',
@@ -896,7 +898,7 @@ class ValidateOperation(ProjectOperation):
         # Save report
         vd.save_report()
 
-        self.update_status('validate',vd.pass_fail,jobid=self._logid, dryrun=self._dryrun)
+        self.update_status('validate',vd.pass_fail,jobid=self._logid)
         return vd.pass_fail
 
     def _open_sample(self):
@@ -922,9 +924,12 @@ class ValidateOperation(ProjectOperation):
         """
 
         if self.cloud_format == 'kerchunk':
+
+            self.create_new_kfile(self.outproduct)
+
             # Kerchunk opening sequence
             return open_kerchunk(
-                self.outpath, 
+                self.kfile.filepath, 
                 self.logger,
                 isparq = (self.file_type == 'parq'),
                 retry = True,

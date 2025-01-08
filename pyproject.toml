@@ -31,8 +31,12 @@ sphinx = "7.1.2"
 sphinx-rtd-theme = "2.0.0"
 cfapyx = "2024.11.27"
 myst-nb = "^1.1.2"
-
+types-pyyaml = "^6.0.12.20240917"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+shepard_deploy = "padocc.operations.shepard:main"
+padocc = "padocc.cli:main"

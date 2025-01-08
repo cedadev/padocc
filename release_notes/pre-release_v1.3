@@ -1,0 +1,105 @@
+
+# Release Notes for pre-release 1.3
+
+## Module Restructuring
+ - Restructured module sections into three components:
+   - Core: Central components
+   - Operations: Relating specifically to group operations.
+   - Phases: Classes for specific phases within the pipeline (scan, compute etc.)
+   - Added a Tests module for automated testing.
+
+ - Other details
+   - The entire module is now referred to as `padocc` throughout.
+   - `padocc` is consistent with other packages in the CEDA package landscape in terms of its use of poetry for dependency management.
+   - 
+
+## Filehandlers
+
+ - Generic properties of all filehandlers:
+   - move_file: Specify a new path/name for the attached file.
+   - remove_file: Delete the file from the filesystem.
+   - file: Name of the attached file.
+   - filename: Full path to the attached file.
+
+ - Magic Methods of all filehandlers - implementations vary.
+   - `__contains__`: Check if a value exists within the filehandler contents.
+   - `__str__`: String representation of the specific instance.
+   - `__repr__`: Programmatic representation of the specific instance.
+   - `__len__`: Length of contents within the filehandler (where appropriate)
+   - `__iter__`: Allows generation of iterable content of filehandler (where appropriate)
+   - `__getitem__`: Filehandlers are indexable.
+
+ - Other Methods
+   - Append: ListFileHandler operates like a list with `append()` function.
+   - Set/Get: Set or get the value attributed to a filehandler
+   - Close: Save content of the filehandler to the filesystem.
+
+ - Methods for Special Filehandlers
+   - add_download_link: Specific to the Kerchunk JSON Filehandler, resets the path for all chunks to use the CEDA dap connection.
+   - add_kerchunk_history: Adds specific parameters to the Kerchunk content's `history` parameter to state when it was generated etc.
+   - clear: Clears the Store-type filehandlers of all internal files.
+   - open (beta): Open a cloud-format (Store or JSON) Filehandler as a dataset
+
+ - Other Features
+   - Conf: JSON Filehandlers allow a special property to be supplied, a default dictionary which contains some template values. These are then applied before saving any content, where all new values override the template.
+   - Documentation: Added the documentation page for filehandlers and subcomponents.
+
+## Project Operator
+
+Documentation is provided for the project operator, detailed here are some of the key features.
+
+ - Key Methods
+   - info: Obtain information about the specific operator instance.
+   - help: Get help with public methods 
+   - run: Can only be used with a Phase Operator (see below) for running a phased operation. All errors are handled and logged when using this function.
+   - increment_versions: Increment major or minor versions 
+
+ - Properties
+   - dir: The directory on the filesystem where all project files can be found
+   - groupdir: The path to the group directory on the filesystem.
+   - cfa_path: The path to a cfa dataset for this project.
+   - outproduct: The complete filename of the output product
+   - outpath: The combined path to the output product.
+   - revision: The full revision describing the product version i.e 'kr1.0'
+   - version_no: The version number (second part of the revision i.e '1.0') with a major and minor component.
+   - cloud_format [Editable]: The cloud format being used in current workflows.
+   - file_type [Editable]: The file type being used in current workflows.
+   - source_format: The source format detected for this project.
+
+## Group Operator
+
+The group operator enables the application of phased operators across a group of datasets at once, either by parallel deployment or serial handling.
+
+ - Key Methods
+   - info: Obtain useful information about the group
+   - help: Find helpful user functions for the group.
+   - merge/unmerge (beta): Allows the merging and unmerging of groups of datasets.
+   - run: Perform an operation on a subset of full set of the datasets within the group.
+   - create_sbatch: Create a job deployment to SLURM for group processing.
+   - init_from_file [Mixin]: Initialise a group from parameters in a CSV file.
+   - add/remove_project [Mixin]: Add or remove a specific project from a group (Not implemented in pre-release)
+   - get_project [Mixin]: Enables retrieval of a specific project, also accomplished by indexing the group which utilises this function.
+
+ - Still in development:
+   - summary_data: Summarise the data across all projects in the group, including status within the pipeline.
+   - progress: Obtain pipeline specific information about the projects in the group.
+   - create_allocations: Assemble allocations using binpacking for parallel deployment.
+
+ - Magic Methods
+   - `__str__`: String representation of the group
+   - `__repr__`: Programmatic representation of the group.
+   - `__getitem__`: Group is integer indexable to obtain a specific dataset as a ProjectOperator.
+
+## Phased Operators
+
+The phased operators can be used to individually operate on a specific project, although 
+it is instead suggested that the `GroupOperator.run()` method is used as this includes all error logging
+as part of the project operator. Specifics of the phased operators are described below:
+
+ - Scan Operator: Scan a subset of the source files in a specific project and generate some extrapolated results for the whole dataset, including number of chunks, data size and volumes etc.
+ - Compute Operator: Inherited by DatasetProcessors within the compute module (Kerchunk, Zarr, CFA etc.) and enables the computation step. The scan operator uses the compute processors with a file limiter, to operate on a small subset for scanning purposes.
+ - Validate Operator: Perform dataset validation using the CFA dataset generated as part of the pipeline. If a CFA dataset is the only dataset generated, this step is currently not utilised.
+
+Future improvements:
+ - Reorganisation of the compute operator as the current inheritance system is overly complicated.
+ - Addition of an ingest operator for ingestion into STAC catalogs and the CEDA Archive (CEDA-only.)

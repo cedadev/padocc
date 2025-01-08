@@ -26,12 +26,9 @@ from padocc.core.utils import (
 
 from padocc.core.errors import (
     PartialDriverError,
-    SoftfailBypassError,
     KerchunkDriverFatalError,
     ConcatFatalError,
     SourceNotFoundError,
-    ValidationError,
-    IdenticalVariablesError,
     ComputeError
 )
 
@@ -290,7 +287,8 @@ class ComputeOperation(ProjectOperation):
 
         self.partial = (limiter and num_files != limiter)
 
-        self._determine_version()
+        # Perform this later
+        #self._determine_version()
 
         self.limiter = limiter
         if not self.limiter:
@@ -301,7 +299,7 @@ class ComputeOperation(ProjectOperation):
         self.temp_zattrs = JSONFileHandler(
             self.cache, 
             'temp_zattrs',
-            self.logger,
+            logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful
         )
@@ -346,7 +344,7 @@ class ComputeOperation(ProjectOperation):
         self.logger.error('Nothing to do with this class - use KerchunkDS/ZarrDS instead!')
         raise ComputeError
 
-    def _run_with_timings(self, func):
+    def _run_with_timings(self, func, **kwargs) -> str:
         """
         Configure all required steps for Kerchunk processing.
         - Check if output files already exist.
@@ -355,7 +353,7 @@ class ComputeOperation(ProjectOperation):
 
         # Timed func call
         t1 = datetime.now()
-        func()
+        func(**kwargs)
         compute_time = (datetime.now()-t1).total_seconds()
 
         timings      = self._get_timings()
@@ -603,7 +601,7 @@ class ComputeOperation(ProjectOperation):
         vd.save_report(
             JSONFileHandler(
                 self.dir,
-                'potential_issues.json',
+                'potential_issues',
                 logger=self.logger
             )
         )
@@ -671,22 +669,23 @@ class KerchunkDS(ComputeOperation):
         
     def _run(
             self,
-            **kwargs) -> None:
+            check_dimensions: bool = False,
+            **kwargs) -> str:
         """
         ``_run`` hook method called from the ``ProjectOperation.run`` 
         which this subclass inherits. The kwargs capture the ``mode``
         parameter from ``ProjectOperation.run`` which is not needed 
         because we already know we're running for ``Kerchunk``.
         """
-        status = self._run_with_timings(self.create_refs)
+        status = self._run_with_timings(self.create_refs, check_dimensions=check_dimensions)
         results = cfa_handler(self)
         if results is not None:
             self.base_cfg['data_properties'] = results
             self.detail_cfg['cfa'] = True
-        self.update_status('compute',status,jobid=self._logid, dryrun=self._dryrun)
+        self.update_status('compute',status,jobid=self._logid)
         return status
 
-    def create_refs(self) -> None:
+    def create_refs(self, check_dimensions: bool = False) -> None:
         """Organise creation and loading of refs
         - Load existing cached refs
         - Create new refs
@@ -709,7 +708,7 @@ class KerchunkDS(ComputeOperation):
         t1 = datetime.now()
         for x, nfile in enumerate(listfiles[:self.limiter]):
             ref = None
-            CacheFile = JSONFileHandler(self.cache, f'{x}.json', 
+            CacheFile = JSONFileHandler(self.cache, f'{x}', 
                                             dryrun=self._dryrun, forceful=self._forceful,
                                             logger=self.logger)
             if not self._thorough:
@@ -736,6 +735,10 @@ class KerchunkDS(ComputeOperation):
 
             if not self.quality_required:
                 self._perform_shape_checks(ref)
+
+            if check_dimensions:
+                refs = self._perform_dimensions_checks(ref)
+
             CacheFile.set(ref)
             CacheFile.close()
             ctypes.append(ctype)
@@ -923,6 +926,17 @@ class KerchunkDS(ComputeOperation):
             if self.var_shapes[key] != zarray['shape']:
                 self.quality_required = True
 
+    def _perform_dimension_checks(self, ref: dict) -> dict:
+        """
+        Perform dimensional corrections, developed in 
+        response to issues with CCI lakes datasets.
+        """
+
+        raise NotImplementedError(
+            'This feature is not implemented in pre-release v1.3a'
+        )
+
+
 class ZarrDS(ComputeOperation):
 
     def __init__(
@@ -937,7 +951,7 @@ class ZarrDS(ComputeOperation):
         
         super().__init__(proj_code, workdir, stage, *kwargs)
 
-        self.tempstore   = ZarrStore(self.dir, "zarrcache.zarr", self.logger, **self.fh_kwargs)
+        self.tempstore   = ZarrStore(self.dir, "zarrcache.zarr", logger=self.logger, **self.fh_kwargs)
         self.preferences = preferences
 
         if self.thorough or self.forceful:
@@ -946,12 +960,12 @@ class ZarrDS(ComputeOperation):
         self.filelist    = []
         self.mem_allowed = mem_allowed
 
-    def _run(self, **kwargs) -> None:
+    def _run(self, **kwargs) -> str:
         """
         Recommended way of running an operation - includes timers etc.
         """
         status = self._run_with_timings(self.create_store)
-        self.update_status('compute',status,jobid=self._logid, dryrun=self._dryrun)
+        self.update_status('compute',status,jobid=self._logid)
         return status
 
     def create_store(self):
@@ -1055,6 +1069,18 @@ class ZarrDS(ComputeOperation):
             volume += self.combined_ds[var].nbytes
 
         return concat_dim_rechunk, dim_sizes, cpf/self.limiter, volume/self.limiter
+
+class CfaDS(ComputeOperation):
+
+    def _run(self, **kwargs) -> str:
+        """
+        Integration of CFA Converter to 
+        Padocc Operation class."""
+        if cfa_handler(self):
+            return 'Success'
+        return 'Fatal'
+    
+        # Deal with setting proper values here in specific files.
 
 if __name__ == '__main__':
     print('Serial Processor for Kerchunk Pipeline - run with single_run.py')

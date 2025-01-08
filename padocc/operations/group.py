@@ -4,7 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import os
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 from padocc.core import BypassSwitch, FalseLogger
 from padocc.core.utils import format_str, times
@@ -13,19 +13,19 @@ from padocc.phases import (
     ScanOperation,
     KerchunkDS, 
     ZarrDS, 
-    cfa_handler,
+    CfaDS,
     KNOWN_PHASES,
     ValidateOperation,
 )
 from padocc.core.mixins import DirectoryMixin
-from padocc.core.filehandlers import CSVFileHandler, TextFileHandler
+from padocc.core.filehandlers import CSVFileHandler, ListFileHandler
 
 from .mixins import AllocationsMixin, InitialisationMixin, EvaluationsMixin
 
 COMPUTE = {
     'kerchunk':KerchunkDS,
     'zarr':ZarrDS,
-    'cfa': cfa_handler,
+    'cfa': CfaDS,
 }
 
 class GroupOperation(
@@ -106,7 +106,7 @@ class GroupOperation(
         self.blacklist_codes = CSVFileHandler(
             self.groupdir,
             'blacklist_codes',
-            self.logger,
+            logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful,
         )
@@ -114,7 +114,7 @@ class GroupOperation(
         self.datasets = CSVFileHandler(
             self.groupdir,
             'datasets',
-            self.logger,
+            logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful,
         )
@@ -126,7 +126,15 @@ class GroupOperation(
     
     def __repr__(self):
         return str(self)
+    
+    def __getitem__(self, index: int) -> ProjectOperation:
+        """
+        Indexable group allows access to individual projects
+        """
 
+        proj_code = self.proj_codes['main'][index]
+        return self.get_project(proj_code)
+    
     @property
     def proj_codes_dir(self):
         return f'{self.groupdir}/proj_codes'
@@ -138,6 +146,113 @@ class GroupOperation(
         else:
             raise NotImplementedError
         
+    def merge(group_A,group_B):
+        """
+        Merge group B into group A.
+        1. Migrate all projects from B to A and reset groupID values.
+        2. Combine datasets.csv
+        3. Combine project codes
+        4. Combine blacklists.
+        """
+
+        new_proj_dir = f'{group_A.workdir}/in_progress/{group_A.groupID}'
+        group_A.logger.info(f'Merging {group_B.groupID} into {group_A.groupID}')
+
+        # Combine projects
+        for proj_code in group_B.proj_codes['main']:
+            proj_op = ProjectOperation(
+                proj_code,
+                group_B.workdir,
+                group_B.groupID
+            )
+            group_A.logger.debug(f'Migrating project {proj_code}')
+            proj_op.move_to(new_proj_dir)
+
+        # Datasets
+        group_A.datasets.set(
+            group_A.datasets.get() + group_B.datasets.get()
+        )
+        group_B.datasets.remove_file()
+        group_A.logger.debug(f'Removed dataset file for {group_B.groupID}')
+
+        # Blacklists
+        group_A.blacklist_codes.set(
+            group_A.blacklist_codes.get() + group_B.blacklist_codes.get()
+        )
+        group_B.blacklist_codes.remove_file()
+        group_A.logger.debug(f'Removed blacklist file for {group_B.groupID}')
+
+        # Subsets
+        for name, subset in group_B.proj_codes.items():
+            if name not in group_A.proj_codes:
+                subset.move_file(group_A.groupdir)
+                group_A.logger.debug(f'Migrating subset {name}')
+            else:
+                group_A.proj_codes[name].set(
+                    group_A.proj_codes[name].get() + subset.get()
+                )
+                group_A.logger.debug(f'Merging subset {name}')
+                subset.remove_file()
+
+        group_A.logger.info("Merge operation complete")
+        del group_B
+
+    def unmerge(group_A, group_B, dataset_list: list):
+        """
+        Separate elements from group_A into group_B
+        according to the list
+        1. Migrate projects
+        2. Set the datasets
+        3. Set the blacklists
+        4. Project codes (remove group B sections)"""
+
+        group_A.logger.info(
+            f"Separating {len(dataset_list)} datasets from "
+            f"{group_A.groupID} to {group_B.groupID}")
+        
+        new_proj_dir = f'{group_B.workdir}/in_progress/{group_B.groupID}'
+
+        # Combine projects
+        for proj_code in dataset_list:
+            proj_op = ProjectOperation(
+                proj_code,
+                group_A.workdir,
+                group_A.groupID
+            )
+
+            proj_op.move_to(new_proj_dir)
+            proj_op.groupID = group_B.groupID
+        
+        # Set datasets
+        group_B.datasets.set(dataset_list)
+        group_A.datasets.set(
+            [ds for ds in group_A.datasets if ds not in dataset_list]
+        )
+
+        group_A.logger.debug(f"Created datasets file for {group_B.groupID}")
+
+        # Set blacklist
+        A_blacklist, B_blacklist = [],[]
+        for bl in group_A.blacklist_codes:
+            if bl in dataset_list:
+                B_blacklist.append(bl)
+            else:
+                A_blacklist.append(bl)
+
+        group_A.blacklist_codes.set(A_blacklist)
+        group_B.blacklist_codes.set(B_blacklist)
+        group_A.logger.debug(f"Created blacklist file for {group_B.groupID}")
+
+        # Combine project subsets
+        group_B.proj_codes['main'].set(dataset_list)
+        for name, subset in group_A.proj_codes.items():
+            if name != 'main':
+                subset.set([s for s in subset if s not in dataset_list])
+        group_A.logger.debug(f"Removed all datasets from all {group_A.groupID} subsets")
+
+
+        group_A.logger.info("Unmerge operation complete")
+
     def values(self):
         print(f'Group: {self.groupID}')
         print(f' - Workdir: {self.workdir}')
@@ -164,9 +279,11 @@ class GroupOperation(
             repeat_id: str = 'main',
             proj_code: Optional[str] = None,
             subset: Optional[str] = None,
-            subset_bypass: bool = False,
+            bypass: Union[BypassSwitch, None] = None,
             **kwargs
         ) -> dict[str]:
+
+        bypass = bypass or BypassSwitch()
 
         phases = {
             'scan': self._scan_config,
@@ -208,7 +325,7 @@ class GroupOperation(
             status = func(
                 proj_code, 
                 mode=mode, logid=logid, label=phase, 
-                fh=fh, subset_bypass=subset_bypass,
+                fh=fh, bypass=bypass,
                 **kwargs)
             
             if status in results:
@@ -225,9 +342,9 @@ class GroupOperation(
 
     def _scan_config(
             self,
-            proj_code,
-            mode='kerchunk',
-            subset_bypass=False,
+            proj_code: str,
+            mode: str = 'kerchunk',
+            bypass: Union[BypassSwitch,None] = None,
             **kwargs
         ) -> None:
         """
@@ -249,16 +366,17 @@ class GroupOperation(
 
         so = ScanOperation(
             proj_code, self.workdir, groupID=self.groupID,
-            verbose=self._verbose, **kwargs, dryrun=self._dryrun)
-        status = so.run(mode=mode, subset_bypass=False)
+            verbose=self._verbose, bypass=bypass, 
+            dryrun=self._dryrun, **kwargs)
+        status = so.run(mode=mode)
         so.save_files()
         return status
 
     def _compute_config(
             self, 
-            proj_code,  
-            mode=None,
-            subset_bypass=False,
+            proj_code: str,
+            mode: str = 'kerchunk',
+            bypass: Union[BypassSwitch,None] = None,
             **kwargs
         ) -> None:
         """
@@ -286,10 +404,11 @@ class GroupOperation(
             self.workdir,
             groupID=self.groupID,
             logger=self.logger,
+            bypass=bypass,
             **kwargs,
         )
 
-        mode = proj_op.cloud_format
+        mode = mode or proj_op.cloud_format
         if mode is None:
             mode = 'kerchunk'
 
@@ -315,7 +434,7 @@ class GroupOperation(
             logger=self.logger,
             **kwargs
         )
-        status = proj_op.run(subset_bypass=subset_bypass)
+        status = proj_op.run()
         proj_op.save_files()
         return status
     
@@ -323,7 +442,7 @@ class GroupOperation(
             self, 
             proj_code: str,  
             mode: str = 'kerchunk',
-            subset_bypass: bool = False,
+            bypass: Union[BypassSwitch,None] = None,
             forceful: Optional[bool] = None,
             thorough: Optional[bool] = None,
             dryrun: Optional[bool] = None,
@@ -332,29 +451,24 @@ class GroupOperation(
 
         self.logger.debug(f"Starting validation for {proj_code}")
 
-        #try:
-        if True:
+        try:
             vop = ValidateOperation(
                 proj_code,
                 workdir=self.workdir,
                 groupID=self.groupID,
+                bypass=bypass,
                 **kwargs)
-        #except TypeError:
-            #raise ValueError(
-            #    f'{proj_code}, {self.groupID}, {self.workdir}'
-            #)
+        except TypeError:
+            raise ValueError(
+                f'{proj_code}, {self.groupID}, {self.workdir}'
+            )
         
         status = vop.run(
             mode=mode, 
-            subset_bypass=subset_bypass,
             forceful=forceful,
             thorough=thorough,
             dryrun=dryrun)
         return status
-
-
-    def add_project(self):
-        pass
 
     def _save_proj_codes(self):
         for pc in self.proj_codes.keys():
@@ -366,15 +480,14 @@ class GroupOperation(
         self._save_proj_codes()
 
     def _add_proj_codeset(self, name : str, newcodes : list):
-        self.proj_codes[name] = TextFileHandler(
+        self.proj_codes[name] = ListFileHandler(
             self.proj_codes_dir,
             name,
-            self.logger,
+            init_value=newcodes,
+            logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful
         )
-
-        self.proj_codes[name].set(newcodes)
 
     def check_writable(self):
         if not os.access(self.workdir, os.W_OK):
@@ -488,7 +601,7 @@ class GroupOperation(
             sbatch_file = f'{phase}_{joblabel}.sbatch'
             repeat_id = f'{repeat_id}/{joblabel}'
 
-        sbatch = TextFileHandler(sbatch_dir, sbatch_file, self.logger, dryrun=self._dryrun, forceful=self._forceful)
+        sbatch = ListFileHandler(sbatch_dir, sbatch_file, self.logger, dryrun=self._dryrun, forceful=self._forceful)
 
         master_script = f'{source}/single_run.py'
 
@@ -592,14 +705,14 @@ class GroupOperation(
             # Running for the first time
             self._add_proj_codeset(
                 'main', 
-                self.datasets.get()
+                self.datasets
             )
             
         for p in proj_codes:
-            self.proj_codes[p] = TextFileHandler(
+            self.proj_codes[p] = ListFileHandler(
                 self.proj_codes_dir, 
                 p, 
-                self.logger,
+                logger=self.logger,
                 dryrun=self._dryrun,
                 forceful=self._forceful,
             )

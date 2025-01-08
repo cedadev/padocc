@@ -4,6 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import logging
 import os
+from typing import Union, Optional
 
 levels = [
     logging.WARN,
@@ -19,31 +20,6 @@ SUFFIXES = {
     'G': 1000000000
 }
 
-class LoggedOperation:
-    """
-    Allows inherritance of logger objects without creating new ones.
-    """
-    def __init__(
-            self, 
-            logger : logging.Logger = None,
-            label  : str = None, 
-            fh     : str = None, 
-            logid  : str = None, 
-            verbose: int = 0
-        ) -> None:
-
-        self._logid = logid
-        self._verbose = verbose
-        if hasattr(self, 'logger'):
-            return
-        if logger is None:
-            self.logger = init_logger(
-                self._verbose, 
-                label,
-                fh=fh, 
-                logid=logid)
-        else:
-            self.logger = logger
 
 class FalseLogger:
     """
@@ -60,6 +36,32 @@ class FalseLogger:
         pass
     def error(self, message: str):
         pass
+
+class LoggedOperation:
+    """
+    Allows inherritance of logger objects without creating new ones.
+    """
+    def __init__(
+            self, 
+            logger : Union[logging.Logger,FalseLogger, None] = None,
+            label  : Union[str,None] = None, 
+            fh     : Union[str,None] = None, 
+            logid  : Union[str,None] = None, 
+            verbose: int = 0
+        ) -> None:
+
+        self._logid = logid
+        self._verbose = verbose
+        if hasattr(self, 'logger'):
+            return
+        if logger is None:
+            self.logger = init_logger(
+                self._verbose, 
+                label,
+                fh=fh, 
+                logid=logid)
+        else:
+            self.logger = logger
 
 def reset_file_handler(
         logger  : logging.Logger,

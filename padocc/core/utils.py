@@ -73,21 +73,17 @@ class BypassSwitch:
     switches stored in this class.
     """
 
-    def __init__(self, switch='DBSCLR'):
+    def __init__(self, switch='D'):
         if switch.startswith('+'):
-            switch = 'DBSCLR' + switch[1:]
+            switch = 'D' + switch[1:]
         self.switch = switch
         if isinstance(switch, str):
             switch = list(switch)
         
-        self.skip_driver   = ('D' in switch)
-        self.skip_boxfail  = ('B' in switch)
-        self.skip_softfail = ('S' in switch)
-        self.skip_data_sum = ('C' in switch)
-        self.skip_xkshape  = ('X' in switch)
-        self.skip_report   = ('R' in switch)
+        self.skip_driver   = ('D' in switch) # Keep
         self.skip_scan     = ('F' in switch) # Fasttrack
         self.skip_links    = ('L' in switch)
+        self.skip_subsets  = ('S' in switch)
 
     def __str__(self):
         """Return the switch string (letters representing switches)"""
@@ -98,16 +94,10 @@ class BypassSwitch:
 Bypass switch options: \n
   "D" - * Skip driver failures - Pipeline tries different options for NetCDF (default).
       -   Only need to turn this skip off if all drivers fail (KerchunkDriverFatalError).
-  "B" - * Skip Box compute errors.
-  "S" - * Skip Soft fails (NaN-only boxes in validation) (default).
-  "C" - * Skip calculation (data sum) errors (time array typically cannot be summed) (default).
-  "X" -   Skip initial shape errors, by attempting XKShape tolerance method (special case.)
-  "R" -   Skip reporting to status_log which becomes visible with assessor. Reporting is skipped
-          by default in single_run.py but overridden when using group_run.py so any serial
-          testing does not by default report the error experienced to the status log for that project.
   "F" -   Skip scanning (fasttrack) and go straight to compute. Required if running compute before scan
           is attempted.
   "L" -   Skip adding links in compute (download links) - this will be required on ingest.
+  "S" -   Skip errors when running a subset within a group. Record the error then move onto the next dataset.
 """)
   
 def open_kerchunk(kfile: str, logger, isparq=False, retry=False, attempt=1, **kwargs) -> xr.Dataset:
