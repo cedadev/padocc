@@ -56,6 +56,7 @@ The ingestion/cataloging phase is not currently implemented for public use but m
    
    Projects <project_source>
    Groups <group_source>
+   Phases <phase_source>
    Filehandlers, Logs, and Utilities <misc_source>
    
 Indices and Tables

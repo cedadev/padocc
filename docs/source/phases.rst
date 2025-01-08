@@ -40,8 +40,6 @@ The scan phase can be activated with the following:
 
     mygroup.run('scan',mode='kerchunk')
 
-.. automodule:: padocc.phases.scan
-    :members:
 
 Compute
 -------
@@ -74,10 +72,6 @@ Computation can be executed in serial for a group with the following:
 
     mygroup.run('compute',mode='kerchunk')
 
-.. automodule:: padocc.phases.compute
-    :members:
-    :show-inheritance:
-
 Validate
 --------
 
@@ -107,9 +101,6 @@ validator which checks the Xarray representations and identifies differences in 
 
     # The validation reports will be saved to the filesystem for each project in this group
     # as 'data_report.json' and 'metadata_report.json'
-
-.. automodule:: padocc.phases.validate
-    :members:
 
 Next Steps
 ----------
