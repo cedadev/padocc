@@ -1,5 +1,7 @@
 from padocc.operations import GroupOperation
 
+from padocc.core.utils import BypassSwitch
+
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 
 class TestValidate:
@@ -12,7 +14,7 @@ class TestValidate:
             label='test_validate',
             verbose=1)
 
-        results = process.run('validate', forceful=True, subset_bypass=True)
+        results = process.run('validate', forceful=True, bypass=BypassSwitch('DS'))
 
         assert results['Fatal'] == 2
         assert results['Warning'] == 1
