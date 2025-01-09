@@ -1,4 +1,4 @@
-from padocc.operations import GroupOperation
+from padocc import GroupOperation
 
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 
