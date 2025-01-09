@@ -8,3 +8,13 @@ from .ingest import IngestOperation
 from .validate import ValidateOperation
 
 KNOWN_PHASES = ['init', 'scan', 'compute', 'validate']
+
+phase_map = {
+    'scan': ScanOperation,
+    'compute': {
+        'kerchunk': KerchunkDS,
+        'zarr': ZarrDS,
+        'CFA': cfa_handler,
+    },
+    'validate': ValidateOperation
+}

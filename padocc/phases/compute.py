@@ -14,7 +14,7 @@ from typing import Optional
 
 import rechunker
 
-from padocc.core import ProjectOperation
+from padocc import ProjectOperation
 
 from padocc.core import (
     FalseLogger,
@@ -685,7 +685,9 @@ class KerchunkDS(ComputeOperation):
         self.update_status('compute',status,jobid=self._logid)
         return status
 
-    def create_refs(self, check_dimensions: bool = False) -> None:
+    def create_refs(
+            self, 
+            check_refs : bool = False) -> None:
         """Organise creation and loading of refs
         - Load existing cached refs
         - Create new refs
@@ -733,11 +735,9 @@ class KerchunkDS(ComputeOperation):
             allzattrs.append(ref['refs']['.zattrs'])
             refs.append(ref)
 
-            if not self.quality_required:
-                self._perform_shape_checks(ref)
-
-            if check_dimensions:
-                refs = self._perform_dimensions_checks(ref)
+            if check_refs:
+                # Perform any and all checks here if required
+                refs = self._perform_shape_checks(ref)
 
             CacheFile.set(ref)
             CacheFile.close()
@@ -847,11 +847,8 @@ class KerchunkDS(ComputeOperation):
         from fsspec.implementations.reference import LazyReferenceMapper
 
         self.logger.debug('Starting parquet-write process')
-        self.create_new_kstore(self.outproduct)
 
-        if not os.path.isdir(self.outstore):
-            os.makedirs(self.outstore)
-        out = LazyReferenceMapper.create(self.record_size, self.outstore, fs = filesystem("file"), **self.pre_kwargs)
+        out = LazyReferenceMapper.create(self.record_size, str(self.kstore), fs = filesystem("file"), **self.pre_kwargs)
 
         out_dict = MultiZarrToZarr(
             refs,
@@ -861,10 +858,10 @@ class KerchunkDS(ComputeOperation):
         ).translate()
         
         if self.partial:
-            self.logger.info(f'Skipped writing to parquet store - {self.outstore}')
+            self.logger.info(f'Skipped writing to parquet store - {self.kstore}')
         else:
             out.flush()
-            self.logger.info(f'Written to parquet store - {self.outstore}')
+            self.logger.info(f'Written to parquet store - {self.kstore}')
 
     def _data_to_json(self, refs: dict) -> None:
         """
@@ -873,7 +870,6 @@ class KerchunkDS(ComputeOperation):
         from kerchunk.combine import MultiZarrToZarr
 
         self.logger.debug('Starting JSON-write process')
-        self.create_new_kfile(self.outproduct)
 
         # Already have default options saved to class variables
         if len(refs) > 1:
@@ -884,7 +880,6 @@ class KerchunkDS(ComputeOperation):
                 self.combine_kwargs['concat_dims'] = [vdim]
 
             try:
-                print(self.combine_kwargs)
                 mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
             except ValueError as err:
                 if 'chunk size mismatch' in str(err):
@@ -907,34 +902,38 @@ class KerchunkDS(ComputeOperation):
         else:
             self.logger.info(f'Skipped writing to JSON file - {self.outproduct}')
 
-    def _perform_shape_checks(self, ref: dict) -> None:
+    def _perform_shape_checks(self, ref: dict) -> dict:
         """
         Check the shape of each variable for inconsistencies which will
         require a thorough validation process.
         """
+
+        if self.source_format not in ['ncf3','hdf5']:
+            self.logger.warning(
+                'Skipped reference checks, source file not compatible.'
+            )
+
+        # Identify variables to be checked
         if self.base_cfg['data_properties']['aggregated_vars'] != 'Unknown':
             variables = self.base_cfg['data_properties']['aggregated_vars']
             checklist = [f'{v}/.zarray' for v in variables]
         else:
             checklist = [r for r in ref['refs'].keys() if '.zarray' in r]
 
+        # Determine correct values from a single source file
+        ## - Test opening a netcdf file and extracting the dimensions
+        ## - Already checked the files are of netcdf type.
+
+        # Perform corrections
         for key in checklist:
             zarray = json.loads(ref['refs'][key])
             if key not in self.var_shapes:
                 self.var_shapes[key] = zarray['shape']
 
             if self.var_shapes[key] != zarray['shape']:
-                self.quality_required = True
-
-    def _perform_dimension_checks(self, ref: dict) -> dict:
-        """
-        Perform dimensional corrections, developed in 
-        response to issues with CCI lakes datasets.
-        """
-
-        raise NotImplementedError(
-            'This feature is not implemented in pre-release v1.3a'
-        )
+                self.logger.debug(
+                    f'Reference Correction: {zarray["shape"]} to '
+                )
 
 
 class ZarrDS(ComputeOperation):
@@ -1020,7 +1019,7 @@ class ZarrDS(ComputeOperation):
                 self.combined_ds, 
                 concat_dim_rechunk, 
                 self.mem_allowed, 
-                self.outstore,
+                self.zstore,
                 temp_store=self.tempstore).execute()
             self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
             self.logger.info(f'Concluded Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')

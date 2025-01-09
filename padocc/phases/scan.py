@@ -10,13 +10,14 @@ import logging
 
 from typing import Union
 
+from padocc import ProjectOperation
+
 from padocc.core import FalseLogger
 from padocc.core.errors import ConcatFatalError
-from padocc.core import ProjectOperation
 from padocc.core.utils import BypassSwitch
-from .compute import KerchunkDS, cfa_handler
-
 from padocc.core.filehandlers import JSONFileHandler
+
+from .compute import KerchunkDS, cfa_handler
 
 def _format_float(value: int, logger: logging.Logger = FalseLogger()) -> str:
     """
