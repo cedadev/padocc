@@ -12,7 +12,7 @@ from .errors import error_handler
 from .utils import extract_file, BypassSwitch, apply_substitutions, phases, file_configs
 from .logs import reset_file_handler
 
-from .mixins import DirectoryMixin, EvaluationsMixin, PropertiesMixin
+from .mixins import DirectoryMixin, DatasetHandlerMixin, StatusMixin, PropertiesMixin
 from .filehandlers import (
     JSONFileHandler, 
     CSVFileHandler,
@@ -24,7 +24,8 @@ from .filehandlers import (
           
 class ProjectOperation(
     DirectoryMixin, 
-    EvaluationsMixin,
+    DatasetHandlerMixin,
+    StatusMixin,
     PropertiesMixin):
     """
     PADOCC Project Operation class, able to access project files
@@ -152,9 +153,9 @@ class ProjectOperation(
                 **self.fh_kwargs
             )
 
-        self.kfile  = None
-        self.kstore = None
-        self.zstore = None
+        self._kfile  = None
+        self._kstore = None
+        self._zstore = None
 
         self._is_trial = False
         self.stage = None
@@ -236,17 +237,6 @@ class ProjectOperation(
         # Default project operation run.
         self.logger.info("Nothing to run with this setup!")
 
-    def create_new_kfile(self, product : str) -> None:
-        self.kfile = KerchunkFile(
-            self.dir,
-            product,
-            logger=self.logger,
-            **self.fh_kwargs
-        )
-
-    def create_new_kstore(self, product: str) -> None:
-        raise NotImplementedError
-
     @property
     def dir(self):
         if self.groupID:
@@ -254,25 +244,31 @@ class ProjectOperation(
         else:
             return f'{self.workdir}/in_progress/general/{self.proj_code}'
 
-    @property
-    def cfa_path(self):
-        return f'{self.dir}/{self.proj_code}.nca'
-
-    def dir_exists(self, checkdir : str = None):
-        if not checkdir:
-            checkdir = self.dir
-
-        if os.path.isdir(checkdir):
-            return True
-        return False
-
     def file_exists(self, file : str):
-        """Check if a named file exists (without extension)"""
+        """
+        Check if a named file exists (without extension).
+        This can be any generic filehandler attached."""
         if hasattr(self, file):
             fhandle = getattr(self, file)
         return fhandle.file_exists()
+    
+    def delete_project(self, ask: bool = True):
+        """
+        Delete a project
+        """
+        if self._dryrun:
+            self.logger.info('Skipped Deleting directory in dryrun mode.')
+            return
+        if ask:
+            inp = input(f'Are you sure you want to delete {self.proj_code}? (Y/N)?')
+            if inp != 'Y':
+                self.logger.info(f'Skipped Deleting directory (User entered {inp})')
+                return
+            
+        os.system(f'rm -rf {self.dir}')
+        self.logger.info(f'All internal files for {self.proj_code} deleted.')
 
-    def update_status(
+    def _update_status(
             self, 
             phase : str, 
             status: str, 

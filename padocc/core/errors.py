@@ -56,7 +56,6 @@ def error_handler(
     else:
         raise err
 
-
 class KerchunkException(Exception):
     def __init__(self, proj_code: Union[str,None], groupdir: Union[str,None]) -> None:
         self.proj_code = proj_code
