@@ -179,7 +179,7 @@ class InitialisationMixin:
                 forceful=self._forceful,
             )
 
-            proj_op.update_status('init','Success')
+            proj_op._update_status('init','Success')
             proj_op.save_files()
 
         self.logger.info(f'Created {len(datasets)*6} files, {len(datasets)*2} directories in group {self.groupID}')

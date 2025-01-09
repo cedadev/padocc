@@ -15,7 +15,7 @@ import glob
 import json
 
 from padocc.core.logs import LoggedOperation
-from padocc.operations.group import GroupOperation
+from padocc import GroupOperation
 
 shepard_template = {
     'workdir': '/my/workdir',

@@ -138,13 +138,6 @@ class GroupOperation(
     @property
     def proj_codes_dir(self):
         return f'{self.groupdir}/proj_codes'
-
-    @property
-    def new_inputfile(self):
-        if self.groupID:
-            return f'{self.workdir}/groups/filelists/{self.groupID}.txt'
-        else:
-            raise NotImplementedError
         
     def merge(group_A,group_B):
         """
@@ -727,6 +720,18 @@ class GroupOperation(
                 self.logger.debug(f'DRYRUN: Skip making codes-dir for {self.groupID}')
             else:
                 os.makedirs(codes_dir)
+
+    def _setup_slurm_directories(self):
+        """
+        Currently Unused function to set up 
+        the slurm directories for a group."""
+
+        for dirx in ['sbatch','errs']:
+            if not os.path.isdir(f'{self.groupdir}/{dirx}'):
+                if self._dryrun:
+                    self.logger.debug(f"DRYRUN: Skipped creating {dirx}")
+                    continue
+                os.makedirs(f'{self.dir}/{dirx}')
   
     def _configure_subset(self, main_set, subset_size: int, subset_id: int):
         # Configure subset controls
