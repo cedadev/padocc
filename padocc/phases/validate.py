@@ -14,7 +14,8 @@ from typing import Union, Optional
 from padocc.core import ProjectOperation
 from padocc.core import LoggedOperation
 from padocc.core import BypassSwitch
-from padocc.core.utils import open_kerchunk
+
+from padocc.core.errors import ValidationError
 
 from padocc.core.filehandlers import JSONFileHandler
 from padocc.core.utils import format_tuple
@@ -895,6 +896,10 @@ class ValidateOperation(ProjectOperation):
         vd.save_report()
 
         self.update_status('validate',vd.pass_fail,jobid=self._logid)
+
+        if vd.pass_fail == 'Fatal':
+            raise ValidationError
+        
         return vd.pass_fail
 
     def _open_sample(self):

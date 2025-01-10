@@ -14,7 +14,6 @@ from padocc.core import ProjectOperation
 
 from padocc.core import FalseLogger
 from padocc.core.errors import ConcatFatalError
-from padocc.core.utils import BypassSwitch
 from padocc.core.filehandlers import JSONFileHandler
 
 from .compute import KerchunkDS, cfa_handler

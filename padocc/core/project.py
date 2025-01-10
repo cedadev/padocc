@@ -18,7 +18,6 @@ from .filehandlers import (
     CSVFileHandler,
     ListFileHandler,
     LogFileHandler,
-    KerchunkFile
 )
 
           

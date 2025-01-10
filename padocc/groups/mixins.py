@@ -12,8 +12,7 @@ import datetime
 from typing import Union
 
 from padocc.core import (
-    FalseLogger,
-    LoggedOperation
+    FalseLogger
 )
 from padocc.core.utils import extract_file, times, apply_substitutions, file_configs
 
