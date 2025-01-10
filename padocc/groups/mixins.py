@@ -21,7 +21,18 @@ from padocc.core import ProjectOperation
 class InitialisationMixin:
     """
     Mixin container class for initialisation
-    routines for groups via input files."""
+    routines for groups via input files.
+    
+    This is a behavioural Mixin class and thus should not be
+    directly accessed. Where possible, encapsulated classes 
+    should contain all relevant parameters for their operation
+    as per convention, however this is not the case for mixin
+    classes. The mixin classes here will explicitly state
+    where they are designed to be used, as an extension of an 
+    existing class.
+    
+    Use case: GroupOperation [ONLY]
+    """
 
     def init_from_stac(self):
         pass
@@ -259,7 +270,7 @@ class ModifiersMixin:
 """
 Replacement for assessor tool. Requires the following (public) methods:
  - progress (progress_check)
- - blacklist
+ - faultlist
  - upgrade (upgrade_version)
  - summarise (summary_data)
  - display (show_options)
@@ -280,11 +291,23 @@ Private methods suspected:
 class EvaluationsMixin:
     """
     Group Mixin for methods to evaluate the status of a group.
+
+    This is a behavioural Mixin class and thus should not be
+    directly accessed. Where possible, encapsulated classes 
+    should contain all relevant parameters for their operation
+    as per convention, however this is not the case for mixin
+    classes. The mixin classes here will explicitly state
+    where they are designed to be used, as an extension of an 
+    existing class.
+    
+    Use case: GroupOperation [ONLY]
     """
+
     def _assess_info(self):
         print('Assessment methods:')
-        print(' > group.summary_data() - Get a printout summary of data representations in this group')
-        print(' > group.remove_projects() - Remove projects fitting some parameters from this group')
+        print(' > group.summarise_status() - Summarise the status of all group member projects.')
+        print(' > group.summarise_data() - Get a printout summary of data representations in this group')
+        print(' > group.repeat_by_status() - Create a new subset group to (re)run an operation, based on the current status')
         print(' > group.progress_display() - Get a human-readable display of progress within the group.')
         print(' > group.progress_repr() - Get a dict version of the progress report (for AirFlow)')
 
@@ -301,14 +324,14 @@ class EvaluationsMixin:
             dryrun=True
         )
 
-    def repeat_by_status(self, status: str, repeat_id: str):
+    def repeat_by_status(self, status: str, new_repeat_id: str):
         """
         Group projects by their status, to then
         create a new repeat ID.
         """
         pass
 
-    def remove_by_status(self, status: str, repeat_id: str):
+    def remove_by_status(self, status: str, new_repeat_id: str):
         """
         Group projects by their status for
         removal from the group
@@ -330,13 +353,13 @@ class EvaluationsMixin:
             write: bool = False
         ) -> None:
         """
-        Give a general overview of progress within the pipeline
+        Gives a general overview of progress within the pipeline
         - How many datasets currently at each stage of the pipeline
         - Errors within each pipeline phase
         - Allows for examination of error logs
         - Allows saving codes matching an error type into a new repeat group
         """
-        blacklist  = self.blacklist_codes
+        faultlist  = self.faultlist_codes
         proj_codes = self.proj_codes[repeat_id]
 
         if write:
@@ -347,15 +370,15 @@ class EvaluationsMixin:
             )
 
         done_set = {}
-        extras = {'blacklist': {}}
+        extras   = {'faultlist': {}}
         complete = 0
 
-        # Summarising the blacklist reasons
-        for code, reason in blacklist:
-            if reason in extras['blacklist']:
-                extras['blacklist'][reason].append(0)
+        # Summarising the faultlist reasons
+        for code, reason in faultlist:
+            if reason in extras['faultlist']:
+                extras['faultlist'][reason].append(0)
             else:
-                extras['blacklist'][reason] = [0]
+                extras['faultlist'][reason] = [0]
             done_set[code] = True
 
         phases = {'init':{}, 'scan': {}, 'compute': {}, 'validate': {}}
@@ -458,12 +481,12 @@ class EvaluationsMixin:
             else:
                 print('Skipped writing new codes - Write flag not present')
 
-        if args.blacklist:
-            logger.debug(f'Preparing to add {len(savecodes)} codes to the blacklist')
+        if args.faultlist:
+            logger.debug(f'Preparing to add {len(savecodes)} codes to the faultlist')
             if args.write:
-                add_to_blacklist(savecodes, args.groupdir, args.reason, logger)
+                add_to_faultlist(savecodes, args.groupdir, args.reason, logger)
             else:
-                print('Skipped blacklisting codes - Write flag not present')
+                print('Skipped faultlisting codes - Write flag not present')
 
     def get_operation(self, opt):
         """Operation to perform - deprecated"""
@@ -485,7 +508,19 @@ class EvaluationsMixin:
                 'Unrecognised operation type for EvaluationOperation.')
 
 class AllocationsMixin:
+    """
+    Enables the use of Allocations for job deployments via Slurm.
 
+    This is a behavioural Mixin class and thus should not be
+    directly accessed. Where possible, encapsulated classes 
+    should contain all relevant parameters for their operation
+    as per convention, however this is not the case for mixin
+    classes. The mixin classes here will explicitly state
+    where they are designed to be used, as an extension of an 
+    existing class.
+    
+    Use case: GroupOperation [ONLY]
+    """
     def create_allocations(
             self,
             phase,

@@ -103,9 +103,9 @@ class GroupOperation(
         self._setup_directories()
 
         self.proj_codes      = {}
-        self.blacklist_codes = CSVFileHandler(
+        self.faultlist_codes = CSVFileHandler(
             self.groupdir,
-            'blacklist_codes',
+            'faultlist_codes',
             logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful,
@@ -145,7 +145,7 @@ class GroupOperation(
         1. Migrate all projects from B to A and reset groupID values.
         2. Combine datasets.csv
         3. Combine project codes
-        4. Combine blacklists.
+        4. Combine faultlists.
         """
 
         new_proj_dir = f'{group_A.workdir}/in_progress/{group_A.groupID}'
@@ -168,12 +168,12 @@ class GroupOperation(
         group_B.datasets.remove_file()
         group_A.logger.debug(f'Removed dataset file for {group_B.groupID}')
 
-        # Blacklists
-        group_A.blacklist_codes.set(
-            group_A.blacklist_codes.get() + group_B.blacklist_codes.get()
+        # faultlists
+        group_A.faultlist_codes.set(
+            group_A.faultlist_codes.get() + group_B.faultlist_codes.get()
         )
-        group_B.blacklist_codes.remove_file()
-        group_A.logger.debug(f'Removed blacklist file for {group_B.groupID}')
+        group_B.faultlist_codes.remove_file()
+        group_A.logger.debug(f'Removed faultlist file for {group_B.groupID}')
 
         # Subsets
         for name, subset in group_B.proj_codes.items():
@@ -196,7 +196,7 @@ class GroupOperation(
         according to the list
         1. Migrate projects
         2. Set the datasets
-        3. Set the blacklists
+        3. Set the faultlists
         4. Project codes (remove group B sections)"""
 
         group_A.logger.info(
@@ -224,17 +224,17 @@ class GroupOperation(
 
         group_A.logger.debug(f"Created datasets file for {group_B.groupID}")
 
-        # Set blacklist
-        A_blacklist, B_blacklist = [],[]
-        for bl in group_A.blacklist_codes:
+        # Set faultlist
+        A_faultlist, B_faultlist = [],[]
+        for bl in group_A.faultlist_codes:
             if bl in dataset_list:
-                B_blacklist.append(bl)
+                B_faultlist.append(bl)
             else:
-                A_blacklist.append(bl)
+                A_faultlist.append(bl)
 
-        group_A.blacklist_codes.set(A_blacklist)
-        group_B.blacklist_codes.set(B_blacklist)
-        group_A.logger.debug(f"Created blacklist file for {group_B.groupID}")
+        group_A.faultlist_codes.set(A_faultlist)
+        group_B.faultlist_codes.set(B_faultlist)
+        group_A.logger.debug(f"Created faultlist file for {group_B.groupID}")
 
         # Combine project subsets
         group_B.proj_codes['main'].set(dataset_list)
@@ -468,7 +468,7 @@ class GroupOperation(
             self.proj_codes[pc].close()
 
     def save_files(self):
-        self.blacklist_codes.close()
+        self.faultlist_codes.close()
         self.datasets.close()
         self._save_proj_codes()
 
