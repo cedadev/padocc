@@ -206,6 +206,12 @@ class ListFileHandler(FileIOMixin):
         
         self._value.append(newvalue)
 
+    def pop(self, oldvalue: str) -> None:
+        """Remove a value from the internal list"""
+        self._obtain_value()
+        
+        self._value.pop(oldvalue)
+
     def set(self, value: list) -> None:
         """
         Reset the value as a whole for this 
@@ -614,6 +620,7 @@ class GenericStore(LoggedOperation):
             logid    : Optional[str] = None,
             dryrun   : bool = False,
             forceful : bool = False,
+            thorough : bool = False,
             verbose  : int = 0
         ) -> None:
 
@@ -624,8 +631,11 @@ class GenericStore(LoggedOperation):
         self._meta: JSONFileHandler = JSONFileHandler(
             self.store_path, metadata_name)
 
-        self._dryrun: bool   = dryrun
-        self._forceful: bool = forceful
+        self._set_fh_kwargs(
+            forceful=forceful,
+            dryrun=dryrun,
+            thorough=thorough
+        )
 
         # All filehandlers are logged operations
         super().__init__(
@@ -665,6 +675,15 @@ class GenericStore(LoggedOperation):
                 f'Skipped clearing "{self._extension}"-type '
                 f'Store "{self._store_name}" in dryrun mode.'
             )
+
+    @property
+    def is_empty(self) -> bool:
+        """
+        Check if the store contains any data
+        """
+        if not os.path.exists(self.store_path):
+            return True
+        return len(os.listdir(self.store_path)) == 0
 
     def get_meta(self):
         """
