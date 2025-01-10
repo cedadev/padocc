@@ -6,7 +6,7 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
 import argparse
 
-from padocc.core.utils import BypassSwitch
+from padocc.core.utils import BypassSwitch, get_attribute
 from padocc import GroupOperation, phase_map
 
 def get_args():
@@ -25,8 +25,9 @@ def get_args():
 
     # Single-job within group
     parser.add_argument('-G','--groupID',   dest='groupID', default=None, help='Group identifier label')
-    parser.add_argument('-s','--subset',    dest='subset',    default=1,   type=int, help='Size of subset within group')
+    parser.add_argument('-s','--subset',    dest='subset',    default=None,   type=int, help='Size of subset within group')
     parser.add_argument('-r','--repeat_id', dest='repeat_id', default='main', help='Repeat id (main if first time running, <phase>_<repeat> otherwise)')
+    parser.add_argument('-p','--proj_code',dest='proj_code',help='Run for a specific project code, within a group or otherwise')
 
     # Specialised
     parser.add_argument('-C','--cloud-format', dest='mode', default='kerchunk', help='Output format required.')
@@ -42,6 +43,9 @@ def get_args():
     parser.add_argument('--allow-band-increase', dest='band_increase',action='store_true', help='Allow automatic banding increase relative to previous runs.')
 
     args = parser.parse_args()
+
+    args.workdir  = get_attribute('WORKDIR', args, 'workdir')
+
     return args
 
 def main():
@@ -64,7 +68,7 @@ def main():
         )
 
         if args.phase == 'init':
-            group.init_from_file(args.input_file)
+            group.init_from_file(args.input)
             return
 
         group.run(
