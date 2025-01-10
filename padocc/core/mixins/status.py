@@ -70,4 +70,4 @@ class StatusMixin:
         """
         Setup for running this specific component interactively.
         """
-        return ''
+        return f'padocc <operation> -G {self.groupID} -p {self.proj_code} -vvv'

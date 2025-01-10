@@ -6,7 +6,7 @@ from typing import Union
 import xarray as xr
 import os
 
-from padocc.core.filehandlers import (
+from ..filehandlers import (
     KerchunkFile,
     KerchunkStore,
     ZarrStore,
@@ -40,10 +40,7 @@ class DatasetHandlerMixin:
         
         if self.file_type != 'json':
             return None
-        
-        if not os.path.exists(self.outproduct):
-            return None
-        
+                
         if self._kfile is None:
             self._kfile = KerchunkFile(
                 self.dir,
@@ -61,9 +58,6 @@ class DatasetHandlerMixin:
             return None
         
         if self.file_type == 'json':
-            return None
-        
-        if not os.path.exists(self.outproduct):
             return None
         
         if self._kfile is None:
@@ -104,9 +98,6 @@ class DatasetHandlerMixin:
         Retrieve a read-only xarray representation 
         of a CFA dataset"""
 
-        if not os.path.exists(self.cfa_path):
-            return None
-
         if not self._cfa_dataset:
             self._cfa_dataset = CFADataset(
                 self.cfa_path,
@@ -124,9 +115,6 @@ class DatasetHandlerMixin:
         """
         Retrieve a filehandler for the zarr store"""
         if self.cloud_format != 'zarr':
-            return None
-        
-        if not os.path.exists(self.outproduct):
             return None
         
         if self._zstore is None:

@@ -5,8 +5,8 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 import os
 import logging
 
-from padocc.core.logs import LoggedOperation, levels
-from padocc.core.utils import BypassSwitch
+from ..logs import LoggedOperation, levels
+from ..utils import BypassSwitch
 
 class DirectoryMixin(LoggedOperation):
     """
@@ -54,38 +54,23 @@ class DirectoryMixin(LoggedOperation):
         if verbose in levels:
             verbose = levels.index(verbose)
 
-        self._set_fh_kwargs(forceful=forceful, dryrun=dryrun, thorough=thorough)
-
         super().__init__(
             logger,
             label=label,
             fh=fh,
             logid=logid,
-            verbose=verbose)
-
-    def values(self):
-        print(f' - forceful: {bool(self._forceful)}')
-        print(f' - thorough: {bool(self._thorough)}')
-        print(f' - dryrun: {bool(self._dryrun)}')
-
-    @property
-    def fh_kwargs(self):
-        return {
-            'dryrun': self._dryrun,
-            'forceful': self._forceful,
-            'thorough': self._thorough,
-        }
-    
-    @fh_kwargs.setter
-    def fh_kwargs(self, value):
-        self._set_fh_kwargs(**value)
-
-    def _set_fh_kwargs(self, forceful=None, dryrun=None, thorough=None):
-        self._forceful = forceful
-        self._dryrun   = dryrun
-        self._thorough = thorough
+            verbose=verbose,
+            forceful=forceful,
+            dryrun=dryrun,
+            thorough=thorough)
 
     def _setup_workdir(self):
+        if self.workdir is None:
+            raise ValueError(
+                'Working directory not defined.'
+                'If using the CLI tool, please specify working directory with -w'
+            )
+
         if not os.path.isdir(self.workdir):
             if self._dryrun:
                 self.logger.debug(f'DRYRUN: Skip making workdir {self.workdir}')
