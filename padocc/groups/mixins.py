@@ -9,14 +9,40 @@ import json
 import binpacking
 import datetime
 
-from typing import Union
+from typing import Union, Optional
+from collections.abc import Callable
 
 from padocc.core import (
     FalseLogger
 )
-from padocc.core.utils import extract_file, times, apply_substitutions, file_configs
+from padocc.core.utils import extract_file, times, apply_substitutions, file_configs, format_str
 
 from padocc.core import ProjectOperation
+
+def _deformat_float(item: str) -> str:
+    """
+    Format byte-value with proper units.
+    """
+    units = ['','K','M','G','T','P']
+    value, suffix = item.split(' ')
+
+    ord = units.index(suffix)*1000
+    return float(value)*ord
+
+def _format_float(value: float) -> str:
+    """
+    Format byte-value with proper units.
+    """
+
+    if value is not None:
+        unit_index = 0
+        units = ['','K','M','G','T','P']
+        while value > 1000:
+            value = value / 1000
+            unit_index += 1
+        return f'{value:.2f} {units[unit_index]}B'
+    else:
+        return None
 
 class InitialisationMixin:
     """
@@ -238,6 +264,11 @@ class ModifiersMixin:
             if proj_code in pset:
                 pset.remove(proj_code)
 
+        if proj_code in self.datasets:
+            self.datasets.pop(proj_code)
+        if proj_code in self.faultlist:
+            self.faultlist.pop(proj_code)
+
         proj_op = ProjectOperation(
             proj_code,
             self.workdir,
@@ -266,27 +297,6 @@ class ModifiersMixin:
         proj_op.migrate(receiver_group.groupID)
 
         receiver_group.proj_codes['main'].append(proj_code)
-
-"""
-Replacement for assessor tool. Requires the following (public) methods:
- - progress (progress_check)
- - faultlist
- - upgrade (upgrade_version)
- - summarise (summary_data)
- - display (show_options)
- - cleanup (cleanup) - May not need since this is built into the group.
- - match ?
- - status (status_log)
- - allocations (assess_allocation)
-
- 
-Private methods suspected:
- - _get_rerun_command : To get a specific rerun for a dataset.
- - _merge_old_new     : Combine sets of project codes.
- - _save_project_codes : Depends how the group stuff works if we need this
- _ _analyse_data      : Connect to project codes and get a summary of each.
- - _force_datetime_decode : Decode datetimes.
-"""
 
 class EvaluationsMixin:
     """
@@ -324,33 +334,180 @@ class EvaluationsMixin:
             dryrun=True
         )
 
-    def repeat_by_status(self, status: str, new_repeat_id: str):
+    def repeat_by_status(
+            self, 
+            status: str, 
+            new_repeat_id: str, 
+            phase: Optional[str] = None,
+            old_repeat_id: str = 'main'
+        ) -> None:
         """
         Group projects by their status, to then
         create a new repeat ID.
         """
-        pass
+        faultdict = self._get_fault_dict()
+        status_dict = self._get_status_dict(
+            old_repeat_id,
+            faultdict,
+            specific_phase=phase,
+            specific_error=status
+        )
 
-    def remove_by_status(self, status: str, new_repeat_id: str):
+        # New codes are in the status_dict
+        new_codes = status_dict[phase][status]
+        self._add_proj_codeset(
+            new_repeat_id,
+            new_codes
+        )
+
+        self._save_proj_codes()
+
+    def remove_by_status(
+            self, 
+            status: str, 
+            phase: Optional[str] = None,
+            old_repeat_id: str = 'main'
+        ) -> None:
         """
         Group projects by their status for
         removal from the group
         """
-        pass
+        faultdict = self._get_fault_dict()
+        status_dict = self._get_status_dict(
+            old_repeat_id,
+            faultdict,
+            specific_phase=phase,
+            specific_error=status
+        )
+
+        for code in status_dict[phase][status]:
+            self.remove_project(code)
+
+        self.save_files()
         
-    def summarise_data(self):
+    def merge_subsets(
+            self,
+            subset_list: list[str],
+            combined_id: str,
+            remove_after: False,
+        ) -> None:
         """
-        Summarise data stored across all files
+        Merge one or more of the subsets previously created
         """
-        pass
+        newset = []
+
+        for subset in subset_list:
+            if subset not in self.proj_codes:
+                raise ValueError(
+                    f'Repeat subset "{subset}" not found in existing subsets.'
+                )
+            
+            newset = newset + self.proj_codes[subset].get()
+
+        self._add_proj_codeset(combined_id, newset)
+
+        if remove_after:
+            for subset in subset_list:
+                self._delete_proj_codeset(subset)
+
+        self._save_proj_codes()
+
+    def summarise_data(self, repeat_id: str = 'main', func: Callable = print):
+        """
+        Summarise data stored across all projects, mostly
+        concatenating results from the detail-cfg files from
+        all projects.
+        """
+        import numpy as np
+
+        # Cloud Formats and File Types
+        # Source Data [Avg,Total]
+        # Cloud Data [Avg,Total]
+        # File Count [Avg,Total]
+
+        cloud_formats: dict = {}
+        file_types: dict = {}
+
+        source_data: list = []
+        cloud_data:  list = []
+        file_count:  list = []
+        
+        # Chunk Info
+        ## Chunks per file [Avg,Total]
+        ## Total Chunks [Avg, Total]
+
+        chunks_per_file: list = []
+        total_chunks: list = []
+
+        for proj_code in self.proj_codes[repeat_id]:
+            op = ProjectOperation(
+                proj_code,
+                self.workdir,
+                groupID=self.groupID,
+                **self.fh_kwargs
+            )
+
+            if op.cloud_format in cloud_formats:
+                cloud_formats[op.cloud_format] += 1
+            else:
+                cloud_formats[op.cloud_format] = 1
+
+            if op.file_type in file_types:
+                file_types[op.file_type] += 1
+            else:
+                file_types[op.file_type] = 1
+
+            details = op.detail_cfg.get()
+
+            if 'source_data' in details:
+                source_data.append(
+                    _deformat_float(details['source_data'])
+                )
+            if 'cloud_data' in details:
+                cloud_data.append(
+                    _deformat_float(details['cloud_data'])
+                )
+
+            file_count.append(int(details['num_files']))
+
+            chunk_data = details['chunk_info']
+            chunks_per_file.append(
+                float(chunk_data['chunks_per_file'])
+            )
+            total_chunks.append(
+                int(chunk_data['total_chunks'])
+            )
+
+        # Render Outputs
+        ot = []
+        
+        ot.append(f'Summary Report: {self.groupID}')
+        ot.append(f'Project Codes: {len(self.proj_codes[repeat_id])}')
+        ot.append()
+        ot.append(f'Source Files: {sum(file_count)} [Avg. {np.mean(file_count):.2f} per project]')
+        ot.append(f'Source Data: {_format_float(sum(source_data))} [Avg. {np.mean(source_data):.2f} per project]')
+        ot.append(f'Cloud Data: {_format_float(sum(cloud_data))} [Avg. {np.mean(cloud_data):.2f} per project]')
+        ot.append()
+        ot.append(f'Cloud Formats: {list(set(cloud_formats))}')
+        ot.append(f'File Types: {list(set(file_types))}')
+        ot.append()
+        ot.append(
+            f'Chunks per File: {_format_float(sum(chunks_per_file))} [Avg. {np.mean(chunks_per_file):.2f} per project]')
+        ot.append(
+            f'Total Chunks: {_format_float(sum(total_chunks))} [Avg. {np.mean(total_chunks):.2f} per project]')
+        
+        func('\n'.join(ot))
 
     def summarise_status(
             self, 
             repeat_id, 
             specific_phase: Union[str,None] = None,
             specific_error: Union[str,None] = None,
+            long_display: Union[bool,None] = None,
+            display_upto: int = 5,
             halt: bool = False,
-            write: bool = False
+            write: bool = False,
+            fn: Callable = print,
         ) -> None:
         """
         Gives a general overview of progress within the pipeline
@@ -359,7 +516,81 @@ class EvaluationsMixin:
         - Allows for examination of error logs
         - Allows saving codes matching an error type into a new repeat group
         """
-        faultlist  = self.faultlist_codes
+
+        faultdict = self._get_fault_dict()
+
+        status_dict = self._get_status_dict(
+            repeat_id, 
+            faultdict=faultdict,
+            specific_phase=specific_phase,
+            specific_error=specific_error,
+            halt=halt,
+            write=write,
+        )
+
+        num_codes  = len(self.proj_codes[repeat_id])
+        ot = []
+        ot.append('')
+        ot.append(f'Group: {self.groupID}')
+        ot.append(f'  Total Codes: {num_codes}')
+        ot.append()
+        ot.append('Pipeline Current:')
+        if long_display is None and longest_err > 30:
+            longest_err = 30
+
+        for phase, records in status_dict.items():
+
+            if isinstance(records, dict):
+                self._summarise_dict(phase, records, num_codes, status_len=longest_err, numbers=display_upto)
+            else:
+                ot.append()
+
+        ot.append()
+        ot.append('Pipeline Complete:')
+        ot.append()
+
+        complete = len(status_dict['complete'])
+
+        complete_percent = format_str(f'{complete*100/num_codes:.1f}',4)
+        ot.append(f'   complete  : {format_str(complete,5)} [{complete_percent}%]')
+
+        for option, records in faultdict['faultlist'].items():
+            self._summarise_dict(option, records, num_codes, status_len=longest_err, numbers=0)
+
+        ot.append()
+        fn('\n'.join(ot))
+
+    def _get_fault_dict(self) -> dict:
+        """
+        Assemble the fault list into a dictionary
+        with all reasons.
+        """
+        extras   = {'faultlist': {}}
+        for code, reason in self.faultlist:
+            if reason in extras['faultlist']:
+                extras['faultlist'][reason].append(0)
+            else:
+                extras['faultlist'][reason] = [0]
+            extras['ignore'][code] = True
+        return extras
+
+    def _get_status_dict(
+            self,
+            repeat_id, 
+            faultdict: dict = None,
+            specific_phase: Union[str,None] = None,
+            specific_error: Union[str,None] = None,
+            halt: bool = False,
+            write: bool = False,
+        ) -> dict:
+
+        """
+        Assemble the status dict, can be used for stopping and 
+        directly assessing specific errors if needed.
+        """
+
+        faultdict = faultdict or {}
+        
         proj_codes = self.proj_codes[repeat_id]
 
         if write:
@@ -369,143 +600,115 @@ class EvaluationsMixin:
                 ' - Will update status with "JobCancelled" for >24hr pending jobs'
             )
 
-        done_set = {}
-        extras   = {'faultlist': {}}
-        complete = 0
+        status_dict = {'init':{},'scan': {}, 'compute': {}, 'validate': {},'complete':[]}
 
-        # Summarising the faultlist reasons
-        for code, reason in faultlist:
-            if reason in extras['faultlist']:
-                extras['faultlist'][reason].append(0)
-            else:
-                extras['faultlist'][reason] = [0]
-            done_set[code] = True
-
-        phases = {'init':{}, 'scan': {}, 'compute': {}, 'validate': {}}
-        savecodes = []
-        longest_err = 0
         for idx, p in enumerate(proj_codes):
+            if p in faultdict['ignore']:
+                continue
 
-            proj_op = ProjectOperation(
-                self.workdir,
-                p,
-                groupID=self.groupID,
-                logger=self.logger
+            status_dict = self._assess_status_of_project(
+                p, idx,
+                status_dict,
+                write=write,
+                specific_phase=specific_phase,
+                specific_error=specific_error,
+                halt=halt
             )
+        return status_dict
 
-            try:
-                if p not in done_set:
-                    current = proj_op.get_last_status()
-                    entry   = current.split(',')
-                    if len(entry[1]) > longest_err:
-                        longest_err = len(entry[1])
+    def _assess_status_of_project(
+            self, 
+            proj_code: str, 
+            pid: int,
+            status_dict: dict,
+            write: bool = False,
+            specific_phase: Union[str,None] = None,
+            specific_error: Union[str,None] = None,
+            halt: bool = False,
+            ) -> dict:
+        """
+        Assess the status of a single project
+        """
 
-                    if entry[1] == 'pending' and write:
-                        timediff = (datetime.now() - datetime(entry[2])).total_seconds()
-                        if timediff > 86400: # 1 Day - fixed for now
-                            entry[1] = 'JobCancelled'
-                            proj_op.update_status(entry[0], 'JobCancelled')
-                    
-                    match_phase = (specific_phase == entry[0])
-                    match_error = (specific_error == entry[1])
+        # Open the specific project
+        proj_op = ProjectOperation(
+            self.workdir,
+            proj_code,
+            groupID=self.groupID,
+            logger=self.logger
+        )
 
-                    if bool(specific_phase) != (match_phase) or bool(specific_error) != (match_error):
-                        total_match = False
-                    else:
-                        total_match = match_phase or match_error
+        current = proj_op.get_last_status()
+        entry   = current.split(',')
 
-                    if total_match:
-                        proj_op.show_log_contents(specific_phase, halt=halt)
+        phase  = entry[0]
+        status = entry[1]
+        time   = entry[2]
 
-                    merge_errs = True # Debug - add as argument later?
-                    if merge_errs:
-                        err_type = entry[1].split(' ')[0]
-                    else:
-                        err_type = entry[1]
+        if len(status) > longest_err:
+            longest_err = len(status)
 
-                    if entry[0] == 'complete':
-                        complete += 1
-                    else:
-                        if err_type in phases[entry[0]]:
-                            phases[entry[0]][err_type].append(idx)
-                        else:
-                            phases[entry[0]][err_type] = [idx]
-            except KeyboardInterrupt as err:
-                raise err
-            except Exception as err:
-                proj_op.show_log_contents(specific_phase, halt=halt)
-                print(f'Issue with analysis of error log: {p}')
-        num_codes  = len(proj_codes)
-        print()
-        print(f'Group: {args.groupID}')
-        print(f'  Total Codes: {num_codes}')
+        if status == 'pending' and write:
+            timediff = (datetime.now() - datetime(time)).total_seconds()
+            if timediff > 86400: # 1 Day - fixed for now
+                status = 'JobCancelled'
+                proj_op.update_status(phase, 'JobCancelled')
+        
+        match_phase = (specific_phase == phase)
+        match_error = (specific_error == status)
 
-        def summary_dict(pdict, num_codes, status_len=5, numbers=0):
-            """Display summary information for a dictionary structure of the expected format."""
-            for entry in pdict.keys():
-                pcount = len(list(pdict[entry].keys()))
-                num_types = sum([len(pdict[entry][pop]) for pop in pdict[entry].keys()])
-                if pcount > 0:
-                    print()
-                    fmentry = format_str(entry,10, concat=False)
-                    fmnum_types = format_str(num_types,5, concat=False)
-                    fmcalc = format_str(f'{num_types*100/num_codes:.1f}',4, concat=False)
-                    print(f'   {fmentry}: {fmnum_types} [{fmcalc}%] (Variety: {int(pcount)})')
-
-                    # Convert from key : len to key : [list]
-                    errkeys = reversed(sorted(pdict[entry], key=lambda x:len(pdict[entry][x])))
-                    for err in errkeys:
-                        num_errs = len(pdict[entry][err])
-                        if num_errs < numbers:
-                            print(f'    - {format_str(err, status_len+1, concat=True)}: {num_errs} (IDs = {list(pdict[entry][err])})')
-                        else:
-                            print(f'    - {format_str(err, status_len+1, concat=True)}: {num_errs}')
-        if not args.new_id:
-            print()
-            print('Pipeline Current:')
-            if not args.long and longest_err > 30:
-                longest_err = 30
-            summary_dict(phases, num_codes, status_len=longest_err, numbers=int(args.numbers))
-            print()
-            print('Pipeline Complete:')
-            print()
-            complete_percent = format_str(f'{complete*100/num_codes:.1f}',4)
-            print(f'   complete  : {format_str(complete,5)} [{complete_percent}%]')
-            summary_dict(extras, num_codes, status_len=longest_err, numbers=0)
-            print()
-
-        if args.new_id:
-            logger.debug(f'Preparing to write {len(savecodes)} codes to proj_codes/{args.new_id}.txt')
-            if args.write:
-                save_selection(savecodes, groupdir, args.new_id, logger, overwrite=args.overwrite)
-            else:
-                print('Skipped writing new codes - Write flag not present')
-
-        if args.faultlist:
-            logger.debug(f'Preparing to add {len(savecodes)} codes to the faultlist')
-            if args.write:
-                add_to_faultlist(savecodes, args.groupdir, args.reason, logger)
-            else:
-                print('Skipped faultlisting codes - Write flag not present')
-
-    def get_operation(self, opt):
-        """Operation to perform - deprecated"""
-        if hasattr(self, opt):
-            try:
-                getattr(self, opt)()
-            except TypeError as err:
-                self.logger.error(
-                    f'Attribute "{opt}" is not callable'
-                )
-                raise err
-            except KeyboardInterrupt as err:
-                raise err
-            except Exception as err:
-                examine_log(args.workdir, p, entry[0], groupID=args.groupID, repeat_id=args.repeat_id, error=entry[1])
-                print(f'Issue with analysis of error log: {p}')
+        if bool(specific_phase) != (match_phase) or bool(specific_error) != (match_error):
+            total_match = False
         else:
-            self.logger.error(
-                'Unrecognised operation type for EvaluationOperation.')
+            total_match = match_phase or match_error
+
+        if total_match:
+            proj_op.show_log_contents(specific_phase, halt=halt)
+
+        if status == 'complete':
+            status_dict['complete'] += 1
+        else:
+            if status in status_dict[phase]:
+                status_dict[phase][status].append(pid)
+            else:
+                status_dict[phase][status] = [pid]
+
+        return status_dict
+
+    def _summarise_dict(
+            self,
+            phase: str, 
+            records: dict, 
+            num_codes: int, 
+            status_len: int = 5, 
+            numbers: int = 0
+        ) -> list:
+        """
+        Summarise information for a dictionary structure
+        that contains a set of errors for a phase within the pipeline
+        """
+        ot = []
+
+        pcount = len(list(records.keys()))
+        num_types = sum([len(records[pop]) for pop in records.keys()])
+        if pcount > 0:
+
+            ot.append('')
+            fmentry     = format_str(phase,10, concat=False)
+            fmnum_types = format_str(num_types,5, concat=False)
+            fmcalc      = format_str(f'{num_types*100/num_codes:.1f}',4, concat=False)
+
+            ot.append(f'   {fmentry}: {fmnum_types} [{fmcalc}%] (Variety: {int(pcount)})')
+
+            # Convert from key : len to key : [list]
+            errkeys = reversed(sorted(records, key=lambda x:len(records[x])))
+            for err in errkeys:
+                num_errs = len(records[err])
+                if num_errs < numbers:
+                    ot.append(f'    - {format_str(err, status_len+1, concat=True)}: {num_errs} (IDs = {list(records[err])})')
+                else:
+                    ot.append(f'    - {format_str(err, status_len+1, concat=True)}: {num_errs}')
+        return ot
 
 class AllocationsMixin:
     """

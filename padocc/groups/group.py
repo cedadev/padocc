@@ -425,9 +425,10 @@ class GroupOperation(
             self.workdir,
             groupID=self.groupID,
             logger=self.logger,
+            bypass=bypass,
             **kwargs
         )
-        status = proj_op.run()
+        status = proj_op.run(mode=mode)
         proj_op.save_files()
         return status
     
@@ -481,6 +482,25 @@ class GroupOperation(
             dryrun=self._dryrun,
             forceful=self._forceful
         )
+    
+    def _delete_proj_codeset(self, name: str):
+        """
+        Delete a project codeset
+        """
+
+        if name == 'main':
+            raise ValueError(
+                'Operation not permitted - removing the main codeset'
+                'cannot be achieved using this function.'
+            )
+        
+        if name not in self.proj_codes:
+            self.logger.warning(
+                f'Subset ID "{name}" could not be deleted - no matching subset.'
+            )
+
+        self.proj_codes[name].remove_file()
+        self.proj_codes.pop(name)
 
     def check_writable(self):
         if not os.access(self.workdir, os.W_OK):
