@@ -67,6 +67,11 @@ file_configs = {
     'detail_cfg':DETAIL_CFG
 }
 
+FILE_DEFAULT = {
+    'kerchunk':'json',
+    'zarr':None,
+}
+
 class BypassSwitch:
     """Class to represent all bypass switches throughout the pipeline.
     Requires a switch string which is used to enable/disable specific pipeline 

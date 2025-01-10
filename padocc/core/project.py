@@ -9,7 +9,7 @@ import logging
 from typing import Union
 
 from .errors import error_handler
-from .utils import extract_file, BypassSwitch, apply_substitutions, phases, file_configs
+from .utils import extract_file, BypassSwitch, apply_substitutions, phases, file_configs, FILE_DEFAULT
 from .logs import reset_file_handler
 
 from .mixins import DirectoryMixin, DatasetHandlerMixin, StatusMixin, PropertiesMixin
@@ -155,6 +155,7 @@ class ProjectOperation(
         self._kfile  = None
         self._kstore = None
         self._zstore = None
+        self._cfa_dataset = None
 
         self._is_trial = False
 
@@ -217,6 +218,13 @@ class ProjectOperation(
             self._thorough = thorough
         if dryrun is not None:
             self._dryrun = dryrun
+
+        if self.cloud_format != mode:
+            self.logger.info(
+                f'Switching cloud format to {mode}'
+            )
+            self.cloud_format = mode
+            self.file_type = FILE_DEFAULT[mode]
 
         try:
             status = self._run(mode=mode, **kwargs)

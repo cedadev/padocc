@@ -114,6 +114,7 @@ class DatasetHandlerMixin:
     def zstore(self) -> Union[ZarrStore, None]:
         """
         Retrieve a filehandler for the zarr store"""
+
         if self.cloud_format != 'zarr':
             return None
         

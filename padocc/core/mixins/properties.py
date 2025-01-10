@@ -82,6 +82,7 @@ class PropertiesMixin:
         
         type_map = {
             'kerchunk': ['json','parq'],
+            'zarr':[None],
         }
         
         if self.cloud_format in type_map:
