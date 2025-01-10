@@ -18,7 +18,7 @@ from padocc.core.filehandlers import JSONFileHandler
 
 from .compute import KerchunkDS, cfa_handler
 
-def _format_float(value: int, logger: logging.Logger = FalseLogger()) -> str:
+def _format_float(value: float, logger: logging.Logger = FalseLogger()) -> str:
     """
     Format byte-value with proper units.
     """

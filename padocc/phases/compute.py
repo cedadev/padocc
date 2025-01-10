@@ -10,7 +10,7 @@ import xarray as xr
 import numpy as np
 import base64
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 import rechunker
 
@@ -939,21 +939,21 @@ class ZarrDS(ComputeOperation):
             self, 
             proj_code,
             workdir,
-            stage = 'in_progress',
+            groupID: Union[str,None] = None,
+            stage : str = 'in_progress',
             mem_allowed : str = '100MB',
             preferences = None,
             **kwargs,
         ) -> None:
         
-        super().__init__(proj_code, workdir, stage, *kwargs)
+        super().__init__(proj_code, workdir, groupID=groupID, stage=stage, **kwargs)
 
-        self.tempstore   = ZarrStore(self.dir, "zarrcache.zarr", logger=self.logger, **self.fh_kwargs)
+        self.tempstore   = ZarrStore(self.dir, "zarrcache", logger=self.logger, **self.fh_kwargs)
         self.preferences = preferences
 
-        if self.thorough or self.forceful:
-            os.system(f'rm -rf {self.tempstore}')
+        if self._thorough or self._forceful:
+            self.tempstore.clear()
 
-        self.filelist    = []
         self.mem_allowed = mem_allowed
 
     def _run(self, **kwargs) -> str:
@@ -964,25 +964,25 @@ class ZarrDS(ComputeOperation):
         self.update_status('compute',status,jobid=self._logid)
         return status
 
-    def create_store(self):
+    def create_store(self, file_limit: int = None):
+        """
+        Create the Zarr Store
+        """
 
-        # Abort process if overwrite method not specified
-        if not self.carryon:
-            self.logger.info('Process aborted - no overwrite plan for existing file.')
-            return None
+        self.combine_kwargs = self.detail_cfg['kwargs']['combine_kwargs']
 
         # Open all files for this process (depending on limiter)
         self.logger.debug('Starting timed section for estimation of whole process')
         t1 = datetime.now()
-        self.obtain_file_subset()
+
         self.logger.info(f"Retrieved required xarray dataset objects - {(datetime.now()-t1).total_seconds():.2f}s")
 
         # Determine concatenation dimensions
         if self.base_cfg['data_properties']['aggregated_vars'] == 'Unknown':
             # Determine dimension specs for concatenation.
             self._determine_dim_specs([
-                xr.open_dataset(self.filelist[0]),
-                xr.open_dataset(self.filelist[1])
+                xr.open_dataset(self.allfiles[0]),
+                xr.open_dataset(self.allfiles[1])
             ])
         if not self.combine_kwargs['concat_dims']:
             self.logger.error('No concatenation dimensions - unsupported for zarr conversion')
@@ -991,7 +991,16 @@ class ZarrDS(ComputeOperation):
         # Perform Concatenation
         self.logger.info(f'Concatenating xarray objects across dimensions ({self.combine_kwargs["concat_dims"]})')
 
-        self.combined_ds = xr.open_mfdataset(self.filelist, combine='nested', concat_dim=self.combine_kwargs['concat_dims'])
+        if file_limit:
+            fileset = self.allfiles[:file_limit]
+        else:
+            fileset = self.allfiles.get()
+
+        self.combined_ds = xr.open_mfdataset(
+            fileset, 
+            combine='nested', 
+            concat_dim=self.combine_kwargs['concat_dims'],
+            data_vars='minimal')
         
         # Assessment values
         self.std_vars = list(self.combined_ds.variables)
@@ -1007,17 +1016,31 @@ class ZarrDS(ComputeOperation):
         self.logger.debug(f'CPF: {self.cpf[0]}, VPF: {self.volm[0]}, num_vars: {len(self.std_vars)}')
 
         self.concat_time = (datetime.now()-t1).total_seconds()/self.limiter
+
+        for store in [self.tempstore, self.zstore]:
+            if not store.is_empty:
+                if self._forceful or self._thorough:
+                    store.clear()
+                else:
+                    raise ValueError(
+                        'Unable to rechunk to zarr - store already exists '
+                        'and no overwrite plan has been given. Use '
+                        '-f or -Q on the commandline to clear or overwrite'
+                        'existing store'
+                    )
     
         # Perform Rechunking
         self.logger.info(f'Starting Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
-        if not self.dryrun:
+        if not self._dryrun:
             t1 = datetime.now()
+
             rechunker.rechunk(
                 self.combined_ds, 
                 concat_dim_rechunk, 
                 self.mem_allowed, 
-                self.zstore,
-                temp_store=self.tempstore).execute()
+                self.zstore.store_path,
+                temp_store=self.tempstore.store_path).execute()
+            
             self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
             self.logger.info(f'Concluded Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
         else:
