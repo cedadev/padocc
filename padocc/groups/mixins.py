@@ -7,6 +7,9 @@ import logging
 import glob
 import json
 import binpacking
+import datetime
+
+from typing import Union
 
 from padocc.core import (
     FalseLogger,
@@ -14,7 +17,7 @@ from padocc.core import (
 )
 from padocc.core.utils import extract_file, times, apply_substitutions, file_configs
 
-from padocc.core.project import ProjectOperation
+from padocc.core import ProjectOperation
 
 class InitialisationMixin:
     """
@@ -179,7 +182,7 @@ class InitialisationMixin:
                 forceful=self._forceful,
             )
 
-            proj_op._update_status('init','Success')
+            proj_op.update_status('init','Success')
             proj_op.save_files()
 
         self.logger.info(f'Created {len(datasets)*6} files, {len(datasets)*2} directories in group {self.groupID}')
@@ -188,18 +191,71 @@ class InitialisationMixin:
         self.save_files()
 
 class ModifiersMixin:
+    """
+    Modifiers to the group in terms of the projects associated,
+    allows adding and removing projects.
 
-    def add_project(self):
-        """
-        Add a project to this group
-        """
-        pass
+    This is a behavioural Mixin class and thus should not be
+    directly accessed. Where possible, encapsulated classes 
+    should contain all relevant parameters for their operation
+    as per convention, however this is not the case for mixin
+    classes. The mixin classes here will explicitly state
+    where they are designed to be used, as an extension of an 
+    existing class.
+    
+    Use case: GroupOperation [ONLY]
+    """
 
-    def remove_project(self):
+    def add_project(
+            self,
+            config: dict,
+            ):
+        """
+        Add a project to this group. 
+        """
+        self._init_project(config)
+
+        self.proj_codes['main'].append(config['proj_code'])
+
+    def remove_project(self, proj_code: str) -> None:
         """
         Remove a project from this group
+        Steps required:
+        1. Remove the project directory including all internal files.
+        2. Remove the project code from all project files.
         """
-        pass
+        for pset in self.proj_codes.values():
+            if proj_code in pset:
+                pset.remove(proj_code)
+
+        proj_op = ProjectOperation(
+            proj_code,
+            self.workdir,
+            groupID=self.groupID,
+            forceful=self._forceful,
+            dryrun=self._dryrun
+        )
+
+        proj_op.delete_project()
+
+    def transfer_project(self, proj_code: str, receiver_group) -> None:
+        """
+        Transfer an existing project to a new group
+        """
+
+        for pset in self.proj_codes.values():
+            if proj_code in pset:
+                pset.remove(proj_code)
+
+        proj_op = ProjectOperation(
+            proj_code,
+            self.workdir,
+            self.groupID
+        )
+
+        proj_op.migrate(receiver_group.groupID)
+
+        receiver_group.proj_codes['main'].append(proj_code)
 
 """
 Replacement for assessor tool. Requires the following (public) methods:
@@ -234,6 +290,10 @@ class EvaluationsMixin:
         print(' > group.progress_repr() - Get a dict version of the progress report (for AirFlow)')
 
     def get_project(self, proj_code: str):
+        """
+        Get a project operation from this group
+        """
+
         return ProjectOperation(
             proj_code,
             self.workdir,
@@ -241,22 +301,37 @@ class EvaluationsMixin:
             logger=self.logger,
             dryrun=True
         )
-        
 
-    def summary_data(self):
+    def repeat_by_status(self, status: str, repeat_id: str):
+        """
+        Group projects by their status, to then
+        create a new repeat ID.
+        """
+        pass
+
+    def remove_by_status(self, status: str, repeat_id: str):
+        """
+        Group projects by their status for
+        removal from the group
+        """
+        pass
+        
+    def summarise_data(self):
         """
         Summarise data stored across all files
         """
         pass
 
-    def remove_projects(self):
+    def summarise_status(
+            self, 
+            repeat_id, 
+            specific_phase: Union[str,None] = None,
+            specific_error: Union[str,None] = None,
+            halt: bool = False,
+            write: bool = False
+        ) -> None:
         """
-        Delete a set of projects which match some criteria.
-        """
-        pass
-
-    def progress(self, repeat_id, write=True):
-        """Give a general overview of progress within the pipeline
+        Give a general overview of progress within the pipeline
         - How many datasets currently at each stage of the pipeline
         - Errors within each pipeline phase
         - Allows for examination of error logs
@@ -298,40 +373,27 @@ class EvaluationsMixin:
 
             try:
                 if p not in done_set:
-                    proj_dir = f'{args.workdir}/in_progress/{args.groupID}/{p}'
-                    current = get_log_status(proj_dir)
-                    if not current:
-                        seek_unknown(proj_dir)
-                        if 'unknown' in extras:
-                            extras['unknown']['no data'].append(idx)
-                        else:
-                            extras['unknown'] = {'no data':[idx]}
-                        continue
-                    entry = current.split(',')
+                    current = proj_op.get_last_status()
+                    entry   = current.split(',')
                     if len(entry[1]) > longest_err:
                         longest_err = len(entry[1])
 
-                    if entry[1] == 'pending' and args.write:
-                        timediff = (datetime.now() - force_datetime_decode(entry[2])).total_seconds()
+                    if entry[1] == 'pending' and write:
+                        timediff = (datetime.now() - datetime(entry[2])).total_seconds()
                         if timediff > 86400: # 1 Day - fixed for now
                             entry[1] = 'JobCancelled'
-                            log_status(entry[0], proj_dir, entry[1], FalseLogger())
+                            proj_op.update_status(entry[0], 'JobCancelled')
                     
-                    match_phase = (bool(args.phase) and args.phase == entry[0])
-                    match_error = (bool(args.error) and any([err == entry[1].split(' ')[0] for err in args.error]))
+                    match_phase = (specific_phase == entry[0])
+                    match_error = (specific_error == entry[1])
 
-                    if bool(args.phase) != (args.phase == entry[0]):
-                        total_match = False
-                    elif bool(args.error) != (any([err == entry[1].split(' ')[0] for err in args.error])):
+                    if bool(specific_phase) != (match_phase) or bool(specific_error) != (match_error):
                         total_match = False
                     else:
                         total_match = match_phase or match_error
 
                     if total_match:
-                        if args.examine:
-                            examine_log(args.workdir, p, entry[0], groupID=args.groupID, repeat_id=args.repeat_id, error=entry[1])
-                        if args.new_id or args.blacklist:
-                            savecodes.append(p)
+                        proj_op.show_log_contents(specific_phase, halt=halt)
 
                     merge_errs = True # Debug - add as argument later?
                     if merge_errs:
@@ -349,7 +411,7 @@ class EvaluationsMixin:
             except KeyboardInterrupt as err:
                 raise err
             except Exception as err:
-                examine_log(args.workdir, p, entry[0], groupID=args.groupID, repeat_id=args.repeat_id, error=entry[1])
+                proj_op.show_log_contents(specific_phase, halt=halt)
                 print(f'Issue with analysis of error log: {p}')
         num_codes  = len(proj_codes)
         print()

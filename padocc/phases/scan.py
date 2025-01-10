@@ -10,7 +10,7 @@ import logging
 
 from typing import Union
 
-from padocc import ProjectOperation
+from padocc.core import ProjectOperation
 
 from padocc.core import FalseLogger
 from padocc.core.errors import ConcatFatalError

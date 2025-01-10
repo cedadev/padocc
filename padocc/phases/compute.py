@@ -14,7 +14,7 @@ from typing import Optional
 
 import rechunker
 
-from padocc import ProjectOperation
+from padocc.core import ProjectOperation
 
 from padocc.core import (
     FalseLogger,
@@ -254,7 +254,6 @@ class ComputeOperation(ProjectOperation):
 
         """
         self.phase = 'compute'
-        self._is_trial = is_trial
 
         super().__init__(
             proj_code, 
@@ -263,6 +262,8 @@ class ComputeOperation(ProjectOperation):
             thorough=thorough,
             label=label,
             **kwargs)
+        
+        self._is_trial = is_trial
 
         self.logger.debug('Starting variable definitions')
 
@@ -294,7 +295,7 @@ class ComputeOperation(ProjectOperation):
         if not self.limiter:
             self.limiter = num_files
 
-        self._setup_cache()
+        self._setup_cache(self.dir)
 
         self.temp_zattrs = JSONFileHandler(
             self.cache, 
@@ -895,12 +896,8 @@ class KerchunkDS(ComputeOperation):
         else:
             self.logger.debug('Found single ref to save')
             self.kfile.set(refs[0])
-        
-        if not self.partial:
-            self.logger.info(f'Written to JSON file - {self.outproduct}')
-            self.kfile.close()
-        else:
-            self.logger.info(f'Skipped writing to JSON file - {self.outproduct}')
+
+        self.kfile.close()
 
     def _perform_shape_checks(self, ref: dict) -> dict:
         """

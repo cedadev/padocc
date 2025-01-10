@@ -158,6 +158,7 @@ class ProjectOperation(
         self._zstore = None
 
         self._is_trial = False
+
         self.stage = None
 
     def __str__(self):
@@ -268,7 +269,10 @@ class ProjectOperation(
         os.system(f'rm -rf {self.dir}')
         self.logger.info(f'All internal files for {self.proj_code} deleted.')
 
-    def _update_status(
+    def migrate(self, newgroupID: str):
+        pass
+
+    def update_status(
             self, 
             phase : str, 
             status: str, 
@@ -343,8 +347,22 @@ class ProjectOperation(
                 config['substitutions'] = substitutions
             self.base_cfg.set(config)
 
+    def _dir_exists(self, checkdir : str = None):
+        """
+        Check a directory exists on the filesystem
+        """
+        if not checkdir:
+            checkdir = self.dir
+
+        if os.path.isdir(checkdir):
+            return True
+        return False
+
     def _create_dirs(self, first_time : bool = None):
-        if not self.dir_exists():
+        """
+        Create Project directory and other required directories
+        """
+        if not self._dir_exists():
             if self._dryrun:
                 self.logger.debug(f'DRYRUN: Skip making project directory for: "{self}"')
             else:
@@ -354,7 +372,7 @@ class ProjectOperation(
                 self.logger.warning(f'"{self.dir}" already exists.')
 
         logdir = f'{self.dir}/phase_logs'
-        if not self.dir_exists(logdir):
+        if not self._dir_exists(logdir):
             if self._dryrun:
                 self.logger.debug(f'DRYRUN: Skip making phase_logs directory for: "{self}"')
             else:

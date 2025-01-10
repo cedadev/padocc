@@ -296,7 +296,7 @@ class GroupOperation(
         
         codeset = self.proj_codes[repeat_id].get()
         if subset is not None:
-            codeset = self.configure_subset(codeset, subset, proj_code)
+            codeset = self._configure_subset(codeset, subset, proj_code)
 
         elif proj_code in codeset:
             self.logger.info(f'Project code: {proj_code}')

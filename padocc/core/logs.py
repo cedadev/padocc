@@ -46,12 +46,18 @@ class LoggedOperation:
             logger : Union[logging.Logger,FalseLogger, None] = None,
             label  : Union[str,None] = None, 
             fh     : Union[str,None] = None, 
-            logid  : Union[str,None] = None, 
+            logid  : Union[str,None] = None,
+            forceful: bool = None, 
+            dryrun  : bool = None, 
+            thorough: bool = None,
             verbose: int = 0
         ) -> None:
 
         self._logid = logid
         self._verbose = verbose
+
+        self._set_fh_kwargs(forceful=forceful, dryrun=dryrun, thorough=thorough)
+
         if hasattr(self, 'logger'):
             return
         if logger is None:
@@ -62,6 +68,28 @@ class LoggedOperation:
                 logid=logid)
         else:
             self.logger = logger
+
+    def values(self):
+        print(f' - forceful: {bool(self._forceful)}')
+        print(f' - thorough: {bool(self._thorough)}')
+        print(f' - dryrun: {bool(self._dryrun)}')
+
+    @property
+    def fh_kwargs(self):
+        return {
+            'dryrun': self._dryrun,
+            'forceful': self._forceful,
+            'thorough': self._thorough,
+        }
+    
+    @fh_kwargs.setter
+    def fh_kwargs(self, value):
+        self._set_fh_kwargs(**value)
+
+    def _set_fh_kwargs(self, forceful=None, dryrun=None, thorough=None):
+        self._forceful = forceful
+        self._dryrun   = dryrun
+        self._thorough = thorough
 
 def reset_file_handler(
         logger  : logging.Logger,

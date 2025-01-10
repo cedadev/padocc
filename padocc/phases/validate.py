@@ -11,7 +11,7 @@ import numpy as np
 
 from typing import Union, Optional
 
-from padocc import ProjectOperation
+from padocc.core import ProjectOperation
 from padocc.core import LoggedOperation
 from padocc.core import BypassSwitch
 from padocc.core.utils import open_kerchunk

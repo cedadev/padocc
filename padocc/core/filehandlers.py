@@ -13,7 +13,7 @@ import xarray as xr
 import fsspec
 import re
 
-from padocc.core import LoggedOperation, FalseLogger
+from .logs import LoggedOperation, FalseLogger
 from .utils import format_str
 from .errors import KerchunkDecodeError, ChunkDataError
 
@@ -54,6 +54,7 @@ class FileIOMixin(LoggedOperation):
             logid    : Optional[str] = None,
             dryrun   : bool = False,
             forceful : bool = False,
+            thorough : bool = False,
             verbose  : int = 0
         ) -> None:
         """
@@ -96,7 +97,10 @@ class FileIOMixin(LoggedOperation):
             label=label,
             fh=fh,
             logid=logid,
-            verbose=verbose)
+            verbose=verbose,
+            dryrun=dryrun,
+            forceful=forceful,
+            thorough=thorough)
         
     @property
     def filepath(self) -> str:
