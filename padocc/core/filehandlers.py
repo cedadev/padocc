@@ -10,9 +10,12 @@ import logging
 from typing import Iterator
 from typing import Optional, Union
 import xarray as xr
+import fsspec
+import re
 
-from padocc.core import LoggedOperation, FalseLogger
+from .logs import LoggedOperation, FalseLogger
 from .utils import format_str
+from .errors import KerchunkDecodeError, ChunkDataError
 
 
 class FileIOMixin(LoggedOperation):
@@ -51,6 +54,7 @@ class FileIOMixin(LoggedOperation):
             logid    : Optional[str] = None,
             dryrun   : bool = False,
             forceful : bool = False,
+            thorough : bool = False,
             verbose  : int = 0
         ) -> None:
         """
@@ -93,7 +97,10 @@ class FileIOMixin(LoggedOperation):
             label=label,
             fh=fh,
             logid=logid,
-            verbose=verbose)
+            verbose=verbose,
+            dryrun=dryrun,
+            forceful=forceful,
+            thorough=thorough)
         
     @property
     def filepath(self) -> str:
@@ -198,6 +205,12 @@ class ListFileHandler(FileIOMixin):
         self._obtain_value()
         
         self._value.append(newvalue)
+
+    def pop(self, oldvalue: str) -> None:
+        """Remove a value from the internal list"""
+        self._obtain_value()
+        
+        self._value.pop(oldvalue)
 
     def set(self, value: list) -> None:
         """
@@ -496,12 +509,14 @@ class KerchunkFile(JSONFileHandler):
         from datetime import datetime
 
         # Get current time
-        attrs = self.get('refs',None)
+        attrs = self.get_meta()
 
         if attrs is None or not isinstance(attrs,str):
             raise ValueError(
                 'Attribute "refs" not present in Kerchunk file'
             )
+        
+        attrs = attrs['.zattrs']
 
         # Format for different uses
         now = datetime.now()
@@ -519,10 +534,73 @@ class KerchunkFile(JSONFileHandler):
         else:
             attrs['history'] = 'Kerchunk file created on ' + now.strftime("%D") + '\n'
         
-        attrs['kerchunk_revision'] = version_no
-        attrs['kerchunk_creation_date'] = now.strftime("%d%m%yT%H%M%S")
+        attrs['padocc_revision'] = version_no
+        attrs['padocc_creation_date'] = now.strftime("%d%m%yT%H%M%S")
         
-        self['refs'] = attrs
+        self.set_meta(attrs)
+
+    def open_dataset(
+            self, 
+            fsspec_kwargs: Union[dict,None] = None,
+            retry: bool = False,
+            **kwargs) -> xr.Dataset:
+        """
+        Open the kerchunk file as a dataset"""
+
+        default_fsspec = {'target_options':{'compression':None}}
+        if fsspec_kwargs is not None:
+            default_fsspec.update(fsspec_kwargs)
+
+        default_zarr = {'consolidated':False, 'decode_times':True}
+        default_zarr.update(kwargs)
+
+        self.logger.info(f'Attempting to open Kerchunk JSON file')
+        try:
+            mapper  = fsspec.get_mapper('reference://',fo=self.filepath, **default_fsspec)
+        except json.JSONDecodeError as err:
+            self.logger.error(f"Kerchunk file {self.filepath} appears to be empty")
+            return None
+        
+        # Need a safe repeat here
+        ds = None
+        attempts = 0
+        while attempts < 3 and not ds:
+            attempts += 1
+            try:
+                ds = xr.open_zarr(mapper, **default_zarr)
+            except OverflowError:
+                ds = None
+            except KeyError as err:
+                if re.match('.*https.*',str(err)) and not retry:
+                    # RemoteProtocol is not https - retry with correct protocol
+                    self.logger.warning('Found KeyError "https" on opening the Kerchunk file - retrying with local filepaths.')
+                    return self.open_dataset(fsspec_kwargs=default_fsspec, retry=True)
+                else:
+                    raise err
+            except Exception as err:
+                if 'decode' in str(err):
+                    raise KerchunkDecodeError
+                raise err #MissingKerchunkError(message=f'Failed to open kerchunk file {kfile}')
+        if not ds:
+            raise ChunkDataError
+        self.logger.debug('Successfully opened Kerchunk with virtual xarray ds')
+        return ds
+
+    def get_meta(self):
+        """
+        Obtain the metadata dictionary
+        """
+        return self._value['refs']['.zattrs']
+    
+    def set_meta(self, values: dict):
+        """
+        Reset the metadata dictionary
+        """
+        if 'refs' not in self._value:
+            raise ValueError(
+                'Cannot reset metadata for a file with no existing values.'
+            )
+        self._value['refs']['.zattrs'] = values
 
 class GenericStore(LoggedOperation):
     """
@@ -542,6 +620,7 @@ class GenericStore(LoggedOperation):
             logid    : Optional[str] = None,
             dryrun   : bool = False,
             forceful : bool = False,
+            thorough : bool = False,
             verbose  : int = 0
         ) -> None:
 
@@ -552,8 +631,11 @@ class GenericStore(LoggedOperation):
         self._meta: JSONFileHandler = JSONFileHandler(
             self.store_path, metadata_name)
 
-        self._dryrun: bool   = dryrun
-        self._forceful: bool = forceful
+        self._set_fh_kwargs(
+            forceful=forceful,
+            dryrun=dryrun,
+            thorough=thorough
+        )
 
         # All filehandlers are logged operations
         super().__init__(
@@ -562,7 +644,22 @@ class GenericStore(LoggedOperation):
             fh=fh,
             logid=logid,
             verbose=verbose)
-        
+
+    def _update_history(
+            self,
+            addition: str,
+            new_version: str,
+        ) -> None:
+
+        attrs = self._meta['refs']['.zattrs']
+        now   = datetime.now()
+
+        attrs['history'].append(addition)
+        attrs['padocc_revision'] = new_version
+        attrs['padocc_last_changed'] = now.strftime("%d%m%yT%H%M%S")
+
+        self._meta['refs']['.zattrs'] = attrs
+    
     @property
     def store_path(self) -> str:
         """Assemble the store path"""
@@ -579,9 +676,30 @@ class GenericStore(LoggedOperation):
                 f'Store "{self._store_name}" in dryrun mode.'
             )
 
-    def open(self, engine: str = 'zarr', **open_kwargs) -> xr.Dataset:
-        """Open the store as a dataset (READ_ONLY)"""
-        return xr.open_dataset(self.store_path, engine=engine,**open_kwargs)
+    @property
+    def is_empty(self) -> bool:
+        """
+        Check if the store contains any data
+        """
+        if not os.path.exists(self.store_path):
+            return True
+        return len(os.listdir(self.store_path)) == 0
+
+    def get_meta(self):
+        """
+        Obtain the metadata dictionary
+        """
+        return self._meta['refs']['.zattrs']
+    
+    def set_meta(self, values: dict):
+        """
+        Reset the metadata dictionary
+        """
+        if 'refs' not in self._meta:
+            raise ValueError(
+                'Cannot reset metadata for a file with no existing values.'
+            )
+        self._meta['refs']['.zattrs'] = values
 
     def __contains__(self, key: str) -> bool:
         """
@@ -627,11 +745,11 @@ class ZarrStore(GenericStore):
         """Programmatic representation"""
         return f'<PADOCC ZarrStore: {format_str(self._store_name,10)}>'
     
-    def open(self, *args, **zarr_kwargs) -> xr.Dataset:
+    def open_dataset(self, **zarr_kwargs) -> xr.Dataset:
         """
         Open the ZarrStore as an xarray dataset
         """
-        return super().open(engine='zarr',**zarr_kwargs)
+        return xr.open_dataset(self.store_path, engine='zarr', **zarr_kwargs)
 
 class KerchunkStore(GenericStore):
     """
@@ -657,11 +775,39 @@ class KerchunkStore(GenericStore):
         """Programmatic representation"""
         return f'<PADOCC ParquetStore: {format_str(self._store_name,10)}>'
     
-    def open(self, *args, **parquet_kwargs) -> xr.Dataset:
+    def open_dataset(
+            self, 
+            rfs_kwargs: Union[dict,None] = None,
+            **parquet_kwargs
+        ) -> xr.Dataset:
         """
         Open the Parquet Store as an xarray dataset
         """
-        raise NotImplementedError
+        self.logger.debug('Opening Kerchunk Parquet store')
+
+        default_rfs = {
+            'remote_protocol':'file',
+            'target_protocol':'file',
+            'lazy':True
+        }
+        if rfs_kwargs is not None:
+            default_rfs.update(rfs_kwargs)
+
+        default_parquet = {
+            'backend_kwargs':{"consolidated": False, "decode_times": False}
+        }
+        default_parquet.update(parquet_kwargs)
+
+        from fsspec.implementations.reference import ReferenceFileSystem
+        fs = ReferenceFileSystem(
+            self.filepath, 
+            **default_rfs)
+        
+        return xr.open_dataset(
+            fs.get_mapper(), 
+            engine="zarr",
+            **default_parquet
+        )
 
 class LogFileHandler(ListFileHandler):
     """Log File handler for padocc phase logs."""
@@ -728,3 +874,31 @@ class CSVFileHandler(ListFileHandler):
         addition = f'{phase},{status},{datetime.now().strftime("%H:%M %D")},{jobid}'
         self.append(addition)
         self.logger.info(f'Updated new status: {phase} - {status}')
+
+class CFADataset:
+    """
+    Basic handler for CFA dataset
+    """
+
+    def __init__(self, filepath, identifier):
+
+        if 'CFA' not in xr.backends.list_engines():
+            raise ImportError(
+                'CFA Engine Module not found, see the documentation '
+                'at https://github.com/cedadev/CFAPyX'
+            )
+        
+        self._filepath = filepath
+        self._ident = identifier
+
+    def __str__(self) -> str:
+        """String representation of CFA Dataset"""
+        return f'<PADOCC CFA Dataset: {self._ident}>'
+    
+    def __repr__(self) -> str:
+        """Programmatic representation of CFA Dataset"""
+        return self.__str__
+    
+    def open_dataset(self, **kwargs) -> xr.Dataset:
+        """Open the CFA Dataset [READ-ONLY]"""
+        return xr.open_dataset(self._filepath, engine='CFA',**kwargs)

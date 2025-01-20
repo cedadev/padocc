@@ -2,34 +2,26 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
-import os
 import xarray as xr
 import json
 from datetime import datetime
-import fsspec
-from fsspec.implementations.reference import ReferenceNotReachable
+
 import random
 import numpy as np
-import glob
-import logging
-import math
-import re
-from functools import reduce
-from itertools import groupby
+
 from typing import Union, Optional
 
-from padocc.core.errors import ChunkDataError
-from padocc.core import BypassSwitch, FalseLogger
-from padocc.core.utils import open_kerchunk
+from padocc.core import ProjectOperation
+from padocc.core import LoggedOperation
+from padocc.core import BypassSwitch
+
+from padocc.core.errors import ValidationError
 
 from padocc.core.filehandlers import JSONFileHandler
 from padocc.core.utils import format_tuple
 
 SUFFIXES = []
 SUFFIX_LIST = []
-
-from padocc.core import ProjectOperation, LoggedOperation
-       
 def mem_to_value(mem) -> float:
     """
     Convert a memory value i.e 2G into a value
@@ -115,7 +107,7 @@ def format_slice(slice: list[slice]) -> str:
     for s in slice:
         starts.append(str(s.start))
         ends.append(str(s.stop))
-    return ','.join(starts), ','.join(ends)
+    return "(%s)" % ','.join(starts), "(%s)" % ','.join(ends)
 
 def _recursive_set(source: dict, keyset: list, value):
     """
@@ -261,6 +253,16 @@ class ValidateDatasets(LoggedOperation):
         if self._metadata_report:
             return 'Warning'
         return 'Success'
+    
+    @property
+    def data_report(self):
+        """Read-only data report"""
+        return self._data_report
+    
+    @property
+    def metadata_report(self):
+        """Read-only metadata report"""
+        return self._metadata_report
 
     @property
     def report(self):
@@ -748,7 +750,7 @@ class ValidateDatasets(LoggedOperation):
     def _compare_data(
         self, 
         vname: str, 
-        slice_applied,
+        slice_applied: list[slice],
         test: xr.DataArray, 
         control: xr.DataArray,
         ) -> None:
@@ -779,6 +781,8 @@ class ValidateDatasets(LoggedOperation):
         control   = np.array(control).flatten()
         test      = np.array(test).flatten()
 
+        if len(slice_applied) == 0:
+            slice_applied = [slice(0, len(control))]
         start, stop = format_slice(slice_applied)
 
         self.logger.debug(f'2. Calculating Tolerance - {(datetime.now()-t1).total_seconds():.2f}s')
@@ -865,9 +869,14 @@ class ValidateOperation(ProjectOperation):
             mode: str = 'kerchunk',
             **kwargs
         ) -> None:
-        # Replaces validate timestep
+        """
+        Run hook for project operation run method
+        """
 
-        test   = self._open_product()
+        if mode != self.cloud_format and mode is not None:
+            self.cloud_format = mode
+
+        test   = self.dataset.open_dataset()
         sample = self._open_sample()
 
         meta_fh = JSONFileHandler(self.dir, 'metadata_report',logger=self.logger, **self.fh_kwargs)
@@ -899,6 +908,10 @@ class ValidateOperation(ProjectOperation):
         vd.save_report()
 
         self.update_status('validate',vd.pass_fail,jobid=self._logid)
+
+        if vd.pass_fail == 'Fatal':
+            raise ValidationError(vd.data_report)
+        
         return vd.pass_fail
 
     def _open_sample(self):
@@ -913,31 +926,7 @@ class ValidateOperation(ProjectOperation):
         """
         Open the CFA dataset for this project
         """
-
-        return xr.open_dataset(self.cfa_path, engine='CFA', cfa_options=None)
-
-    def _open_product(self):
-        """
-        Configuration to open object wrappers in the appropriate way so actions
-        can be applied to all. Any products not usable with Xarray should have 
-        an xarray-wrapper to allow the application of typical methods for comparison.
-        """
-
-        if self.cloud_format == 'kerchunk':
-
-            self.create_new_kfile(self.outproduct)
-
-            # Kerchunk opening sequence
-            return open_kerchunk(
-                self.kfile.filepath, 
-                self.logger,
-                isparq = (self.file_type == 'parq'),
-                retry = True,
-                attempt = 3
-            )
-        raise NotImplementedError(
-            f'Opening sequence not known for {self.cloud_format}'
-        )
+        return self.cfa_dataset.open_dataset()
 
     def _get_preslice(self, test, sample, variables):
         """Match timestamp of xarray object to kerchunk object.

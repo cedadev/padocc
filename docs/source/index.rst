@@ -40,13 +40,13 @@ The ingestion/cataloging phase is not currently implemented for public use but m
    Getting Started <start>
    Example Operation <cci_water>
    A Deep Dive <deep_dive>
-   Developer's Guide <dev-guide>
 
 .. toctree::
    :maxdepth: 1
    :caption: Operations:
 
    The Project Operator <projects>
+   Core Mixins <mixins>
    The Group Operator <groups>
    SHEPARD <shepard>
 

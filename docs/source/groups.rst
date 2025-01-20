@@ -13,7 +13,7 @@ A group is most easily created using a python terminal or Jupyter notebook, with
 
 .. code-block:: python
 
-    from padocc.operations import GroupOperation
+    from padocc import GroupOperation
 
     my_group = GroupOperation(
         'mygroup',

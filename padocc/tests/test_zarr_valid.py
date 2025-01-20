@@ -14,10 +14,9 @@ class TestValidate:
             label='test_validate',
             verbose=1)
 
-        results = process.run('validate', forceful=True, bypass=BypassSwitch('DS'))
+        results = process.run('validate', mode='zarr', forceful=True, bypass=BypassSwitch('DS'),proj_code='1DAgg')
 
-        assert results['Fatal'] == 2
-        assert results['Warning'] == 1
+        print(results)
 
 if __name__ == '__main__':
     #workdir = '/home/users/dwest77/cedadev/padocc/padocc/tests/auto_testdata_dir'

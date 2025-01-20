@@ -103,9 +103,9 @@ class GroupOperation(
         self._setup_directories()
 
         self.proj_codes      = {}
-        self.blacklist_codes = CSVFileHandler(
+        self.faultlist_codes = CSVFileHandler(
             self.groupdir,
-            'blacklist_codes',
+            'faultlist_codes',
             logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful,
@@ -138,13 +138,6 @@ class GroupOperation(
     @property
     def proj_codes_dir(self):
         return f'{self.groupdir}/proj_codes'
-
-    @property
-    def new_inputfile(self):
-        if self.groupID:
-            return f'{self.workdir}/groups/filelists/{self.groupID}.txt'
-        else:
-            raise NotImplementedError
         
     def merge(group_A,group_B):
         """
@@ -152,7 +145,7 @@ class GroupOperation(
         1. Migrate all projects from B to A and reset groupID values.
         2. Combine datasets.csv
         3. Combine project codes
-        4. Combine blacklists.
+        4. Combine faultlists.
         """
 
         new_proj_dir = f'{group_A.workdir}/in_progress/{group_A.groupID}'
@@ -175,12 +168,12 @@ class GroupOperation(
         group_B.datasets.remove_file()
         group_A.logger.debug(f'Removed dataset file for {group_B.groupID}')
 
-        # Blacklists
-        group_A.blacklist_codes.set(
-            group_A.blacklist_codes.get() + group_B.blacklist_codes.get()
+        # faultlists
+        group_A.faultlist_codes.set(
+            group_A.faultlist_codes.get() + group_B.faultlist_codes.get()
         )
-        group_B.blacklist_codes.remove_file()
-        group_A.logger.debug(f'Removed blacklist file for {group_B.groupID}')
+        group_B.faultlist_codes.remove_file()
+        group_A.logger.debug(f'Removed faultlist file for {group_B.groupID}')
 
         # Subsets
         for name, subset in group_B.proj_codes.items():
@@ -203,7 +196,7 @@ class GroupOperation(
         according to the list
         1. Migrate projects
         2. Set the datasets
-        3. Set the blacklists
+        3. Set the faultlists
         4. Project codes (remove group B sections)"""
 
         group_A.logger.info(
@@ -231,17 +224,17 @@ class GroupOperation(
 
         group_A.logger.debug(f"Created datasets file for {group_B.groupID}")
 
-        # Set blacklist
-        A_blacklist, B_blacklist = [],[]
-        for bl in group_A.blacklist_codes:
+        # Set faultlist
+        A_faultlist, B_faultlist = [],[]
+        for bl in group_A.faultlist_codes:
             if bl in dataset_list:
-                B_blacklist.append(bl)
+                B_faultlist.append(bl)
             else:
-                A_blacklist.append(bl)
+                A_faultlist.append(bl)
 
-        group_A.blacklist_codes.set(A_blacklist)
-        group_B.blacklist_codes.set(B_blacklist)
-        group_A.logger.debug(f"Created blacklist file for {group_B.groupID}")
+        group_A.faultlist_codes.set(A_faultlist)
+        group_B.faultlist_codes.set(B_faultlist)
+        group_A.logger.debug(f"Created faultlist file for {group_B.groupID}")
 
         # Combine project subsets
         group_B.proj_codes['main'].set(dataset_list)
@@ -303,7 +296,7 @@ class GroupOperation(
         
         codeset = self.proj_codes[repeat_id].get()
         if subset is not None:
-            codeset = self.configure_subset(codeset, subset, proj_code)
+            codeset = self._configure_subset(codeset, subset, proj_code)
 
         elif proj_code in codeset:
             self.logger.info(f'Project code: {proj_code}')
@@ -432,9 +425,10 @@ class GroupOperation(
             self.workdir,
             groupID=self.groupID,
             logger=self.logger,
+            bypass=bypass,
             **kwargs
         )
-        status = proj_op.run()
+        status = proj_op.run(mode=mode)
         proj_op.save_files()
         return status
     
@@ -475,7 +469,7 @@ class GroupOperation(
             self.proj_codes[pc].close()
 
     def save_files(self):
-        self.blacklist_codes.close()
+        self.faultlist_codes.close()
         self.datasets.close()
         self._save_proj_codes()
 
@@ -488,6 +482,25 @@ class GroupOperation(
             dryrun=self._dryrun,
             forceful=self._forceful
         )
+    
+    def _delete_proj_codeset(self, name: str):
+        """
+        Delete a project codeset
+        """
+
+        if name == 'main':
+            raise ValueError(
+                'Operation not permitted - removing the main codeset'
+                'cannot be achieved using this function.'
+            )
+        
+        if name not in self.proj_codes:
+            self.logger.warning(
+                f'Subset ID "{name}" could not be deleted - no matching subset.'
+            )
+
+        self.proj_codes[name].remove_file()
+        self.proj_codes.pop(name)
 
     def check_writable(self):
         if not os.access(self.workdir, os.W_OK):
@@ -727,6 +740,18 @@ class GroupOperation(
                 self.logger.debug(f'DRYRUN: Skip making codes-dir for {self.groupID}')
             else:
                 os.makedirs(codes_dir)
+
+    def _setup_slurm_directories(self):
+        """
+        Currently Unused function to set up 
+        the slurm directories for a group."""
+
+        for dirx in ['sbatch','errs']:
+            if not os.path.isdir(f'{self.groupdir}/{dirx}'):
+                if self._dryrun:
+                    self.logger.debug(f"DRYRUN: Skipped creating {dirx}")
+                    continue
+                os.makedirs(f'{self.dir}/{dirx}')
   
     def _configure_subset(self, main_set, subset_size: int, subset_id: int):
         # Configure subset controls

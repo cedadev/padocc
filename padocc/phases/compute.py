@@ -10,7 +10,7 @@ import xarray as xr
 import numpy as np
 import base64
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 import rechunker
 
@@ -254,7 +254,6 @@ class ComputeOperation(ProjectOperation):
 
         """
         self.phase = 'compute'
-        self._is_trial = is_trial
 
         super().__init__(
             proj_code, 
@@ -263,6 +262,8 @@ class ComputeOperation(ProjectOperation):
             thorough=thorough,
             label=label,
             **kwargs)
+        
+        self._is_trial = is_trial
 
         self.logger.debug('Starting variable definitions')
 
@@ -294,7 +295,7 @@ class ComputeOperation(ProjectOperation):
         if not self.limiter:
             self.limiter = num_files
 
-        self._setup_cache()
+        self._setup_cache(self.dir)
 
         self.temp_zattrs = JSONFileHandler(
             self.cache, 
@@ -670,14 +671,20 @@ class KerchunkDS(ComputeOperation):
     def _run(
             self,
             check_dimensions: bool = False,
-            **kwargs) -> str:
+            ctype: Union[str,None] = None,
+            **kwargs
+        ) -> str:
         """
         ``_run`` hook method called from the ``ProjectOperation.run`` 
         which this subclass inherits. The kwargs capture the ``mode``
         parameter from ``ProjectOperation.run`` which is not needed 
         because we already know we're running for ``Kerchunk``.
         """
-        status = self._run_with_timings(self.create_refs, check_dimensions=check_dimensions)
+        status = self._run_with_timings(
+            self.create_refs, 
+            check_refs=check_dimensions,
+            ctype=ctype
+        )
         results = cfa_handler(self)
         if results is not None:
             self.base_cfg['data_properties'] = results
@@ -685,7 +692,11 @@ class KerchunkDS(ComputeOperation):
         self.update_status('compute',status,jobid=self._logid)
         return status
 
-    def create_refs(self, check_dimensions: bool = False) -> None:
+    def create_refs(
+            self, 
+            check_refs : bool = False,
+            ctype: Union[str,None] = None
+        ) -> None:
         """Organise creation and loading of refs
         - Load existing cached refs
         - Create new refs
@@ -698,7 +709,7 @@ class KerchunkDS(ComputeOperation):
         partials = []
         ctypes = []
 
-        ctype = None
+        ctype = self.source_format or ctype
 
         converter = KerchunkConverter(logger=self.logger, 
                                       bypass_driver=self._bypass.skip_driver)
@@ -706,19 +717,34 @@ class KerchunkDS(ComputeOperation):
         listfiles = self.allfiles.get()
 
         t1 = datetime.now()
+        create_mode = False
+
         for x, nfile in enumerate(listfiles[:self.limiter]):
+
             ref = None
+            ## Default Converter Type if not set.
+            if ctype is None:
+                ctype = list(converter.drivers.keys())[0]
+
+            ## Connect to Cache File
             CacheFile = JSONFileHandler(self.cache, f'{x}', 
                                             dryrun=self._dryrun, forceful=self._forceful,
                                             logger=self.logger)
+            
+            ## Attempt to load the cache file
             if not self._thorough:
-                self.logger.info('Loading cache file')
+                self.logger.info(f'Loading cache file: {x+1}/{self.limiter}')
                 ref = CacheFile.get()
                 if ref:
-                    self.logger.info(f'Loaded refs: {x+1}/{self.limiter}')
-                ctype = 'Unknown'
+                    self.logger.info(f' > Loaded refs')
+                    create_mode = False
 
+            ## Create cache file from scratch if needed
             if not ref:
+                if not create_mode:
+                    self.logger.info(' > Cache file not found: Switching to create mode')
+                    create_mode = True
+
                 self.logger.info(f'Creating refs: {x+1}/{self.limiter}')
                 try:
                     ref, ctype = converter.run(nfile, extension=ctype, **self.create_kwargs)
@@ -727,17 +753,16 @@ class KerchunkDS(ComputeOperation):
                         raise err
                     else:
                         partials.append(x)
+
             if not ref:
-                raise KerchunkDriverFatalError()
+                continue
             
             allzattrs.append(ref['refs']['.zattrs'])
             refs.append(ref)
 
-            if not self.quality_required:
-                self._perform_shape_checks(ref)
-
-            if check_dimensions:
-                refs = self._perform_dimensions_checks(ref)
+            if check_refs:
+                # Perform any and all checks here if required
+                refs = self._perform_shape_checks(ref)
 
             CacheFile.set(ref)
             CacheFile.close()
@@ -847,11 +872,8 @@ class KerchunkDS(ComputeOperation):
         from fsspec.implementations.reference import LazyReferenceMapper
 
         self.logger.debug('Starting parquet-write process')
-        self.create_new_kstore(self.outproduct)
 
-        if not os.path.isdir(self.outstore):
-            os.makedirs(self.outstore)
-        out = LazyReferenceMapper.create(self.record_size, self.outstore, fs = filesystem("file"), **self.pre_kwargs)
+        out = LazyReferenceMapper.create(self.record_size, str(self.kstore), fs = filesystem("file"), **self.pre_kwargs)
 
         out_dict = MultiZarrToZarr(
             refs,
@@ -861,10 +883,10 @@ class KerchunkDS(ComputeOperation):
         ).translate()
         
         if self.partial:
-            self.logger.info(f'Skipped writing to parquet store - {self.outstore}')
+            self.logger.info(f'Skipped writing to parquet store - {self.kstore}')
         else:
             out.flush()
-            self.logger.info(f'Written to parquet store - {self.outstore}')
+            self.logger.info(f'Written to parquet store - {self.kstore}')
 
     def _data_to_json(self, refs: dict) -> None:
         """
@@ -873,7 +895,6 @@ class KerchunkDS(ComputeOperation):
         from kerchunk.combine import MultiZarrToZarr
 
         self.logger.debug('Starting JSON-write process')
-        self.create_new_kfile(self.outproduct)
 
         # Already have default options saved to class variables
         if len(refs) > 1:
@@ -884,7 +905,6 @@ class KerchunkDS(ComputeOperation):
                 self.combine_kwargs['concat_dims'] = [vdim]
 
             try:
-                print(self.combine_kwargs)
                 mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
             except ValueError as err:
                 if 'chunk size mismatch' in str(err):
@@ -900,41 +920,41 @@ class KerchunkDS(ComputeOperation):
         else:
             self.logger.debug('Found single ref to save')
             self.kfile.set(refs[0])
-        
-        if not self.partial:
-            self.logger.info(f'Written to JSON file - {self.outproduct}')
-            self.kfile.close()
-        else:
-            self.logger.info(f'Skipped writing to JSON file - {self.outproduct}')
 
-    def _perform_shape_checks(self, ref: dict) -> None:
+        self.kfile.close()
+
+    def _perform_shape_checks(self, ref: dict) -> dict:
         """
         Check the shape of each variable for inconsistencies which will
         require a thorough validation process.
         """
+
+        if self.source_format not in ['ncf3','hdf5']:
+            self.logger.warning(
+                'Skipped reference checks, source file not compatible.'
+            )
+
+        # Identify variables to be checked
         if self.base_cfg['data_properties']['aggregated_vars'] != 'Unknown':
             variables = self.base_cfg['data_properties']['aggregated_vars']
             checklist = [f'{v}/.zarray' for v in variables]
         else:
             checklist = [r for r in ref['refs'].keys() if '.zarray' in r]
 
+        # Determine correct values from a single source file
+        ## - Test opening a netcdf file and extracting the dimensions
+        ## - Already checked the files are of netcdf type.
+
+        # Perform corrections
         for key in checklist:
             zarray = json.loads(ref['refs'][key])
             if key not in self.var_shapes:
                 self.var_shapes[key] = zarray['shape']
 
             if self.var_shapes[key] != zarray['shape']:
-                self.quality_required = True
-
-    def _perform_dimension_checks(self, ref: dict) -> dict:
-        """
-        Perform dimensional corrections, developed in 
-        response to issues with CCI lakes datasets.
-        """
-
-        raise NotImplementedError(
-            'This feature is not implemented in pre-release v1.3a'
-        )
+                self.logger.debug(
+                    f'Reference Correction: {zarray["shape"]} to '
+                )
 
 
 class ZarrDS(ComputeOperation):
@@ -943,21 +963,21 @@ class ZarrDS(ComputeOperation):
             self, 
             proj_code,
             workdir,
-            stage = 'in_progress',
+            groupID: Union[str,None] = None,
+            stage : str = 'in_progress',
             mem_allowed : str = '100MB',
             preferences = None,
             **kwargs,
         ) -> None:
         
-        super().__init__(proj_code, workdir, stage, *kwargs)
+        super().__init__(proj_code, workdir, groupID=groupID, stage=stage, **kwargs)
 
-        self.tempstore   = ZarrStore(self.dir, "zarrcache.zarr", logger=self.logger, **self.fh_kwargs)
+        self.tempstore   = ZarrStore(self.dir, "zarrcache", logger=self.logger, **self.fh_kwargs)
         self.preferences = preferences
 
-        if self.thorough or self.forceful:
-            os.system(f'rm -rf {self.tempstore}')
+        if self._thorough or self._forceful:
+            self.tempstore.clear()
 
-        self.filelist    = []
         self.mem_allowed = mem_allowed
 
     def _run(self, **kwargs) -> str:
@@ -968,25 +988,27 @@ class ZarrDS(ComputeOperation):
         self.update_status('compute',status,jobid=self._logid)
         return status
 
-    def create_store(self):
+    def create_store(
+            self, 
+            file_limit: int = None):
+        """
+        Create the Zarr Store
+        """
 
-        # Abort process if overwrite method not specified
-        if not self.carryon:
-            self.logger.info('Process aborted - no overwrite plan for existing file.')
-            return None
+        self.combine_kwargs = self.detail_cfg['kwargs']['combine_kwargs']
 
         # Open all files for this process (depending on limiter)
         self.logger.debug('Starting timed section for estimation of whole process')
         t1 = datetime.now()
-        self.obtain_file_subset()
+
         self.logger.info(f"Retrieved required xarray dataset objects - {(datetime.now()-t1).total_seconds():.2f}s")
 
         # Determine concatenation dimensions
         if self.base_cfg['data_properties']['aggregated_vars'] == 'Unknown':
             # Determine dimension specs for concatenation.
             self._determine_dim_specs([
-                xr.open_dataset(self.filelist[0]),
-                xr.open_dataset(self.filelist[1])
+                xr.open_dataset(self.allfiles[0]),
+                xr.open_dataset(self.allfiles[1])
             ])
         if not self.combine_kwargs['concat_dims']:
             self.logger.error('No concatenation dimensions - unsupported for zarr conversion')
@@ -995,7 +1017,16 @@ class ZarrDS(ComputeOperation):
         # Perform Concatenation
         self.logger.info(f'Concatenating xarray objects across dimensions ({self.combine_kwargs["concat_dims"]})')
 
-        self.combined_ds = xr.open_mfdataset(self.filelist, combine='nested', concat_dim=self.combine_kwargs['concat_dims'])
+        if file_limit:
+            fileset = self.allfiles[:file_limit]
+        else:
+            fileset = self.allfiles.get()
+
+        self.combined_ds = xr.open_mfdataset(
+            fileset, 
+            combine='nested', 
+            concat_dim=self.combine_kwargs['concat_dims'],
+            data_vars='minimal')
         
         # Assessment values
         self.std_vars = list(self.combined_ds.variables)
@@ -1011,17 +1042,31 @@ class ZarrDS(ComputeOperation):
         self.logger.debug(f'CPF: {self.cpf[0]}, VPF: {self.volm[0]}, num_vars: {len(self.std_vars)}')
 
         self.concat_time = (datetime.now()-t1).total_seconds()/self.limiter
+
+        for store in [self.tempstore, self.zstore]:
+            if not store.is_empty:
+                if self._forceful or self._thorough:
+                    store.clear()
+                else:
+                    raise ValueError(
+                        'Unable to rechunk to zarr - store already exists '
+                        'and no overwrite plan has been given. Use '
+                        '-f or -Q on the commandline to clear or overwrite'
+                        'existing store'
+                    )
     
         # Perform Rechunking
         self.logger.info(f'Starting Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
-        if not self.dryrun:
+        if not self._dryrun:
             t1 = datetime.now()
+
             rechunker.rechunk(
                 self.combined_ds, 
                 concat_dim_rechunk, 
                 self.mem_allowed, 
-                self.outstore,
-                temp_store=self.tempstore).execute()
+                self.zstore.store_path,
+                temp_store=self.tempstore.store_path).execute()
+            
             self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
             self.logger.info(f'Concluded Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
         else:

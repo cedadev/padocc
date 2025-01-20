@@ -9,22 +9,22 @@ import logging
 from typing import Union
 
 from .errors import error_handler
-from .utils import extract_file, BypassSwitch, apply_substitutions, phases, file_configs
+from .utils import extract_file, BypassSwitch, apply_substitutions, phases, file_configs, FILE_DEFAULT
 from .logs import reset_file_handler
 
-from .mixins import DirectoryMixin, EvaluationsMixin, PropertiesMixin
+from .mixins import DirectoryMixin, DatasetHandlerMixin, StatusMixin, PropertiesMixin
 from .filehandlers import (
     JSONFileHandler, 
     CSVFileHandler,
     ListFileHandler,
     LogFileHandler,
-    KerchunkFile
 )
 
           
 class ProjectOperation(
     DirectoryMixin, 
-    EvaluationsMixin,
+    DatasetHandlerMixin,
+    StatusMixin,
     PropertiesMixin):
     """
     PADOCC Project Operation class, able to access project files
@@ -152,11 +152,13 @@ class ProjectOperation(
                 **self.fh_kwargs
             )
 
-        self.kfile  = None
-        self.kstore = None
-        self.zstore = None
+        self._kfile  = None
+        self._kstore = None
+        self._zstore = None
+        self._cfa_dataset = None
 
         self._is_trial = False
+
         self.stage = None
 
     def __str__(self):
@@ -205,7 +207,14 @@ class ProjectOperation(
         Main function for running any project operation. All 
         subclasses act as plugins for this function, and require a
         ``_run`` method called from here. This means all error handling
-        with status logs and log files can be dealt with here."""
+        with status logs and log files can be dealt with here.
+        
+        To find the parameters for a specific operation (e.g. compute 
+        with kerchunk mode), see the additional parameters of ``run`` in
+        the source code for the phase you are running. In this example, 
+        see ``padocc.phases.compute:KerchunkDS._run``
+        
+        """
 
         self._bypass = bypass or self._bypass
 
@@ -216,6 +225,13 @@ class ProjectOperation(
             self._thorough = thorough
         if dryrun is not None:
             self._dryrun = dryrun
+
+        if self.cloud_format != mode:
+            self.logger.info(
+                f'Switching cloud format to {mode}'
+            )
+            self.cloud_format = mode
+            self.file_type = FILE_DEFAULT[mode]
 
         try:
             status = self._run(mode=mode, **kwargs)
@@ -230,22 +246,12 @@ class ProjectOperation(
 
     def move_to(self, new_directory: str) -> None:
         """
-        Move all associated files across to new directory."""
+        Move all associated files across to new directory.
+        """
 
     def _run(self, **kwargs) -> None:
         # Default project operation run.
         self.logger.info("Nothing to run with this setup!")
-
-    def create_new_kfile(self, product : str) -> None:
-        self.kfile = KerchunkFile(
-            self.dir,
-            product,
-            logger=self.logger,
-            **self.fh_kwargs
-        )
-
-    def create_new_kstore(self, product: str) -> None:
-        raise NotImplementedError
 
     @property
     def dir(self):
@@ -254,23 +260,32 @@ class ProjectOperation(
         else:
             return f'{self.workdir}/in_progress/general/{self.proj_code}'
 
-    @property
-    def cfa_path(self):
-        return f'{self.dir}/{self.proj_code}.nca'
-
-    def dir_exists(self, checkdir : str = None):
-        if not checkdir:
-            checkdir = self.dir
-
-        if os.path.isdir(checkdir):
-            return True
-        return False
-
     def file_exists(self, file : str):
-        """Check if a named file exists (without extension)"""
+        """
+        Check if a named file exists (without extension).
+        This can be any generic filehandler attached."""
         if hasattr(self, file):
             fhandle = getattr(self, file)
         return fhandle.file_exists()
+    
+    def delete_project(self, ask: bool = True):
+        """
+        Delete a project
+        """
+        if self._dryrun:
+            self.logger.info('Skipped Deleting directory in dryrun mode.')
+            return
+        if ask:
+            inp = input(f'Are you sure you want to delete {self.proj_code}? (Y/N)?')
+            if inp != 'Y':
+                self.logger.info(f'Skipped Deleting directory (User entered {inp})')
+                return
+            
+        os.system(f'rm -rf {self.dir}')
+        self.logger.info(f'All internal files for {self.proj_code} deleted.')
+
+    def migrate(self, newgroupID: str):
+        pass
 
     def update_status(
             self, 
@@ -347,8 +362,22 @@ class ProjectOperation(
                 config['substitutions'] = substitutions
             self.base_cfg.set(config)
 
+    def _dir_exists(self, checkdir : str = None):
+        """
+        Check a directory exists on the filesystem
+        """
+        if not checkdir:
+            checkdir = self.dir
+
+        if os.path.isdir(checkdir):
+            return True
+        return False
+
     def _create_dirs(self, first_time : bool = None):
-        if not self.dir_exists():
+        """
+        Create Project directory and other required directories
+        """
+        if not self._dir_exists():
             if self._dryrun:
                 self.logger.debug(f'DRYRUN: Skip making project directory for: "{self}"')
             else:
@@ -358,7 +387,7 @@ class ProjectOperation(
                 self.logger.warning(f'"{self.dir}" already exists.')
 
         logdir = f'{self.dir}/phase_logs'
-        if not self.dir_exists(logdir):
+        if not self._dir_exists(logdir):
             if self._dryrun:
                 self.logger.debug(f'DRYRUN: Skip making phase_logs directory for: "{self}"')
             else:

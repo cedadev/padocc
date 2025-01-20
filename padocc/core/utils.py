@@ -10,7 +10,7 @@ import math
 import numpy as np
 import re
 
-from padocc.core.errors import (
+from .errors import (
     MissingVariableError, 
     MissingKerchunkError, 
     ChunkDataError,
@@ -46,8 +46,8 @@ BASE_CFG = {
         'identical_vars':'Unknown'
     },
     'override':{
-        'cloud_type':None,
-        'file_type':None
+        'cloud_type':'kerchunk',
+        'file_type':'json' # Default values
     },
     'last_run': (None, None),
 }
@@ -65,6 +65,11 @@ DETAIL_CFG = {
 file_configs = {
     'base_cfg':BASE_CFG,
     'detail_cfg':DETAIL_CFG
+}
+
+FILE_DEFAULT = {
+    'kerchunk':'json',
+    'zarr':None,
 }
 
 class BypassSwitch:
@@ -159,7 +164,7 @@ def open_kerchunk(kfile: str, logger, isparq=False, retry=False, attempt=1, **kw
         logger.debug('Successfully opened Kerchunk with virtual xarray ds')
         return ds
 
-def get_attribute(env: str, value: str) -> str:
+def get_attribute(env: str, args, value: str) -> str:
     """
     Assemble environment variable or take from passed argument. Find
     value of variable from Environment or ParseArgs object, or reports failure.
@@ -172,7 +177,7 @@ def get_attribute(env: str, value: str) -> str:
 
     :returns: Value of either environment variable or argparse value.
     """
-    if value is None:
+    if getattr(args, value) is None:
         if not os.getenv(env):
             raise MissingVariableError(vtype=env)
         else:
