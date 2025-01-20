@@ -145,8 +145,9 @@ class DatasetHandlerMixin:
         getattr(self, target).set_meta(meta)
 
     @property
-    def dataset_attributes(self):
+    def dataset_attributes(self) -> dict:
         """
         Fetch a dictionary of the metadata for the dataset
         where possible.
         """
+        return self.dataset.get_meta()
