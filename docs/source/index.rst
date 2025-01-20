@@ -46,6 +46,7 @@ The ingestion/cataloging phase is not currently implemented for public use but m
    :caption: Operations:
 
    The Project Operator <projects>
+   Core Mixins <mixins>
    The Group Operator <groups>
    SHEPARD <shepard>
 
