@@ -556,7 +556,7 @@ class KerchunkFile(JSONFileHandler):
 
         self.logger.info(f'Attempting to open Kerchunk JSON file')
         try:
-            mapper  = fsspec.get_mapper('reference://',fo=self.filepath, **fsspec_kwargs)
+            mapper  = fsspec.get_mapper('reference://',fo=self.filepath, **default_fsspec)
         except json.JSONDecodeError as err:
             self.logger.error(f"Kerchunk file {self.filepath} appears to be empty")
             return None
@@ -574,7 +574,7 @@ class KerchunkFile(JSONFileHandler):
                 if re.match('.*https.*',str(err)) and not retry:
                     # RemoteProtocol is not https - retry with correct protocol
                     self.logger.warning('Found KeyError "https" on opening the Kerchunk file - retrying with local filepaths.')
-                    return self.open_dataset(fsspec_kwargs=fsspec_kwargs, retry=True)
+                    return self.open_dataset(fsspec_kwargs=default_fsspec, retry=True)
                 else:
                     raise err
             except Exception as err:
