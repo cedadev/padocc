@@ -51,8 +51,8 @@ def error_handler(
         status_fh.update_status(phase, status, jobid=jobid)
 
     if subset_bypass:
-        logger.error(tb)
-        return status
+        logger.error('\n'.join(tb))
+        return 'Fatal'
     else:
         raise err
 
@@ -212,11 +212,12 @@ class ValidationError(KerchunkException):
     """One or more checks within validation have failed - most likely elementwise comparison of data."""
     def __init__(
             self,
+            report: Union[dict,None] = None,
             verbose: int = 0, 
             proj_code: Union[str,None] = None, 
             groupdir: Union[str,None] = None
         ) -> None:
-        self.message = "Fatal Validation Error - see data report."
+        self.message = f"Data Report: {report}"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
