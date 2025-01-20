@@ -31,6 +31,7 @@ sphinx-rtd-theme = "2.0.0"
 cfapyx = "2024.11.27"
 myst-nb = "^1.1.2"
 types-pyyaml = "^6.0.12.20240917"
+zarr = "^2.18.4"
 
 [build-system]
 requires = ["poetry-core"]
