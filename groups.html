@@ -24,7 +24,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="The SHEPARD Module" href="shepard.html" />
-    <link rel="prev" title="Projects in PADOCC" href="projects.html" /> 
+    <link rel="prev" title="PADOCC Core Mixin Behaviours" href="mixins.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -54,13 +54,11 @@
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example Operation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="deep_dive.html">A Deep Dive</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev-guide.html">Developer Guide - Adding new functionality</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-modes-in-assessor">1. New Modes in Assessor</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-processors-for-compute">2. New Processors for Compute</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mixins.html">Core Mixins</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">The Group Operator</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#instantiating-a-group">Instantiating a Group</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#initialisation-from-a-file">Initialisation from a File</a></li>
@@ -111,7 +109,7 @@ See the source documentation page for more detail.</p>
 <section id="instantiating-a-group">
 <h2>Instantiating a Group<a class="headerlink" href="#instantiating-a-group" title="Permalink to this heading"></a></h2>
 <p>A group is most easily created using a python terminal or Jupyter notebook, with a similar form to the below.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padocc.operations</span> <span class="kn">import</span> <span class="n">GroupOperation</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padocc</span> <span class="kn">import</span> <span class="n">GroupOperation</span>
 
 <span class="n">my_group</span> <span class="o">=</span> <span class="n">GroupOperation</span><span class="p">(</span>
     <span class="s1">&#39;mygroup&#39;</span><span class="p">,</span>
@@ -190,7 +188,7 @@ format is a csv file, where each entry fits the format:
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="projects.html" class="btn btn-neutral float-left" title="Projects in PADOCC" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mixins.html" class="btn btn-neutral float-left" title="PADOCC Core Mixin Behaviours" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="shepard.html" class="btn btn-neutral float-right" title="The SHEPARD Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

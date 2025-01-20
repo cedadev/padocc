@@ -54,13 +54,11 @@
 <li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example Operation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="deep_dive.html">A Deep Dive</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev-guide.html">Developer Guide - Adding new functionality</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-modes-in-assessor">1. New Modes in Assessor</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev-guide.html#new-processors-for-compute">2. New Processors for Compute</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mixins.html">Core Mixins</a></li>
 <li class="toctree-l1"><a class="reference internal" href="groups.html">The Group Operator</a></li>
 <li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD</a></li>
 </ul>
@@ -76,7 +74,7 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#compute-operations">Compute Operations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-padocc.phases.compute">Compute Operations</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.CfaDS"><code class="docutils literal notranslate"><span class="pre">CfaDS</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.ComputeOperation"><code class="docutils literal notranslate"><span class="pre">ComputeOperation</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.ComputeOperation.filelist"><code class="docutils literal notranslate"><span class="pre">ComputeOperation.filelist</span></code></a></li>
@@ -91,14 +89,19 @@
 <li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.KerchunkDS.create_refs"><code class="docutils literal notranslate"><span class="pre">KerchunkDS.create_refs()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.ZarrDS"><code class="docutils literal notranslate"><span class="pre">ZarrDS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.ZarrDS"><code class="docutils literal notranslate"><span class="pre">ZarrDS</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.ZarrDS.create_store"><code class="docutils literal notranslate"><span class="pre">ZarrDS.create_store()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.cfa_handler"><code class="docutils literal notranslate"><span class="pre">cfa_handler()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#validate-operations">Validate Operations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-padocc.phases.validate">Validate Operations</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.phases.validate.Report"><code class="docutils literal notranslate"><span class="pre">Report</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.phases.validate.ValidateDatasets"><code class="docutils literal notranslate"><span class="pre">ValidateDatasets</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#padocc.phases.validate.ValidateDatasets.control_dataset_var"><code class="docutils literal notranslate"><span class="pre">ValidateDatasets.control_dataset_var()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.validate.ValidateDatasets.data_report"><code class="docutils literal notranslate"><span class="pre">ValidateDatasets.data_report</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.validate.ValidateDatasets.metadata_report"><code class="docutils literal notranslate"><span class="pre">ValidateDatasets.metadata_report</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#padocc.phases.validate.ValidateDatasets.replace_dataset"><code class="docutils literal notranslate"><span class="pre">ValidateDatasets.replace_dataset()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#padocc.phases.validate.ValidateDatasets.replace_preslice"><code class="docutils literal notranslate"><span class="pre">ValidateDatasets.replace_preslice()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#padocc.phases.validate.ValidateDatasets.test_dataset_var"><code class="docutils literal notranslate"><span class="pre">ValidateDatasets.test_dataset_var()</span></code></a></li>
@@ -165,9 +168,9 @@
 </dd></dl>
 
 </section>
-<section id="compute-operations">
-<h2>Compute Operations<a class="headerlink" href="#compute-operations" title="Permalink to this heading"></a></h2>
-<span class="target" id="module-padocc.phases.compute"></span><dl class="py class">
+<section id="module-padocc.phases.compute">
+<span id="compute-operations"></span><h2>Compute Operations<a class="headerlink" href="#module-padocc.phases.compute" title="Permalink to this heading"></a></h2>
+<dl class="py class">
 <dt class="sig sig-object py" id="padocc.phases.compute.CfaDS">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.compute.</span></span><span class="sig-name descname"><span class="pre">CfaDS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'in_progress'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'See</span> <span class="pre">individual</span> <span class="pre">files</span> <span class="pre">for</span> <span class="pre">more</span> <span class="pre">details'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limiter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_concat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'compute'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.CfaDS" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#padocc.phases.compute.ComputeOperation" title="padocc.phases.compute.ComputeOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ComputeOperation</span></code></a></p>
@@ -220,7 +223,7 @@ otherwise if unsuccessful.</p>
 <dd><p>Bases: <a class="reference internal" href="#padocc.phases.compute.ComputeOperation" title="padocc.phases.compute.ComputeOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ComputeOperation</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.phases.compute.KerchunkDS.create_refs">
-<span class="sig-name descname"><span class="pre">create_refs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check_dimensions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.phases.compute.KerchunkDS.create_refs" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">create_refs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check_refs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.phases.compute.KerchunkDS.create_refs" title="Permalink to this definition"></a></dt>
 <dd><p>Organise creation and loading of refs
 - Load existing cached refs
 - Create new refs
@@ -232,8 +235,14 @@ otherwise if unsuccessful.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padocc.phases.compute.ZarrDS">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.compute.</span></span><span class="sig-name descname"><span class="pre">ZarrDS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'in_progress'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem_allowed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'100MB'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preferences</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.ZarrDS" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.compute.</span></span><span class="sig-name descname"><span class="pre">ZarrDS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'in_progress'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem_allowed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'100MB'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preferences</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.ZarrDS" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#padocc.phases.compute.ComputeOperation" title="padocc.phases.compute.ComputeOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ComputeOperation</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.phases.compute.ZarrDS.create_store">
+<span class="sig-name descname"><span class="pre">create_store</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.ZarrDS.create_store" title="Permalink to this definition"></a></dt>
+<dd><p>Create the Zarr Store</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -252,9 +261,9 @@ from which to pull project-specific info.</p></li>
 </dd></dl>
 
 </section>
-<section id="validate-operations">
-<h2>Validate Operations<a class="headerlink" href="#validate-operations" title="Permalink to this heading"></a></h2>
-<span class="target" id="module-padocc.phases.validate"></span><dl class="py class">
+<section id="module-padocc.phases.validate">
+<span id="validate-operations"></span><h2>Validate Operations<a class="headerlink" href="#module-padocc.phases.validate" title="Permalink to this heading"></a></h2>
+<dl class="py class">
 <dt class="sig sig-object py" id="padocc.phases.validate.Report">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.validate.</span></span><span class="sig-name descname"><span class="pre">Report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.validate.Report" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
@@ -277,6 +286,18 @@ Validate data using combined NetCDF or CFA vs Kerchunk
 <span class="sig-name descname"><span class="pre">control_dataset_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.validate.ValidateDatasets.control_dataset_var" title="Permalink to this definition"></a></dt>
 <dd><p>Get a variable DataArray from the control dataset, 
 performing preslice functions.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padocc.phases.validate.ValidateDatasets.data_report">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data_report</span></span><a class="headerlink" href="#padocc.phases.validate.ValidateDatasets.data_report" title="Permalink to this definition"></a></dt>
+<dd><p>Read-only data report</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padocc.phases.validate.ValidateDatasets.metadata_report">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">metadata_report</span></span><a class="headerlink" href="#padocc.phases.validate.ValidateDatasets.metadata_report" title="Permalink to this definition"></a></dt>
+<dd><p>Read-only metadata report</p>
 </dd></dl>
 
 <dl class="py method">
