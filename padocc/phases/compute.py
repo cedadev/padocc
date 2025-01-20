@@ -671,6 +671,7 @@ class KerchunkDS(ComputeOperation):
     def _run(
             self,
             check_dimensions: bool = False,
+            ctype: Union[str,None] = None,
             **kwargs
         ) -> str:
         """
@@ -679,7 +680,11 @@ class KerchunkDS(ComputeOperation):
         parameter from ``ProjectOperation.run`` which is not needed 
         because we already know we're running for ``Kerchunk``.
         """
-        status = self._run_with_timings(self.create_refs, check_refs=check_dimensions)
+        status = self._run_with_timings(
+            self.create_refs, 
+            check_refs=check_dimensions,
+            ctype=ctype
+        )
         results = cfa_handler(self)
         if results is not None:
             self.base_cfg['data_properties'] = results
@@ -689,7 +694,9 @@ class KerchunkDS(ComputeOperation):
 
     def create_refs(
             self, 
-            check_refs : bool = False) -> None:
+            check_refs : bool = False,
+            ctype: Union[str,None] = None
+        ) -> None:
         """Organise creation and loading of refs
         - Load existing cached refs
         - Create new refs
@@ -702,7 +709,7 @@ class KerchunkDS(ComputeOperation):
         partials = []
         ctypes = []
 
-        ctype = None
+        ctype = self.source_format or ctype
 
         converter = KerchunkConverter(logger=self.logger, 
                                       bypass_driver=self._bypass.skip_driver)
@@ -710,19 +717,33 @@ class KerchunkDS(ComputeOperation):
         listfiles = self.allfiles.get()
 
         t1 = datetime.now()
+        from_scratch = False
+
         for x, nfile in enumerate(listfiles[:self.limiter]):
+
             ref = None
+            ## Default Converter Type if not set.
+            if ctype is None:
+                ctype = list(converter.drivers.keys())[0]
+
+            ## Connect to Cache File
             CacheFile = JSONFileHandler(self.cache, f'{x}', 
                                             dryrun=self._dryrun, forceful=self._forceful,
                                             logger=self.logger)
-            if not self._thorough:
-                self.logger.info('Loading cache file')
+            
+            ## Attempt to load the cache file
+            if not self._thorough and not from_scratch:
+                self.logger.info(f'Loading cache file: {x+1}/{self.limiter}')
                 ref = CacheFile.get()
                 if ref:
-                    self.logger.info(f'Loaded refs: {x+1}/{self.limiter}')
-                ctype = 'Unknown'
+                    self.logger.info(f' > Loaded refs')
 
+            ## Create cache file from scratch if needed
             if not ref:
+                if not from_scratch:
+                    self.logger.info(' > Cache file not found: Switching to create mode')
+                    from_scratch = True
+
                 self.logger.info(f'Creating refs: {x+1}/{self.limiter}')
                 try:
                     ref, ctype = converter.run(nfile, extension=ctype, **self.create_kwargs)
@@ -731,8 +752,9 @@ class KerchunkDS(ComputeOperation):
                         raise err
                     else:
                         partials.append(x)
+
             if not ref:
-                raise KerchunkDriverFatalError()
+                continue
             
             allzattrs.append(ref['refs']['.zattrs'])
             refs.append(ref)

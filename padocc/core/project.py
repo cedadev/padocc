@@ -207,7 +207,14 @@ class ProjectOperation(
         Main function for running any project operation. All 
         subclasses act as plugins for this function, and require a
         ``_run`` method called from here. This means all error handling
-        with status logs and log files can be dealt with here."""
+        with status logs and log files can be dealt with here.
+        
+        To find the parameters for a specific operation (e.g. compute 
+        with kerchunk mode), see the additional parameters of ``run`` in
+        the source code for the phase you are running. In this example, 
+        see ``padocc.phases.compute:KerchunkDS._run``
+        
+        """
 
         self._bypass = bypass or self._bypass
 
