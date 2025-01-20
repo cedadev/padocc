@@ -107,7 +107,7 @@ def format_slice(slice: list[slice]) -> str:
     for s in slice:
         starts.append(str(s.start))
         ends.append(str(s.stop))
-    return ','.join(starts), ','.join(ends)
+    return "(%s)" % ','.join(starts), "(%s)" % ','.join(ends)
 
 def _recursive_set(source: dict, keyset: list, value):
     """
@@ -253,6 +253,16 @@ class ValidateDatasets(LoggedOperation):
         if self._metadata_report:
             return 'Warning'
         return 'Success'
+    
+    @property
+    def data_report(self):
+        """Read-only data report"""
+        return self._data_report
+    
+    @property
+    def metadata_report(self):
+        """Read-only metadata report"""
+        return self._metadata_report
 
     @property
     def report(self):
@@ -740,7 +750,7 @@ class ValidateDatasets(LoggedOperation):
     def _compare_data(
         self, 
         vname: str, 
-        slice_applied,
+        slice_applied: list[slice],
         test: xr.DataArray, 
         control: xr.DataArray,
         ) -> None:
@@ -771,6 +781,8 @@ class ValidateDatasets(LoggedOperation):
         control   = np.array(control).flatten()
         test      = np.array(test).flatten()
 
+        if len(slice_applied) == 0:
+            slice_applied = [slice(0, len(control))]
         start, stop = format_slice(slice_applied)
 
         self.logger.debug(f'2. Calculating Tolerance - {(datetime.now()-t1).total_seconds():.2f}s')
@@ -898,7 +910,7 @@ class ValidateOperation(ProjectOperation):
         self.update_status('validate',vd.pass_fail,jobid=self._logid)
 
         if vd.pass_fail == 'Fatal':
-            raise ValidationError
+            raise ValidationError(vd.data_report)
         
         return vd.pass_fail
 
