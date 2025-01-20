@@ -1,0 +1,69 @@
+
+# Release Notes for pre-release 1.3.0b
+
+## General
+ - Minor changes to project Readme.
+ - Added Airflow example workflow file in documentation.
+ - Added zarr version limit to pyproject.
+ - Added specific license version to pyproject, instead of broken license link.
+
+## Tests
+ - Now import the `GroupOperation` directly from padocc
+ - Added Zarr tests, which run successfully in gitlab workflows.
+
+## Phases
+
+### Compute
+ - Moved definition of `is_trial` to after the `super()` call in `ComputeOperation`: This is to allow is_trial to be set as default for all project processes, then overridden in the case of the `scan` operation that then creates a `compute` operation.
+ - Changed the behaviour of the `setup_cache` method for `DirectoryOperation` objects.
+ - Added default converter type, and allows users to specify a type running compute or scan. In the case of scanning, the ctype carries through to the compute element.
+ - Added `create_mode` to `create_refs()` which reorganises logger messages. Loading each cache file will always be attempted, but additional messages will now display if attepts are unsuccessful in a row. The unsuccessful loading message will only display once until an attept is successful, then subsequent attempts are unsuccessful again.
+ - Concatenated shape checks into a single `perform_shape_checks` function.
+ - Removed `create_kstore`/`create_kfile` calls, now dealt with by filehandlers.
+ - Repaired `ZarrDS` object, which is now in line with other practices in padocc, in terms of use of filehandlers and properties of the project.
+ - Repaired `combine_dataset` function to fix issue with data vars.
+ - Added store overwrite checks, with appropriate help function.
+
+### Scan
+ - Added `ctype` option as described above, allows users to select a starting ctype to try for conversion.
+
+### Validate
+ - Changed `format_slice` function so it adds brackets to coordinate values.
+ - Added `data_report` and `metadata_report` properties that are readonly.
+ - Various typing hints.
+ - Added general validation error which now points at the data report.
+ - Removed opening sequences for datasets, now dealt with by filehandlers.
+
+## Operations -> Groups
+ - Renamed Operations to Groups.
+ - Replaced `blacklist` with `faultlist`. All behaviours remain the same.
+ - Removed `new_inputfile` property.
+ - Made `configure_subset` a private method, should use the method `repeat_by_status` which also allows repetition by phase.
+ - Added deletion function.
+ - Added slurm directories creation (from `DirectoryOperation`.)
+ - Added docstrings to Mixins.
+ - Expanded functions:
+   - Add project (add_project)
+   - Remove project (remove_project)
+   - Transfer project (transfer_project)
+   - Repeat by status (repeat_by_status)
+   - Remove by status (remove_by_status)
+   - Merge subsets (merge_subsets)
+   - Summarise data (summarise_data)
+   - Summarise status (summarise_status)
+ - Removed or migrated several older functions (mostly private.)
+
+## Core
+ - Added `mixins` module, expanded from single script.
+ - Added dataset handler mixin - filehandlers as properties depending on specific parameters of the project.
+ - Added directory mixin
+ - Added properties mixin for project.
+ - Added status mixin for project.
+ - Added docstrings, with explanation of which mixins can be applied where.
+ - Removed old definitions for creating new cloud files, now dealt with by dataset handler and filehandlers.
+ - Added delete project function.
+ - Added default overrides for `cloud_type` and `file_type` to apply to all projects.
+ - Sorted filehandler kwargs, these are now part of the logging operation.
+ - Removed the base mixins script.
+ - Readded the `get_attribute` method from the command line.
+ - Fixed issue with the CLI script argument `input_file`, now always specified as `input`.

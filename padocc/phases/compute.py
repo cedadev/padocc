@@ -717,7 +717,7 @@ class KerchunkDS(ComputeOperation):
         listfiles = self.allfiles.get()
 
         t1 = datetime.now()
-        from_scratch = False
+        create_mode = False
 
         for x, nfile in enumerate(listfiles[:self.limiter]):
 
@@ -732,17 +732,18 @@ class KerchunkDS(ComputeOperation):
                                             logger=self.logger)
             
             ## Attempt to load the cache file
-            if not self._thorough and not from_scratch:
+            if not self._thorough:
                 self.logger.info(f'Loading cache file: {x+1}/{self.limiter}')
                 ref = CacheFile.get()
                 if ref:
                     self.logger.info(f' > Loaded refs')
+                    create_mode = False
 
             ## Create cache file from scratch if needed
             if not ref:
-                if not from_scratch:
+                if not create_mode:
                     self.logger.info(' > Cache file not found: Switching to create mode')
-                    from_scratch = True
+                    create_mode = True
 
                 self.logger.info(f'Creating refs: {x+1}/{self.limiter}')
                 try:
