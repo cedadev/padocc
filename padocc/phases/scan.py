@@ -149,7 +149,7 @@ class ScanOperation(ProjectOperation):
         fn('Scan Options:')
         fn(' > project.run() - Run a scan for this project')
 
-    def _run(self, mode: str = 'kerchunk') -> None:
+    def _run(self, mode: str = 'kerchunk', ctype: Union[str,None] = None) -> None:
         """Main process handler for scanning phase"""
 
         self.logger.info(f'Starting scan-{mode} operation for {self.proj_code}')
@@ -171,7 +171,7 @@ class ScanOperation(ProjectOperation):
         if mode == 'zarr':
             self._scan_zarr(limiter=limiter)
         elif mode == 'kerchunk':
-            self._scan_kerchunk(limiter=limiter)
+            self._scan_kerchunk(limiter=limiter, ctype=ctype)
         elif mode == 'cfa':
             self._scan_cfa(limiter=limiter)
         else:
@@ -183,7 +183,7 @@ class ScanOperation(ProjectOperation):
         self.update_status('scan','Success',jobid=self._logid)
         return 'Success'
 
-    def _scan_kerchunk(self, limiter: Union[int,None] = None):
+    def _scan_kerchunk(self, limiter: Union[int,None] = None, ctype: Union[str,None] = None):
         """
         Function to perform scanning with output Kerchunk format.
         """
@@ -200,7 +200,7 @@ class ScanOperation(ProjectOperation):
             limiter=limiter,
             is_trial=True)
 
-        mini_ds.create_refs()
+        mini_ds.create_refs(ctype=ctype)
 
         if mini_ds.extra_properties is not None:
             self.base_cfg['data_properties'].update(mini_ds.extra_properties)
