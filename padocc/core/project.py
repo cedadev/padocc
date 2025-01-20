@@ -239,7 +239,8 @@ class ProjectOperation(
 
     def move_to(self, new_directory: str) -> None:
         """
-        Move all associated files across to new directory."""
+        Move all associated files across to new directory.
+        """
 
     def _run(self, **kwargs) -> None:
         # Default project operation run.
