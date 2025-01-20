@@ -10,21 +10,21 @@ Scan Operations
     :show-inheritance:
 
 Compute Operations
----------------
+------------------
 
 .. automodule:: padocc.phases.compute
     :members:
     :show-inheritance:
 
 Validate Operations
----------------
+-------------------
 
 .. automodule:: padocc.phases.validate
     :members:
     :show-inheritance:
 
 Ingest Operations
----------------
+-----------------
 
 .. note::
 
