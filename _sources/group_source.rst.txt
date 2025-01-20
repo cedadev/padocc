@@ -4,8 +4,8 @@ GroupOperation Core and Mixin Behaviours
 
 Source code for group operations and mixin behaviours.
 
-.. automodule:: padocc.group
+.. automodule:: padocc.groups.group
     :members:
 
-.. automodule:: padocc.group.mixins
+.. automodule:: padocc.groups.mixins
     :members:

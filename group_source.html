@@ -65,7 +65,37 @@
 <p class="caption" role="heading"><span class="caption-text">PADOCC Source:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="project_source.html">Projects</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Groups</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Groups</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#padocc.groups.group.GroupOperation"><code class="docutils literal notranslate"><span class="pre">GroupOperation</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.group.GroupOperation.merge"><code class="docutils literal notranslate"><span class="pre">GroupOperation.merge()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.group.GroupOperation.unmerge"><code class="docutils literal notranslate"><span class="pre">GroupOperation.unmerge()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#padocc.groups.mixins.AllocationsMixin"><code class="docutils literal notranslate"><span class="pre">AllocationsMixin</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.AllocationsMixin.create_allocations"><code class="docutils literal notranslate"><span class="pre">AllocationsMixin.create_allocations()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#padocc.groups.mixins.EvaluationsMixin"><code class="docutils literal notranslate"><span class="pre">EvaluationsMixin</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.EvaluationsMixin.get_project"><code class="docutils literal notranslate"><span class="pre">EvaluationsMixin.get_project()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.EvaluationsMixin.merge_subsets"><code class="docutils literal notranslate"><span class="pre">EvaluationsMixin.merge_subsets()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.EvaluationsMixin.remove_by_status"><code class="docutils literal notranslate"><span class="pre">EvaluationsMixin.remove_by_status()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.EvaluationsMixin.repeat_by_status"><code class="docutils literal notranslate"><span class="pre">EvaluationsMixin.repeat_by_status()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.EvaluationsMixin.summarise_data"><code class="docutils literal notranslate"><span class="pre">EvaluationsMixin.summarise_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.EvaluationsMixin.summarise_status"><code class="docutils literal notranslate"><span class="pre">EvaluationsMixin.summarise_status()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#padocc.groups.mixins.InitialisationMixin"><code class="docutils literal notranslate"><span class="pre">InitialisationMixin</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.InitialisationMixin.init_from_file"><code class="docutils literal notranslate"><span class="pre">InitialisationMixin.init_from_file()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#padocc.groups.mixins.ModifiersMixin"><code class="docutils literal notranslate"><span class="pre">ModifiersMixin</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.ModifiersMixin.add_project"><code class="docutils literal notranslate"><span class="pre">ModifiersMixin.add_project()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.ModifiersMixin.remove_project"><code class="docutils literal notranslate"><span class="pre">ModifiersMixin.remove_project()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.ModifiersMixin.transfer_project"><code class="docutils literal notranslate"><span class="pre">ModifiersMixin.transfer_project()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="phase_source.html">Phases</a></li>
 <li class="toctree-l1"><a class="reference internal" href="misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
@@ -97,6 +127,188 @@
   <section id="groupoperation-core-and-mixin-behaviours">
 <h1>GroupOperation Core and Mixin Behaviours<a class="headerlink" href="#groupoperation-core-and-mixin-behaviours" title="Permalink to this heading"></a></h1>
 <p>Source code for group operations and mixin behaviours.</p>
+<span class="target" id="module-padocc.groups.group"></span><dl class="py class">
+<dt class="sig sig-object py" id="padocc.groups.group.GroupOperation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.groups.group.</span></span><span class="sig-name descname"><span class="pre">GroupOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">groupID:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger:</span> <span class="pre">~logging.Logger</span> <span class="pre">|</span> <span class="pre">~padocc.core.logs.FalseLogger</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass:</span> <span class="pre">~padocc.core.utils.BypassSwitch</span> <span class="pre">=</span> <span class="pre">&lt;padocc.core.utils.BypassSwitch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.group.GroupOperation" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.group.GroupOperation.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_B</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.group.GroupOperation.merge" title="Permalink to this definition"></a></dt>
+<dd><p>Merge group B into group A.
+1. Migrate all projects from B to A and reset groupID values.
+2. Combine datasets.csv
+3. Combine project codes
+4. Combine faultlists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.group.GroupOperation.unmerge">
+<span class="sig-name descname"><span class="pre">unmerge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_B</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.group.GroupOperation.unmerge" title="Permalink to this definition"></a></dt>
+<dd><p>Separate elements from group_A into group_B
+according to the list
+1. Migrate projects
+2. Set the datasets
+3. Set the faultlists
+4. Project codes (remove group B sections)</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-padocc.groups.mixins"></span><dl class="py class">
+<dt class="sig sig-object py" id="padocc.groups.mixins.AllocationsMixin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.groups.mixins.</span></span><span class="sig-name descname"><span class="pre">AllocationsMixin</span></span><a class="headerlink" href="#padocc.groups.mixins.AllocationsMixin" title="Permalink to this definition"></a></dt>
+<dd><p>Enables the use of Allocations for job deployments via Slurm.</p>
+<p>This is a behavioural Mixin class and thus should not be
+directly accessed. Where possible, encapsulated classes 
+should contain all relevant parameters for their operation
+as per convention, however this is not the case for mixin
+classes. The mixin classes here will explicitly state
+where they are designed to be used, as an extension of an 
+existing class.</p>
+<p>Use case: GroupOperation [ONLY]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.AllocationsMixin.create_allocations">
+<span class="sig-name descname"><span class="pre">create_allocations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band_increase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">binpack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#padocc.groups.mixins.AllocationsMixin.create_allocations" title="Permalink to this definition"></a></dt>
+<dd><p>Function for assembling all allocations and bands for packing. Allocations contain multiple processes within
+a single SLURM job such that the estimates for time sum to less than the time allowed for that SLURM job. Bands
+are single process per job, based on a default time plus any previous attempts (use –allow-band-increase flag
+to enable band increases with successive attempts if previous jobs timed out)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of tuple objects such that each tuple represents an array to submit to slurm with
+the attributes (label, time, number_of_datasets). Note: The list of datasets to apply in
+each array job is typcially saved under proj_codes/&lt;repeat_id&gt;/&lt;label&gt;.txt (allocations use
+allocations/&lt;x&gt;.txt in place of the label)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padocc.groups.mixins.EvaluationsMixin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.groups.mixins.</span></span><span class="sig-name descname"><span class="pre">EvaluationsMixin</span></span><a class="headerlink" href="#padocc.groups.mixins.EvaluationsMixin" title="Permalink to this definition"></a></dt>
+<dd><p>Group Mixin for methods to evaluate the status of a group.</p>
+<p>This is a behavioural Mixin class and thus should not be
+directly accessed. Where possible, encapsulated classes 
+should contain all relevant parameters for their operation
+as per convention, however this is not the case for mixin
+classes. The mixin classes here will explicitly state
+where they are designed to be used, as an extension of an 
+existing class.</p>
+<p>Use case: GroupOperation [ONLY]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.EvaluationsMixin.get_project">
+<span class="sig-name descname"><span class="pre">get_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.mixins.EvaluationsMixin.get_project" title="Permalink to this definition"></a></dt>
+<dd><p>Get a project operation from this group</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.EvaluationsMixin.merge_subsets">
+<span class="sig-name descname"><span class="pre">merge_subsets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subset_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">combined_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="k"><span class="pre">False</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.groups.mixins.EvaluationsMixin.merge_subsets" title="Permalink to this definition"></a></dt>
+<dd><p>Merge one or more of the subsets previously created</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.EvaluationsMixin.remove_by_status">
+<span class="sig-name descname"><span class="pre">remove_by_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_repeat_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'main'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.groups.mixins.EvaluationsMixin.remove_by_status" title="Permalink to this definition"></a></dt>
+<dd><p>Group projects by their status for
+removal from the group</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.EvaluationsMixin.repeat_by_status">
+<span class="sig-name descname"><span class="pre">repeat_by_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_repeat_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_repeat_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'main'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.groups.mixins.EvaluationsMixin.repeat_by_status" title="Permalink to this definition"></a></dt>
+<dd><p>Group projects by their status, to then
+create a new repeat ID.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.EvaluationsMixin.summarise_data">
+<span class="sig-name descname"><span class="pre">summarise_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">repeat_id:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'main'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func:</span> <span class="pre">~collections.abc.Callable</span> <span class="pre">=</span> <span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.mixins.EvaluationsMixin.summarise_data" title="Permalink to this definition"></a></dt>
+<dd><p>Summarise data stored across all projects, mostly
+concatenating results from the detail-cfg files from
+all projects.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.EvaluationsMixin.summarise_status">
+<span class="sig-name descname"><span class="pre">summarise_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">specific_phase:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">specific_error:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">long_display:</span> <span class="pre">bool</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_upto:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">halt:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fn:</span> <span class="pre">~collections.abc.Callable</span> <span class="pre">=</span> <span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.groups.mixins.EvaluationsMixin.summarise_status" title="Permalink to this definition"></a></dt>
+<dd><p>Gives a general overview of progress within the pipeline
+- How many datasets currently at each stage of the pipeline
+- Errors within each pipeline phase
+- Allows for examination of error logs
+- Allows saving codes matching an error type into a new repeat group</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padocc.groups.mixins.InitialisationMixin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.groups.mixins.</span></span><span class="sig-name descname"><span class="pre">InitialisationMixin</span></span><a class="headerlink" href="#padocc.groups.mixins.InitialisationMixin" title="Permalink to this definition"></a></dt>
+<dd><p>Mixin container class for initialisation
+routines for groups via input files.</p>
+<p>This is a behavioural Mixin class and thus should not be
+directly accessed. Where possible, encapsulated classes 
+should contain all relevant parameters for their operation
+as per convention, however this is not the case for mixin
+classes. The mixin classes here will explicitly state
+where they are designed to be used, as an extension of an 
+existing class.</p>
+<p>Use case: GroupOperation [ONLY]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.InitialisationMixin.init_from_file">
+<span class="sig-name descname"><span class="pre">init_from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitutions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.mixins.InitialisationMixin.init_from_file" title="Permalink to this definition"></a></dt>
+<dd><p>Run initialisation by loading configurations from input sources, determine
+input file type and use appropriate functions to instantiate group and project
+directories.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_file</strong> – (str) Path to an input file from which to initialise the project.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padocc.groups.mixins.ModifiersMixin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.groups.mixins.</span></span><span class="sig-name descname"><span class="pre">ModifiersMixin</span></span><a class="headerlink" href="#padocc.groups.mixins.ModifiersMixin" title="Permalink to this definition"></a></dt>
+<dd><p>Modifiers to the group in terms of the projects associated,
+allows adding and removing projects.</p>
+<p>This is a behavioural Mixin class and thus should not be
+directly accessed. Where possible, encapsulated classes 
+should contain all relevant parameters for their operation
+as per convention, however this is not the case for mixin
+classes. The mixin classes here will explicitly state
+where they are designed to be used, as an extension of an 
+existing class.</p>
+<p>Use case: GroupOperation [ONLY]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.ModifiersMixin.add_project">
+<span class="sig-name descname"><span class="pre">add_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.mixins.ModifiersMixin.add_project" title="Permalink to this definition"></a></dt>
+<dd><p>Add a project to this group.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.ModifiersMixin.remove_project">
+<span class="sig-name descname"><span class="pre">remove_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.groups.mixins.ModifiersMixin.remove_project" title="Permalink to this definition"></a></dt>
+<dd><p>Remove a project from this group
+Steps required:
+1. Remove the project directory including all internal files.
+2. Remove the project code from all project files.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.ModifiersMixin.transfer_project">
+<span class="sig-name descname"><span class="pre">transfer_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">receiver_group</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.groups.mixins.ModifiersMixin.transfer_project" title="Permalink to this definition"></a></dt>
+<dd><p>Transfer an existing project to a new group</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
 
