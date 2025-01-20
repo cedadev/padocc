@@ -671,14 +671,15 @@ class KerchunkDS(ComputeOperation):
     def _run(
             self,
             check_dimensions: bool = False,
-            **kwargs) -> str:
+            **kwargs
+        ) -> str:
         """
         ``_run`` hook method called from the ``ProjectOperation.run`` 
         which this subclass inherits. The kwargs capture the ``mode``
         parameter from ``ProjectOperation.run`` which is not needed 
         because we already know we're running for ``Kerchunk``.
         """
-        status = self._run_with_timings(self.create_refs, check_dimensions=check_dimensions)
+        status = self._run_with_timings(self.create_refs, check_refs=check_dimensions)
         results = cfa_handler(self)
         if results is not None:
             self.base_cfg['data_properties'] = results
@@ -964,7 +965,9 @@ class ZarrDS(ComputeOperation):
         self.update_status('compute',status,jobid=self._logid)
         return status
 
-    def create_store(self, file_limit: int = None):
+    def create_store(
+            self, 
+            file_limit: int = None):
         """
         Create the Zarr Store
         """
