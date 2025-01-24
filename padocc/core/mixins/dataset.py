@@ -72,6 +72,11 @@ class DatasetHandlerMixin:
     def dataset(
         self
     ) -> Union[KerchunkFile,GenericStore, CFADataset, None]:
+        """
+        Generic dataset property, links to the correct
+        cloud format, given the Project's ``cloud_format``
+        property with other configurations applied.
+        """
         
         if self.cloud_format is None:
             raise ValueError(
@@ -96,7 +101,8 @@ class DatasetHandlerMixin:
     def cfa_dataset(self) -> xr.Dataset:
         """
         Retrieve a read-only xarray representation 
-        of a CFA dataset"""
+        of a CFA dataset
+        """
 
         if not self._cfa_dataset:
             self._cfa_dataset = CFADataset(
@@ -108,12 +114,16 @@ class DatasetHandlerMixin:
 
     @property
     def cfa_path(self) -> str:
+        """
+        Path to the CFA object for this project.
+        """
         return f'{self.dir}/{self.proj_code}.nca'
     
     @property
     def zstore(self) -> Union[ZarrStore, None]:
         """
-        Retrieve a filehandler for the zarr store"""
+        Retrieve a filehandler for the zarr store
+        """
 
         if self.cloud_format != 'zarr':
             return None

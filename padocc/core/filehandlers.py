@@ -147,7 +147,10 @@ class FileIOMixin(LoggedOperation):
             new_dir: str,
             new_name: Union[str,None] = None,
             new_extension: Union[str, None] = None
-        ):
+        ) -> None:
+        """
+        Migrate the file to a new location.
+        """
 
         if not os.access(new_dir, os.W_OK):
             raise OSError(
@@ -184,7 +187,23 @@ class FileIOMixin(LoggedOperation):
 
 class ListFileHandler(FileIOMixin):
     """
-    Filehandler for string-based Lists in Padocc
+    Filehandler for string-based Lists in Padocc.
+
+    List Behaviour
+    --------------
+
+    1. Append - works the same as with normal lists.
+    2. Pop - remove a specific value (works as normal).
+    3. Contains - (x in y) works as normal.
+    4. Length - (len(x)) works as normal.
+    5. Iterable - (for x in y) works as normal.
+    6. Indexable - (x[0]) works as normal
+
+    Added behaviour
+    ---------------
+
+    1. Close - close and save the file.
+    2. Get/Set - Get or set the whole value.
     """
 
     def __init__(
@@ -316,7 +335,24 @@ class ListFileHandler(FileIOMixin):
         self._set_value_in_file()
 
 class JSONFileHandler(FileIOMixin):
-    """JSON File handler for padocc config files."""
+    """
+    JSON File handler for padocc config files.
+
+    Dictionary Behaviour
+    --------------------
+
+    1. Indexable - index by key (as normal)
+    2. Contains - key in dict (as normal)
+    3. Length - length of the key set (as normal)
+
+    Added Behaviour
+    ---------------
+
+    1. Iterable - iterate over the keys.
+    2. Get/set - get/set the whole value.
+    3. Create_file - Specific for JSON files.
+
+    """
 
     def __init__(
             self, 
@@ -456,8 +492,6 @@ class JSONFileHandler(FileIOMixin):
 
         with open(self.filepath,'w') as f:
             f.write(json.dumps(self._value))
-
-    
 
     def _apply_conf(self) -> None:
         """
@@ -606,6 +640,16 @@ class GenericStore(LoggedOperation):
     """
     Filehandler for Generic stores in Padocc - enables Filesystem
     operations on component files.
+
+    Behaviours (Applies to Metadata)
+    --------------------------------
+
+    1. Length - length of metadata keyset
+    2. Contains - metadata contains key (as with dict)
+    3. Indexable - Get/set a specific property.
+    4. Get/set_meta - Get/set the whole metadata set.
+    5. Clear - clears all files in the store.
+
     """
 
     def __init__(
@@ -650,6 +694,10 @@ class GenericStore(LoggedOperation):
             addition: str,
             new_version: str,
         ) -> None:
+        """
+        Update the history with a new addition, 
+        and set the new version/revision.
+        """
 
         attrs = self._meta['refs']['.zattrs']
         now   = datetime.now()
@@ -667,7 +715,8 @@ class GenericStore(LoggedOperation):
 
     def clear(self) -> None:
         """
-        Remove all components of the store"""
+        Remove all components of the store
+        """
         if not self._dryrun:
             os.system(f'rm -rf {self.store_path}')
         else:
@@ -730,7 +779,13 @@ class ZarrStore(GenericStore):
     """
     Filehandler for Zarr stores in PADOCC.
     Enables manipulation of Zarr store on filesystem
-    and setting metadata attributes."""
+    and setting metadata attributes.
+    
+    Added Behaviours
+    ----------------
+    
+    1. Open dataset - open the zarr store.
+    """
 
     def __init__(
             self,
@@ -756,6 +811,11 @@ class KerchunkStore(GenericStore):
     Filehandler for Kerchunk stores using parquet
     in PADOCC. Enables setting metadata attributes and
     will allow combining stores in future.
+
+    Added behaviours
+    ----------------
+
+    1. Open dataset - opens the kerchunk store.
     """
 
     def __init__(
@@ -878,6 +938,11 @@ class CSVFileHandler(ListFileHandler):
 class CFADataset:
     """
     Basic handler for CFA dataset
+
+    Added behaviours
+    ----------------
+
+    1. Open dataset - opens the CFA dataset
     """
 
     def __init__(self, filepath, identifier):

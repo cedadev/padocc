@@ -13,7 +13,6 @@ def error_handler(
         err : Exception, 
         logger: logging.Logger, 
         phase: str,
-        dryrun: bool = False,
         subset_bypass: bool = False,
         jobid: Optional[str] = None,
         status_fh: Optional[object] = None
@@ -57,6 +56,9 @@ def error_handler(
         raise err
 
 class KerchunkException(Exception):
+    """
+    General Exception type.
+    """
     def __init__(self, proj_code: Union[str,None], groupdir: Union[str,None]) -> None:
         self.proj_code = proj_code
         self.groupdir  = groupdir
