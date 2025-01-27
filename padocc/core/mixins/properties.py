@@ -2,6 +2,8 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
+from typing import Callable
+
 class PropertiesMixin:
     """
     Properties relating to the ProjectOperation class that
@@ -17,6 +19,20 @@ class PropertiesMixin:
     
     Use case: ProjectOperation [ONLY]
     """
+
+    @classmethod
+    def help(cls, func: Callable = print):
+        func('Extra Properties:')
+        func(' > project.outpath - path to the output product (Kerchunk/Zarr)')
+        func(' > project.outproduct - name of the output product (minus extension)')
+        func(' > project.revision - Revision identifier (major + minor version plus type indicator)')
+        func(' > project.version_no - Get major + minor version identifier')
+        func(' > project.cloud_format[EDITABLE] - Cloud format (Kerchunk/Zarr) for this project')
+        func(' > project.file_type[EDITABLE] - The file type to use (e.g JSON/parq for kerchunk).')
+        func(' > project.source_format - Get the driver used by kerchunk')
+        func(
+            ' > project.get_stac_representation() - Provide a mapper, '
+            'fills with values from the project to create a STAC record.')
 
     def _check_override(self, key, mapper) -> str:
         """
@@ -108,6 +124,7 @@ class PropertiesMixin:
         to switch conversion method at any time.
         """
         self.base_cfg['override']['cloud_type'] = value
+        self.file_type = None
 
     @property
     def file_type(self) -> str:
@@ -131,6 +148,9 @@ class PropertiesMixin:
             'kerchunk': ['json','parq'],
             'zarr':[None],
         }
+
+        if value is None:
+            value = type_map[self.cloud_format][0]
         
         if self.cloud_format in type_map:
             if value in type_map[self.cloud_format]:

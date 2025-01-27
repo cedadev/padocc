@@ -4,6 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import os
 import logging
+from typing import Callable
 
 from ..logs import LoggedOperation, levels
 from ..utils import BypassSwitch
@@ -63,6 +64,13 @@ class DirectoryMixin(LoggedOperation):
             forceful=forceful,
             dryrun=dryrun,
             thorough=thorough)
+    
+    @classmethod
+    def help(cls, func: Callable = print):
+        """
+        No public methods
+        """
+        pass
 
     def _setup_workdir(self):
         """

@@ -2,6 +2,8 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
+from typing import Callable
+
 class StatusMixin:
 
     """
@@ -18,6 +20,13 @@ class StatusMixin:
     
     Use case: ProjectOperation [ONLY]
     """
+
+    @classmethod
+    def help(cls, func: Callable = print):
+        func('Status Options:')
+        func(' > project.get_last_run() - Get the last performed phase and time it occurred')
+        func(' > project.get_last_status() - Get the status of the previous core operation.')
+        func(' > project.get_log_contents() - Get the log contents of a previous core operation')
 
     def set_last_run(self, phase: str, time : str) -> None:
         """

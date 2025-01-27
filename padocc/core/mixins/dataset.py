@@ -2,7 +2,7 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-from typing import Union
+from typing import Union, Callable
 import xarray as xr
 import os
 
@@ -29,17 +29,22 @@ class DatasetHandlerMixin:
     Use case: ProjectOperation [ONLY]
     """
 
+    @classmethod
+    def help(cls, func: Callable = print):
+        func('Dataset Handling:')
+        func(' > project.dataset - Default product Filehandler (pointer) property')
+        func(' > project.dataset_attributes - Fetch metadata from the default dataset')
+        func(' > project.kfile - Kerchunk Filehandler property')
+        func(' > project.kstore - Kerchunk (Parquet) Filehandler property')
+        func(' > project.cfa_dataset - CFA Filehandler property')
+        func(' > project.zstore - Zarr Filehandler property')
+        func(' > project.update_attribute() - Update an attribute within the metadata')
+
     @property
     def kfile(self) -> Union[KerchunkFile,None]:
         """
         Retrieve the kfile filehandler, create if not present
         """
-
-        if self.cloud_format != 'kerchunk':
-            return None
-        
-        if self.file_type != 'json':
-            return None
                 
         if self._kfile is None:
             self._kfile = KerchunkFile(
@@ -53,13 +58,7 @@ class DatasetHandlerMixin:
     def kstore(self) -> Union[KerchunkStore,None]:
         """
         Retrieve the kstore filehandler, create if not present
-        """
-        if self.cloud_format != 'kerchunk':
-            return None
-        
-        if self.file_type == 'json':
-            return None
-        
+        """        
         if self._kfile is None:
             self._kfile = KerchunkStore(
                 self.dir,
@@ -124,9 +123,6 @@ class DatasetHandlerMixin:
         """
         Retrieve a filehandler for the zarr store
         """
-
-        if self.cloud_format != 'zarr':
-            return None
         
         if self._zstore is None:
             self._zstore = ZarrStore(
