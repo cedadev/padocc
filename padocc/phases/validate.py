@@ -900,6 +900,7 @@ class ValidateOperation(ProjectOperation):
             vd.replace_dataset(control, label=self.source_format)
         else:
             preslice = self._get_preslice(test, sample, test.variables)
+
             vd.replace_preslice(preslice, label=self.cloud_format)
 
         vd.validate_data()
@@ -943,10 +944,19 @@ class ValidateOperation(ProjectOperation):
         for var in variables:
             preslice_var = {}
             for dim in sample[var].dims:
-                slice_dim = slice(
-                    np.array(sample[dim][0], dtype=sample[dim].dtype),
-                    np.array(sample[dim][-1], dtype=sample[dim].dtype)
-                )
+
+                if len(sample[dim]) < 2:
+                    slice_dim = slice(None,None)
+                else:
+                    pos0 = np.array(sample[dim][0], dtype=sample[dim].dtype)
+                    pos1 = np.array(sample[dim][1], dtype=sample[dim].dtype)
+
+                    end = np.array(sample[dim][-1], dtype=sample[dim].dtype) + (pos1-pos0)
+
+                    slice_dim = slice(
+                        pos0,
+                        end
+                    )
                 preslice_var[dim] = slice_dim
             preslice.add_preslice(preslice_var, var)
 
