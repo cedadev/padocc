@@ -298,6 +298,24 @@ class ModifiersMixin:
 
         receiver_group.proj_codes['main'].append(proj_code)
 
+    def get_stac_representation(
+            self, 
+            stac_mapping: dict, 
+            repeat_id: str = 'main'
+        ) -> list:
+        """
+        Obtain all records for all projects in this group.
+        """
+        record_set = []
+        proj_list = self.proj_codes[repeat_id].get()
+
+        for proj in proj_list:
+            proj_op = self[proj]
+            record_set.append(
+                proj_op.get_stac_representation(stac_mapping)
+            )
+        return record_set
+
 class EvaluationsMixin:
     """
     Group Mixin for methods to evaluate the status of a group.
