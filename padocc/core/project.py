@@ -240,7 +240,7 @@ class ProjectOperation(
         except Exception as err:
             return error_handler(
                 err, self.logger, self.phase,
-                jobid=self._logid, dryrun=self._dryrun, 
+                jobid=self._logid,
                 subset_bypass=self._bypass.skip_subsets,
                 status_fh=self.status_log)
 
