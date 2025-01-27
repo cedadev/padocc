@@ -230,12 +230,10 @@ class ComputeOperation(ProjectOperation):
 
         :param workdir:         (str) Path to the current working directory.
 
+        :param groupID:         (str) GroupID of the parent group.
+
         :param thorough:        (bool) From args.quality - if True will create all files 
             from scratch, otherwise saved refs from previous runs will be loaded.
-
-        :param version_no:      (str) Kerchunk revision number/identifier. Default is trial - 
-            used for 'scan' phase, will be overridden with specific revision in 'compute' 
-            actual phase.
         
         :param concat_msg:      (str) Value displayed as global attribute for any attributes 
             that differ across the set of files, instead of a list of the differences,
@@ -956,7 +954,6 @@ class KerchunkDS(ComputeOperation):
                     f'Reference Correction: {zarray["shape"]} to '
                 )
 
-
 class ZarrDS(ComputeOperation):
 
     def __init__(
@@ -1022,18 +1019,18 @@ class ZarrDS(ComputeOperation):
         else:
             fileset = self.allfiles.get()
 
-        self.combined_ds = xr.open_mfdataset(
+        combined_ds = xr.open_mfdataset(
             fileset, 
             combine='nested', 
             concat_dim=self.combine_kwargs['concat_dims'],
             data_vars='minimal')
         
         # Assessment values
-        self.std_vars = list(self.combined_ds.variables)
+        self.std_vars = list(combined_ds.variables)
 
         self.logger.info(f'Concluded object concatenation - {(datetime.now()-t1).total_seconds():.2f}s')
 
-        concat_dim_rechunk, dim_sizes, cpf, volm = self._get_rechunk_scheme()
+        concat_dim_rechunk, dim_sizes, cpf, volm = self._get_rechunk_scheme(combined_ds)
         self.cpf  = [cpf]
         self.volm = [volm]
         self.logger.info(f'Determined appropriate rechunking scheme - {(datetime.now()-t1).total_seconds():.2f}s')
@@ -1061,7 +1058,7 @@ class ZarrDS(ComputeOperation):
             t1 = datetime.now()
 
             rechunker.rechunk(
-                self.combined_ds, 
+                combined_ds, 
                 concat_dim_rechunk, 
                 self.mem_allowed, 
                 self.zstore.store_path,
@@ -1072,18 +1069,17 @@ class ZarrDS(ComputeOperation):
         else:
             self.logger.info('Skipped rechunking step.')
 
-        # Clean Metadata here.
+    def _get_rechunk_scheme(self, ds):
+        """
+        Determine Rechunking Scheme appropriate
+         - Figure out which variable has the largest total size.
+         - Rechunk all dimensions for that variable to sensible values.
+         - Rechunk all other dimensions to 1.
+        """
 
-    def _get_rechunk_scheme(self):
-
-        # Determine Rechunking Scheme appropriate
-        #  - Figure out which variable has the largest total size.
-        #  - Rechunk all dimensions for that variable to sensible values.
-        #  - Rechunk all other dimensions to 1?
-
-        dims               = self.combined_ds.dims
+        dims               = ds.dims
         concat_dim_rechunk = {}
-        dim_sizes          = {d: self.combined_ds[d].size for d in dims}
+        dim_sizes          = {d: ds[d].size for d in dims}
         total              = sum(dim_sizes.values())
 
         for index, cd in enumerate(dims):
@@ -1105,17 +1101,25 @@ class ZarrDS(ComputeOperation):
         cpf = 0
         volume = 0
         for var in self.std_vars:
-            shape = self.combined_ds[var].shape
+            shape = ds[var].shape
             chunks = []
-            for x, dim in enumerate(self.combined_ds[var].dims):
+            for x, dim in enumerate(ds[var].dims):
                 chunks.append(shape[x]/concat_dim_rechunk[dim])
 
             cpf    += sum(chunks)
-            volume += self.combined_ds[var].nbytes
+            volume += ds[var].nbytes
 
         return concat_dim_rechunk, dim_sizes, cpf/self.limiter, volume/self.limiter
 
 class CfaDS(ComputeOperation):
+    """
+    Dataset Operation class for CFA.
+
+    This is a class for the sole purpose of 
+    utilising the ``cfa_handler`` function
+    as a main operation. It may be replaced or
+    refactored in future.
+    """
 
     def _run(self, **kwargs) -> str:
         """

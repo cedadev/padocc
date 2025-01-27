@@ -16,7 +16,7 @@ from padocc.core import FalseLogger
 from padocc.core.errors import ConcatFatalError
 from padocc.core.filehandlers import JSONFileHandler
 
-from .compute import KerchunkDS, cfa_handler
+from .compute import KerchunkDS, ZarrDS, cfa_handler
 
 def _format_float(value: float, logger: logging.Logger = FalseLogger()) -> str:
     """
@@ -271,12 +271,12 @@ class ScanOperation(ProjectOperation):
         self.logger.info('Starting scan process for Zarr cloud format')
 
         # Need a refactor
-        mini_ds = ZarrDSRechunker(
+        mini_ds = ZarrDS(
             self.proj_code,
             workdir=self.workdir, 
             thorough=True, forceful=True, # Always run from scratch forcefully to get best time estimates.
-            is_trial=True, verb=args.verbose, logid='0',
-            groupID=args.groupID, limiter=limiter, logger=logger, dryrun=args.dryrun,
+            is_trial=True, verb=self._verbose, logid='0',
+            groupID=self.groupID, limiter=limiter, dryrun=self._dryrun,
             mem_allowed='500MB')
 
         mini_ds.create_store()
