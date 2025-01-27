@@ -4,12 +4,21 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import os
 import glob
+import yaml
 import logging
 
-from typing import Union
+from typing import Union, Callable
 
 from .errors import error_handler
-from .utils import extract_file, BypassSwitch, apply_substitutions, phases, file_configs, FILE_DEFAULT
+from .utils import (
+    extract_file, 
+    BypassSwitch, 
+    apply_substitutions, 
+    phases, 
+    file_configs, 
+    FILE_DEFAULT,
+    print_fmt_str
+)
 from .logs import reset_file_handler
 
 from .mixins import DirectoryMixin, DatasetHandlerMixin, StatusMixin, PropertiesMixin
@@ -20,7 +29,6 @@ from .filehandlers import (
     LogFileHandler,
 )
 
-          
 class ProjectOperation(
     DirectoryMixin, 
     DatasetHandlerMixin,
@@ -47,7 +55,8 @@ class ProjectOperation(
             verbose    : int = 0,
             forceful   : bool = None,
             dryrun     : bool = None,
-            thorough   : bool = None
+            thorough   : bool = None,
+            mem_allowed: Union[str,None] = None,
         ) -> None:
         """
         Initialisation for a ProjectOperation object to handle all interactions
@@ -90,6 +99,8 @@ class ProjectOperation(
         :returns: None
 
         """
+
+        self.mem_allowed = mem_allowed
 
         if label is None:
             label = 'project-operation'
@@ -165,35 +176,35 @@ class ProjectOperation(
         return f'<PADOCC Project: {self.proj_code} ({self.groupID})>'
     
     def __repr__(self):
-        return str(self)
+        return yaml.dump(self.info())
 
-    def info(self, fn=print):
+    def info(self):
         """
         Display some info about this particular project
         """
-        if self.groupID is not None:
-            fn(f'{self.proj_code} ({self.groupID}):')
-        else:
-            fn(f'{self.proj_code}:')
-        fn(f' > Phase: {self._get_phase()}')
-        fn(f' > Files: {len(self.allfiles)}')
-        fn(f' > Version: {self.get_version()}')
+        return {
+            self.proj_code: {
+                'Group':self.groupID,
+                'Phase': self._get_phase(),
+                'File count': len(self.allfiles),
+                'Revision': self.revision
+                
+            }
+        }
     
-    def help(self, fn=print):
+    @classmethod
+    def help(self, func: Callable = print_fmt_str):
         """
         Public user functions for the project operator.
         """
-        fn(str(self))
-        fn(' > project.info() - Get some information about this project')
-        fn(' > project.get_version() - Get the version number for the output product')
-        fn(' > project.save_files() - Save all open files related to this project')
-        fn('Properties:')
-        fn(' > project.proj_code - code for this project.')
-        fn(' > project.groupID - group to which this project belongs.')
-        fn(' > project.dir - directory containing the projects files.')
-        fn(' > project.cfa_path - path to the CFA file.')
-        fn(' > project.outfile - path to the output product (Kerchunk/Zarr)')
+        func('Project Operator:')
+        func(' > project.info() - Get some information about this project')
+        func(' > project.get_version() - Get the version number for the output product')
+        func(' > project.save_files() - Save all open files related to this project')
 
+        for cls in ProjectOperation.__bases__:
+            cls.help(func)
+        
     def run(
             self,
             mode: str = 'kerchunk',

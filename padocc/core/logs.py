@@ -4,7 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import logging
 import os
-from typing import Union, Optional
+from typing import Union, Callable
 
 levels = [
     logging.WARN,
@@ -56,6 +56,10 @@ class LoggedOperation:
         self._logid = logid
         self._verbose = verbose
 
+        self._forceful = None
+        self._dryrun   = None
+        self._thorough = None
+
         self._set_fh_kwargs(forceful=forceful, dryrun=dryrun, thorough=thorough)
 
         if hasattr(self, 'logger'):
@@ -69,10 +73,12 @@ class LoggedOperation:
         else:
             self.logger = logger
 
-    def values(self):
-        print(f' - forceful: {bool(self._forceful)}')
-        print(f' - thorough: {bool(self._thorough)}')
-        print(f' - dryrun: {bool(self._dryrun)}')
+    @classmethod
+    def help(cls, func: Callable = print):
+        """
+        No public methods.
+        """
+        pass
 
     @property
     def fh_kwargs(self):
@@ -86,10 +92,19 @@ class LoggedOperation:
     def fh_kwargs(self, value):
         self._set_fh_kwargs(**value)
 
-    def _set_fh_kwargs(self, forceful=None, dryrun=None, thorough=None):
-        self._forceful = forceful
-        self._dryrun   = dryrun
-        self._thorough = thorough
+    def _set_fh_kwargs(
+            self, 
+            forceful: bool = None, 
+            dryrun: bool = None, 
+            thorough: bool = None
+        ) -> None:
+        """
+        Set the FH Kwargs for all objects,
+        override but default to current value if not specified.
+        """
+        self._forceful = forceful or self._forceful
+        self._dryrun   = dryrun or self._dryrun
+        self._thorough = thorough or self._thorough
 
 def reset_file_handler(
         logger  : logging.Logger,
