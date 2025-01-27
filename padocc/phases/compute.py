@@ -687,6 +687,10 @@ class KerchunkDS(ComputeOperation):
         if results is not None:
             self.base_cfg['data_properties'] = results
             self.detail_cfg['cfa'] = True
+
+        if ctype is None:
+            self.detail_cfg['driver'] = '/'.join(set(self.ctypes))
+
         self.update_status('compute',status,jobid=self._logid)
         return status
 
@@ -992,7 +996,7 @@ class ZarrDS(ComputeOperation):
         Create the Zarr Store
         """
 
-        self.combine_kwargs = self.detail_cfg['kwargs']['combine_kwargs']
+        self.combine_kwargs = self.detail_cfg['kwargs'].get('combine_kwargs',{})
 
         # Open all files for this process (depending on limiter)
         self.logger.debug('Starting timed section for estimation of whole process')
@@ -1000,30 +1004,35 @@ class ZarrDS(ComputeOperation):
 
         self.logger.info(f"Retrieved required xarray dataset objects - {(datetime.now()-t1).total_seconds():.2f}s")
 
-        # Determine concatenation dimensions
-        if self.base_cfg['data_properties']['aggregated_vars'] == 'Unknown':
-            # Determine dimension specs for concatenation.
-            self._determine_dim_specs([
-                xr.open_dataset(self.allfiles[0]),
-                xr.open_dataset(self.allfiles[1])
-            ])
-        if not self.combine_kwargs['concat_dims']:
-            self.logger.error('No concatenation dimensions - unsupported for zarr conversion')
-            raise NotImplementedError
+        if len(self.allfiles) > 1:
+            
+            # Determine concatenation dimensions
+            if self.base_cfg['data_properties']['aggregated_vars'] == 'Unknown':
+                # Determine dimension specs for concatenation.
+                self._determine_dim_specs([
+                    xr.open_dataset(self.allfiles[0]),
+                    xr.open_dataset(self.allfiles[1])
+                ])
+            if not self.combine_kwargs['concat_dims']:
+                self.logger.error('No concatenation dimensions - unsupported for zarr conversion')
+                raise NotImplementedError
 
-        # Perform Concatenation
-        self.logger.info(f'Concatenating xarray objects across dimensions ({self.combine_kwargs["concat_dims"]})')
+            # Perform Concatenation
+            self.logger.info(f'Concatenating xarray objects across dimensions ({self.combine_kwargs["concat_dims"]})')
 
-        if file_limit:
-            fileset = self.allfiles[:file_limit]
+            if file_limit:
+                fileset = self.allfiles[:file_limit]
+            else:
+                fileset = self.allfiles.get()
+
+            combined_ds = xr.open_mfdataset(
+                fileset, 
+                combine='nested', 
+                concat_dim=self.combine_kwargs['concat_dims'],
+                data_vars='minimal')
+            
         else:
-            fileset = self.allfiles.get()
-
-        combined_ds = xr.open_mfdataset(
-            fileset, 
-            combine='nested', 
-            concat_dim=self.combine_kwargs['concat_dims'],
-            data_vars='minimal')
+            combined_ds = xr.open_dataset(self.allfiles[0])
         
         # Assessment values
         self.std_vars = list(combined_ds.variables)

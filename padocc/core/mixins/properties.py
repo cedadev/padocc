@@ -155,7 +155,7 @@ class PropertiesMixin:
         Note: This returns the driver used in the kerchunk
         scanning process if that step has been completed.
         """
-        return self.detail_cfg.get(index='driver', default=None)
+        return self.detail_cfg.get(index='driver', default='src')
     
     def minor_version_increment(self):
         """

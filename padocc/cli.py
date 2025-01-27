@@ -55,6 +55,10 @@ def main():
     be re-added in the full version."""
     args = get_args()
 
+    if args.phase == 'init' and args.groupID is None:
+        print('Error: GroupID must be provided on initialisation')
+        return
+
     if args.groupID is not None:
         group = GroupOperation(
             args.groupID,

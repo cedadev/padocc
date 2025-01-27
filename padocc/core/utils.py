@@ -57,9 +57,9 @@ DETAIL_CFG = {
     'cloud_data': None,
     'scanned_with': None,
     'num_files': None,
-    'timings': None,
+    'timings': {},
     'chunk_info':None,
-    'kwargs': None,
+    'kwargs': {},
 }
 
 file_configs = {
