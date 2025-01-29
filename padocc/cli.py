@@ -74,6 +74,10 @@ def main():
             bypass=bypass
         )
 
+        if args.phase == 'new':
+            group.save_files()
+            return
+
         if args.phase == 'init':
             group.init_from_file(args.input)
             return
