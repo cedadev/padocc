@@ -9,6 +9,7 @@ import fsspec
 import math
 import numpy as np
 import re
+from typing import Any
 
 from .errors import (
     MissingVariableError, 
@@ -71,6 +72,15 @@ FILE_DEFAULT = {
     'kerchunk':'json',
     'zarr':None,
 }
+
+def make_tuple(item: Any) -> tuple:
+    """
+    Make any object into a tuple
+    """
+    if not isinstance(item, tuple):
+        return (item,)
+    else:
+        return item
 
 def deformat_float(item: str) -> str:
     """
