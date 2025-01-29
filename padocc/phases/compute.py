@@ -21,7 +21,8 @@ from padocc.core import (
     LoggedOperation
 )
 from padocc.core.utils import (
-    find_closest
+    find_closest,
+    make_tuple
 )
 
 from padocc.core.errors import (
@@ -303,18 +304,21 @@ class ComputeOperation(ProjectOperation):
         This class now defaults to create the CFA dataset,
         rather than having a separate class for this.
         """
-        if mode != 'cfa':
+        if mode != 'CFA':
             raise ValueError(
                 '`ComputeOperation` default run option uses CFA - you '
                 f'have specified to use {mode} which requires the use '
                 'of a different `DS` operator (Kerchunk/Zarr supported).'
             )
+        
+        if file_limit == len(self.allfiles):
+            file_limit = None
 
         results = self._run_cfa(file_limit=file_limit)
         if results is not None:
             # Save results
             self.base_cfg['data_properties'] = results
-            self.detail_cfg['cfa'] = True
+            self.detail_cfg['CFA'] = True
             return 'Success'
         return 'Fatal'
 
@@ -352,12 +356,12 @@ class ComputeOperation(ProjectOperation):
                 cfa.write(instance.cfa_path)
 
             return {
-                'aggregated_dims': cfa.agg_dims,
-                'pure_dims': cfa.pure_dims,
-                'coord_dims': cfa.coord_dims,
-                'aggregated_vars': cfa.aggregated_vars,
-                'scalar_vars': cfa.scalar_vars,
-                'identical_vars': cfa.identical_vars
+                'aggregated_dims': make_tuple(cfa.agg_dims),
+                'pure_dims': make_tuple(cfa.pure_dims),
+                'coord_dims': make_tuple(cfa.coord_dims),
+                'aggregated_vars': make_tuple(cfa.aggregated_vars),
+                'scalar_vars': make_tuple(cfa.scalar_vars),
+                'identical_vars': make_tuple(cfa.identical_vars)
             }
 
         except Exception as err:
@@ -591,8 +595,11 @@ class ComputeOperation(ProjectOperation):
 
         concat_dims = report['aggregated_dims']
         identical_dims = [c for c in report['coord_dims'] if c not in concat_dims]
-        identicals = tuple(set(
-            report['identical_vars'] + report['scalar_vars'] + tuple(identical_dims) + report['pure_dims']))
+
+        identicals = tuple(set(report['identical_vars'] + \
+                         report['scalar_vars'] + \
+                         tuple(identical_dims) + \
+                         report['pure_dims']))
     
         return concat_dims, identicals, report
 
@@ -635,7 +642,7 @@ class ComputeOperation(ProjectOperation):
         identical_dims = [dim for dim in dimensions if dim not in vars]
         return concat_dims, identical_dims
 
-    def _determine_dim_specs(self, objs: list) -> None:
+    def _determine_dim_specs(self) -> None:
         """
         Perform identification of identical_dims and concat_dims here.
         """
@@ -644,7 +651,8 @@ class ComputeOperation(ProjectOperation):
         t1 = datetime.now()
         self.logger.info("Starting dimension specs determination")
 
-        if 'cfa' in self.detail_cfg:
+        if 'CFA' in self.detail_cfg:
+            self.logger.info('Extracting dim info from CFA report')
             concat_dims, identical_dims, report = self._dims_via_cfa()
             self._data_properties = report
 
@@ -709,9 +717,6 @@ class KerchunkDS(ComputeOperation):
             self.detail_cfg['driver'] = '/'.join(set(self.ctypes))
 
         self.update_status('compute',status,jobid=self._logid)
-
-        # Run CFA in super class.
-        super()._run(file_limit=self.limiter)
 
         return status
 
@@ -823,16 +828,7 @@ class KerchunkDS(ComputeOperation):
 
         self.logger.info('Starting concatenation of refs')
         if len(refs) > 1:
-            # Pick 2 refs to use when determining dimension info.
-            # Concatenation Dimensions
-            if self.detail_cfg['kwargs'] is not None and not self._thorough:
-                self.combine_kwargs = self.detail_cfg['kwargs']['combine_kwargs']
-            else:
-                # Determine combine_kwargs
-                self._determine_dim_specs([
-                    xr.open_zarr(fsspec.get_mapper('reference://', fo=refs[0]), consolidated=False),
-                    xr.open_zarr(fsspec.get_mapper('reference://', fo=refs[-1]), consolidated=False),
-                ])
+            self._determine_dim_specs()
 
         t1 = datetime.now()  
         if self.file_type == 'parq':

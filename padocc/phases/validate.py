@@ -892,13 +892,12 @@ class ValidateOperation(ProjectOperation):
         # Run metadata testing
         vd.validate_metadata()
 
-        # Run data testing
-
-        if self.detail_cfg.get(index='cfa'):
-            # CFA-enabled validation
+        if self.detail_cfg.get(index='CFA'):
+            self.logger.info('CFA-enabled validation')
             control = self._open_cfa()
             vd.replace_dataset(control, label=self.source_format)
         else:
+            self.logger.info('Source-slice validation')
             preslice = self._get_preslice(test, sample, test.variables)
 
             vd.replace_preslice(preslice, label=self.cloud_format)
