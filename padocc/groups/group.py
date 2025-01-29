@@ -12,9 +12,9 @@ from padocc.core.utils import format_str, print_fmt_str
 from padocc.core import ProjectOperation
 from padocc.phases import (
     ScanOperation,
+    ComputeOperation,
     KerchunkDS, 
     ZarrDS, 
-    CfaDS,
     KNOWN_PHASES,
     ValidateOperation,
 )
@@ -26,7 +26,7 @@ from .mixins import AllocationsMixin, InitialisationMixin, EvaluationsMixin, Mod
 COMPUTE = {
     'kerchunk':KerchunkDS,
     'zarr':ZarrDS,
-    'cfa': CfaDS,
+    'CFA': ComputeOperation,
 }
 
 class GroupOperation(
@@ -128,13 +128,22 @@ class GroupOperation(
     
     def __repr__(self):
         return yaml.dump(self.info())
+
+    def __len__(self):
+        """
+        Shorthand for length of the list-like group.
+        """
+        return len(self.proj_codes['main'])
     
-    def __getitem__(self, index: int) -> ProjectOperation:
+    def __getitem__(self, index: Union[int,str]) -> ProjectOperation:
         """
         Indexable group allows access to individual projects
         """
-
-        proj_code = self.proj_codes['main'][index]
+        if isinstance(index, int):
+            proj_code = self.proj_codes['main'][index]
+        else:
+            proj_code = index
+            
         return self.get_project(proj_code)
     
     def get_stac_representation(
@@ -167,7 +176,7 @@ class GroupOperation(
             'workdir': self.workdir,
             'groupdir': self.groupdir,
             'projects': len(self.proj_codes['main']),
-            'logID': self._logID,
+            'logID': self._logid,
         }
 
         return {
@@ -253,7 +262,7 @@ class GroupOperation(
                 label=phase, 
                 fh=fh, 
                 bypass=bypass,
-                run_kwargs=run_kwargs
+                run_kwargs=run_kwargs,
                 **kwargs)
             
             if status in results:
@@ -398,6 +407,9 @@ class GroupOperation(
             self.proj_codes[pc].close()
 
     def save_files(self):
+        """
+        Save all files associated with this group.
+        """
         self.faultlist_codes.close()
         self.datasets.close()
         self._save_proj_codes()

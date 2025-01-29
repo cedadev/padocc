@@ -77,19 +77,40 @@ class ModifiersMixin:
         Transfer an existing project to a new group
         """
 
+        # 0. Check all objects exist
+        if proj_code not in self.proj_codes['main']:
+            raise ValueError(
+                f'{proj_code} not found in group {self.groupID}'
+            )
+
+        # 1. Transfer in proj codes
         for pset in self.proj_codes.values():
             if proj_code in pset:
                 pset.remove(proj_code)
+        receiver_group.proj_codes['main'].append(proj_code)
 
+        # 2. Transfer in datasets
+        new_datasets = []
+        for ds in self.datasets:
+            if ds[0] == proj_code:
+                receiver_group.datasets.append(ds)
+            else:
+                new_datasets.append(ds)
+        self.datasets.set(new_datasets)
+
+        self.save_files()
+        receiver_group.save_files()
+
+        # 3. Migrate project
         proj_op = ProjectOperation(
             proj_code,
             self.workdir,
-            self.groupID
+            self.groupID,
+            verbose=self._verbose,
+            logid=f'transfer-{proj_code}'
         )
 
         proj_op.migrate(receiver_group.groupID)
-
-        receiver_group.proj_codes['main'].append(proj_code)
 
     def merge(group_A,group_B):
         """
