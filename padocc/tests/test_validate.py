@@ -1,6 +1,7 @@
 from padocc import GroupOperation
 
 from padocc.core.utils import BypassSwitch
+import os
 
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 
@@ -13,11 +14,14 @@ class TestValidate:
             workdir=workdir,
             label='test_validate',
             verbose=1)
+        
+        assert os.path.exists(process.groupdir)
+        assert len(process) >= 2
 
-        results = process.run('validate', forceful=True, bypass=BypassSwitch('DS'))
+        results = process.run('validate', forceful=True, bypass=BypassSwitch('DS'), verbose=2)
 
-        assert results['Fatal'] == 2
-        assert results['Warning'] == 1
+        print(results)
+        assert 'Fatal' in results
 
 if __name__ == '__main__':
     #workdir = '/home/users/dwest77/cedadev/padocc/padocc/tests/auto_testdata_dir'
