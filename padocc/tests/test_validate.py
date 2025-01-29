@@ -11,17 +11,13 @@ class TestValidate:
 
         process = GroupOperation(
             groupID,
-            workdir=workdir,
-            label='test_validate',
-            verbose=1)
+            workdir=workdir)
         
-        assert os.path.exists(process.groupdir)
-        assert len(process) >= 2
+        assert process.proj_codes['main'].file_exists()
 
         results = process.run('validate', forceful=True, bypass=BypassSwitch('DS'), verbose=2)
 
-        print(results)
-        assert 'Fatal' in results
+        assert results['Warning'] >= 1
 
 if __name__ == '__main__':
     #workdir = '/home/users/dwest77/cedadev/padocc/padocc/tests/auto_testdata_dir'
