@@ -35,51 +35,7 @@ from padocc.core.errors import (
 from padocc.phases.validate import ValidateDatasets
 from padocc.core.filehandlers import JSONFileHandler, ZarrStore
 
-CONCAT_MSG = 'See individual files for more details'
-
-def cfa_handler(instance, file_limit: Optional[int] = None):
-    """
-    Handle the creation of a CFA-netCDF file using the CFAPyX package
-
-    :param instance:    (obj) The reference instance of ProjectOperation 
-        from which to pull project-specific info.
-
-    :param file_limit:  (obj) The file limit to apply to a set of files.
-    """
-    try:
-        from cfapyx import CFANetCDF
-
-    except ImportError:
-        return False
-
-    try:
-
-        instance.logger.info("Starting CFA Computation")
-
-        files = instance.allfiles.get()
-        if file_limit is not None:
-            files = files[:file_limit]
-
-        cfa = CFANetCDF(files) # Add instance logger here.
-
-        cfa.create()
-        if file_limit is None:
-            cfa.write(instance.cfa_path)
-
-        return {
-            'aggregated_dims': cfa.agg_dims,
-            'pure_dims': cfa.pure_dims,
-            'coord_dims': cfa.coord_dims,
-            'aggregated_vars': cfa.aggregated_vars,
-            'scalar_vars': cfa.scalar_vars,
-            'identical_vars': cfa.identical_vars
-        }
-
-    except Exception as err:
-        instance.logger.error(
-            f'Aggregation via CFA failed - {err} - report at https://github.com/cedadev/CFAPyX/issues'
-        )
-        return None
+CONCAT_MSG = 'See individual files for more details'    
 
 class KerchunkConverter(LoggedOperation):
     """Class for converting a single file to a Kerchunk reference object. Handles known
@@ -333,15 +289,82 @@ class ComputeOperation(ProjectOperation):
             'pre_kwargs': self.pre_kwargs,
         }
 
-    def _run(self, mode: str = 'kerchunk'):
+    def _run(
+            self, 
+            mode: str = 'CFA',
+            file_limit: Union[int,None] = None,
+        ) -> str:
         """
         Default _run hook for compute operations. A user should aim to use the
         configuration options to use the Kerchunk or Zarr DS classes rather than
         the bare parent class. Override this class with a _run parameter for new 
-        DS classes (COG etc.)"""
+        DS classes (COG etc.)
+        
+        This class now defaults to create the CFA dataset,
+        rather than having a separate class for this.
+        """
+        if mode != 'cfa':
+            raise ValueError(
+                '`ComputeOperation` default run option uses CFA - you '
+                f'have specified to use {mode} which requires the use '
+                'of a different `DS` operator (Kerchunk/Zarr supported).'
+            )
 
-        self.logger.error('Nothing to do with this class - use KerchunkDS/ZarrDS instead!')
-        raise ComputeError
+        results = self._run_cfa(file_limit=file_limit)
+        if results is not None:
+            # Save results
+            self.base_cfg['data_properties'] = results
+            self.detail_cfg['cfa'] = True
+            return 'Success'
+        return 'Fatal'
+
+    def _run_cfa(
+            instance: type[ProjectOperation], 
+            file_limit: Union[int,None] = None,
+        ) -> Union[dict,None]:
+
+        """
+        Handle the creation of a CFA-netCDF file using the CFAPyX package
+
+        :param instance:    (obj) The reference instance of ProjectOperation 
+            from which to pull project-specific info.
+
+        :param file_limit:  (obj) The file limit to apply to a set of files.
+        """
+        try:
+            from cfapyx import CFANetCDF
+
+        except ImportError:
+            return False
+
+        try:
+
+            instance.logger.info("Starting CFA Computation")
+
+            files = instance.allfiles.get()
+            if file_limit is not None:
+                files = files[:file_limit]
+
+            cfa = CFANetCDF(files) # Add instance logger here.
+
+            cfa.create()
+            if file_limit is None:
+                cfa.write(instance.cfa_path)
+
+            return {
+                'aggregated_dims': cfa.agg_dims,
+                'pure_dims': cfa.pure_dims,
+                'coord_dims': cfa.coord_dims,
+                'aggregated_vars': cfa.aggregated_vars,
+                'scalar_vars': cfa.scalar_vars,
+                'identical_vars': cfa.identical_vars
+            }
+
+        except Exception as err:
+            instance.logger.error(
+                f'Aggregation via CFA failed - {err} - report at https://github.com/cedadev/CFAPyX/issues'
+            )
+            return None
 
     def _run_with_timings(self, func, **kwargs) -> str:
         """
@@ -558,19 +581,13 @@ class ComputeOperation(ProjectOperation):
         return new_zattrs
 
     def _dims_via_cfa(self):
+        """
+        Obtain dimension info from the report generated on running
+        the CFA process.
+        """
     
-        report = cfa_handler(self) 
-        # Don't apply a file limit for scanning.
-        # This function is skipped where the CFA-enabled 
-        # scan has been successful.
-
-        if report is None:
-            raise ValueError('CFA-based dimension determination failed.')
-        
-        self.base_cfg['data_properties'] = report
-        self.base_cfg.close()
-        
-        self.logger.info(report)
+        report = self.base_cfg['data_properties'] 
+        self.logger.debug(report)
 
         concat_dims = report['aggregated_dims']
         identical_dims = [c for c in report['coord_dims'] if c not in concat_dims]
@@ -627,11 +644,11 @@ class ComputeOperation(ProjectOperation):
         t1 = datetime.now()
         self.logger.info("Starting dimension specs determination")
 
-        try:
+        if 'cfa' in self.detail_cfg:
             concat_dims, identical_dims, report = self._dims_via_cfa()
             self._data_properties = report
 
-        except ValueError as err:
+        else:
             self.logger.info('CFA Determination failed - defaulting to Validator-based checks')
             concat_dims, identical_dims = self._dims_via_validator()
 
@@ -678,20 +695,24 @@ class KerchunkDS(ComputeOperation):
         parameter from ``ProjectOperation.run`` which is not needed 
         because we already know we're running for ``Kerchunk``.
         """
+
+        # Run CFA in super class.
+        _ = super()._run(file_limit=self.limiter)
+
         status = self._run_with_timings(
             self.create_refs, 
             check_refs=check_dimensions,
             ctype=ctype
         )
-        results = cfa_handler(self)
-        if results is not None:
-            self.base_cfg['data_properties'] = results
-            self.detail_cfg['cfa'] = True
-
+        
         if ctype is None:
             self.detail_cfg['driver'] = '/'.join(set(self.ctypes))
 
         self.update_status('compute',status,jobid=self._logid)
+
+        # Run CFA in super class.
+        super()._run(file_limit=self.limiter)
+
         return status
 
     def create_refs(
@@ -985,6 +1006,9 @@ class ZarrDS(ComputeOperation):
         """
         Recommended way of running an operation - includes timers etc.
         """
+        # Run CFA in super class.
+        _ = super()._run(file_limit=self.limiter)
+
         status = self._run_with_timings(self.create_store)
         self.update_status('compute',status,jobid=self._logid)
         return status
@@ -1119,26 +1143,6 @@ class ZarrDS(ComputeOperation):
             volume += ds[var].nbytes
 
         return concat_dim_rechunk, dim_sizes, cpf/self.limiter, volume/self.limiter
-
-class CfaDS(ComputeOperation):
-    """
-    Dataset Operation class for CFA.
-
-    This is a class for the sole purpose of 
-    utilising the ``cfa_handler`` function
-    as a main operation. It may be replaced or
-    refactored in future.
-    """
-
-    def _run(self, **kwargs) -> str:
-        """
-        Integration of CFA Converter to 
-        Padocc Operation class."""
-        if cfa_handler(self):
-            return 'Success'
-        return 'Fatal'
-    
-        # Deal with setting proper values here in specific files.
 
 if __name__ == '__main__':
     print('Serial Processor for Kerchunk Pipeline - run with single_run.py')

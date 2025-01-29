@@ -3,7 +3,7 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 from .scan import ScanOperation
-from .compute import KerchunkDS, ZarrDS, ComputeOperation, cfa_handler, CfaDS
+from .compute import KerchunkDS, ZarrDS, ComputeOperation
 from .ingest import IngestOperation
 from .validate import ValidateOperation
 
@@ -14,7 +14,7 @@ phase_map = {
     'compute': {
         'kerchunk': KerchunkDS,
         'zarr': ZarrDS,
-        'CFA': cfa_handler,
+        'CFA': ComputeOperation,
     },
     'validate': ValidateOperation
 }
