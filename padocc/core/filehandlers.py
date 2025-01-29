@@ -219,23 +219,29 @@ class ListFileHandler(FileIOMixin):
         self._value: list    = init_value or []
         self._extension: str = extension or 'txt'
 
-    def append(self, newvalue: str) -> None:
+    def append(self, newvalue: Union[str,list]) -> None:
         """Add a new value to the internal list"""
         self._obtain_value()
+
+        if isinstance(newvalue, list):
+            newvalue = ','.join(newvalue)
         
         self._value.append(newvalue)
 
-    def pop(self, oldvalue: str) -> None:
+    def remove(self, oldvalue: str) -> None:
         """Remove a value from the internal list"""
         self._obtain_value()
         
-        self._value.pop(oldvalue)
+        self._value.remove(oldvalue)
 
-    def set(self, value: list) -> None:
+    def set(self, value: list[str,list]) -> None:
         """
         Reset the value as a whole for this 
         filehandler.
         """
+        if isinstance(value[0],list):
+            value = [','.join(v) for v in value]
+
         self._value = list(value)
 
     def __contains__(self, item: str) -> bool:
@@ -446,9 +452,7 @@ class JSONFileHandler(FileIOMixin):
         Dict-based filehandlers accept string keys only.
         """
         self._obtain_value()
-
-        if index in self._value:
-            self._value[index] = value
+        self._value[index] = value
     
     def _obtain_value(self, index: Union[str,None] = None) -> None:
         """
@@ -675,19 +679,16 @@ class GenericStore(LoggedOperation):
         self._meta: JSONFileHandler = JSONFileHandler(
             self.store_path, metadata_name)
 
-        self._set_fh_kwargs(
-            forceful=forceful,
-            dryrun=dryrun,
-            thorough=thorough
-        )
-
         # All filehandlers are logged operations
         super().__init__(
             logger,
             label=label,
             fh=fh,
             logid=logid,
-            verbose=verbose)
+            verbose=verbose,
+            forceful=forceful,
+            dryrun=dryrun,
+            thorough=thorough)
 
     def _update_history(
             self,
@@ -906,6 +907,11 @@ class CSVFileHandler(ListFileHandler):
         self._extension = 'csv'
 
     def __iter__(self) -> Iterator[str]:
+        """
+        Iterable for this dataset
+        """
+        self._obtain_value()
+
         for i in self._value:
             if i is not None:
                 yield i.replace(' ','').split(',')
