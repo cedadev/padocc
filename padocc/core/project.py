@@ -255,11 +255,6 @@ class ProjectOperation(
                 subset_bypass=self._bypass.skip_subsets,
                 status_fh=self.status_log)
 
-    def move_to(self, new_directory: str) -> None:
-        """
-        Move all associated files across to new directory.
-        """
-
     def _run(self, **kwargs) -> None:
         # Default project operation run.
         self.logger.info("Nothing to run with this setup!")
@@ -295,8 +290,37 @@ class ProjectOperation(
         os.system(f'rm -rf {self.dir}')
         self.logger.info(f'All internal files for {self.proj_code} deleted.')
 
-    def migrate(self, newgroupID: str):
-        pass
+    def migrate(cls, newgroupID: str):
+        """
+        Migrate this project to a new group.
+        1. Move the whole project directory on the filesystem.
+        2. Move all associated filehandlers (individually?)
+        """
+        cls.logger.info(f'Migrating project {cls.proj_code}')
+        
+        # 1. Determine the new location
+        new_dir = str(cls.dir).replace(cls.groupID, newgroupID)
+        cls.logger.debug(cls.dir)
+        cls.logger.debug(new_dir)
+
+        # 2. Save all open files with current content
+        cls.save_files()
+        
+        # 3. Move the project 
+        os.system(f'mv {cls.dir} {new_dir}')
+
+        # 4. Create a new basic project instance
+        new_cls = ProjectOperation(
+            cls.proj_code,
+            cls.workdir,
+            groupID=newgroupID,
+            logger=cls.logger,
+            **cls.fh_kwargs
+        )
+
+        # 5. Delete the old instance
+        del cls
+        return new_cls
 
     def update_status(
             self, 
@@ -304,10 +328,17 @@ class ProjectOperation(
             status: str, 
             jobid : str = ''
         ) -> None: 
+        """
+        Mapper to update the status of the project
+        via the status log filehandler.
+        """
         self.status_log.update_status(phase, status, jobid=jobid)
 
     def save_files(self):
-        # Add all files here.
+        """
+        Save all filehandlers associated with this 
+        group.
+        """
         self.base_cfg.close()
         self.detail_cfg.close()
         self.allfiles.close()
@@ -315,7 +346,8 @@ class ProjectOperation(
 
     def _get_phase(self):
         """
-        Gets the highest phase this project has currently undertaken successfully"""
+        Gets the highest phase this project has currently undertaken successfully
+        """
 
         max_sid = 0
         for row in self.status_log:
@@ -329,6 +361,11 @@ class ProjectOperation(
         return phases[max_sid]
 
     def _configure_filelist(self):
+        """
+        Set the contents of the filelist based on
+        the values provided in the base config,
+        either filepath to a text file or a pattern.
+        """
         pattern = self.base_cfg['pattern']
 
         if not pattern:
