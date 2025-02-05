@@ -21,7 +21,8 @@ from padocc.core import (
     LoggedOperation
 )
 from padocc.core.utils import (
-    find_closest
+    find_closest,
+    make_tuple
 )
 
 from padocc.core.errors import (
@@ -35,51 +36,7 @@ from padocc.core.errors import (
 from padocc.phases.validate import ValidateDatasets
 from padocc.core.filehandlers import JSONFileHandler, ZarrStore
 
-CONCAT_MSG = 'See individual files for more details'
-
-def cfa_handler(instance, file_limit: Optional[int] = None):
-    """
-    Handle the creation of a CFA-netCDF file using the CFAPyX package
-
-    :param instance:    (obj) The reference instance of ProjectOperation 
-        from which to pull project-specific info.
-
-    :param file_limit:  (obj) The file limit to apply to a set of files.
-    """
-    try:
-        from cfapyx import CFANetCDF
-
-    except ImportError:
-        return False
-
-    try:
-
-        instance.logger.info("Starting CFA Computation")
-
-        files = instance.allfiles.get()
-        if file_limit is not None:
-            files = files[:file_limit]
-
-        cfa = CFANetCDF(files) # Add instance logger here.
-
-        cfa.create()
-        if file_limit is None:
-            cfa.write(instance.cfa_path)
-
-        return {
-            'aggregated_dims': cfa.agg_dims,
-            'pure_dims': cfa.pure_dims,
-            'coord_dims': cfa.coord_dims,
-            'aggregated_vars': cfa.aggregated_vars,
-            'scalar_vars': cfa.scalar_vars,
-            'identical_vars': cfa.identical_vars
-        }
-
-    except Exception as err:
-        instance.logger.error(
-            f'Aggregation via CFA failed - {err} - report at https://github.com/cedadev/CFAPyX/issues'
-        )
-        return None
+CONCAT_MSG = 'See individual files for more details'    
 
 class KerchunkConverter(LoggedOperation):
     """Class for converting a single file to a Kerchunk reference object. Handles known
@@ -230,12 +187,10 @@ class ComputeOperation(ProjectOperation):
 
         :param workdir:         (str) Path to the current working directory.
 
+        :param groupID:         (str) GroupID of the parent group.
+
         :param thorough:        (bool) From args.quality - if True will create all files 
             from scratch, otherwise saved refs from previous runs will be loaded.
-
-        :param version_no:      (str) Kerchunk revision number/identifier. Default is trial - 
-            used for 'scan' phase, will be overridden with specific revision in 'compute' 
-            actual phase.
         
         :param concat_msg:      (str) Value displayed as global attribute for any attributes 
             that differ across the set of files, instead of a list of the differences,
@@ -335,15 +290,85 @@ class ComputeOperation(ProjectOperation):
             'pre_kwargs': self.pre_kwargs,
         }
 
-    def _run(self, mode: str = 'kerchunk'):
+    def _run(
+            self, 
+            mode: str = 'CFA',
+            file_limit: Union[int,None] = None,
+        ) -> str:
         """
         Default _run hook for compute operations. A user should aim to use the
         configuration options to use the Kerchunk or Zarr DS classes rather than
         the bare parent class. Override this class with a _run parameter for new 
-        DS classes (COG etc.)"""
+        DS classes (COG etc.)
+        
+        This class now defaults to create the CFA dataset,
+        rather than having a separate class for this.
+        """
+        if mode != 'CFA':
+            raise ValueError(
+                '`ComputeOperation` default run option uses CFA - you '
+                f'have specified to use {mode} which requires the use '
+                'of a different `DS` operator (Kerchunk/Zarr supported).'
+            )
+        
+        if file_limit == len(self.allfiles):
+            file_limit = None
 
-        self.logger.error('Nothing to do with this class - use KerchunkDS/ZarrDS instead!')
-        raise ComputeError
+        results = self._run_cfa(file_limit=file_limit)
+        if results is not None:
+            # Save results
+            self.base_cfg['data_properties'] = results
+            self.detail_cfg['CFA'] = True
+            return 'Success'
+        return 'Fatal'
+
+    def _run_cfa(
+            instance: type[ProjectOperation], 
+            file_limit: Union[int,None] = None,
+        ) -> Union[dict,None]:
+
+        """
+        Handle the creation of a CFA-netCDF file using the CFAPyX package
+
+        :param instance:    (obj) The reference instance of ProjectOperation 
+            from which to pull project-specific info.
+
+        :param file_limit:  (obj) The file limit to apply to a set of files.
+        """
+        try:
+            from cfapyx import CFANetCDF
+
+        except ImportError:
+            return False
+
+        try:
+
+            instance.logger.info("Starting CFA Computation")
+
+            files = instance.allfiles.get()
+            if file_limit is not None:
+                files = files[:file_limit]
+
+            cfa = CFANetCDF(files) # Add instance logger here.
+
+            cfa.create()
+            if file_limit is None:
+                cfa.write(instance.cfa_path)
+
+            return {
+                'aggregated_dims': make_tuple(cfa.agg_dims),
+                'pure_dims': make_tuple(cfa.pure_dims),
+                'coord_dims': make_tuple(cfa.coord_dims),
+                'aggregated_vars': make_tuple(cfa.aggregated_vars),
+                'scalar_vars': make_tuple(cfa.scalar_vars),
+                'identical_vars': make_tuple(cfa.identical_vars)
+            }
+
+        except Exception as err:
+            instance.logger.error(
+                f'Aggregation via CFA failed - {err} - report at https://github.com/cedadev/CFAPyX/issues'
+            )
+            return None
 
     def _run_with_timings(self, func, **kwargs) -> str:
         """
@@ -560,24 +585,21 @@ class ComputeOperation(ProjectOperation):
         return new_zattrs
 
     def _dims_via_cfa(self):
+        """
+        Obtain dimension info from the report generated on running
+        the CFA process.
+        """
     
-        report = cfa_handler(self) 
-        # Don't apply a file limit for scanning.
-        # This function is skipped where the CFA-enabled 
-        # scan has been successful.
-
-        if report is None:
-            raise ValueError('CFA-based dimension determination failed.')
-        
-        self.base_cfg['data_properties'] = report
-        self.base_cfg.close()
-        
-        self.logger.info(report)
+        report = self.base_cfg['data_properties'] 
+        self.logger.debug(report)
 
         concat_dims = report['aggregated_dims']
         identical_dims = [c for c in report['coord_dims'] if c not in concat_dims]
-        identicals = tuple(set(
-            report['identical_vars'] + report['scalar_vars'] + tuple(identical_dims) + report['pure_dims']))
+
+        identicals = tuple(set(report['identical_vars'] + \
+                         report['scalar_vars'] + \
+                         tuple(identical_dims) + \
+                         report['pure_dims']))
     
         return concat_dims, identicals, report
 
@@ -620,7 +642,7 @@ class ComputeOperation(ProjectOperation):
         identical_dims = [dim for dim in dimensions if dim not in vars]
         return concat_dims, identical_dims
 
-    def _determine_dim_specs(self, objs: list) -> None:
+    def _determine_dim_specs(self) -> None:
         """
         Perform identification of identical_dims and concat_dims here.
         """
@@ -629,11 +651,12 @@ class ComputeOperation(ProjectOperation):
         t1 = datetime.now()
         self.logger.info("Starting dimension specs determination")
 
-        try:
+        if 'CFA' in self.detail_cfg:
+            self.logger.info('Extracting dim info from CFA report')
             concat_dims, identical_dims, report = self._dims_via_cfa()
             self._data_properties = report
 
-        except ValueError as err:
+        else:
             self.logger.info('CFA Determination failed - defaulting to Validator-based checks')
             concat_dims, identical_dims = self._dims_via_validator()
 
@@ -680,16 +703,21 @@ class KerchunkDS(ComputeOperation):
         parameter from ``ProjectOperation.run`` which is not needed 
         because we already know we're running for ``Kerchunk``.
         """
+
+        # Run CFA in super class.
+        _ = super()._run(file_limit=self.limiter)
+
         status = self._run_with_timings(
             self.create_refs, 
             check_refs=check_dimensions,
             ctype=ctype
         )
-        results = cfa_handler(self)
-        if results is not None:
-            self.base_cfg['data_properties'] = results
-            self.detail_cfg['cfa'] = True
+        
+        if ctype is None:
+            self.detail_cfg['driver'] = '/'.join(set(self.ctypes))
+
         self.update_status('compute',status,jobid=self._logid)
+
         return status
 
     def create_refs(
@@ -800,16 +828,7 @@ class KerchunkDS(ComputeOperation):
 
         self.logger.info('Starting concatenation of refs')
         if len(refs) > 1:
-            # Pick 2 refs to use when determining dimension info.
-            # Concatenation Dimensions
-            if self.detail_cfg['kwargs'] is not None and not self._thorough:
-                self.combine_kwargs = self.detail_cfg['kwargs']['combine_kwargs']
-            else:
-                # Determine combine_kwargs
-                self._determine_dim_specs([
-                    xr.open_zarr(fsspec.get_mapper('reference://', fo=refs[0]), consolidated=False),
-                    xr.open_zarr(fsspec.get_mapper('reference://', fo=refs[-1]), consolidated=False),
-                ])
+            self._determine_dim_specs()
 
         t1 = datetime.now()  
         if self.file_type == 'parq':
@@ -956,7 +975,6 @@ class KerchunkDS(ComputeOperation):
                     f'Reference Correction: {zarray["shape"]} to '
                 )
 
-
 class ZarrDS(ComputeOperation):
 
     def __init__(
@@ -984,6 +1002,9 @@ class ZarrDS(ComputeOperation):
         """
         Recommended way of running an operation - includes timers etc.
         """
+        # Run CFA in super class.
+        _ = super()._run(file_limit=self.limiter)
+
         status = self._run_with_timings(self.create_store)
         self.update_status('compute',status,jobid=self._logid)
         return status
@@ -995,7 +1016,7 @@ class ZarrDS(ComputeOperation):
         Create the Zarr Store
         """
 
-        self.combine_kwargs = self.detail_cfg['kwargs']['combine_kwargs']
+        self.combine_kwargs = self.detail_cfg['kwargs'].get('combine_kwargs',{})
 
         # Open all files for this process (depending on limiter)
         self.logger.debug('Starting timed section for estimation of whole process')
@@ -1003,37 +1024,42 @@ class ZarrDS(ComputeOperation):
 
         self.logger.info(f"Retrieved required xarray dataset objects - {(datetime.now()-t1).total_seconds():.2f}s")
 
-        # Determine concatenation dimensions
-        if self.base_cfg['data_properties']['aggregated_vars'] == 'Unknown':
-            # Determine dimension specs for concatenation.
-            self._determine_dim_specs([
-                xr.open_dataset(self.allfiles[0]),
-                xr.open_dataset(self.allfiles[1])
-            ])
-        if not self.combine_kwargs['concat_dims']:
-            self.logger.error('No concatenation dimensions - unsupported for zarr conversion')
-            raise NotImplementedError
+        if len(self.allfiles) > 1:
+            
+            # Determine concatenation dimensions
+            if self.base_cfg['data_properties']['aggregated_vars'] == 'Unknown':
+                # Determine dimension specs for concatenation.
+                self._determine_dim_specs([
+                    xr.open_dataset(self.allfiles[0]),
+                    xr.open_dataset(self.allfiles[1])
+                ])
+            if not self.combine_kwargs['concat_dims']:
+                self.logger.error('No concatenation dimensions - unsupported for zarr conversion')
+                raise NotImplementedError
 
-        # Perform Concatenation
-        self.logger.info(f'Concatenating xarray objects across dimensions ({self.combine_kwargs["concat_dims"]})')
+            # Perform Concatenation
+            self.logger.info(f'Concatenating xarray objects across dimensions ({self.combine_kwargs["concat_dims"]})')
 
-        if file_limit:
-            fileset = self.allfiles[:file_limit]
+            if file_limit:
+                fileset = self.allfiles[:file_limit]
+            else:
+                fileset = self.allfiles.get()
+
+            combined_ds = xr.open_mfdataset(
+                fileset, 
+                combine='nested', 
+                concat_dim=self.combine_kwargs['concat_dims'],
+                data_vars='minimal')
+            
         else:
-            fileset = self.allfiles.get()
-
-        self.combined_ds = xr.open_mfdataset(
-            fileset, 
-            combine='nested', 
-            concat_dim=self.combine_kwargs['concat_dims'],
-            data_vars='minimal')
+            combined_ds = xr.open_dataset(self.allfiles[0])
         
         # Assessment values
-        self.std_vars = list(self.combined_ds.variables)
+        self.std_vars = list(combined_ds.variables)
 
         self.logger.info(f'Concluded object concatenation - {(datetime.now()-t1).total_seconds():.2f}s')
 
-        concat_dim_rechunk, dim_sizes, cpf, volm = self._get_rechunk_scheme()
+        concat_dim_rechunk, dim_sizes, cpf, volm = self._get_rechunk_scheme(combined_ds)
         self.cpf  = [cpf]
         self.volm = [volm]
         self.logger.info(f'Determined appropriate rechunking scheme - {(datetime.now()-t1).total_seconds():.2f}s')
@@ -1061,7 +1087,7 @@ class ZarrDS(ComputeOperation):
             t1 = datetime.now()
 
             rechunker.rechunk(
-                self.combined_ds, 
+                combined_ds, 
                 concat_dim_rechunk, 
                 self.mem_allowed, 
                 self.zstore.store_path,
@@ -1072,18 +1098,17 @@ class ZarrDS(ComputeOperation):
         else:
             self.logger.info('Skipped rechunking step.')
 
-        # Clean Metadata here.
+    def _get_rechunk_scheme(self, ds):
+        """
+        Determine Rechunking Scheme appropriate
+         - Figure out which variable has the largest total size.
+         - Rechunk all dimensions for that variable to sensible values.
+         - Rechunk all other dimensions to 1.
+        """
 
-    def _get_rechunk_scheme(self):
-
-        # Determine Rechunking Scheme appropriate
-        #  - Figure out which variable has the largest total size.
-        #  - Rechunk all dimensions for that variable to sensible values.
-        #  - Rechunk all other dimensions to 1?
-
-        dims               = self.combined_ds.dims
+        dims               = ds.dims
         concat_dim_rechunk = {}
-        dim_sizes          = {d: self.combined_ds[d].size for d in dims}
+        dim_sizes          = {d: ds[d].size for d in dims}
         total              = sum(dim_sizes.values())
 
         for index, cd in enumerate(dims):
@@ -1105,27 +1130,15 @@ class ZarrDS(ComputeOperation):
         cpf = 0
         volume = 0
         for var in self.std_vars:
-            shape = self.combined_ds[var].shape
+            shape = ds[var].shape
             chunks = []
-            for x, dim in enumerate(self.combined_ds[var].dims):
+            for x, dim in enumerate(ds[var].dims):
                 chunks.append(shape[x]/concat_dim_rechunk[dim])
 
             cpf    += sum(chunks)
-            volume += self.combined_ds[var].nbytes
+            volume += ds[var].nbytes
 
         return concat_dim_rechunk, dim_sizes, cpf/self.limiter, volume/self.limiter
-
-class CfaDS(ComputeOperation):
-
-    def _run(self, **kwargs) -> str:
-        """
-        Integration of CFA Converter to 
-        Padocc Operation class."""
-        if cfa_handler(self):
-            return 'Success'
-        return 'Fatal'
-    
-        # Deal with setting proper values here in specific files.
 
 if __name__ == '__main__':
     print('Serial Processor for Kerchunk Pipeline - run with single_run.py')

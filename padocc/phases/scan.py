@@ -7,6 +7,7 @@ import json
 import numpy as np
 import re
 import logging
+import yaml
 
 from typing import Union
 
@@ -16,7 +17,7 @@ from padocc.core import FalseLogger
 from padocc.core.errors import ConcatFatalError
 from padocc.core.filehandlers import JSONFileHandler
 
-from .compute import KerchunkDS, cfa_handler
+from .compute import KerchunkDS, ZarrDS, ComputeOperation
 
 def _format_float(value: float, logger: logging.Logger = FalseLogger()) -> str:
     """
@@ -149,7 +150,12 @@ class ScanOperation(ProjectOperation):
         fn('Scan Options:')
         fn(' > project.run() - Run a scan for this project')
 
-    def _run(self, mode: str = 'kerchunk', ctype: Union[str,None] = None) -> None:
+    def _run(
+            self, 
+            mode: str = 'kerchunk', 
+            ctype: Union[str,None] = None,
+            mem_allowed: str = '100MB'
+        ) -> None:
         """Main process handler for scanning phase"""
 
         self.logger.info(f'Starting scan-{mode} operation for {self.proj_code}')
@@ -169,7 +175,7 @@ class ScanOperation(ProjectOperation):
         self.logger.debug(f'Using {mode} scan operations')
 
         if mode == 'zarr':
-            self._scan_zarr(limiter=limiter)
+            self._scan_zarr(limiter=limiter, mem_allowed=mem_allowed)
         elif mode == 'kerchunk':
             self._scan_kerchunk(limiter=limiter, ctype=ctype)
         elif mode == 'cfa':
@@ -258,12 +264,32 @@ class ScanOperation(ProjectOperation):
         self.logger.info('Starting scan process for CFA cloud format')
 
         # Redo this processor call.
-        results = cfa_handler(self, file_limit=limiter)
+        comp = ComputeOperation(
+            self.proj_code,
+            workdir=self.workdir, 
+            thorough=True, 
+            forceful=True, # Always run from scratch forcefully to get best time estimates.
+            is_trial=True, 
+            logger=self.logger,
+            groupID=self.groupID, 
+            dryrun=self._dryrun,
+        )
 
-        # Record results here
-        print(results)
+        status = comp._run(file_limit=limiter)
+        self.logger.info('Scan-CFA results generated')
+        
+        if status == 'Success':
+            self.logger.info(yaml.dump(self.detail_cfg['data_properties']))
+        else:
+            self.logger.info(' > Result generation failed.')
 
-    def _scan_zarr(self, limiter: Union[int,None] = None):
+        self.update_status('scan',status,jobid=self._logid)
+        return status
+
+    def _scan_zarr(
+            self, 
+            limiter: Union[int,None] = None,
+            mem_allowed: str = '100MB'):
         """
         Function to perform scanning with output Zarr format.
         """
@@ -271,13 +297,17 @@ class ScanOperation(ProjectOperation):
         self.logger.info('Starting scan process for Zarr cloud format')
 
         # Need a refactor
-        mini_ds = ZarrDSRechunker(
+        mini_ds = ZarrDS(
             self.proj_code,
             workdir=self.workdir, 
-            thorough=True, forceful=True, # Always run from scratch forcefully to get best time estimates.
-            is_trial=True, verb=args.verbose, logid='0',
-            groupID=args.groupID, limiter=limiter, logger=logger, dryrun=args.dryrun,
-            mem_allowed='500MB')
+            thorough=True, 
+            forceful=True, # Always run from scratch forcefully to get best time estimates.
+            is_trial=True, 
+            logger=self.logger,
+            groupID=self.groupID, 
+            limiter=limiter, 
+            dryrun=self._dryrun,
+            mem_allowed=mem_allowed)
 
         mini_ds.create_store()
         

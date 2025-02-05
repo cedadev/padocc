@@ -3,36 +3,38 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import os
+import yaml
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 
 from padocc.core import BypassSwitch, FalseLogger
-from padocc.core.utils import format_str, times
+from padocc.core.utils import format_str, print_fmt_str
 from padocc.core import ProjectOperation
 from padocc.phases import (
     ScanOperation,
+    ComputeOperation,
     KerchunkDS, 
     ZarrDS, 
-    CfaDS,
     KNOWN_PHASES,
     ValidateOperation,
 )
 from padocc.core.mixins import DirectoryMixin
 from padocc.core.filehandlers import CSVFileHandler, ListFileHandler
 
-from .mixins import AllocationsMixin, InitialisationMixin, EvaluationsMixin
+from .mixins import AllocationsMixin, InitialisationMixin, EvaluationsMixin, ModifiersMixin
 
 COMPUTE = {
     'kerchunk':KerchunkDS,
     'zarr':ZarrDS,
-    'cfa': CfaDS,
+    'CFA': ComputeOperation,
 }
 
 class GroupOperation(
         AllocationsMixin, 
         DirectoryMixin, 
         InitialisationMixin, 
-        EvaluationsMixin
+        EvaluationsMixin,
+        ModifiersMixin
     ):
 
     def __init__(
@@ -99,13 +101,13 @@ class GroupOperation(
             fh=fh,
             logid=logid,
             verbose=verbose)
-        
+
         self._setup_directories()
 
         self.proj_codes      = {}
-        self.faultlist_codes = CSVFileHandler(
+        self.faultlist = CSVFileHandler(
             self.groupdir,
-            'faultlist_codes',
+            'faultlist',
             logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful,
@@ -125,145 +127,76 @@ class GroupOperation(
         return f'<PADOCC Group: {self.groupID}>'
     
     def __repr__(self):
-        return str(self)
+        return yaml.dump(self.info())
+
+    def __len__(self):
+        """
+        Shorthand for length of the list-like group.
+        """
+        return len(self.proj_codes['main'])
     
-    def __getitem__(self, index: int) -> ProjectOperation:
+    def __getitem__(self, index: Union[int,str]) -> ProjectOperation:
         """
         Indexable group allows access to individual projects
         """
-
-        proj_code = self.proj_codes['main'][index]
+        if isinstance(index, int):
+            proj_code = self.proj_codes['main'][index]
+        else:
+            proj_code = index
+            
         return self.get_project(proj_code)
+    
+    def get_stac_representation(
+            self, 
+            stac_mapping: dict, 
+            repeat_id: str = 'main'
+        ) -> list:
+        """
+        Obtain all records for all projects in this group.
+        """
+        record_set = []
+        proj_list = self.proj_codes[repeat_id].get()
+
+        for proj in proj_list:
+            proj_op = self[proj]
+            record_set.append(
+                proj_op.get_stac_representation(stac_mapping)
+            )
+        return record_set
     
     @property
     def proj_codes_dir(self):
         return f'{self.groupdir}/proj_codes'
-        
-    def merge(group_A,group_B):
+
+    def info(self) -> dict:
         """
-        Merge group B into group A.
-        1. Migrate all projects from B to A and reset groupID values.
-        2. Combine datasets.csv
-        3. Combine project codes
-        4. Combine faultlists.
+        Obtain a dictionary of key values for this object.
         """
+        values = {
+            'workdir': self.workdir,
+            'groupdir': self.groupdir,
+            'projects': len(self.proj_codes['main']),
+            'logID': self._logid,
+        }
 
-        new_proj_dir = f'{group_A.workdir}/in_progress/{group_A.groupID}'
-        group_A.logger.info(f'Merging {group_B.groupID} into {group_A.groupID}')
+        return {
+            self.groupID: values
+        }
 
-        # Combine projects
-        for proj_code in group_B.proj_codes['main']:
-            proj_op = ProjectOperation(
-                proj_code,
-                group_B.workdir,
-                group_B.groupID
-            )
-            group_A.logger.debug(f'Migrating project {proj_code}')
-            proj_op.move_to(new_proj_dir)
-
-        # Datasets
-        group_A.datasets.set(
-            group_A.datasets.get() + group_B.datasets.get()
+    @classmethod
+    def help(cls, func: Callable = print_fmt_str):
+        func('Group Operator')
+        func(
+            ' > group.get_stac_representation() - Provide a mapper and obtain values '
+            'in the form of STAC records for all projects'
         )
-        group_B.datasets.remove_file()
-        group_A.logger.debug(f'Removed dataset file for {group_B.groupID}')
+        func(' > group.info() - Obtain a dictionary of key values')
+        func(' > group.run() - Run a specific operation across part of the group.')
+        func(' > group.save_files() - Save any changes to any files in the group as part of an operation')
+        func(' > group.check_writable() - Check if all directories are writable for this group.')
 
-        # faultlists
-        group_A.faultlist_codes.set(
-            group_A.faultlist_codes.get() + group_B.faultlist_codes.get()
-        )
-        group_B.faultlist_codes.remove_file()
-        group_A.logger.debug(f'Removed faultlist file for {group_B.groupID}')
-
-        # Subsets
-        for name, subset in group_B.proj_codes.items():
-            if name not in group_A.proj_codes:
-                subset.move_file(group_A.groupdir)
-                group_A.logger.debug(f'Migrating subset {name}')
-            else:
-                group_A.proj_codes[name].set(
-                    group_A.proj_codes[name].get() + subset.get()
-                )
-                group_A.logger.debug(f'Merging subset {name}')
-                subset.remove_file()
-
-        group_A.logger.info("Merge operation complete")
-        del group_B
-
-    def unmerge(group_A, group_B, dataset_list: list):
-        """
-        Separate elements from group_A into group_B
-        according to the list
-        1. Migrate projects
-        2. Set the datasets
-        3. Set the faultlists
-        4. Project codes (remove group B sections)"""
-
-        group_A.logger.info(
-            f"Separating {len(dataset_list)} datasets from "
-            f"{group_A.groupID} to {group_B.groupID}")
-        
-        new_proj_dir = f'{group_B.workdir}/in_progress/{group_B.groupID}'
-
-        # Combine projects
-        for proj_code in dataset_list:
-            proj_op = ProjectOperation(
-                proj_code,
-                group_A.workdir,
-                group_A.groupID
-            )
-
-            proj_op.move_to(new_proj_dir)
-            proj_op.groupID = group_B.groupID
-        
-        # Set datasets
-        group_B.datasets.set(dataset_list)
-        group_A.datasets.set(
-            [ds for ds in group_A.datasets if ds not in dataset_list]
-        )
-
-        group_A.logger.debug(f"Created datasets file for {group_B.groupID}")
-
-        # Set faultlist
-        A_faultlist, B_faultlist = [],[]
-        for bl in group_A.faultlist_codes:
-            if bl in dataset_list:
-                B_faultlist.append(bl)
-            else:
-                A_faultlist.append(bl)
-
-        group_A.faultlist_codes.set(A_faultlist)
-        group_B.faultlist_codes.set(B_faultlist)
-        group_A.logger.debug(f"Created faultlist file for {group_B.groupID}")
-
-        # Combine project subsets
-        group_B.proj_codes['main'].set(dataset_list)
-        for name, subset in group_A.proj_codes.items():
-            if name != 'main':
-                subset.set([s for s in subset if s not in dataset_list])
-        group_A.logger.debug(f"Removed all datasets from all {group_A.groupID} subsets")
-
-
-        group_A.logger.info("Unmerge operation complete")
-
-    def values(self):
-        print(f'Group: {self.groupID}')
-        print(f' - Workdir: {self.workdir}')
-        print(f' - Groupdir: {self.groupdir}')
-
-        super().values()
-
-    def info(self):
-        print(f'Group: {self.groupID}')
-        print('General Methods:')
-        print(f' > group.run() - Run a specific operation across part of the group.')
-        print(f' > group.init_from_file() - Initialise the group based on an input csv file')
-        print(f' > group.init_from_stac() - Initialise the group based on a STAC index')
-        print(f' > group.add_project() - Add an new project/dataset to this group')
-        print(f' > group.save_files() - Save any changes to any files in the group as part of an operation')
-        print(f' > group.check_writable() - Check if all directories are writable for this group.')
-        
-        self._assess_info()
+        for cls in GroupOperation.__bases__:
+            cls.help(func)
 
     def run(
             self,
@@ -273,10 +206,17 @@ class GroupOperation(
             proj_code: Optional[str] = None,
             subset: Optional[str] = None,
             bypass: Union[BypassSwitch, None] = None,
-            **kwargs
+            forceful: Optional[bool] = None,
+            thorough: Optional[bool] = None,
+            dryrun: Optional[bool] = None,
+            run_kwargs: Union[dict,None] = None,
+            **kwargs,
         ) -> dict[str]:
 
-        bypass = bypass or BypassSwitch()
+        bypass = bypass or self._bypass
+        run_kwargs = run_kwargs or {}
+
+        self._set_fh_kwargs(forceful=forceful, dryrun=dryrun, thorough=thorough)
 
         phases = {
             'scan': self._scan_config,
@@ -317,8 +257,12 @@ class GroupOperation(
 
             status = func(
                 proj_code, 
-                mode=mode, logid=logid, label=phase, 
-                fh=fh, bypass=bypass,
+                mode=mode, 
+                logid=logid, 
+                label=phase, 
+                fh=fh, 
+                bypass=bypass,
+                run_kwargs=run_kwargs,
                 **kwargs)
             
             if status in results:
@@ -338,6 +282,7 @@ class GroupOperation(
             proj_code: str,
             mode: str = 'kerchunk',
             bypass: Union[BypassSwitch,None] = None,
+            run_kwargs: Union[dict,None] = None,
             **kwargs
         ) -> None:
         """
@@ -361,7 +306,7 @@ class GroupOperation(
             proj_code, self.workdir, groupID=self.groupID,
             verbose=self._verbose, bypass=bypass, 
             dryrun=self._dryrun, **kwargs)
-        status = so.run(mode=mode)
+        status = so.run(mode=mode, **self.fh_kwargs, **run_kwargs)
         so.save_files()
         return status
 
@@ -370,6 +315,7 @@ class GroupOperation(
             proj_code: str,
             mode: str = 'kerchunk',
             bypass: Union[BypassSwitch,None] = None,
+            run_kwargs: Union[dict,None] = None,
             **kwargs
         ) -> None:
         """
@@ -392,20 +338,10 @@ class GroupOperation(
         """
 
         self.logger.debug('Finding the suggested mode from previous scan where possible')
-        proj_op = ProjectOperation(
-            proj_code,
-            self.workdir,
-            groupID=self.groupID,
-            logger=self.logger,
-            bypass=bypass,
-            **kwargs,
-        )
 
-        mode = mode or proj_op.cloud_format
+        mode = mode or self[proj_code].cloud_format
         if mode is None:
             mode = 'kerchunk'
-
-        del proj_op
 
         if mode not in COMPUTE:
             raise ValueError(
@@ -428,7 +364,11 @@ class GroupOperation(
             bypass=bypass,
             **kwargs
         )
-        status = proj_op.run(mode=mode)
+        status = proj_op.run(
+            mode=mode, 
+            **self.fh_kwargs,
+            **run_kwargs
+        )
         proj_op.save_files()
         return status
     
@@ -437,9 +377,7 @@ class GroupOperation(
             proj_code: str,  
             mode: str = 'kerchunk',
             bypass: Union[BypassSwitch,None] = None,
-            forceful: Optional[bool] = None,
-            thorough: Optional[bool] = None,
-            dryrun: Optional[bool] = None,
+            run_kwargs: Union[dict,None] = None,
             **kwargs
         ) -> None:
 
@@ -458,10 +396,10 @@ class GroupOperation(
             )
         
         status = vop.run(
-            mode=mode, 
-            forceful=forceful,
-            thorough=thorough,
-            dryrun=dryrun)
+            mode=mode,
+            **self.fh_kwargs,
+            **run_kwargs
+        )
         return status
 
     def _save_proj_codes(self):
@@ -469,7 +407,10 @@ class GroupOperation(
             self.proj_codes[pc].close()
 
     def save_files(self):
-        self.faultlist_codes.close()
+        """
+        Save all files associated with this group.
+        """
+        self.faultlist.close()
         self.datasets.close()
         self._save_proj_codes()
 
@@ -511,205 +452,11 @@ class GroupOperation(
             self.logger.error('Groupdir provided is not writable')
             raise IOError("Groupdir not writable")
 
-    def create_sbatch(
-            self,
-            phase     : str,
-            source    : str = None,
-            venvpath  : str = None,
-            band_increase : str = None,
-            forceful   : bool = None,
-            dryrun     : bool = None,
-            quality    : bool = None,
-            verbose    : int = 0,
-            binpack    : bool = None,
-            time_allowed : str = None,
-            memory       : str = None,
-            subset       : int = None,
-            repeat_id    : str = 'main',
-            bypass       : BypassSwitch = BypassSwitch(),
-            mode         : str = 'kerchunk',
-            new_version  : str = None,
-        ) -> None:
-
-        if phase not in KNOWN_PHASES:
-            raise ValueError(
-                f'"{phase}" not recognised, please select from {KNOWN_PHASES}'
-            )
-            return None
-
-        array_job_kwargs = {
-            'forceful': forceful,
-            'dryrun'  : dryrun,
-            'quality' : quality,
-            'verbose' : verbose,
-            'binpack' : binpack,
-            'time_allowed' : time_allowed,
-            'memory'  : memory,
-            'subset'  : subset,
-            'repeat_id' : repeat_id,
-            'bypass' : bypass,
-            'mode' : mode,
-            'new_version' : new_version,
-        }
-
-        # Perform allocation assignments here.
-        if not time_allowed:
-            allocations = self.create_allocations(
-                phase, repeat_id,
-                band_increase=band_increase, binpack=binpack
-            )
-
-            for alloc in allocations:
-                print(f'{alloc[0]}: ({alloc[1]}) - {alloc[2]} Jobs')
-
-            deploy = input('Deploy the above allocated dataset jobs with these timings? (Y/N) ')
-            if deploy != 'Y':
-                raise KeyboardInterrupt
-
-            for alloc in allocations:
-                self._create_job_array(
-                    phase, source, venvpath, alloc[2]
-                    **array_job_kwargs,
-                )
-        else:
-            num_datasets = len(self.proj_codes[repeat_id].get())
-            self.logger.info(f'All Datasets: {time_allowed} ({num_datasets})')
-
-            # Always check before deploying a significant number of jobs.
-            deploy = input('Deploy the above allocated dataset jobs with these timings? (Y/N) ')
-            if deploy != 'Y':
-                raise KeyboardInterrupt
-
-            self._create_job_array(
-                    phase, source, venvpath, num_datasets,
-                    **array_job_kwargs,
-                )
-
-    def _create_job_array(
-            self,
-            phase,
-            source,
-            venvpath,
-            group_length=None,
-            repeat_id='main',
-            forceful=None,
-            verbose=None,
-            dryrun=None,
-            quality=None,
-            bypass=None,
-            binpack=None,
-            time_allowed=None,
-            memory=None,
-            subset=None,
-            mode=None,
-            new_version=None,
-            time=None,
-            joblabel=None,
-        ):
-
-        sbatch_dir = f'{self.dir}/sbatch/'
-        if not joblabel:
-            sbatch_file = f'{phase}.sbatch'
-        else:
-            sbatch_file = f'{phase}_{joblabel}.sbatch'
-            repeat_id = f'{repeat_id}/{joblabel}'
-
-        sbatch = ListFileHandler(sbatch_dir, sbatch_file, self.logger, dryrun=self._dryrun, forceful=self._forceful)
-
-        master_script = f'{source}/single_run.py'
-
-        if time is None:
-            time = time_allowed or times[phase]
-        mem = '2G' or memory
-
-        jobname = f'PADOCC_{self.groupID}_{phase}'
-        if joblabel:
-            jobname = f'PADOCC_{joblabel}_{phase}_{self.groupID}'
-
-        outfile = f'{self.dir}/outs/{jobname}_{repeat_id}'
-        errfile = f'{self.dir}/errs/{jobname}_{repeat_id}'
-
-        sbatch_kwargs = self._sbatch_kwargs(
-            time,
-            memory,
-            repeat_id,
-            bypass=bypass, 
-            forceful= forceful or self._forceful, 
-            verbose = verbose or self._verbose,
-            quality = quality or self._quality, # Check
-            dryrun = dryrun or self._dryrun,
-            binpack = binpack,
-            subset = subset,
-            new_version = new_version,
-            mode = mode,
-        )
-        
-        sbatch_contents = [
-            '#!/bin/bash',
-            '#SBATCH --partition=short-serial',
-            f'#SBATCH --job-name={jobname}',
-
-            f'#SBATCH --time={time}',
-            f'#SBATCH --mem={mem}',
-
-            f'#SBATCH -o {outfile}',
-            f'#SBATCH -e {errfile}',
-
-            f'module add jaspy',
-            f'source {venvpath}/bin/activate',
-
-            f'export WORKDIR={self.workdir}',
-
-            f'python {master_script} {phase} $SLURM_ARRAY_TASK_ID {sbatch_kwargs}',
-        ]
-
-        sbatch.update(sbatch_contents)
-        sbatch.close()
-
-        if self._dryrun:
-            self.logger.info('DRYRUN: sbatch command: ')
-            print(f'sbatch --array=0-{group_length-1} {sbatch.filepath()}')
-
-    def _sbatch_kwargs(
-            self, time, memory, repeat_id, verbose=None, bypass=None, 
-            subset=None, new_version=None, mode=None, **bool_kwargs):
-        sbatch_kwargs = f'-G {self.groupID} -t {time} -M {memory} -r {repeat_id}'
-
-        bool_options = {
-            'forceful' : '-f',
-            'quality'  : '-Q',
-            'dryrun'   : '-d',
-            'binpack'  : '-A',
-        }
-
-        value_options = {
-            'bypass' : ('-b',bypass),
-            'subset' : ('-s',subset),
-            'mode'   : ('-m',mode),
-            'new_version': ('-n',new_version),
-        }
-
-        optional = []
-
-        if verbose is not None:
-            verb = 'v' * int(verbose)
-            optional.append(f'-{verb}')
-
-        for value in value_options.keys():
-            if value_options[value][1] is not None:
-                optional.append(' '.join(value_options[value]))
-
-        for kwarg in bool_kwargs.keys():
-            if kwarg not in bool_options:
-                raise ValueError(
-                    f'"{kwarg}" option not recognised - '
-                    f'please choose from {list(bool_kwargs.keys())}'
-                )
-            optional.append(bool_options[kwarg])
-
-        return sbatch_kwargs + ' '.join(optional)
-
     def _load_proj_codes(self):
+        """
+        Load all current project code files for this group
+        into Filehandler objects
+        """
         import glob
         # Check filesystem for objects
         proj_codes = [g.split('/')[-1].strip('.txt') for g in glob.glob(f'{self.proj_codes_dir}/*.txt')]
@@ -741,18 +488,6 @@ class GroupOperation(
             else:
                 os.makedirs(codes_dir)
 
-    def _setup_slurm_directories(self):
-        """
-        Currently Unused function to set up 
-        the slurm directories for a group."""
-
-        for dirx in ['sbatch','errs']:
-            if not os.path.isdir(f'{self.groupdir}/{dirx}'):
-                if self._dryrun:
-                    self.logger.debug(f"DRYRUN: Skipped creating {dirx}")
-                    continue
-                os.makedirs(f'{self.dir}/{dirx}')
-  
     def _configure_subset(self, main_set, subset_size: int, subset_id: int):
         # Configure subset controls
         
@@ -774,3 +509,4 @@ class GroupOperation(
             )
 
         return main_set[start:end]
+

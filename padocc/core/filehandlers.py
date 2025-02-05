@@ -147,7 +147,10 @@ class FileIOMixin(LoggedOperation):
             new_dir: str,
             new_name: Union[str,None] = None,
             new_extension: Union[str, None] = None
-        ):
+        ) -> None:
+        """
+        Migrate the file to a new location.
+        """
 
         if not os.access(new_dir, os.W_OK):
             raise OSError(
@@ -184,7 +187,23 @@ class FileIOMixin(LoggedOperation):
 
 class ListFileHandler(FileIOMixin):
     """
-    Filehandler for string-based Lists in Padocc
+    Filehandler for string-based Lists in Padocc.
+
+    List Behaviour
+    --------------
+
+    1. Append - works the same as with normal lists.
+    2. Pop - remove a specific value (works as normal).
+    3. Contains - (x in y) works as normal.
+    4. Length - (len(x)) works as normal.
+    5. Iterable - (for x in y) works as normal.
+    6. Indexable - (x[0]) works as normal
+
+    Added behaviour
+    ---------------
+
+    1. Close - close and save the file.
+    2. Get/Set - Get or set the whole value.
     """
 
     def __init__(
@@ -200,23 +219,33 @@ class ListFileHandler(FileIOMixin):
         self._value: list    = init_value or []
         self._extension: str = extension or 'txt'
 
-    def append(self, newvalue: str) -> None:
+    def append(self, newvalue: Union[str,list]) -> None:
         """Add a new value to the internal list"""
         self._obtain_value()
+
+        if isinstance(newvalue, list):
+            newvalue = ','.join(newvalue)
         
         self._value.append(newvalue)
 
-    def pop(self, oldvalue: str) -> None:
+    def remove(self, oldvalue: str) -> None:
         """Remove a value from the internal list"""
         self._obtain_value()
         
-        self._value.pop(oldvalue)
+        self._value.remove(oldvalue)
 
-    def set(self, value: list) -> None:
+    def set(self, value: list[str,list]) -> None:
         """
         Reset the value as a whole for this 
         filehandler.
         """
+        if len(value) == 0:
+            self.logger.warning(f'No value given to ListFileHandler {self.filepath}')
+            return
+
+        if isinstance(value[0],list):
+            value = [','.join(v) for v in value]
+
         self._value = list(value)
 
     def __contains__(self, item: str) -> bool:
@@ -316,7 +345,24 @@ class ListFileHandler(FileIOMixin):
         self._set_value_in_file()
 
 class JSONFileHandler(FileIOMixin):
-    """JSON File handler for padocc config files."""
+    """
+    JSON File handler for padocc config files.
+
+    Dictionary Behaviour
+    --------------------
+
+    1. Indexable - index by key (as normal)
+    2. Contains - key in dict (as normal)
+    3. Length - length of the key set (as normal)
+
+    Added Behaviour
+    ---------------
+
+    1. Iterable - iterate over the keys.
+    2. Get/set - get/set the whole value.
+    3. Create_file - Specific for JSON files.
+
+    """
 
     def __init__(
             self, 
@@ -410,9 +456,7 @@ class JSONFileHandler(FileIOMixin):
         Dict-based filehandlers accept string keys only.
         """
         self._obtain_value()
-
-        if index in self._value:
-            self._value[index] = value
+        self._value[index] = value
     
     def _obtain_value(self, index: Union[str,None] = None) -> None:
         """
@@ -456,8 +500,6 @@ class JSONFileHandler(FileIOMixin):
 
         with open(self.filepath,'w') as f:
             f.write(json.dumps(self._value))
-
-    
 
     def _apply_conf(self) -> None:
         """
@@ -606,6 +648,16 @@ class GenericStore(LoggedOperation):
     """
     Filehandler for Generic stores in Padocc - enables Filesystem
     operations on component files.
+
+    Behaviours (Applies to Metadata)
+    --------------------------------
+
+    1. Length - length of metadata keyset
+    2. Contains - metadata contains key (as with dict)
+    3. Indexable - Get/set a specific property.
+    4. Get/set_meta - Get/set the whole metadata set.
+    5. Clear - clears all files in the store.
+
     """
 
     def __init__(
@@ -631,25 +683,26 @@ class GenericStore(LoggedOperation):
         self._meta: JSONFileHandler = JSONFileHandler(
             self.store_path, metadata_name)
 
-        self._set_fh_kwargs(
-            forceful=forceful,
-            dryrun=dryrun,
-            thorough=thorough
-        )
-
         # All filehandlers are logged operations
         super().__init__(
             logger,
             label=label,
             fh=fh,
             logid=logid,
-            verbose=verbose)
+            verbose=verbose,
+            forceful=forceful,
+            dryrun=dryrun,
+            thorough=thorough)
 
     def _update_history(
             self,
             addition: str,
             new_version: str,
         ) -> None:
+        """
+        Update the history with a new addition, 
+        and set the new version/revision.
+        """
 
         attrs = self._meta['refs']['.zattrs']
         now   = datetime.now()
@@ -667,7 +720,8 @@ class GenericStore(LoggedOperation):
 
     def clear(self) -> None:
         """
-        Remove all components of the store"""
+        Remove all components of the store
+        """
         if not self._dryrun:
             os.system(f'rm -rf {self.store_path}')
         else:
@@ -730,7 +784,13 @@ class ZarrStore(GenericStore):
     """
     Filehandler for Zarr stores in PADOCC.
     Enables manipulation of Zarr store on filesystem
-    and setting metadata attributes."""
+    and setting metadata attributes.
+    
+    Added Behaviours
+    ----------------
+    
+    1. Open dataset - open the zarr store.
+    """
 
     def __init__(
             self,
@@ -756,6 +816,11 @@ class KerchunkStore(GenericStore):
     Filehandler for Kerchunk stores using parquet
     in PADOCC. Enables setting metadata attributes and
     will allow combining stores in future.
+
+    Added behaviours
+    ----------------
+
+    1. Open dataset - opens the kerchunk store.
     """
 
     def __init__(
@@ -846,6 +911,11 @@ class CSVFileHandler(ListFileHandler):
         self._extension = 'csv'
 
     def __iter__(self) -> Iterator[str]:
+        """
+        Iterable for this dataset
+        """
+        self._obtain_value()
+
         for i in self._value:
             if i is not None:
                 yield i.replace(' ','').split(',')
@@ -878,6 +948,11 @@ class CSVFileHandler(ListFileHandler):
 class CFADataset:
     """
     Basic handler for CFA dataset
+
+    Added behaviours
+    ----------------
+
+    1. Open dataset - opens the CFA dataset
     """
 
     def __init__(self, filepath, identifier):

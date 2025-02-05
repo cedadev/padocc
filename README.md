@@ -14,6 +14,8 @@ Release date: 20th January 2025
 
 This pre-release contains updated source code and source code documentation, but some of the main descriptors that are hand-written (not `source`) may be out of date. Please refer to the release notes for details on what has changed.
 
+This package acknowledges contributions by [Matt Brown](matbro@ceh.ac.uk) as a pre-release tester.
+
 ## Installation
 
 To install this package, clone the repository using git clone (and switch to the MigrationOO branch - `git checkout MigrationOO` if release v1.3 has not been released.)

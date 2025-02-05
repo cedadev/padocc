@@ -18,7 +18,7 @@ def get_args():
     parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Print helpful statements while running')
     parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
     parser.add_argument('-T','--thorough', dest='thorough', action='store_true', help='Thorough processing - start from scratch')
-    parser.add_argument('-b','--bypass-errs', dest='bypass', default='DBSCL', help=BypassSwitch().help())
+    parser.add_argument('-b','--bypass-errs', dest='bypass', default='D', help=BypassSwitch().help())
 
     # Environment variables
     parser.add_argument('-w','--workdir',   dest='workdir',      help='Working directory for pipeline')
@@ -36,6 +36,7 @@ def get_args():
     # Unused v1.3
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
+    parser.add_argument('--mem-allowed', dest='mem_allowed', default='100MB', help='Memory allowed for Zarr rechunking')
     parser.add_argument('-M','--memory', dest='memory', default='2G', help='Memory allocation for this job (i.e "2G" for 2GB)')
     parser.add_argument('-B','--backtrack', dest='backtrack', action='store_true', help='Backtrack to previous position, remove files that would be created in this job.')
     parser.add_argument('-e','--environ',dest='venvpath', help='Path to virtual (e)nvironment (excludes /bin/activate)')
@@ -55,6 +56,12 @@ def main():
     be re-added in the full version."""
     args = get_args()
 
+    if args.phase == 'init' and args.groupID is None:
+        print('Error: GroupID must be provided on initialisation')
+        return
+    
+    bypass=BypassSwitch(args.bypass)
+
     if args.groupID is not None:
         group = GroupOperation(
             args.groupID,
@@ -64,8 +71,12 @@ def main():
             thorough=args.thorough,
             label=f'PADOCC-CLI-{args.phase}',
             verbose=args.verbose,
-            bypass=args.bypass
+            bypass=bypass
         )
+
+        if args.phase == 'new':
+            group.save_files()
+            return
 
         if args.phase == 'init':
             group.init_from_file(args.input)
@@ -77,6 +88,7 @@ def main():
             repeat_id=args.repeat_id,
             proj_code=args.proj_code,
             subset=args.subset,
+            mem_allowed=args.mem_allowed
         )
 
     else:

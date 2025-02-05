@@ -4,12 +4,21 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import os
 import glob
+import yaml
 import logging
 
-from typing import Union
+from typing import Union, Callable
 
 from .errors import error_handler
-from .utils import extract_file, BypassSwitch, apply_substitutions, phases, file_configs, FILE_DEFAULT
+from .utils import (
+    extract_file, 
+    BypassSwitch, 
+    apply_substitutions, 
+    phases, 
+    file_configs, 
+    FILE_DEFAULT,
+    print_fmt_str
+)
 from .logs import reset_file_handler
 
 from .mixins import DirectoryMixin, DatasetHandlerMixin, StatusMixin, PropertiesMixin
@@ -20,7 +29,6 @@ from .filehandlers import (
     LogFileHandler,
 )
 
-          
 class ProjectOperation(
     DirectoryMixin, 
     DatasetHandlerMixin,
@@ -47,7 +55,8 @@ class ProjectOperation(
             verbose    : int = 0,
             forceful   : bool = None,
             dryrun     : bool = None,
-            thorough   : bool = None
+            thorough   : bool = None,
+            mem_allowed: Union[str,None] = None,
         ) -> None:
         """
         Initialisation for a ProjectOperation object to handle all interactions
@@ -90,6 +99,8 @@ class ProjectOperation(
         :returns: None
 
         """
+
+        self.mem_allowed = mem_allowed
 
         if label is None:
             label = 'project-operation'
@@ -165,35 +176,35 @@ class ProjectOperation(
         return f'<PADOCC Project: {self.proj_code} ({self.groupID})>'
     
     def __repr__(self):
-        return str(self)
+        return yaml.dump(self.info())
 
-    def info(self, fn=print):
+    def info(self):
         """
         Display some info about this particular project
         """
-        if self.groupID is not None:
-            fn(f'{self.proj_code} ({self.groupID}):')
-        else:
-            fn(f'{self.proj_code}:')
-        fn(f' > Phase: {self._get_phase()}')
-        fn(f' > Files: {len(self.allfiles)}')
-        fn(f' > Version: {self.get_version()}')
+        return {
+            self.proj_code: {
+                'Group':self.groupID,
+                'Phase': self._get_phase(),
+                'File count': len(self.allfiles),
+                'Revision': self.revision
+                
+            }
+        }
     
-    def help(self, fn=print):
+    @classmethod
+    def help(self, func: Callable = print_fmt_str):
         """
         Public user functions for the project operator.
         """
-        fn(str(self))
-        fn(' > project.info() - Get some information about this project')
-        fn(' > project.get_version() - Get the version number for the output product')
-        fn(' > project.save_files() - Save all open files related to this project')
-        fn('Properties:')
-        fn(' > project.proj_code - code for this project.')
-        fn(' > project.groupID - group to which this project belongs.')
-        fn(' > project.dir - directory containing the projects files.')
-        fn(' > project.cfa_path - path to the CFA file.')
-        fn(' > project.outfile - path to the output product (Kerchunk/Zarr)')
+        func('Project Operator:')
+        func(' > project.info() - Get some information about this project')
+        func(' > project.get_version() - Get the version number for the output product')
+        func(' > project.save_files() - Save all open files related to this project')
 
+        for cls in ProjectOperation.__bases__:
+            cls.help(func)
+        
     def run(
             self,
             mode: str = 'kerchunk',
@@ -240,14 +251,9 @@ class ProjectOperation(
         except Exception as err:
             return error_handler(
                 err, self.logger, self.phase,
-                jobid=self._logid, dryrun=self._dryrun, 
+                jobid=self._logid,
                 subset_bypass=self._bypass.skip_subsets,
                 status_fh=self.status_log)
-
-    def move_to(self, new_directory: str) -> None:
-        """
-        Move all associated files across to new directory.
-        """
 
     def _run(self, **kwargs) -> None:
         # Default project operation run.
@@ -276,16 +282,50 @@ class ProjectOperation(
             self.logger.info('Skipped Deleting directory in dryrun mode.')
             return
         if ask:
-            inp = input(f'Are you sure you want to delete {self.proj_code}? (Y/N)?')
+            inp = input(f'Are you sure you want to delete {self.proj_code}? (Y/N) ')
             if inp != 'Y':
-                self.logger.info(f'Skipped Deleting directory (User entered {inp})')
+                self.logger.warning(f'Skipped Deleting directory (User entered {inp})')
                 return
             
         os.system(f'rm -rf {self.dir}')
         self.logger.info(f'All internal files for {self.proj_code} deleted.')
 
-    def migrate(self, newgroupID: str):
-        pass
+    def migrate(cls, newgroupID: str):
+        """
+        Migrate this project to a new group.
+        1. Move the whole project directory on the filesystem.
+        2. Move all associated filehandlers (individually?)
+        """
+        cls.logger.info(f'Migrating project {cls.proj_code}')
+        
+        # 1. Determine the new location
+        new_dir = str(cls.dir).replace(cls.groupID, newgroupID)
+        cls.logger.debug(cls.dir)
+        cls.logger.debug(new_dir)
+
+        # 2. Save all open files with current content
+        cls.save_files()
+        
+        # 3. Move the project 
+        
+        # Destination may not exist yet
+        if not os.path.isdir(new_dir):
+            os.makedirs(new_dir)
+
+        os.system(f'mv {cls.dir} {new_dir}')
+
+        # 4. Create a new basic project instance
+        new_cls = ProjectOperation(
+            cls.proj_code,
+            cls.workdir,
+            groupID=newgroupID,
+            logger=cls.logger,
+            **cls.fh_kwargs
+        )
+
+        # 5. Delete the old instance
+        del cls
+        return new_cls
 
     def update_status(
             self, 
@@ -293,10 +333,17 @@ class ProjectOperation(
             status: str, 
             jobid : str = ''
         ) -> None: 
+        """
+        Mapper to update the status of the project
+        via the status log filehandler.
+        """
         self.status_log.update_status(phase, status, jobid=jobid)
 
     def save_files(self):
-        # Add all files here.
+        """
+        Save all filehandlers associated with this 
+        group.
+        """
         self.base_cfg.close()
         self.detail_cfg.close()
         self.allfiles.close()
@@ -304,7 +351,8 @@ class ProjectOperation(
 
     def _get_phase(self):
         """
-        Gets the highest phase this project has currently undertaken successfully"""
+        Gets the highest phase this project has currently undertaken successfully
+        """
 
         max_sid = 0
         for row in self.status_log:
@@ -318,6 +366,11 @@ class ProjectOperation(
         return phases[max_sid]
 
     def _configure_filelist(self):
+        """
+        Set the contents of the filelist based on
+        the values provided in the base config,
+        either filepath to a text file or a pattern.
+        """
         pattern = self.base_cfg['pattern']
 
         if not pattern:
@@ -336,31 +389,37 @@ class ProjectOperation(
             # Pattern is a wildcard set of files
             if 'latest' in pattern:
                 pattern = pattern.replace('latest', os.readlink(pattern))
+            
+
+            fileset = sorted(glob.glob(pattern, recursive=True))
+            if len(fileset) == 0:
+                raise ValueError(f'pattern {pattern} returned no files.')
 
             self.allfiles.set(sorted(glob.glob(pattern, recursive=True)))
 
     def _setup_config(
             self, 
             pattern : str = None, 
-            update : str = None, 
-            remove : str = None,
+            updates : str = None, 
+            removals : str = None,
             substitutions: dict = None,
+            **kwargs,
         ) -> None:
         """
         Create base cfg json file with all required parameters.
         """
 
-        self.logger.debug('Constructing the config file.')
-        if pattern or update or remove:
+        self.logger.debug(f'Constructing the config file for {self.proj_code}')
+        if pattern or updates or removals:
             config = {
                 'proj_code':self.proj_code,
                 'pattern':pattern,
-                'updates':update,
-                'removals':remove,
+                'updates':updates,
+                'removals':removals,
             }
             if substitutions:
                 config['substitutions'] = substitutions
-            self.base_cfg.set(config)
+            self.base_cfg.set(config | kwargs)
 
     def _dir_exists(self, checkdir : str = None):
         """

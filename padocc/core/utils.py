@@ -9,6 +9,7 @@ import fsspec
 import math
 import numpy as np
 import re
+from typing import Any
 
 from .errors import (
     MissingVariableError, 
@@ -24,6 +25,7 @@ times = {
 }
 
 phases = [
+    'init',
     'scan',
     'compute',
     'validate',
@@ -57,9 +59,9 @@ DETAIL_CFG = {
     'cloud_data': None,
     'scanned_with': None,
     'num_files': None,
-    'timings': None,
+    'timings': {},
     'chunk_info':None,
-    'kwargs': None,
+    'kwargs': {},
 }
 
 file_configs = {
@@ -72,39 +74,40 @@ FILE_DEFAULT = {
     'zarr':None,
 }
 
-class BypassSwitch:
-    """Class to represent all bypass switches throughout the pipeline.
-    Requires a switch string which is used to enable/disable specific pipeline 
-    switches stored in this class.
+def make_tuple(item: Any) -> tuple:
+    """
+    Make any object into a tuple
+    """
+    if not isinstance(item, tuple):
+        return (item,)
+    else:
+        return item
+
+def deformat_float(item: str) -> str:
+    """
+    Format byte-value with proper units.
+    """
+    units = ['','K','M','G','T','P']
+    value, suffix = item.split(' ')
+
+    ord = units.index(suffix)*1000
+    return float(value)*ord
+
+def format_float(value: float) -> str:
+    """
+    Format byte-value with proper units.
     """
 
-    def __init__(self, switch='D'):
-        if switch.startswith('+'):
-            switch = 'D' + switch[1:]
-        self.switch = switch
-        if isinstance(switch, str):
-            switch = list(switch)
-        
-        self.skip_driver   = ('D' in switch) # Keep
-        self.skip_scan     = ('F' in switch) # Fasttrack
-        self.skip_links    = ('L' in switch)
-        self.skip_subsets  = ('S' in switch)
+    if value is not None:
+        unit_index = 0
+        units = ['','K','M','G','T','P']
+        while value > 1000:
+            value = value / 1000
+            unit_index += 1
+        return f'{value:.2f} {units[unit_index]}B'
+    else:
+        return None
 
-    def __str__(self):
-        """Return the switch string (letters representing switches)"""
-        return self.switch
-    
-    def help(self):
-        return str("""
-Bypass switch options: \n
-  "D" - * Skip driver failures - Pipeline tries different options for NetCDF (default).
-      -   Only need to turn this skip off if all drivers fail (KerchunkDriverFatalError).
-  "F" -   Skip scanning (fasttrack) and go straight to compute. Required if running compute before scan
-          is attempted.
-  "L" -   Skip adding links in compute (download links) - this will be required on ingest.
-  "S" -   Skip errors when running a subset within a group. Record the error then move onto the next dataset.
-""")
-  
 def open_kerchunk(kfile: str, logger, isparq=False, retry=False, attempt=1, **kwargs) -> xr.Dataset:
     """
     Open kerchunk file from JSON/parquet formats
@@ -192,7 +195,7 @@ def get_attribute(env: str, args, value: str) -> str:
         return value
 
 def format_str(
-        string: str, 
+        string: Any, 
         length: int, 
         concat: bool = False, 
         shorten: bool = False
@@ -200,6 +203,8 @@ def format_str(
     """
     Simple function to format a string to a correct length.
     """
+    string = str(string)
+
     if len(string) < length and shorten:
         return string
 
@@ -211,6 +216,27 @@ def format_str(
             string += ' '
 
     return string[:length]
+
+def print_fmt_str(
+        string: str,
+        help_length: int = 40,
+        concat: bool = True,
+        shorten: bool = False
+        ):
+    """
+    Replacement for callable function in ``help``
+    methods that adds whitespace between functions
+    and their help descriptions.
+    """
+    
+    if '-' not in string:
+        print(string)
+        return
+    
+    string, message = string.split('-')
+
+    print(format_str(string, help_length, concat, shorten), end='-')
+    print(message)
   
 def format_tuple(tup: tuple[list[int]]) -> str:
 
@@ -281,6 +307,9 @@ def find_closest(num, closest):
     return closest_div
 
 def apply_substitutions(subkey: str, subs: dict = None, content: list = None):
+    """
+    Apply substitutions to all elements in the provided content list
+    """
     if not subs:
         return content, ""
 
@@ -292,3 +321,37 @@ def apply_substitutions(subkey: str, subs: dict = None, content: list = None):
         content = content.replace(f,r)
 
     return content.split('\n') , ""
+
+class BypassSwitch:
+    """Class to represent all bypass switches throughout the pipeline.
+    Requires a switch string which is used to enable/disable specific pipeline 
+    switches stored in this class.
+    """
+
+    def __init__(self, switch='D'):
+        if switch.startswith('+'):
+            switch = 'D' + switch[1:]
+        self.switch = switch
+        if isinstance(switch, str):
+            switch = list(switch)
+        
+        self.skip_driver   = ('D' in switch) # Keep
+        self.skip_scan     = ('F' in switch) # Fasttrack
+        self.skip_links    = ('L' in switch)
+        self.skip_subsets  = ('S' in switch)
+
+    def __str__(self):
+        """Return the switch string (letters representing switches)"""
+        return self.switch
+    
+    def help(self):
+        return str("""
+Bypass switch options: \n
+  "D" - * Skip driver failures - Pipeline tries different options for NetCDF (default).
+      -   Only need to turn this skip off if all drivers fail (KerchunkDriverFatalError).
+  "F" -   Skip scanning (fasttrack) and go straight to compute. Required if running compute before scan
+          is attempted.
+  "L" -   Skip adding links in compute (download links) - this will be required on ingest.
+  "S" -   Skip errors when running a subset within a group. Record the error then move onto the next dataset.
+""")
+  

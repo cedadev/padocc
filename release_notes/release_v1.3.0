@@ -1,0 +1,16 @@
+# Release Notes for version 1.3
+
+## All feature adjustments
+ - Privatised some directory creations (SLURM) in projects and group.
+ - Removed file/dir exists check from projects.
+ - Removed obsolete custom errors.
+ - Fixed various bugs in all project/group methods. Any further bugs should be reported as github issues.
+ - Added CLI and Interactive sections in the Documentation (MAJOR UPGRADE)
+ - Rearranged all dataset properties.
+ - Rearranged CFA-only operation to a sensible configuration (base ComputeOperation now performs CFA conversion)
+ - Tested Add/Remove project
+ - Noted Transfer-Project as an issue
+ - Noted Merge/Unmerge as an issue due to transfer project.
+ - Noted project manipulation issue (solved by Dave Poulter)
+ - Fixed Zarr compute and Zstore filehandler issues.
+ - Added Shepard documentation.

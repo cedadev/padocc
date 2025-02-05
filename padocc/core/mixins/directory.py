@@ -4,6 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import os
 import logging
+from typing import Callable
 
 from ..logs import LoggedOperation, levels
 from ..utils import BypassSwitch
@@ -63,8 +64,19 @@ class DirectoryMixin(LoggedOperation):
             forceful=forceful,
             dryrun=dryrun,
             thorough=thorough)
+    
+    @classmethod
+    def help(cls, func: Callable = print):
+        """
+        No public methods
+        """
+        pass
 
     def _setup_workdir(self):
+        """
+        Setup working directory for this object
+        if it does not already exist.
+        """
         if self.workdir is None:
             raise ValueError(
                 'Working directory not defined.'
@@ -78,6 +90,10 @@ class DirectoryMixin(LoggedOperation):
                 os.makedirs(self.workdir)
 
     def _setup_groupdir(self):
+        """
+        Setup group directory for this object
+        if it does not already exist.
+        """
         if self.groupID:  
             # Create group directory
             if not os.path.isdir(self.groupdir):
@@ -88,13 +104,18 @@ class DirectoryMixin(LoggedOperation):
 
     def _setup_directories(self):
         """
-        Ensure working and group directories are created."""
+        Ensure working and group directories are created.
+        """
         self._setup_workdir()
         self._setup_groupdir()
 
     def _setup_cache(self, dir):
         """
-        Set up the personal cache for this directory object"""
+        Set up the personal cache for this directory object.
+        Note: Typically only Project Operators use a file
+        cache, but this feature could be implemented for 
+        Groups in the future.
+        """
         self.cache = f'{dir}/cache'
 
         if not os.path.isdir(self.cache):
@@ -104,6 +125,9 @@ class DirectoryMixin(LoggedOperation):
 
     @property
     def groupdir(self):
+        """
+        Group directory property
+        """
         if self.groupID:
             return f'{self.workdir}/groups/{self.groupID}'
         else:
