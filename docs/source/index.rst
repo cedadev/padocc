@@ -8,22 +8,22 @@ PADOCC - User Documentation
 
 **padocc** (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package for aggregating data to enable methods of access for cloud-based applications.
 
-The pipeline makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across different datasets simultaneously with validation steps to ensure the outputs are correct.
+The ``padocc`` tool makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across **many** datasets simultaneously with validation steps to ensure the outputs are correct.
 
 Vast amounts of archival data in a variety of formats can be processed using the package's group mechanics and automatic deployment to a job submission system.
 
-Currently supported input file formats:
- - NetCDF/HDF
- - GeoTiff
- - GRIB
- - MetOffice (**future**)
-
-*padocc* is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr. 
+Formats that can be generated
+-----------------------------
+**padocc** is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr. 
 Additionally, PADOCC creates CF-compliant aggregation files as part of the standard workflow, which means you get CFA-netCDF files as standard!
 You can find out more about Climate Forecast Aggregations `here <https://cedadev.github.io/CFAPyX/>`_, these files are denoted with the extension ``.nca`` and can be opened using xarray with ``engine="CFA"`` if you have the ``CFAPyX`` package installed.
 
-The pipeline consists of three central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. 
-These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system.
+General usage
+-------------
+The pipeline consists of three central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system. The recommended way of running the core phases is to use the `command line tool<core/cli>`.
+
+To check the status of various elements of the pipeline, including the progress of any group/project in your working directory, it is recommended that you make use of padocc through an `interactive<core/interactive>` interface like a Jupyter Notebook or Shell. Simply import the necessary components and start assessing your projects and groups.
+
 For further information around configuring PADOCC for parallel deployment please contact `daniel.westwood@stfc.ac.uk <daniel.westwood@stfc.ac.uk>`_.
 
 The ingestion/cataloging phase is not currently implemented for public use but may be added in a future update.
@@ -35,29 +35,30 @@ The ingestion/cataloging phase is not currently implemented for public use but m
    :maxdepth: 1
    :caption: Contents:
 
-   Inspiration <inspiration>
-   Steps to Run Padocc <phases>
-   Getting Started <start>
-   Example Operation <cci_water>
-   A Deep Dive <deep_dive>
+   Inspiration <core/inspiration>
+   Installation <core/installation>
+   Command Line Tool <core/cli>
+   Interactive Notebook/Shell <core/interactive>
+   Extra Details <core/extras>
+   Complex (Parallel) Operation <core/complex_operation>
 
 .. toctree::
    :maxdepth: 1
    :caption: Operations:
 
-   The Project Operator <projects>
-   Core Mixins <mixins>
-   The Group Operator <groups>
-   SHEPARD <shepard>
+   The Project Operator <operations/projects>
+   The Group Operator <operations/groups>
+   Core Mixins <operations/mixins>
+   SHEPARD <operations/shepard>
 
 .. toctree::
    :maxdepth: 1
-   :caption: PADOCC Source:
+   :caption: PADOCC API Reference:
    
-   Projects <project_source>
-   Groups <group_source>
-   Phases <phase_source>
-   Filehandlers, Logs, and Utilities <misc_source>
+   Projects <source_code/project_source>
+   Groups <source_code/group_source>
+   Phases <source_code/phase_source>
+   Filehandlers, Logs, and Utilities <source_code/misc_source>
    
 Indices and Tables
 ==================
