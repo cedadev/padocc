@@ -45,6 +45,7 @@ class PropertiesMixin:
         only be changed via an Operation, not by direct
         manipulation.
         """
+
         if self.base_cfg['override'][key] is not None:
             return self.base_cfg['override'][key]
         

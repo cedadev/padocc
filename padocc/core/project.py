@@ -282,9 +282,9 @@ class ProjectOperation(
             self.logger.info('Skipped Deleting directory in dryrun mode.')
             return
         if ask:
-            inp = input(f'Are you sure you want to delete {self.proj_code}? (Y/N)?')
+            inp = input(f'Are you sure you want to delete {self.proj_code}? (Y/N) ')
             if inp != 'Y':
-                self.logger.info(f'Skipped Deleting directory (User entered {inp})')
+                self.logger.warning(f'Skipped Deleting directory (User entered {inp})')
                 return
             
         os.system(f'rm -rf {self.dir}')
@@ -307,6 +307,11 @@ class ProjectOperation(
         cls.save_files()
         
         # 3. Move the project 
+        
+        # Destination may not exist yet
+        if not os.path.isdir(new_dir):
+            os.makedirs(new_dir)
+
         os.system(f'mv {cls.dir} {new_dir}')
 
         # 4. Create a new basic project instance
@@ -384,31 +389,37 @@ class ProjectOperation(
             # Pattern is a wildcard set of files
             if 'latest' in pattern:
                 pattern = pattern.replace('latest', os.readlink(pattern))
+            
+
+            fileset = sorted(glob.glob(pattern, recursive=True))
+            if len(fileset) == 0:
+                raise ValueError(f'pattern {pattern} returned no files.')
 
             self.allfiles.set(sorted(glob.glob(pattern, recursive=True)))
 
     def _setup_config(
             self, 
             pattern : str = None, 
-            update : str = None, 
-            remove : str = None,
+            updates : str = None, 
+            removals : str = None,
             substitutions: dict = None,
+            **kwargs,
         ) -> None:
         """
         Create base cfg json file with all required parameters.
         """
 
-        self.logger.debug('Constructing the config file.')
-        if pattern or update or remove:
+        self.logger.debug(f'Constructing the config file for {self.proj_code}')
+        if pattern or updates or removals:
             config = {
                 'proj_code':self.proj_code,
                 'pattern':pattern,
-                'updates':update,
-                'removals':remove,
+                'updates':updates,
+                'removals':removals,
             }
             if substitutions:
                 config['substitutions'] = substitutions
-            self.base_cfg.set(config)
+            self.base_cfg.set(config | kwargs)
 
     def _dir_exists(self, checkdir : str = None):
         """

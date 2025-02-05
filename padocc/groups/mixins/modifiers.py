@@ -42,17 +42,29 @@ class ModifiersMixin:
         """
         Add a project to this group. 
         """
+        if config['proj_code'] in self.proj_codes['main']:
+            raise ValueError(
+                f'proj_code {config["proj_code"]} already exists for this group.'
+            )
+
         self._init_project(config)
-
         self.proj_codes['main'].append(config['proj_code'])
+        self.save_files()
 
-    def remove_project(self, proj_code: str) -> None:
+    def remove_project(self, proj_code: str, ask: bool = True) -> None:
         """
         Remove a project from this group
         Steps required:
         1. Remove the project directory including all internal files.
         2. Remove the project code from all project files.
         """
+
+        if ask:
+            inp = input(f'Are you sure you want to delete {proj_code}? (Y/N) ')
+            if inp != 'Y':
+                self.logger.warning(f'Skipped Deleting directory (User entered {inp})')
+                return
+
         for pset in self.proj_codes.values():
             if proj_code in pset:
                 pset.remove(proj_code)
@@ -70,7 +82,7 @@ class ModifiersMixin:
             dryrun=self._dryrun
         )
 
-        proj_op.delete_project()
+        proj_op.delete_project(ask=False)
 
     def transfer_project(self, proj_code: str, receiver_group) -> None:
         """
@@ -81,6 +93,12 @@ class ModifiersMixin:
         if proj_code not in self.proj_codes['main']:
             raise ValueError(
                 f'{proj_code} not found in group {self.groupID}'
+            )
+        
+        if proj_code in receiver_group.proj_codes['main']:
+            raise ValueError(
+                f'proj_code {proj_code} already exists for '
+                f'group {receiver_group.groupID}'
             )
 
         # 1. Transfer in proj codes
@@ -110,7 +128,8 @@ class ModifiersMixin:
             logid=f'transfer-{proj_code}'
         )
 
-        proj_op.migrate(receiver_group.groupID)
+        proj_op = proj_op.migrate(receiver_group.groupID)
+        proj_op.save_files()
 
     def merge(group_A,group_B):
         """
@@ -146,10 +165,10 @@ class ModifiersMixin:
         group_A.logger.debug(f'Removed dataset file for {group_B.groupID}')
 
         # faultlists
-        group_A.faultlist_codes.set(
-            group_A.faultlist_codes.get() + group_B.faultlist_codes.get()
+        group_A.faultlist.set(
+            group_A.faultlist.get() + group_B.faultlist.get()
         )
-        group_B.faultlist_codes.remove_file()
+        group_B.faultlist.remove_file()
         group_A.logger.debug(f'Removed faultlist file for {group_B.groupID}')
 
         # Subsets
@@ -208,14 +227,14 @@ class ModifiersMixin:
 
         # Set faultlist
         A_faultlist, B_faultlist = [],[]
-        for bl in group_A.faultlist_codes:
+        for bl in group_A.faultlist:
             if bl in dataset_list:
                 B_faultlist.append(bl)
             else:
                 A_faultlist.append(bl)
 
-        group_A.faultlist_codes.set(A_faultlist)
-        group_B.faultlist_codes.set(B_faultlist)
+        group_A.faultlist.set(A_faultlist)
+        group_B.faultlist.set(B_faultlist)
         group_A.logger.debug(f"Created faultlist file for {group_B.groupID}")
 
         # Combine project subsets

@@ -25,6 +25,7 @@ times = {
 }
 
 phases = [
+    'init',
     'scan',
     'compute',
     'validate',
@@ -194,7 +195,7 @@ def get_attribute(env: str, args, value: str) -> str:
         return value
 
 def format_str(
-        string: str, 
+        string: Any, 
         length: int, 
         concat: bool = False, 
         shorten: bool = False
@@ -202,6 +203,8 @@ def format_str(
     """
     Simple function to format a string to a correct length.
     """
+    string = str(string)
+
     if len(string) < length and shorten:
         return string
 
@@ -304,6 +307,9 @@ def find_closest(num, closest):
     return closest_div
 
 def apply_substitutions(subkey: str, subs: dict = None, content: list = None):
+    """
+    Apply substitutions to all elements in the provided content list
+    """
     if not subs:
         return content, ""
 

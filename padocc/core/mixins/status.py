@@ -56,19 +56,19 @@ class StatusMixin:
         self.logger.warning(f'Phase "{phase}" not recognised - no log file retrieved.')
         return ''
 
-    def show_log_contents(self, phase: str, halt : bool = False):
+    def show_log_contents(self, phase: str, halt : bool = False, func: Callable = print):
         """
         Format the contents of the log file to print.
         """
 
         logfh = self.get_log_contents(phase=phase)
         status = self.status_log[-1].split(',')
-        self.logger.info(logfh)
+        func(logfh)
 
-        self.logger.info(f'Project Code: {self.proj_code}')
-        self.logger.info(f'Status: {status}')
+        func(f'Project Code: {self.proj_code}')
+        func(f'Status: {status}')
 
-        self.logger.info(self._rerun_command())
+        func(self._rerun_command())
 
         if halt:
             paused = input('Type "E" to exit assessment:')
@@ -79,4 +79,4 @@ class StatusMixin:
         """
         Setup for running this specific component interactively.
         """
-        return f'padocc <operation> -G {self.groupID} -p {self.proj_code} -vvv'
+        return f'padocc <operation> -G {self.groupID} -p {self.proj_code} -vv'

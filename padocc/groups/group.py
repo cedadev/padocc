@@ -105,9 +105,9 @@ class GroupOperation(
         self._setup_directories()
 
         self.proj_codes      = {}
-        self.faultlist_codes = CSVFileHandler(
+        self.faultlist = CSVFileHandler(
             self.groupdir,
-            'faultlist_codes',
+            'faultlist',
             logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful,
@@ -410,7 +410,7 @@ class GroupOperation(
         """
         Save all files associated with this group.
         """
-        self.faultlist_codes.close()
+        self.faultlist.close()
         self.datasets.close()
         self._save_proj_codes()
 
