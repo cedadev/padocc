@@ -12,6 +12,8 @@ The ``padocc`` tool makes it easy to generate data-aggregated access patterns in
 
 Vast amounts of archival data in a variety of formats can be processed using the package's group mechanics and automatic deployment to a job submission system.
 
+**Latest Release: v1.3 05/02/2025**: This release now adds a huge number of additional features to both projects and groups (see the CLI and Interactive sections in this documentation for details). Several alpha-stage features are still untested or not well documented, please report any issues to the `github repo <https://github.com/cedadev/padocc>_`.
+
 Formats that can be generated
 -----------------------------
 **padocc** is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr. 
