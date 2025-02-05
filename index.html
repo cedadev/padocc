@@ -23,7 +23,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Inspiration for Cloud Formats and Aggregations" href="inspiration.html" /> 
+    <link rel="next" title="Inspiration for Cloud Formats and Aggregations" href="core/inspiration.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -48,25 +48,26 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="phases.html">Steps to Run Padocc</a></li>
-<li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example Operation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="deep_dive.html">A Deep Dive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/cli.html">Command Line Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mixins.html">Core Mixins</a></li>
-<li class="toctree-l1"><a class="reference internal" href="groups.html">The Group Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations/projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations/groups.html">The Group Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations/mixins.html">Core Mixins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations/shepard.html">SHEPARD</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">PADOCC Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="project_source.html">Projects</a></li>
-<li class="toctree-l1"><a class="reference internal" href="group_source.html">Groups</a></li>
-<li class="toctree-l1"><a class="reference internal" href="phase_source.html">Phases</a></li>
-<li class="toctree-l1"><a class="reference internal" href="misc_source.html">Filehandlers, Logs, and Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source_code/project_source.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source_code/phase_source.html">Phases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
 
         </div>
@@ -96,53 +97,52 @@
   <section id="padocc-user-documentation">
 <h1>PADOCC - User Documentation<a class="headerlink" href="#padocc-user-documentation" title="Permalink to this heading"></a></h1>
 <p><strong>padocc</strong> (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package for aggregating data to enable methods of access for cloud-based applications.</p>
-<p>The pipeline makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across different datasets simultaneously with validation steps to ensure the outputs are correct.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">padocc</span></code> tool makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across <strong>many</strong> datasets simultaneously with validation steps to ensure the outputs are correct.</p>
 <p>Vast amounts of archival data in a variety of formats can be processed using the package’s group mechanics and automatic deployment to a job submission system.</p>
-<dl class="simple">
-<dt>Currently supported input file formats:</dt><dd><ul class="simple">
-<li><p>NetCDF/HDF</p></li>
-<li><p>GeoTiff</p></li>
-<li><p>GRIB</p></li>
-<li><p>MetOffice (<strong>future</strong>)</p></li>
-</ul>
-</dd>
-</dl>
-<p><em>padocc</em> is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr.
+<p><strong>Latest Release: v1.3 05/02/2025</strong>: This release now adds a huge number of additional features to both projects and groups (see the CLI and Interactive sections in this documentation for details). Several alpha-stage features are still untested or not well documented, please report any issues to the <cite>github repo &lt;https://github.com/cedadev/padocc&gt;_</cite>.</p>
+<section id="formats-that-can-be-generated">
+<h2>Formats that can be generated<a class="headerlink" href="#formats-that-can-be-generated" title="Permalink to this heading"></a></h2>
+<p><strong>padocc</strong> is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr.
 Additionally, PADOCC creates CF-compliant aggregation files as part of the standard workflow, which means you get CFA-netCDF files as standard!
 You can find out more about Climate Forecast Aggregations <a class="reference external" href="https://cedadev.github.io/CFAPyX/">here</a>, these files are denoted with the extension <code class="docutils literal notranslate"><span class="pre">.nca</span></code> and can be opened using xarray with <code class="docutils literal notranslate"><span class="pre">engine=&quot;CFA&quot;</span></code> if you have the <code class="docutils literal notranslate"><span class="pre">CFAPyX</span></code> package installed.</p>
-<p>The pipeline consists of three central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files.
-These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system.
-For further information around configuring PADOCC for parallel deployment please contact <a class="reference external" href="mailto:daniel&#46;westwood&#37;&#52;&#48;stfc&#46;ac&#46;uk">daniel<span>&#46;</span>westwood<span>&#64;</span>stfc<span>&#46;</span>ac<span>&#46;</span>uk</a>.</p>
+</section>
+<section id="general-usage">
+<h2>General usage<a class="headerlink" href="#general-usage" title="Permalink to this heading"></a></h2>
+<p>The pipeline consists of three central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system. The recommended way of running the core phases is to use the <cite>command line tool&lt;core/cli&gt;</cite>.</p>
+<p>To check the status of various elements of the pipeline, including the progress of any group/project in your working directory, it is recommended that you make use of padocc through an <cite>interactive&lt;core/interactive&gt;</cite> interface like a Jupyter Notebook or Shell. Simply import the necessary components and start assessing your projects and groups.</p>
+<p>For further information around configuring PADOCC for parallel deployment please contact <a class="reference external" href="mailto:daniel&#46;westwood&#37;&#52;&#48;stfc&#46;ac&#46;uk">daniel<span>&#46;</span>westwood<span>&#64;</span>stfc<span>&#46;</span>ac<span>&#46;</span>uk</a>.</p>
 <p>The ingestion/cataloging phase is not currently implemented for public use but may be added in a future update.</p>
-<img alt="Stages of the PADOCC workflow" src="_images/pipeline.png" />
+<img alt="Stages of the PADOCC workflow" src="_images/pipeline1.png" />
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="phases.html">Steps to Run Padocc</a></li>
-<li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example Operation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="deep_dive.html">A Deep Dive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/cli.html">Command Line Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mixins.html">Core Mixins</a></li>
-<li class="toctree-l1"><a class="reference internal" href="groups.html">The Group Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations/projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations/groups.html">The Group Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations/mixins.html">Core Mixins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations/shepard.html">SHEPARD</a></li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">PADOCC Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="project_source.html">Projects</a></li>
-<li class="toctree-l1"><a class="reference internal" href="group_source.html">Groups</a></li>
-<li class="toctree-l1"><a class="reference internal" href="phase_source.html">Phases</a></li>
-<li class="toctree-l1"><a class="reference internal" href="misc_source.html">Filehandlers, Logs, and Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source_code/project_source.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source_code/phase_source.html">Phases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
 </div>
+</section>
 </section>
 <section id="indices-and-tables">
 <h1>Indices and Tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading"></a></h1>
@@ -163,7 +163,7 @@ For further information around configuring PADOCC for parallel deployment please
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="inspiration.html" class="btn btn-neutral float-right" title="Inspiration for Cloud Formats and Aggregations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="core/inspiration.html" class="btn btn-neutral float-right" title="Inspiration for Cloud Formats and Aggregations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

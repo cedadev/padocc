@@ -6,25 +6,25 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Groups in PADOCC &mdash; PADOCC Package v1.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
   
-    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
   <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
+    <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=3dd8cc91"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
-    <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="The SHEPARD Module" href="shepard.html" />
-    <link rel="prev" title="PADOCC Core Mixin Behaviours" href="mixins.html" /> 
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3dd8cc91"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="PADOCC Core Mixin Behaviours" href="mixins.html" />
+    <link rel="prev" title="Projects in PADOCC" href="projects.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -35,12 +35,12 @@
 
           
           
-          <a href="index.html" class="icon icon-home">
+          <a href="../index.html" class="icon icon-home">
             PADOCC Package
-              <img src="_static/padocc_wt.png" class="logo" alt="Logo"/>
+              <img src="../_static/padocc_wt.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -49,31 +49,33 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="phases.html">Steps to Run Padocc</a></li>
-<li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example Operation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="deep_dive.html">A Deep Dive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mixins.html">Core Mixins</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">The Group Operator</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#help-with-the-groupoperation">Help with the GroupOperation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#instantiating-a-group">Instantiating a Group</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#initialisation-from-a-file">Initialisation from a File</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#applying-an-operation">Applying an operation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#merging-or-unmerging">Merging or Unmerging</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="mixins.html">Core Mixins</a></li>
 <li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">PADOCC Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="project_source.html">Projects</a></li>
-<li class="toctree-l1"><a class="reference internal" href="group_source.html">Groups</a></li>
-<li class="toctree-l1"><a class="reference internal" href="phase_source.html">Phases</a></li>
-<li class="toctree-l1"><a class="reference internal" href="misc_source.html">Filehandlers, Logs, and Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/project_source.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/phase_source.html">Phases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
 
         </div>
@@ -82,17 +84,17 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">PADOCC Package</a>
+          <a href="../index.html">PADOCC Package</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">Groups in PADOCC</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/groups.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/operations/groups.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -106,6 +108,36 @@
 PADOCC allows the creation of groups of datasets, each with N source files, that can be operated upon as a single entity.
 The operation can be applied to all or a subset of the datasets within the group with relative ease. Here we outline some basic functionality of the <code class="docutils literal notranslate"><span class="pre">GroupOperation</span></code>.
 See the source documentation page for more detail.</p>
+<section id="help-with-the-groupoperation">
+<h2>Help with the GroupOperation<a class="headerlink" href="#help-with-the-groupoperation" title="Permalink to this heading"></a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Group Operator</span>
+<span class="go">&gt; group.get_stac_representation()      - Provide a mapper and obtain values in the form of STAC records for all projects</span>
+<span class="go">&gt; group.info()                         - Obtain a dictionary of key values</span>
+<span class="go">&gt; group.run()                          - Run a specific operation across part of the group.</span>
+<span class="go">&gt; group.save_files()                   - Save any changes to any files in the group as part of an operation</span>
+<span class="go">&gt; group.check_writable()               - Check if all directories are writable for this group.</span>
+<span class="go">Allocations:</span>
+<span class="go">&gt; group.create_allocations()           - Create a set of allocations, returns a binned list of bands</span>
+<span class="go">&gt; group.create_sbatch()                - Create sbatch script for submitting to slurm.</span>
+<span class="go">Initialisations:</span>
+<span class="go">&gt; group.init_from_stac()               - Initialise a group from a set of STAC records</span>
+<span class="go">&gt; group.init_from_file()               - Initialise a group based on values from a local file</span>
+<span class="go">Evaluations:</span>
+<span class="go">&gt; group.get_project()                  - Get a project operator, indexed by project code</span>
+<span class="go">&gt; group.repeat_by_status()             - Create a new subset group to (re)run an operation, based on the current status</span>
+<span class="go">&gt; group.remove_by_status()             - Delete projects based on a given status</span>
+<span class="go">&gt; group.merge_subsets()                - Merge created subsets</span>
+<span class="go">&gt; group.summarise_data()               - Get a printout summary of data representations in this group</span>
+<span class="go">&gt; group.summarise_status()             - Summarise the status of all group member projects.</span>
+<span class="go">Modifiers:</span>
+<span class="go">&gt; group.add_project()                  - Add a new project, requires a base config (padocc.core.utils.BASE_CFG) compliant dictionary</span>
+<span class="go">&gt; group.remove_project()               - Delete project and all associated files</span>
+<span class="go">&gt; group.transfer_project()             - Transfer project to a new &quot;receiver&quot; group</span>
+<span class="go">&gt; group.merge()                        - Merge two groups</span>
+<span class="go">&gt; group.unmerge()                      - Split one group into two sets, given a list of datasets to move into the new group.</span>
+</pre></div>
+</div>
+</section>
 <section id="instantiating-a-group">
 <h2>Instantiating a Group<a class="headerlink" href="#instantiating-a-group" title="Permalink to this heading"></a></h2>
 <p>A group is most easily created using a python terminal or Jupyter notebook, with a similar form to the below.</p>
@@ -188,8 +220,8 @@ format is a csv file, where each entry fits the format:
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="mixins.html" class="btn btn-neutral float-left" title="PADOCC Core Mixin Behaviours" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="shepard.html" class="btn btn-neutral float-right" title="The SHEPARD Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="projects.html" class="btn btn-neutral float-left" title="Projects in PADOCC" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mixins.html" class="btn btn-neutral float-right" title="PADOCC Core Mixin Behaviours" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

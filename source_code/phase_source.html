@@ -6,23 +6,23 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Phased Operators &mdash; PADOCC Package v1.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
   
-    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
   <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
+    <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=3dd8cc91"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
-    <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3dd8cc91"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Padocc Filehandlers" href="misc_source.html" />
     <link rel="prev" title="GroupOperation Core and Mixin Behaviours" href="group_source.html" /> 
 </head>
@@ -35,12 +35,12 @@
 
           
           
-          <a href="index.html" class="icon icon-home">
+          <a href="../index.html" class="icon icon-home">
             PADOCC Package
-              <img src="_static/padocc_wt.png" class="logo" alt="Logo"/>
+              <img src="../_static/padocc_wt.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -49,20 +49,21 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="phases.html">Steps to Run Padocc</a></li>
-<li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example Operation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="deep_dive.html">A Deep Dive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mixins.html">Core Mixins</a></li>
-<li class="toctree-l1"><a class="reference internal" href="groups.html">The Group Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/groups.html">The Group Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/mixins.html">Core Mixins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/shepard.html">SHEPARD</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">PADOCC Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="project_source.html">Projects</a></li>
 <li class="toctree-l1"><a class="reference internal" href="group_source.html">Groups</a></li>
@@ -75,10 +76,10 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-padocc.phases.compute">Compute Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.CfaDS"><code class="docutils literal notranslate"><span class="pre">CfaDS</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.ComputeOperation"><code class="docutils literal notranslate"><span class="pre">ComputeOperation</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.ComputeOperation.filelist"><code class="docutils literal notranslate"><span class="pre">ComputeOperation.filelist</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.ComputeOperation.help"><code class="docutils literal notranslate"><span class="pre">ComputeOperation.help()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.ComputeOperation.save_files"><code class="docutils literal notranslate"><span class="pre">ComputeOperation.save_files()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.KerchunkConverter"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter</span></code></a><ul>
@@ -93,7 +94,6 @@
 <li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.ZarrDS.create_store"><code class="docutils literal notranslate"><span class="pre">ZarrDS.create_store()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.cfa_handler"><code class="docutils literal notranslate"><span class="pre">cfa_handler()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-padocc.phases.validate">Validate Operations</a><ul>
@@ -133,17 +133,17 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">PADOCC Package</a>
+          <a href="../index.html">PADOCC Package</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">Phased Operators</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/phase_source.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/source_code/phase_source.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -171,12 +171,6 @@
 <section id="module-padocc.phases.compute">
 <span id="compute-operations"></span><h2>Compute Operations<a class="headerlink" href="#module-padocc.phases.compute" title="Permalink to this heading"></a></h2>
 <dl class="py class">
-<dt class="sig sig-object py" id="padocc.phases.compute.CfaDS">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.compute.</span></span><span class="sig-name descname"><span class="pre">CfaDS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'in_progress'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'See</span> <span class="pre">individual</span> <span class="pre">files</span> <span class="pre">for</span> <span class="pre">more</span> <span class="pre">details'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limiter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_concat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'compute'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.CfaDS" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#padocc.phases.compute.ComputeOperation" title="padocc.phases.compute.ComputeOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ComputeOperation</span></code></a></p>
-</dd></dl>
-
-<dl class="py class">
 <dt class="sig sig-object py" id="padocc.phases.compute.ComputeOperation">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.compute.</span></span><span class="sig-name descname"><span class="pre">ComputeOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'in_progress'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'See</span> <span class="pre">individual</span> <span class="pre">files</span> <span class="pre">for</span> <span class="pre">more</span> <span class="pre">details'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limiter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_concat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'compute'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.ComputeOperation" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="project_source.html#padocc.core.project.ProjectOperation" title="padocc.core.project.ProjectOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProjectOperation</span></code></a></p>
@@ -193,6 +187,13 @@ used to open all the files using Xarray for concatenation later.</p>
 <dt class="sig sig-object py" id="padocc.phases.compute.ComputeOperation.help">
 <span class="sig-name descname"><span class="pre">help</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn=&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.ComputeOperation.help" title="Permalink to this definition"></a></dt>
 <dd><p>Public user functions for the project operator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.phases.compute.ComputeOperation.save_files">
+<span class="sig-name descname"><span class="pre">save_files</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.ComputeOperation.save_files" title="Permalink to this definition"></a></dt>
+<dd><p>Save all filehandlers associated with this 
+group.</p>
 </dd></dl>
 
 </dd></dl>
@@ -243,21 +244,6 @@ otherwise if unsuccessful.</p>
 <dd><p>Create the Zarr Store</p>
 </dd></dl>
 
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="padocc.phases.compute.cfa_handler">
-<span class="sig-prename descclassname"><span class="pre">padocc.phases.compute.</span></span><span class="sig-name descname"><span class="pre">cfa_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.cfa_handler" title="Permalink to this definition"></a></dt>
-<dd><p>Handle the creation of a CFA-netCDF file using the CFAPyX package</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>instance</strong> – (obj) The reference instance of ProjectOperation 
-from which to pull project-specific info.</p></li>
-<li><p><strong>file_limit</strong> – (obj) The file limit to apply to a set of files.</p></li>
-</ul>
-</dd>
-</dl>
 </dd></dl>
 
 </section>

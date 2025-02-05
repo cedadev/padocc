@@ -6,23 +6,23 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Padocc Filehandlers &mdash; PADOCC Package v1.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
   
-    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
   <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
+    <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=3dd8cc91"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
-    <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3dd8cc91"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
     <link rel="prev" title="Phased Operators" href="phase_source.html" /> 
 </head>
 
@@ -34,12 +34,12 @@
 
           
           
-          <a href="index.html" class="icon icon-home">
+          <a href="../index.html" class="icon icon-home">
             PADOCC Package
-              <img src="_static/padocc_wt.png" class="logo" alt="Logo"/>
+              <img src="../_static/padocc_wt.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -48,20 +48,21 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="phases.html">Steps to Run Padocc</a></li>
-<li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example Operation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="deep_dive.html">A Deep Dive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mixins.html">Core Mixins</a></li>
-<li class="toctree-l1"><a class="reference internal" href="groups.html">The Group Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/groups.html">The Group Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/mixins.html">Core Mixins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/shepard.html">SHEPARD</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">PADOCC Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="project_source.html">Projects</a></li>
 <li class="toctree-l1"><a class="reference internal" href="group_source.html">Groups</a></li>
@@ -80,6 +81,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.FileIOMixin.file"><code class="docutils literal notranslate"><span class="pre">FileIOMixin.file</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.FileIOMixin.file_exists"><code class="docutils literal notranslate"><span class="pre">FileIOMixin.file_exists()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.FileIOMixin.filepath"><code class="docutils literal notranslate"><span class="pre">FileIOMixin.filepath</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.FileIOMixin.move_file"><code class="docutils literal notranslate"><span class="pre">FileIOMixin.move_file()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.FileIOMixin.remove_file"><code class="docutils literal notranslate"><span class="pre">FileIOMixin.remove_file()</span></code></a></li>
 </ul>
 </li>
@@ -114,7 +116,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler.append"><code class="docutils literal notranslate"><span class="pre">ListFileHandler.append()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler.close"><code class="docutils literal notranslate"><span class="pre">ListFileHandler.close()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler.get"><code class="docutils literal notranslate"><span class="pre">ListFileHandler.get()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler.pop"><code class="docutils literal notranslate"><span class="pre">ListFileHandler.pop()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler.remove"><code class="docutils literal notranslate"><span class="pre">ListFileHandler.remove()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler.set"><code class="docutils literal notranslate"><span class="pre">ListFileHandler.set()</span></code></a></li>
 </ul>
 </li>
@@ -128,16 +130,24 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-padocc.core.utils">Utilities</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.BypassSwitch"><code class="docutils literal notranslate"><span class="pre">BypassSwitch</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.apply_substitutions"><code class="docutils literal notranslate"><span class="pre">apply_substitutions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.deformat_float"><code class="docutils literal notranslate"><span class="pre">deformat_float()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.find_zarrays"><code class="docutils literal notranslate"><span class="pre">find_zarrays()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.format_float"><code class="docutils literal notranslate"><span class="pre">format_float()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.format_str"><code class="docutils literal notranslate"><span class="pre">format_str()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.get_attribute"><code class="docutils literal notranslate"><span class="pre">get_attribute()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.make_tuple"><code class="docutils literal notranslate"><span class="pre">make_tuple()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.mem_to_val"><code class="docutils literal notranslate"><span class="pre">mem_to_val()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.open_kerchunk"><code class="docutils literal notranslate"><span class="pre">open_kerchunk()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.print_fmt_str"><code class="docutils literal notranslate"><span class="pre">print_fmt_str()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-padocc.core.logs">Logging</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.logs.FalseLogger"><code class="docutils literal notranslate"><span class="pre">FalseLogger</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.logs.LoggedOperation"><code class="docutils literal notranslate"><span class="pre">LoggedOperation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.logs.LoggedOperation"><code class="docutils literal notranslate"><span class="pre">LoggedOperation</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.logs.LoggedOperation.help"><code class="docutils literal notranslate"><span class="pre">LoggedOperation.help()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.logs.init_logger"><code class="docutils literal notranslate"><span class="pre">init_logger()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.logs.reset_file_handler"><code class="docutils literal notranslate"><span class="pre">reset_file_handler()</span></code></a></li>
 </ul>
@@ -152,17 +162,17 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">PADOCC Package</a>
+          <a href="../index.html">PADOCC Package</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">Padocc Filehandlers</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/misc_source.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/source_code/misc_source.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -184,12 +194,18 @@ processes.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.filehandlers.</span></span><span class="sig-name descname"><span class="pre">CFADataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifier</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.filehandlers.CFADataset" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Basic handler for CFA dataset</p>
+<section id="added-behaviours">
+<h2>Added behaviours<a class="headerlink" href="#added-behaviours" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Open dataset - opens the CFA dataset</p></li>
+</ol>
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.CFADataset.open_dataset">
 <span class="sig-name descname"><span class="pre">open_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dataset</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.CFADataset.open_dataset" title="Permalink to this definition"></a></dt>
 <dd><p>Open the CFA Dataset [READ-ONLY]</p>
 </dd></dl>
 
+</section>
 </dd></dl>
 
 <dl class="py class">
@@ -272,6 +288,12 @@ fh.set(contents)</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.filehandlers.FileIOMixin.move_file">
+<span class="sig-name descname"><span class="pre">move_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_extension</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.FileIOMixin.move_file" title="Permalink to this definition"></a></dt>
+<dd><p>Migrate the file to a new location.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.FileIOMixin.remove_file">
 <span class="sig-name descname"><span class="pre">remove_file</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.FileIOMixin.remove_file" title="Permalink to this definition"></a></dt>
 <dd><p>Remove the file on the filesystem
@@ -287,6 +309,15 @@ if not on dryrun</p>
 <dd><p>Bases: <a class="reference internal" href="#padocc.core.logs.LoggedOperation" title="padocc.core.logs.LoggedOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">LoggedOperation</span></code></a></p>
 <p>Filehandler for Generic stores in Padocc - enables Filesystem
 operations on component files.</p>
+<section id="behaviours-applies-to-metadata">
+<h2>Behaviours (Applies to Metadata)<a class="headerlink" href="#behaviours-applies-to-metadata" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Length - length of metadata keyset</p></li>
+<li><p>Contains - metadata contains key (as with dict)</p></li>
+<li><p>Indexable - Get/set a specific property.</p></li>
+<li><p>Get/set_meta - Get/set the whole metadata set.</p></li>
+<li><p>Clear - clears all files in the store.</p></li>
+</ol>
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.GenericStore.clear">
 <span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.GenericStore.clear" title="Permalink to this definition"></a></dt>
@@ -317,6 +348,7 @@ operations on component files.</p>
 <dd><p>Assemble the store path</p>
 </dd></dl>
 
+</section>
 </dd></dl>
 
 <dl class="py class">
@@ -324,6 +356,21 @@ operations on component files.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.filehandlers.</span></span><span class="sig-name descname"><span class="pre">JSONFileHandler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.filehandlers.JSONFileHandler" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#padocc.core.filehandlers.FileIOMixin" title="padocc.core.filehandlers.FileIOMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileIOMixin</span></code></a></p>
 <p>JSON File handler for padocc config files.</p>
+<section id="dictionary-behaviour">
+<h2>Dictionary Behaviour<a class="headerlink" href="#dictionary-behaviour" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Indexable - index by key (as normal)</p></li>
+<li><p>Contains - key in dict (as normal)</p></li>
+<li><p>Length - length of the key set (as normal)</p></li>
+</ol>
+</section>
+<section id="added-behaviour">
+<h2>Added Behaviour<a class="headerlink" href="#added-behaviour" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Iterable - iterate over the keys.</p></li>
+<li><p>Get/set - get/set the whole value.</p></li>
+<li><p>Create_file - Specific for JSON files.</p></li>
+</ol>
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.JSONFileHandler.close">
 <span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.JSONFileHandler.close" title="Permalink to this definition"></a></dt>
@@ -348,6 +395,7 @@ operations on component files.</p>
 <dd><p>Set the value of the whole dictionary.</p>
 </dd></dl>
 
+</section>
 </dd></dl>
 
 <dl class="py class">
@@ -396,22 +444,45 @@ creation/update date and version/revision number.</p>
 <p>Filehandler for Kerchunk stores using parquet
 in PADOCC. Enables setting metadata attributes and
 will allow combining stores in future.</p>
+<section id="id1">
+<h2>Added behaviours<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Open dataset - opens the kerchunk store.</p></li>
+</ol>
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.KerchunkStore.open_dataset">
 <span class="sig-name descname"><span class="pre">open_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rfs_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">parquet_kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dataset</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.KerchunkStore.open_dataset" title="Permalink to this definition"></a></dt>
 <dd><p>Open the Parquet Store as an xarray dataset</p>
 </dd></dl>
 
+</section>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.ListFileHandler">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.filehandlers.</span></span><span class="sig-name descname"><span class="pre">ListFileHandler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extension</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.filehandlers.ListFileHandler" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#padocc.core.filehandlers.FileIOMixin" title="padocc.core.filehandlers.FileIOMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileIOMixin</span></code></a></p>
-<p>Filehandler for string-based Lists in Padocc</p>
+<p>Filehandler for string-based Lists in Padocc.</p>
+<section id="list-behaviour">
+<h2>List Behaviour<a class="headerlink" href="#list-behaviour" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Append - works the same as with normal lists.</p></li>
+<li><p>Pop - remove a specific value (works as normal).</p></li>
+<li><p>Contains - (x in y) works as normal.</p></li>
+<li><p>Length - (len(x)) works as normal.</p></li>
+<li><p>Iterable - (for x in y) works as normal.</p></li>
+<li><p>Indexable - (x[0]) works as normal</p></li>
+</ol>
+</section>
+<section id="id2">
+<h2>Added behaviour<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Close - close and save the file.</p></li>
+<li><p>Get/Set - Get or set the whole value.</p></li>
+</ol>
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.ListFileHandler.append">
-<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">newvalue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.ListFileHandler.append" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">newvalue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.ListFileHandler.append" title="Permalink to this definition"></a></dt>
 <dd><p>Add a new value to the internal list</p>
 </dd></dl>
 
@@ -428,18 +499,19 @@ will allow combining stores in future.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="padocc.core.filehandlers.ListFileHandler.pop">
-<span class="sig-name descname"><span class="pre">pop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">oldvalue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.ListFileHandler.pop" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="padocc.core.filehandlers.ListFileHandler.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">oldvalue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.ListFileHandler.remove" title="Permalink to this definition"></a></dt>
 <dd><p>Remove a value from the internal list</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.ListFileHandler.set">
-<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.ListFileHandler.set" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.ListFileHandler.set" title="Permalink to this definition"></a></dt>
 <dd><p>Reset the value as a whole for this 
 filehandler.</p>
 </dd></dl>
 
+</section>
 </dd></dl>
 
 <dl class="py class">
@@ -462,12 +534,18 @@ filehandler.</p>
 <p>Filehandler for Zarr stores in PADOCC.
 Enables manipulation of Zarr store on filesystem
 and setting metadata attributes.</p>
+<section id="id3">
+<h2>Added Behaviours<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Open dataset - open the zarr store.</p></li>
+</ol>
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.ZarrStore.open_dataset">
 <span class="sig-name descname"><span class="pre">open_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">zarr_kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dataset</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.ZarrStore.open_dataset" title="Permalink to this definition"></a></dt>
 <dd><p>Open the ZarrStore as an xarray dataset</p>
 </dd></dl>
 
+</section>
 </dd></dl>
 
 <section id="module-padocc.core.utils">
@@ -482,14 +560,32 @@ switches stored in this class.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="padocc.core.utils.apply_substitutions">
+<span class="sig-prename descclassname"><span class="pre">padocc.core.utils.</span></span><span class="sig-name descname"><span class="pre">apply_substitutions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subkey</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.utils.apply_substitutions" title="Permalink to this definition"></a></dt>
+<dd><p>Apply substitutions to all elements in the provided content list</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padocc.core.utils.deformat_float">
+<span class="sig-prename descclassname"><span class="pre">padocc.core.utils.</span></span><span class="sig-name descname"><span class="pre">deformat_float</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padocc.core.utils.deformat_float" title="Permalink to this definition"></a></dt>
+<dd><p>Format byte-value with proper units.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="padocc.core.utils.find_zarrays">
 <span class="sig-prename descclassname"><span class="pre">padocc.core.utils.</span></span><span class="sig-name descname"><span class="pre">find_zarrays</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#padocc.core.utils.find_zarrays" title="Permalink to this definition"></a></dt>
 <dd><p>Quick way of extracting all the zarray components of a ref set.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="padocc.core.utils.format_float">
+<span class="sig-prename descclassname"><span class="pre">padocc.core.utils.</span></span><span class="sig-name descname"><span class="pre">format_float</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padocc.core.utils.format_float" title="Permalink to this definition"></a></dt>
+<dd><p>Format byte-value with proper units.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="padocc.core.utils.format_str">
-<span class="sig-prename descclassname"><span class="pre">padocc.core.utils.</span></span><span class="sig-name descname"><span class="pre">format_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shorten</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padocc.core.utils.format_str" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">padocc.core.utils.</span></span><span class="sig-name descname"><span class="pre">format_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shorten</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padocc.core.utils.format_str" title="Permalink to this definition"></a></dt>
 <dd><p>Simple function to format a string to a correct length.</p>
 </dd></dl>
 
@@ -510,6 +606,12 @@ value of variable from Environment or ParseArgs object, or reports failure.</p>
 <dd class="field-even"><p>Value of either environment variable or argparse value.</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padocc.core.utils.make_tuple">
+<span class="sig-prename descclassname"><span class="pre">padocc.core.utils.</span></span><span class="sig-name descname"><span class="pre">make_tuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#padocc.core.utils.make_tuple" title="Permalink to this definition"></a></dt>
+<dd><p>Make any object into a tuple</p>
 </dd></dl>
 
 <dl class="py function">
@@ -537,6 +639,14 @@ value of variable from Environment or ParseArgs object, or reports failure.</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="padocc.core.utils.print_fmt_str">
+<span class="sig-prename descclassname"><span class="pre">padocc.core.utils.</span></span><span class="sig-name descname"><span class="pre">print_fmt_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">help_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">40</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shorten</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.utils.print_fmt_str" title="Permalink to this definition"></a></dt>
+<dd><p>Replacement for callable function in <code class="docutils literal notranslate"><span class="pre">help</span></code>
+methods that adds whitespace between functions
+and their help descriptions.</p>
+</dd></dl>
+
 </section>
 <section id="module-padocc.core.logs">
 <span id="logging"></span><h2>Logging<a class="headerlink" href="#module-padocc.core.logs" title="Permalink to this heading"></a></h2>
@@ -553,6 +663,12 @@ some operations.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.logs.</span></span><span class="sig-name descname"><span class="pre">LoggedOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Logger</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#padocc.core.logs.FalseLogger" title="padocc.core.logs.FalseLogger"><span class="pre">FalseLogger</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.logs.LoggedOperation" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Allows inherritance of logger objects without creating new ones.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.logs.LoggedOperation.help">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">help</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func:</span> <span class="pre">~typing.Callable</span> <span class="pre">=</span> <span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.logs.LoggedOperation.help" title="Permalink to this definition"></a></dt>
+<dd><p>No public methods.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">

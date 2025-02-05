@@ -6,25 +6,25 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ProjectOperation Core and Mixin Behaviours &mdash; PADOCC Package v1.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
   
-    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
   <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
+    <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=3dd8cc91"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
-    <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3dd8cc91"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="GroupOperation Core and Mixin Behaviours" href="group_source.html" />
-    <link rel="prev" title="The SHEPARD Module" href="shepard.html" /> 
+    <link rel="prev" title="The SHEPARD Module" href="../operations/shepard.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -35,12 +35,12 @@
 
           
           
-          <a href="index.html" class="icon icon-home">
+          <a href="../index.html" class="icon icon-home">
             PADOCC Package
-              <img src="_static/padocc_wt.png" class="logo" alt="Logo"/>
+              <img src="../_static/padocc_wt.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -49,20 +49,21 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="phases.html">Steps to Run Padocc</a></li>
-<li class="toctree-l1"><a class="reference internal" href="start.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cci_water.html">Example Operation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="deep_dive.html">A Deep Dive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mixins.html">Core Mixins</a></li>
-<li class="toctree-l1"><a class="reference internal" href="groups.html">The Group Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/groups.html">The Group Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/mixins.html">Core Mixins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/shepard.html">SHEPARD</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">PADOCC Source:</span></p>
+<p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Projects</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.project.ProjectOperation"><code class="docutils literal notranslate"><span class="pre">ProjectOperation</span></code></a><ul>
@@ -70,12 +71,16 @@
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.file_exists"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.file_exists()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.help"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.help()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.info"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.info()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.move_to"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.move_to()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.migrate"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.migrate()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.run"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.run()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.save_files"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.save_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.update_status"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.update_status()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.cfa_dataset"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.cfa_dataset</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.cfa_path"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.cfa_path</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.dataset"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.dataset</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.dataset_attributes"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.dataset_attributes</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.kfile"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.kfile</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.kstore"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.kstore</span></code></a></li>
@@ -83,11 +88,22 @@
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.zstore"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.zstore</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#padocc.core.mixins.directory.DirectoryMixin"><code class="docutils literal notranslate"><span class="pre">DirectoryMixin</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#padocc.core.mixins.directory.DirectoryMixin"><code class="docutils literal notranslate"><span class="pre">DirectoryMixin</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.directory.DirectoryMixin.groupdir"><code class="docutils literal notranslate"><span class="pre">DirectoryMixin.groupdir</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.directory.DirectoryMixin.help"><code class="docutils literal notranslate"><span class="pre">DirectoryMixin.help()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.cloud_format"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.cloud_format</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.file_type"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.file_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.get_stac_representation"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.get_stac_representation()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.major_version_increment"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.major_version_increment()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.minor_version_increment"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.minor_version_increment()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.outpath"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.outpath</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.outproduct"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.outproduct</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.revision"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.revision</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.source_format"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.source_format</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.version_no"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.version_no</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.mixins.status.StatusMixin"><code class="docutils literal notranslate"><span class="pre">StatusMixin</span></code></a><ul>
@@ -111,17 +127,17 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">PADOCC Package</a>
+          <a href="../index.html">PADOCC Package</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">ProjectOperation Core and Mixin Behaviours</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/project_source.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/source_code/project_source.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -134,7 +150,7 @@
 <p>Source code for individual project operations and mixin behaviours.</p>
 <span class="target" id="module-padocc.core.project"></span><dl class="py class">
 <dt class="sig sig-object py" id="padocc.core.project.ProjectOperation">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.project.</span></span><span class="sig-name descname"><span class="pre">ProjectOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_time:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ft_kwargs:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger:</span> <span class="pre">~logging.Logger</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass:</span> <span class="pre">~padocc.core.utils.BypassSwitch</span> <span class="pre">=</span> <span class="pre">&lt;padocc.core.utils.BypassSwitch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.project.</span></span><span class="sig-name descname"><span class="pre">ProjectOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_time:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ft_kwargs:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger:</span> <span class="pre">~logging.Logger</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass:</span> <span class="pre">~padocc.core.utils.BypassSwitch</span> <span class="pre">=</span> <span class="pre">&lt;padocc.core.utils.BypassSwitch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem_allowed:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation" title="Permalink to this definition"></a></dt>
 <dd><p>PADOCC Project Operation class, able to access project files
 and perform some simple functions. Single-project operations
 always inherit from this class (e.g. Scan, Compute, Validate)</p>
@@ -153,20 +169,22 @@ This can be any generic filehandler attached.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.help">
-<span class="sig-name descname"><span class="pre">help</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn=&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation.help" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">help</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func:</span> <span class="pre">~typing.Callable</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">print_fmt_str&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation.help" title="Permalink to this definition"></a></dt>
 <dd><p>Public user functions for the project operator.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.info">
-<span class="sig-name descname"><span class="pre">info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn=&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation.info" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation.info" title="Permalink to this definition"></a></dt>
 <dd><p>Display some info about this particular project</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.move_to">
-<span class="sig-name descname"><span class="pre">move_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.project.ProjectOperation.move_to" title="Permalink to this definition"></a></dt>
-<dd><p>Move all associated files across to new directory.</p>
+<dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.migrate">
+<span class="sig-name descname"><span class="pre">migrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">newgroupID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation.migrate" title="Permalink to this definition"></a></dt>
+<dd><p>Migrate this project to a new group.
+1. Move the whole project directory on the filesystem.
+2. Move all associated filehandlers (individually?)</p>
 </dd></dl>
 
 <dl class="py method">
@@ -180,6 +198,20 @@ with status logs and log files can be dealt with here.</p>
 with kerchunk mode), see the additional parameters of <code class="docutils literal notranslate"><span class="pre">run</span></code> in
 the source code for the phase you are running. In this example, 
 see <code class="docutils literal notranslate"><span class="pre">padocc.phases.compute:KerchunkDS._run</span></code></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.save_files">
+<span class="sig-name descname"><span class="pre">save_files</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation.save_files" title="Permalink to this definition"></a></dt>
+<dd><p>Save all filehandlers associated with this 
+group.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.update_status">
+<span class="sig-name descname"><span class="pre">update_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jobid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.project.ProjectOperation.update_status" title="Permalink to this definition"></a></dt>
+<dd><p>Mapper to update the status of the project
+via the status log filehandler.</p>
 </dd></dl>
 
 </dd></dl>
@@ -201,6 +233,20 @@ existing class.</p>
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cfa_dataset</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dataset</span></em><a class="headerlink" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.cfa_dataset" title="Permalink to this definition"></a></dt>
 <dd><p>Retrieve a read-only xarray representation 
 of a CFA dataset</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padocc.core.mixins.dataset.DatasetHandlerMixin.cfa_path">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cfa_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.cfa_path" title="Permalink to this definition"></a></dt>
+<dd><p>Path to the CFA object for this project.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padocc.core.mixins.dataset.DatasetHandlerMixin.dataset">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dataset</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="misc_source.html#padocc.core.filehandlers.KerchunkFile" title="padocc.core.filehandlers.KerchunkFile"><span class="pre">KerchunkFile</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="misc_source.html#padocc.core.filehandlers.GenericStore" title="padocc.core.filehandlers.GenericStore"><span class="pre">GenericStore</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="misc_source.html#padocc.core.filehandlers.CFADataset" title="padocc.core.filehandlers.CFADataset"><span class="pre">CFADataset</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.dataset" title="Permalink to this definition"></a></dt>
+<dd><p>Generic dataset property, links to the correct
+cloud format, given the Project’s <code class="docutils literal notranslate"><span class="pre">cloud_format</span></code>
+property with other configurations applied.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -256,6 +302,18 @@ classes. The mixin classes here will explicitly state
 where they are designed to be used, as an extension of an 
 existing class.</p>
 <p>Use case: ProjectOperation, GroupOperation</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="padocc.core.mixins.directory.DirectoryMixin.groupdir">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">groupdir</span></span><a class="headerlink" href="#padocc.core.mixins.directory.DirectoryMixin.groupdir" title="Permalink to this definition"></a></dt>
+<dd><p>Group directory property</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.mixins.directory.DirectoryMixin.help">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">help</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func:</span> <span class="pre">~typing.Callable</span> <span class="pre">=</span> <span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.mixins.directory.DirectoryMixin.help" title="Permalink to this definition"></a></dt>
+<dd><p>No public methods</p>
+</dd></dl>
+
 </dd></dl>
 
 <span class="target" id="module-padocc.core.mixins.properties"></span><dl class="py class">
@@ -272,9 +330,39 @@ where they are designed to be used, as an extension of an
 existing class.</p>
 <p>Use case: ProjectOperation [ONLY]</p>
 <dl class="py property">
+<dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.cloud_format">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cloud_format</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.cloud_format" title="Permalink to this definition"></a></dt>
+<dd><p>Check multiple options from base and detail
+configs to find the cloud format for this project.</p>
+<p>The default is to use kerchunk.</p>
+</dd></dl>
+
+<dl class="py property">
 <dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.file_type">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">file_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.file_type" title="Permalink to this definition"></a></dt>
 <dd><p>Return the file type for this project.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.get_stac_representation">
+<span class="sig-name descname"><span class="pre">get_stac_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stac_mapping</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.get_stac_representation" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the stac representation of this project
+according to the provided mapping.</p>
+<p>Stac mappings should follow the intended stac
+record structure, where the value of each 
+lowest-level key in the mapping is given as a tuple
+of sources for that value from the project. The last
+value in the tuple is the default parameter, if all
+sources are unavailable.</p>
+<p>E.g <a href="#id1"><span class="problematic" id="id2">``</span></a>`
+{</p>
+<blockquote>
+<div><p>“experiment_id”: (”<a class="reference external" href="mailto:property&#37;&#52;&#48;experiment_id">property<span>&#64;</span>experiment_id</a>”,None),
+“source_fmt”: (”<a class="reference external" href="mailto:detail_cfg&#37;&#52;&#48;source_type">detail_cfg<span>&#64;</span>source_type</a>”,None)</p>
+</div></blockquote>
+<section id="id3">
+<h2>}<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h2>
+</section>
 </dd></dl>
 
 <dl class="py method">
@@ -288,6 +376,47 @@ existing class.</p>
 <dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.minor_version_increment">
 <span class="sig-name descname"><span class="pre">minor_version_increment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.minor_version_increment" title="Permalink to this definition"></a></dt>
 <dd><p>Use this function for when properties of the cloud file have been changed.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.outpath">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">outpath</span></span><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.outpath" title="Permalink to this definition"></a></dt>
+<dd><p>Path to the output product. Takes
+into account the cloud format and type.
+Extension is applied via the Filehandler that this
+string is applied to.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.outproduct">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">outproduct</span></span><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.outproduct" title="Permalink to this definition"></a></dt>
+<dd><p>File/directory name for the output product.
+Revision takes into account cloud format and
+type where applicable.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.revision">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">revision</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.revision" title="Permalink to this definition"></a></dt>
+<dd><p>Revision takes into account cloud format and
+type where applicable.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.source_format">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">source_format</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.source_format" title="Permalink to this definition"></a></dt>
+<dd><p>Get the source format of the files, 
+as determined during the scanning process.</p>
+<p>Note: This returns the driver used in the kerchunk
+scanning process if that step has been completed.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.version_no">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">version_no</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.version_no" title="Permalink to this definition"></a></dt>
+<dd><p>Get the version number from the base config file.</p>
+<p>This property is read-only, but currently can be
+forcibly overwritten by editing the base config.</p>
 </dd></dl>
 
 </dd></dl>
@@ -331,7 +460,7 @@ existing class.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.mixins.status.StatusMixin.show_log_contents">
-<span class="sig-name descname"><span class="pre">show_log_contents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">halt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.mixins.status.StatusMixin.show_log_contents" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">show_log_contents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">halt:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func:</span> <span class="pre">~typing.Callable</span> <span class="pre">=</span> <span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.mixins.status.StatusMixin.show_log_contents" title="Permalink to this definition"></a></dt>
 <dd><p>Format the contents of the log file to print.</p>
 </dd></dl>
 
@@ -343,7 +472,7 @@ existing class.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="shepard.html" class="btn btn-neutral float-left" title="The SHEPARD Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../operations/shepard.html" class="btn btn-neutral float-left" title="The SHEPARD Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="group_source.html" class="btn btn-neutral float-right" title="GroupOperation Core and Mixin Behaviours" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

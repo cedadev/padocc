@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Projects in PADOCC &mdash; PADOCC Package v1.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3dd8cc91"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Groups in PADOCC" href="groups.html" />
+    <link rel="prev" title="Complex Operations" href="../core/complex_operation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            PADOCC Package
+              <img src="../_static/padocc_wt.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core/inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/complex_operation.html">Complex (Parallel) Operation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The Project Operator</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-project-operator-class">The Project Operator class</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="groups.html">The Group Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mixins.html">Core Mixins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/project_source.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/phase_source.html">Phases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PADOCC Package</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Projects in PADOCC</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/operations/projects.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="projects-in-padocc">
+<h1>Projects in PADOCC<a class="headerlink" href="#projects-in-padocc" title="Permalink to this heading"></a></h1>
+<p>To differentiate syntax of datasets/datafiles with other packages that have varying definitions of those terms,
+PADOCC uses the term <code class="docutils literal notranslate"><span class="pre">Project</span></code> to refer to a set of files to be aggregated into a single ‘Cloud Product’.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ProjectOperation</span></code> class within PADOCC allows us to access all information about a specific dataset, including
+fetching data from files within the pipeline directory. This class also inherits from several Mixin classes which
+act as containers for specific behaviours for easier organisation and future debugging.</p>
+<section id="the-project-operator-class">
+<h2>The Project Operator class<a class="headerlink" href="#the-project-operator-class" title="Permalink to this heading"></a></h2>
+<p>The ‘core’ behaviour of all classes is contained in the <code class="docutils literal notranslate"><span class="pre">ProjectOperation</span></code> class.
+This class has public UI methods like <code class="docutils literal notranslate"><span class="pre">info</span></code> and <code class="docutils literal notranslate"><span class="pre">help</span></code> that give general information about a project,
+and list some of the other public methods available respectively.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Project Operator:</span>
+<span class="go">&gt; project.info()                       - Get some information about this project</span>
+<span class="go">&gt; project.get_version()                - Get the version number for the output product</span>
+<span class="go">&gt; project.save_files()                 - Save all open files related to this project</span>
+<span class="go">Dataset Handling:</span>
+<span class="go">&gt; project.dataset                      - Default product Filehandler (pointer) property</span>
+<span class="go">&gt; project.dataset_attributes           - Fetch metadata from the default dataset</span>
+<span class="go">&gt; project.kfile                        - Kerchunk Filehandler property</span>
+<span class="go">&gt; project.kstore                       - Kerchunk (Parquet) Filehandler property</span>
+<span class="go">&gt; project.cfa_dataset                  - CFA Filehandler property</span>
+<span class="go">&gt; project.zstore                       - Zarr Filehandler property</span>
+<span class="go">&gt; project.update_attribute()           - Update an attribute within the metadata</span>
+<span class="go">Status Options:</span>
+<span class="go">&gt; project.get_last_run()               - Get the last performed phase and time it occurred</span>
+<span class="go">&gt; project.get_last_status()            - Get the status of the previous core operation.</span>
+<span class="go">&gt; project.get_log_contents()           - Get the log contents of a previous core operation</span>
+<span class="go">Extra Properties:</span>
+<span class="go">&gt; project.outpath                      - path to the output product (Kerchunk/Zarr)</span>
+<span class="go">&gt; project.outproduct                   - name of the output product (minus extension)</span>
+<span class="go">&gt; project.revision                     - Revision identifier (major + minor version plus type indicator)</span>
+<span class="go">&gt; project.version_no                   - Get major + minor version identifier</span>
+<span class="go">&gt; project.cloud_format[EDITABLE]       - Cloud format (Kerchunk/Zarr) for this project</span>
+<span class="go">&gt; project.file_type[EDITABLE]          - The file type to use (e.g JSON/parq for kerchunk).</span>
+<span class="go">&gt; project.source_format                - Get the driver used by kerchunk</span>
+<span class="go">&gt; project.get_stac_representation()    - Provide a mapper, fills with values from the project to create a STAC record.</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>Key Functions:</dt><dd><ul class="simple">
+<li><p>Acts as an access point to all information and data about a project (dataset).</p></li>
+<li><p>Can adjust values within key files (abstracted) by setting specific parameters of the project instance and then using <code class="docutils literal notranslate"><span class="pre">save_files</span></code>.</p></li>
+<li><p>Enables quick stats gathering for use with group statistics calculations.</p></li>
+<li><p>Can run any process on a project from the Project Operator.</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../core/complex_operation.html" class="btn btn-neutral float-left" title="Complex Operations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="groups.html" class="btn btn-neutral float-right" title="Groups in PADOCC" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024, Centre of Environmental Data Analysis Developers,Scientific and Technical Facilities Council (STFC),UK Research and Innovation (UKRI). BSD 2-Clause License. All rights reserved..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>  
+
+  <style>
+    /* Sidebar header (and topbar for mobile) */
+    .wy-side-nav-search, .wy-nav-top {
+      background: #e92603;
+    }
+
+    .caption-text, .header h1 {
+        color: #ef4d5a
+    }
+
+    .note {
+        background: #BEEF9E
+    }
+    .admonition-title {
+        background: #335145
+    }
+
+    .wy-nav-side {
+        background: #001711;
+    }
+
+  </style>
+
+
+</body>
+</html>

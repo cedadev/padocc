@@ -1,0 +1,313 @@
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PADOCC Command Line Tool &mdash; PADOCC Package v1.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3dd8cc91"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Running padocc interactively (Notebook/Shell)" href="interactive.html" />
+    <link rel="prev" title="Getting Started" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            PADOCC Package
+              <img src="../_static/padocc_wt.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Command Line Tool</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#general-command-form">General Command Form</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#padocc-cli-flags">Padocc CLI Flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#create-a-group-from-scratch-optional">Create a group from scratch (optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#initialise-a-group">Initialise a group</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scan">Scan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#compute">Compute</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#validate">Validate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="complex_operation.html">Complex (Parallel) Operation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../operations/projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/groups.html">The Group Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/mixins.html">Core Mixins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/shepard.html">SHEPARD</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/project_source.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/phase_source.html">Phases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PADOCC Package</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">PADOCC Command Line Tool</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/core/cli.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="padocc-command-line-tool">
+<h1>PADOCC Command Line Tool<a class="headerlink" href="#padocc-command-line-tool" title="Permalink to this heading"></a></h1>
+<img alt="Stages of the PADOCC workflow" src="../_images/pipeline.png" />
+<p>The command-line tool <code class="docutils literal notranslate"><span class="pre">padocc</span></code> allows quick deployments of serial and parallel processing jobs for your projects and groups within the padocc workspace. The core phases are most readily executed using the command line tool.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For information on how to setup the padocc environment, please see the Installation section of this documentation. Some general tips would be to:</p>
+<ol class="arabic simple">
+<li><p>Ensure you have the padocc package installed and the command line tool is accessible. You can check this by running <code class="docutils literal notranslate"><span class="pre">which</span> <span class="pre">padocc</span></code> in your terminal.</p></li>
+<li><p>Set the working directory <code class="docutils literal notranslate"><span class="pre">WORKDIR</span></code> environment variable. All pipeline directories and files will be created under this directory, which includes all the groups you define. It is suggested to have only one working directory where possible, although if a distinction is needed for different groups of datasets, using multiple working directories can be done with user discretion.</p></li>
+</ol>
+</div>
+<section id="general-command-form">
+<h2>General Command Form<a class="headerlink" href="#general-command-form" title="Permalink to this heading"></a></h2>
+<p>The general form of a command for padocc should be to call the command line tool <code class="docutils literal notranslate"><span class="pre">padocc</span></code> with a minimum of the <code class="docutils literal notranslate"><span class="pre">phase</span></code> argument specified afterwards. E.g:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>padocc<span class="w"> </span>init
+</pre></div>
+</div>
+<p>In almost all cases, other arguments will be necessary for any particular operation you would like to perform.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">usage: padocc phase [-h] [-f] [-v] [-d] [-T] [-b BYPASS] [-w WORKDIR] [-G GROUPID] [-s SUBSET] [-r REPEAT_ID] [-p PROJ_CODE] [-C MODE] [-i INPUT] [-n NEW_VERSION] [-t TIME_ALLOWED] [--mem-allowed MEM_ALLOWED] [-M MEMORY] [-B] [-e VENVPATH] [-A] [--allow-band-increase]</span>
+</pre></div>
+</div>
+</section>
+<section id="padocc-cli-flags">
+<h2>Padocc CLI Flags<a class="headerlink" href="#padocc-cli-flags" title="Permalink to this heading"></a></h2>
+<p>The flags above show all the different possible options for operating the pipeline. Listed here are some of the more common flags that can be applied to most or all of the different <code class="docutils literal notranslate"><span class="pre">phased</span></code> operations for padocc.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">-h, --help            show this help message and exit</span>
+<span class="go">-f, --forceful        Force overwrite of steps if previously done</span>
+<span class="go">-v, --verbose         Print helpful statements while running (add more v&#39;s for greater verbosity)</span>
+<span class="go">-d, --dryrun          Perform dry-run (i.e no new files/dirs created)</span>
+<span class="go">-T, --thorough        Thorough processing - start from scratch</span>
+
+<span class="go">-b BYPASS, --bypass-errs (See the Deep Dive section for info on this feature)</span>
+<span class="go">-w WORKDIR, --workdir WORKDIR</span>
+<span class="go">                      Working directory for pipeline (if not specified as an environment variable.)</span>
+<span class="go">-G GROUPID, --groupID GROUPID</span>
+<span class="go">                      Group identifier label</span>
+</pre></div>
+</div>
+<p>Other flags listed in the command above are described in the Complex Operation section of this documentation.</p>
+</section>
+<section id="create-a-group-from-scratch-optional">
+<h2>Create a group from scratch (optional)<a class="headerlink" href="#create-a-group-from-scratch-optional" title="Permalink to this heading"></a></h2>
+<p>This optional first step allows you to create empty groups in the workspace that can be properly initialised later.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>padocc<span class="w"> </span>new<span class="w"> </span>-G<span class="w"> </span>my-new-group
+</pre></div>
+</div>
+<p>There is no particular advantage to creating empty groups but this may be beneficial for organisation of multiple new groups where the data is still being collected.</p>
+</section>
+<section id="initialise-a-group">
+<h2>Initialise a group<a class="headerlink" href="#initialise-a-group" title="Permalink to this heading"></a></h2>
+<dl class="simple">
+<dt>The pipeline takes a CSV (or similar) input file from which to instantiate a <code class="docutils literal notranslate"><span class="pre">GroupOperation</span></code>, which includes:</dt><dd><ul class="simple">
+<li><p>creating subdirectories for all associated datasets (projects)</p></li>
+<li><p>creating multiple group files with information regarding this group.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>padocc<span class="w"> </span>init<span class="w"> </span>-G<span class="w"> </span>my-new-group<span class="w"> </span>-i<span class="w"> </span>path/to/input_file.csv
+</pre></div>
+</div>
+<p>An example of the output for this command, when the <code class="docutils literal notranslate"><span class="pre">-v</span></code> flag is added can be found below. The test data is composed of two <code class="docutils literal notranslate"><span class="pre">rain</span></code> datasets each with 5 NetCDF files filles with arbitrary data. You can access this test data through the <cite>github repo&lt;https://github.com/cedadev/padocc&gt;_</cite>. Under <code class="docutils literal notranslate"><span class="pre">padocc/tests/data</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">INFO [PADOCC-CLI-init]: Starting initialisation</span>
+<span class="go">INFO [PADOCC-CLI-init]: Copying input file from relative path - resolved to &lt;your-directory-structure&gt;/file.csv</span>
+<span class="go">INFO [PADOCC-CLI-init]: Creating project directories</span>
+<span class="go">INFO [PADOCC-CLI-init]: Creating directories/filelists for 1/2</span>
+<span class="go">INFO [PADOCC-CLI-init]: Updated new status: init - Success</span>
+<span class="go">INFO [PADOCC-CLI-init]: Creating directories/filelists for 2/2</span>
+<span class="go">INFO [PADOCC-CLI-init]: Updated new status: init - Success</span>
+<span class="go">INFO [PADOCC-CLI-init]: Created 12 files, 4 directories in group rain-example</span>
+<span class="go">INFO [PADOCC-CLI-init]: Written as group ID: rain-example</span>
+</pre></div>
+</div>
+</section>
+<section id="scan">
+<h2>Scan<a class="headerlink" href="#scan" title="Permalink to this heading"></a></h2>
+<p>The first main phase of the pipeline involves scanning a subset of the native source files to determine certain parameters:</p>
+<ul class="simple">
+<li><p>Ensure source files are compatible with one of the available converters for Kerchunk/Zarr etc.:</p></li>
+<li><p>Calculate expected memory (for job allocation later.)</p></li>
+<li><p>Calculate estimated chunk sizes and other values.</p></li>
+<li><p>Determine suggested file type, including whether to use JSON or Parquet for Kerchunk references.</p></li>
+<li><p>Identify Identical/Concat dims for use in <strong>Compute</strong> phase.</p></li>
+<li><p>Determine any other specific parameters for the dataset on creation and concatenation.</p></li>
+</ul>
+<p>A scan operation is performed across a group of datasets/projects to determine specific
+properties of each project and some estimates of time/memory allocations that will be
+required in later phases.</p>
+<p>The scan phase can be activated with the following:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>padocc<span class="w"> </span>scan<span class="w"> </span>-G<span class="w"> </span>my-group<span class="w"> </span>-C<span class="w"> </span>kerchunk
+</pre></div>
+</div>
+<p>Alternatively, you can run any of the phases interactively in a python shell/notebook environment:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mygroup</span> <span class="o">=</span> <span class="n">GroupOperation</span><span class="p">(</span>
+    <span class="s1">&#39;my-group&#39;</span><span class="p">,</span>
+    <span class="n">workdir</span><span class="o">=</span><span class="s1">&#39;path/to/pipeline/directory&#39;</span>
+<span class="p">)</span>
+<span class="c1"># Assuming this group has already been initialised from a file.</span>
+
+<span class="n">mygroup</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">&#39;scan&#39;</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;kerchunk&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The above demonstrates why the command line tool is easier to use for phased operations, as most of the configurations are known and handled using the various flags. Interactive operations (like checking specific project properties etc.) are not covered by the CLI tool, so need to be completed using an interactive environment.</p>
+</section>
+<section id="compute">
+<h2>Compute<a class="headerlink" href="#compute" title="Permalink to this heading"></a></h2>
+<p>Building the Cloud/reference product for a dataset requires a multi-step process:</p>
+<p>Example for Kerchunk:</p>
+<ul class="simple">
+<li><p>Create Kerchunk references for each archive-type file.</p></li>
+<li><p>Save cache of references for each file prior to concatenation.</p></li>
+<li><p>Perform concatenation (abort if concatenation fails, can load cache on second attempt).</p></li>
+<li><p>Perform metadata corrections (based on updates and removals specified at the start)</p></li>
+<li><p>Add Kerchunk history global attributes (creation time, pipeline version etc.)</p></li>
+<li><p>Reconfigure each chunk for remote access (replace local path with <a class="reference external" href="https://">https://</a> download path)</p></li>
+</ul>
+<p>Computation will either refer to outright data conversion to a new format,
+or referencing using one of the Kerchunk drivers to create a reference file.
+In either case the computation may be extensive and require processing in the background
+or deployment and parallelisation across the group of projects.</p>
+<p>Computation can be executed in serial for a group with the following:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">padocc compute -G my-group</span>
+</pre></div>
+</div>
+</section>
+<section id="validate">
+<h2>Validate<a class="headerlink" href="#validate" title="Permalink to this heading"></a></h2>
+<p>Cloud products must be validated against equivalent Xarray objects from CF Aggregations (CFA) where possible, or otherwise using the original NetCDF as separate Xarray Datasets.</p>
+<ul class="simple">
+<li><p>Ensure all variables present in original files are present in the cloud products (barring exceptions where metadata has been altered/corrected)</p></li>
+<li><p>Ensure array shapes are consistent across the products.</p></li>
+<li><p>Ensure data representations are consistent (values in array subsets)</p></li>
+</ul>
+<p>The validation step produced a two-sectioned report that outlines validation warnings and errors with the data or metadata
+around the project. See the documentation on the validation report for more details.</p>
+<p>It is advised to run the validator for all projects in a group to determine any issues
+with the conversion process. Some file types or specific arrangements may produce unwanted effects
+that result in differences between the original and new representations. This can be identified with the
+validator which checks the Xarray representations and identifies differences in both data and metadata.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>padocc<span class="w"> </span>validate<span class="w"> </span>-G<span class="w"> </span>my-group
+</pre></div>
+</div>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Permalink to this heading"></a></h2>
+<p>Cloud products that have been validated are moved to a <code class="docutils literal notranslate"><span class="pre">complete</span></code> directory with the project code as the name, plus the revision identifier <cite>abX.X</cite> - learn more about this in the Extra section.
+These can then be linked to a catalog or ingested into the CEDA archive where appropriate.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="interactive.html" class="btn btn-neutral float-right" title="Running padocc interactively (Notebook/Shell)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024, Centre of Environmental Data Analysis Developers,Scientific and Technical Facilities Council (STFC),UK Research and Innovation (UKRI). BSD 2-Clause License. All rights reserved..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>  
+
+  <style>
+    /* Sidebar header (and topbar for mobile) */
+    .wy-side-nav-search, .wy-nav-top {
+      background: #e92603;
+    }
+
+    .caption-text, .header h1 {
+        color: #ef4d5a
+    }
+
+    .note {
+        background: #BEEF9E
+    }
+    .admonition-title {
+        background: #335145
+    }
+
+    .wy-nav-side {
+        background: #001711;
+    }
+
+  </style>
+
+
+</body>
+</html>
