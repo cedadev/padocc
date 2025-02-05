@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "padocc"
-version = "1.3.0b0"
+version = "1.3.0"
 description = "Pipeline to Aggregate Data for Optimised Cloud Capabilities"
 authors = ["Daniel Westwood <daniel.westwood@stfc.ac.uk>"]
 license = "BSD 3"
