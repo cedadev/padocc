@@ -809,7 +809,62 @@ class ZarrStore(GenericStore):
         """
         Open the ZarrStore as an xarray dataset
         """
-        return xr.open_dataset(self.store_path, engine='zarr', **zarr_kwargs)
+        return xr.open_dataset(self._store_path, engine='zarr', **zarr_kwargs)
+
+    def write_to_s3(
+            self, 
+            credentials: Union[dict, str],
+            bucket_id: str,
+            name_ovewrite: Union[str, None] = None,
+            s3_kwargs: dict = None,
+            **zarr_kwargs):
+        """
+        Write zarr store to an S3 Object Store
+        bucket directly from padocc
+        """
+
+        self.logger.info(f'Configuring s3 connection')
+
+        default_s3 = {'anon':False}
+        s3_kwargs = s3_kwargs or {}
+
+        default_s3.update(s3_kwargs)
+
+        try:
+            import s3fs
+        except ImportError:
+            raise ValueError(
+                "s3fs package not installed in your environment - please "
+                "install with pip or otherwise."
+            )
+
+        if isinstance(credentials, str):
+            with open(credentials) as f:
+                creds = json.load(f)
+        else:
+            creds = credentials
+
+        self.logger.info(f'Connecting to {credentials["endpoint_url"]}')
+
+        remote_s3 = s3fs.S3FileSystem(
+            secret = credentials['secret'],
+            key = credentials['token'],
+            client_kwargs = {'endpoint_url': credentials['endpoint_url']},
+            **default_s3
+        )
+
+        if name_overwrite is not None:
+            name = f'{bucket_id}/{name_overwrite}.{self._extension}
+        else:
+            name = f'{bucket_id}/{self._store_name}.{self._extension}'
+
+        self.logger.info(f'Writing to {name}')
+
+        s3_store = s3fs.S3Map(f'{name}', s3=remote_s3)
+        ds = self.open_dataset(**zarr_kwargs)
+        ds.to_zarr(store=s3_store, mode='w')
+
+        self.logger.info(f'Zarr store {name} written.')
 
 class KerchunkStore(GenericStore):
     """

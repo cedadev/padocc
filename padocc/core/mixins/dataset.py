@@ -150,6 +150,43 @@ class DatasetHandlerMixin:
 
         getattr(self, target).set_meta(meta)
 
+    def write_to_s3(
+            self,
+            credentials: Union[dict, str],
+            bucket_id: str,
+            name_ovewrite: Union[str, None] = None,
+            dataset_type: str = 'zstore',
+            write_as: str = 'zarr',
+            s3_kwargs: dict = None,
+            **zarr_kwargs
+        ) -> None:
+        """
+        Write one of the active ``dataset`` objects to 
+        an s3 zarr store
+        """
+
+        if write_as != 'zarr':
+            raise NotImplementedError(
+                'Non-zarr transfers not yet supported.'
+            )
+
+        if not hasattr(self, dataset_type):
+            raise ValueError(
+                f'Project has no attribute {dataset_type}'
+            )
+
+        ds = getattr(self, dataset_type)
+        name_overwrite = name_overwrite or f'{self.proj_code}_{self.revision}'
+
+        ds.write_to_s3(
+            credentials,
+            bucket_id,
+            name_overwrite=name_overwrite,
+            s3_kwargs=s3_kwargs,
+            **zarr_kwargs
+        )
+
+
     @property
     def dataset_attributes(self) -> dict:
         """
