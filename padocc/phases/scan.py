@@ -172,14 +172,18 @@ class ScanOperation(ProjectOperation):
         limiter = min(100, max(2, int(nfiles/20)))
 
         self.logger.info(f'Determined {limiter} files to scan (out of {nfiles})')
-        self.logger.debug(f'Using {mode} scan operations')
+        self.logger.info(f'Performing CFA Base Scan (Standard)')
+        self._scan_cfa(limiter=limiter)
 
         if mode == 'zarr':
+            self.logger.debug('Performing Zarr Scan')
             self._scan_zarr(limiter=limiter, mem_allowed=mem_allowed)
         elif mode == 'kerchunk':
+            self.logger.debug('Performing Kerchunk Scan')
             self._scan_kerchunk(limiter=limiter, ctype=ctype)
-        elif mode == 'cfa':
-            self._scan_cfa(limiter=limiter)
+        elif mode == 'CFA':
+            # CFA is always performed.
+            pass
         else:
             self.update_status('scan','ValueError',jobid=self._logid)
             raise ValueError(
@@ -257,11 +261,14 @@ class ScanOperation(ProjectOperation):
             ctypes, escape=escape, scanned_with='kerchunk'
         )
 
-    def _scan_cfa(self, limiter: Union[int,None] = None):
+    def _scan_cfa(
+            self, 
+            limiter: Union[int,None] = None,
+            is_core: bool = True
+        ) -> None:
         """
         Function to perform scanning with output CFA format.
         """
-        self.logger.info('Starting scan process for CFA cloud format')
 
         # Redo this processor call.
         comp = ComputeOperation(
@@ -276,14 +283,15 @@ class ScanOperation(ProjectOperation):
         )
 
         status = comp._run(file_limit=limiter)
-        self.logger.info('Scan-CFA results generated')
         
         if status == 'Success':
-            self.logger.info(yaml.dump(self.detail_cfg['data_properties']))
+            self.logger.info('Determined data properties:')
+            self.logger.info(yaml.dump(self.base_cfg['data_properties']))
         else:
             self.logger.info(' > Result generation failed.')
 
-        self.update_status('scan',status,jobid=self._logid)
+        if is_core:
+            self.update_status('scan',status,jobid=self._logid)
         return status
 
     def _scan_zarr(
