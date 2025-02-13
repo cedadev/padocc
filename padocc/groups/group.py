@@ -238,9 +238,18 @@ class GroupOperation(
         if subset is not None:
             codeset = self._configure_subset(codeset, subset, proj_code)
 
-        elif proj_code in codeset:
-            self.logger.info(f'Project code: {proj_code}')
-            codeset = [proj_code]
+        if proj_code is not None:
+            if proj_code in codeset:
+                self.logger.info(f'Project code: {proj_code}')
+                codeset = [proj_code]
+            elif proj_code.isnumeric():
+                if abs(int(proj_code)) > len(codeset):
+                    raise ValueError(
+                        'Invalid project code specfied. If indexing, '
+                        f'must be less than {len(codeset)-1}'
+                    )
+                # Perform by index
+                codeset = [codeset[int(proj_code)]]
 
         func = phases[phase]
 
