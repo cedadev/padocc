@@ -315,10 +315,23 @@ class ComputeOperation(ProjectOperation):
             file_limit = None
 
         results = self._run_cfa(file_limit=file_limit)
+
+        print(results)
+
+        # Check results values
+        success = len(results.keys()) > 0
+        for s in results.values():
+            if s == 'Unknown':
+                success = False
+
         if results is not None:
             # Save results
             self.base_cfg['data_properties'] = results
+            self.base_cfg.close()
+        
+        if success:
             self.detail_cfg['CFA'] = True
+            self.detail_cfg.close()
             return 'Success'
         return 'Fatal'
 
@@ -590,32 +603,33 @@ class ComputeOperation(ProjectOperation):
         the CFA process.
         """
     
-        report = self.base_cfg['data_properties'] 
-        self.logger.debug(report)
+        report = {k: tuple(v) for k, v in self.base_cfg['data_properties'].items()} 
 
         concat_dims = report['aggregated_dims']
-        identical_dims = [c for c in report['coord_dims'] if c not in concat_dims]
+        identical_dims = tuple(c for c in report['coord_dims'] if c not in concat_dims)
 
         identicals = tuple(set(report['identical_vars'] + \
                          report['scalar_vars'] + \
-                         tuple(identical_dims) + \
+                         identical_dims + \
                          report['pure_dims']))
     
         return concat_dims, identicals, report
 
     def _dims_via_validator(self) -> tuple[list[str]]:
+        """
+        Determine identical/concat dims using the validator
+        """
+        self.logger.info('Starting dimension determination - using Validator')
 
         test_files = [self.allfiles[0], self.allfiles[-1]]
-
-        datasets = [xr.open_dataset(t) for t in test_files]
-
+        datasets   = [xr.open_dataset(t) for t in test_files]
         dimensions = datasets[0].dims
 
         vd = ValidateDatasets(
             datasets,
             'scan-dim-check',
             dataset_labels=('first','last'),
-            logger=FalseLogger()
+            logger=self.logger
         )
 
         vd.validate_metadata()
@@ -631,7 +645,12 @@ class ComputeOperation(ProjectOperation):
 
         dims = vd.report['report']['data'].get('dimensions',{})
 
-        vars = vd.report['report']['data'].get('data_errors',{})
+        # Non identical variables identifiable by either data errors (the data changes between files)
+        # Or size errors (the array size is different - data must be different in this case.)
+        derrs   = set(vd.report['report']['data'].get('data_errors',{}))
+        sizerrs = set(vd.report['report']['data']['variables'].get('size_errors',{}))
+
+        vars = derrs | sizerrs
 
         concat_dims = []
         if 'data_errors' in dims:
@@ -640,6 +659,8 @@ class ComputeOperation(ProjectOperation):
         # Concat dims will vary across files, identicals will not.
 
         identical_dims = [dim for dim in dimensions if dim not in vars]
+        
+        
         return concat_dims, identical_dims
 
     def _determine_dim_specs(self) -> None:
@@ -674,7 +695,6 @@ class ComputeOperation(ProjectOperation):
             self.logger.info(f"Found {self.combine_kwargs['concat_dims']} concatenation dimensions.")
 
         # Identical (Variables) Dimensions
-        self.logger.info("Determining identical variables")
         self.logger.info(f"Found {self.combine_kwargs['identical_dims']} identical variables.")
 
         # This one only happens for two files so don't need to take a mean
@@ -761,10 +781,10 @@ class KerchunkDS(ComputeOperation):
             
             ## Attempt to load the cache file
             if not self._thorough:
-                self.logger.info(f'Loading cache file: {x+1}/{self.limiter}')
+                self.logger.info(f'Attempting cache file load: {x+1}/{self.limiter}')
                 ref = CacheFile.get()
                 if ref:
-                    self.logger.info(f' > Loaded refs')
+                    self.logger.info(f' > Loaded ref')
                     create_mode = False
 
             ## Create cache file from scratch if needed
