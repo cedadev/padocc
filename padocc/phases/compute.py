@@ -316,23 +316,23 @@ class ComputeOperation(ProjectOperation):
 
         results = self._run_cfa(file_limit=file_limit)
 
-        print(results)
+        if results is None:
+            return 'Fatal'
+        
+        self.base_cfg['data_properties'] = results
+        self.base_cfg.close()
 
         # Check results values
         success = len(results.keys()) > 0
         for s in results.values():
             if s == 'Unknown':
                 success = False
-
-        if results is not None:
-            # Save results
-            self.base_cfg['data_properties'] = results
-            self.base_cfg.close()
         
         if success:
             self.detail_cfg['CFA'] = True
             self.detail_cfg.close()
             return 'Success'
+        
         return 'Fatal'
 
     def _run_cfa(
@@ -647,8 +647,9 @@ class ComputeOperation(ProjectOperation):
 
         # Non identical variables identifiable by either data errors (the data changes between files)
         # Or size errors (the array size is different - data must be different in this case.)
-        derrs   = set(vd.report['report']['data'].get('data_errors',{}))
-        sizerrs = set(vd.report['report']['data']['variables'].get('size_errors',{}))
+        derrs    = set(vd.report['report']['data'].get('data_errors',{}))
+        var_errs = vd.report['report']['data'].get('variables',{})
+        sizerrs  = set(var_errs.get('size_errors',{}))
 
         vars = derrs | sizerrs
 
