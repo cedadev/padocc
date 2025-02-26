@@ -67,19 +67,20 @@ class PropertiesMixin:
         return f'{self.dir}/{self.outproduct}'
     
     @property
+    def complete_product(self):
+        return f'{self.proj_code}.{self.revision}'
+
+    @property
     def outproduct(self):
         """
         File/directory name for the output product.
         Revision takes into account cloud format and
         type where applicable.
         """
-        if self.stage == 'complete':
-            return f'{self.proj_code}.{self.revision}'
-        else:
-            vn = f'{self.revision}a'
-            if self._is_trial:
-                vn = f'trial-{vn}'
-            return vn
+        vn = f'{self.revision}a'
+        if self._is_trial:
+            vn = f'trial-{vn}'
+        return vn
     
     @property
     def revision(self) -> str:

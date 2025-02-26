@@ -40,6 +40,18 @@ class DatasetHandlerMixin:
         func(' > project.zstore - Zarr Filehandler property')
         func(' > project.update_attribute() - Update an attribute within the metadata')
 
+    def save_ds_filehandlers(self):
+        """
+        Save all dataset files that already exist
+        """
+
+        if self.kfile.file_exists():
+            self.kfile.close()
+
+        # Stores automatically check if they exist already
+        self.kstore.close()
+        self.zstore.close()
+
     @property
     def kfile(self) -> Union[KerchunkFile,None]:
         """
@@ -70,7 +82,7 @@ class DatasetHandlerMixin:
     @property
     def dataset(
         self
-    ) -> Union[KerchunkFile,GenericStore, CFADataset, None]:
+    ) -> Union[KerchunkFile, GenericStore, CFADataset, None]:
         """
         Generic dataset property, links to the correct
         cloud format, given the Project's ``cloud_format``
@@ -116,7 +128,7 @@ class DatasetHandlerMixin:
         """
         Path to the CFA object for this project.
         """
-        return f'{self.dir}/{self.proj_code}.nca'
+        return f'{self.dir}/{self.proj_code}_{self.version_no}.nca'
     
     @property
     def zstore(self) -> Union[ZarrStore, None]:

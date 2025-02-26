@@ -28,6 +28,19 @@ class StatusMixin:
         func(' > project.get_last_status() - Get the status of the previous core operation.')
         func(' > project.get_log_contents() - Get the log contents of a previous core operation')
 
+    def update_status(
+            self, 
+            phase : str, 
+            status: str, 
+            jobid : str = ''
+        ) -> None: 
+        """
+        Mapper to update the status of the project
+        via the status log filehandler.
+        """
+        self.status_log.update_status(phase, status, jobid=jobid)
+        self.status_log.close()
+
     def set_last_run(self, phase: str, time : str) -> None:
         """
         Set the phase and time of the last run for this project.
