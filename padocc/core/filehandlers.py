@@ -628,11 +628,19 @@ class KerchunkFile(JSONFileHandler):
         self.logger.debug('Successfully opened Kerchunk with virtual xarray ds')
         return ds
 
-    def get_meta(self):
+    def get_meta(self) -> Union[dict,None]:
         """
         Obtain the metadata dictionary
         """
-        return self._value['refs']['.zattrs']
+        self._obtain_value()
+
+        refs = self._value.get('refs',{})
+        zattrs = refs.get('.zattrs',None)
+        
+        if isinstance(zattrs, str):
+            zattrs = json.loads(zattrs)
+
+        return zattrs
     
     def set_meta(self, values: dict):
         """
@@ -768,7 +776,7 @@ class GenericStore(LoggedOperation):
         """
         Obtain the metadata dictionary
         """
-        return self._meta['refs']['.zattrs']
+        return self._meta.get()
     
     def set_meta(self, values: dict):
         """
@@ -778,7 +786,7 @@ class GenericStore(LoggedOperation):
             raise ValueError(
                 'Cannot reset metadata for a file with no existing values.'
             )
-        self._meta['refs']['.zattrs'] = values
+        self._meta.set(values)
 
     def __contains__(self, key: str) -> bool:
         """
@@ -1022,6 +1030,13 @@ class CFADataset(LoggedOperation):
         """Programmatic representation of CFA Dataset"""
         return self.__str__
     
+    def get_meta(self) -> dict:
+        """
+        Get the metadata/attributes for this dataset
+        """
+
+        return {}
+
     def spawn_copy(self, copy: str):
         """
         Spawn a copy of this file (not filehandler)
