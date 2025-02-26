@@ -146,6 +146,35 @@ class GroupOperation(
             
         return self.get_project(proj_code)
     
+    def complete_group(
+            self, 
+            move_to: str,
+            repeat_id: str = 'main'
+        ):
+        """
+        Complete all projects for a group.
+        """
+
+        self.logger.info("Verifying completion directory exists")
+        if not os.path.isdir(move_to):
+            os.makedirs(move_to)
+
+        if not os.access(move_to, os.W_OK):
+            raise OSError(
+                f'Directory {move_to} is not writable'
+            )
+        
+        proj_list = self.proj_codes[repeat_id].get()
+        self.logger.info(
+            f"Completing {len(proj_list)}/{len(self)} "
+            f"projects for {self.groupID}"
+        )
+
+        for proj in proj_list:
+            proj_op = self[proj]
+            proj_op.complete_project(move_to)
+
+    
     def get_stac_representation(
             self, 
             stac_mapping: dict, 

@@ -290,6 +290,33 @@ class ProjectOperation(
         os.system(f'rm -rf {self.dir}')
         self.logger.info(f'All internal files for {self.proj_code} deleted.')
 
+    def complete_project(self, move_to: str) -> None:
+        """
+        Move project to a completeness directory
+        """
+
+        self.logger.debug(f' > {self.proj_code} [{self.cloud_format}]')
+
+        status = self.get_last_status()
+        if 'validate' not in status:
+            self.logger.warning(
+                f'Most recent phase for {self.proj_code} is NOT validation - '
+                'please re-validate any changes or ensure products are otherwise validated.'
+            )
+
+        self.save_files()
+
+        # Spawn copy of dataset
+        complete_dataset = f'{move_to}/{self.complete_product}'
+        self.dataset.spawn_copy(complete_dataset)
+
+        # Spawn copy of cfa dataset
+        complete_cfa = self.cfa_path.replace(self.dir, move_to)
+        self.cfa_dataset.spawn_copy(complete_cfa)
+
+        if not self._dryrun:
+            self.update_status('complete','Success')
+
     def migrate(cls, newgroupID: str):
         """
         Migrate this project to a new group.
@@ -327,18 +354,6 @@ class ProjectOperation(
         del cls
         return new_cls
 
-    def update_status(
-            self, 
-            phase : str, 
-            status: str, 
-            jobid : str = ''
-        ) -> None: 
-        """
-        Mapper to update the status of the project
-        via the status log filehandler.
-        """
-        self.status_log.update_status(phase, status, jobid=jobid)
-
     def save_files(self):
         """
         Save all filehandlers associated with this 
@@ -348,6 +363,9 @@ class ProjectOperation(
         self.detail_cfg.close()
         self.allfiles.close()
         self.status_log.close()
+
+        # Save dataset filehandlers
+        self.save_ds_filehandlers()
 
     def _get_phase(self):
         """
