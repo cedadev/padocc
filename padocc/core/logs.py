@@ -145,6 +145,8 @@ def reset_file_handler(
     fhandle.setFormatter(formatter)
     logger.addHandler(fhandle)
 
+    logger.setLevel(levels[verbose])
+
     return logger
 
 def init_logger(
