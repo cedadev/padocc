@@ -565,7 +565,7 @@ class KerchunkFile(JSONFileHandler):
         if 'history' in attrs:
             hist = attrs.get('history','')
 
-            if type(hist) == str:
+            if isinstance(hist, str):
                 hist = hist.split('\n')
 
             if 'Kerchunk' in hist[-1]:
@@ -596,7 +596,7 @@ class KerchunkFile(JSONFileHandler):
         default_zarr = {'consolidated':False, 'decode_times':True}
         default_zarr.update(kwargs)
 
-        self.logger.info(f'Attempting to open Kerchunk JSON file')
+        self.logger.info('Attempting to open Kerchunk JSON file')
         try:
             mapper  = fsspec.get_mapper('reference://',fo=self.filepath, **default_fsspec)
         except json.JSONDecodeError as err:
@@ -643,6 +643,15 @@ class KerchunkFile(JSONFileHandler):
                 'Cannot reset metadata for a file with no existing values.'
             )
         self._value['refs']['.zattrs'] = values
+
+    def spawn_copy(self, copy: str):
+        """
+        Spawn a copy of this file (not filehandler)
+        """
+        if self._dryrun:
+            print(f'[DRYRUN]: cp {self.filepath} {copy}.{self._extension}')
+        else:
+            os.system(f'cp {self.filepath} {copy}.{self._extension}')
 
 class GenericStore(LoggedOperation):
     """
@@ -713,6 +722,22 @@ class GenericStore(LoggedOperation):
 
         self._meta['refs']['.zattrs'] = attrs
     
+    def spawn_copy(self, copy: str):
+        """
+        Spawn a copy of this store (not filehandler)
+        """
+        if self._dryrun:
+            print(f'[DRYRUN]: cp -R {self.store_path} {copy}.{self._extension}/')
+        else:
+            os.system(f'cp -R {self.store_path} {copy}.{self._extension}/')
+
+    def close(self) -> None:
+        """
+        Close the meta filehandler for this store
+        """
+        if not self.is_empty:
+            self._meta.close()
+
     @property
     def store_path(self) -> str:
         """Assemble the store path"""
@@ -945,7 +970,7 @@ class CSVFileHandler(ListFileHandler):
         self.append(addition)
         self.logger.info(f'Updated new status: {phase} - {status}')
 
-class CFADataset:
+class CFADataset(LoggedOperation):
     """
     Basic handler for CFA dataset
 
@@ -955,7 +980,19 @@ class CFADataset:
     1. Open dataset - opens the CFA dataset
     """
 
-    def __init__(self, filepath, identifier):
+    def __init__(
+            self, 
+            filepath: str, 
+            identifier: str,
+            logger   : Optional[Union[logging.Logger,FalseLogger]] = None, 
+            label    : Union[str,None] = None,
+            fh       : Optional[str] = None,
+            logid    : Optional[str] = None,
+            dryrun   : bool = False,
+            forceful : bool = False,
+            thorough : bool = False,
+            verbose  : int = 0
+            ):
 
         if 'CFA' not in xr.backends.list_engines():
             raise ImportError(
@@ -966,6 +1003,17 @@ class CFADataset:
         self._filepath = filepath
         self._ident = identifier
 
+        # All filehandlers are logged operations
+        super().__init__(
+            logger,
+            label=label,
+            fh=fh,
+            logid=logid,
+            verbose=verbose,
+            dryrun=dryrun,
+            forceful=forceful,
+            thorough=thorough)
+
     def __str__(self) -> str:
         """String representation of CFA Dataset"""
         return f'<PADOCC CFA Dataset: {self._ident}>'
@@ -974,6 +1022,15 @@ class CFADataset:
         """Programmatic representation of CFA Dataset"""
         return self.__str__
     
+    def spawn_copy(self, copy: str):
+        """
+        Spawn a copy of this file (not filehandler)
+        """
+        if self._dryrun:
+            print(f'[DRYRUN]: cp {self._filepath} {copy}')
+        else:
+            os.system(f'cp {self._filepath} {copy}')
+
     def open_dataset(self, **kwargs) -> xr.Dataset:
         """Open the CFA Dataset [READ-ONLY]"""
         return xr.open_dataset(self._filepath, engine='CFA',**kwargs)
