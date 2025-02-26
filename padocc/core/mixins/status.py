@@ -40,8 +40,16 @@ class StatusMixin:
             jobid : str = ''
         ) -> None: 
         """
-        Mapper to update the status of the project
-        via the status log filehandler.
+        Update the status of a project
+
+        Status updates performed via the status log filehandler,
+        during phased operation of the pipeline.
+
+        :param phase:   (str) Phased operation being performed.
+
+        :param status:  (str) Status of phased operation outcome
+
+        :param jobid:   (str) ID of SLURM job in which this operation has taken place.
         """
         self.status_log.update_status(phase, status, jobid=jobid)
         self.status_log.close()
@@ -49,6 +57,10 @@ class StatusMixin:
     def set_last_run(self, phase: str, time : str) -> None:
         """
         Set the phase and time of the last run for this project.
+
+        :param phase:   (str) Phased operation of last run.
+
+        :param time:    (str) Timestamp for operation.
         """
         lr = (phase, time)
         self.base_cfg['last_run'] = lr
@@ -67,6 +79,8 @@ class StatusMixin:
     def get_log_contents(self, phase: str) -> str:
         """
         Get the contents of the log file as a string
+
+        :param phase:   (str) Phased operation from which to pull logs.
         """
 
         if phase in self.phase_logs:
@@ -77,6 +91,14 @@ class StatusMixin:
     def show_log_contents(self, phase: str, halt : bool = False, func: Callable = print):
         """
         Format the contents of the log file to print.
+
+        :param phase:   (str) Phased operation to pull log data from.
+
+        :param halt:    (bool) Stop and display log data, wait for input before
+            continuing.
+
+        :param func:        (Callable) provide an alternative to 'print' function
+            for displaying help information.
         """
 
         logfh = self.get_log_contents(phase=phase)
