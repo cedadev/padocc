@@ -100,6 +100,8 @@ class ProjectOperation(
 
         """
 
+        self.proj_code = proj_code
+
         self.mem_allowed = mem_allowed
 
         if label is None:
@@ -122,19 +124,11 @@ class ProjectOperation(
             raise ValueError(
                 f'The group "{groupID}" has not been initialised - not present in the working directory'
             )
-        
-        self.proj_code = proj_code
 
         # Need a first-time initialisation implementation for some elements.
 
-        if fh == 'PhaseLog':
-            if not hasattr(self, 'phase'):
-                raise ValueError(
-                    'Running jobs with no phase operation is not supported'
-                )
-            
-            fh = f'{self.dir}/phase_logs/{self.phase}.log'
-            self.logger = reset_file_handler(self.logger, verbose=verbose, fh=fh)
+        if fh is not None:
+            self.logger.info('Logging to filesystem file is enabled')
     
         self._create_dirs(first_time=first_time)
 

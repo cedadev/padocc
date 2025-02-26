@@ -55,6 +55,14 @@ class DirectoryMixin(LoggedOperation):
         if verbose in levels:
             verbose = levels.index(verbose)
 
+        if fh == 'PhaseLog':
+            if not hasattr(self, 'phase'):
+                raise ValueError(
+                    'Running jobs with no phase operation is not supported'
+                )
+            
+            fh = f'{self.dir}/phase_logs/{self.phase}.log'
+
         super().__init__(
             logger,
             label=label,

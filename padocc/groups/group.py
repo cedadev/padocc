@@ -286,12 +286,11 @@ class GroupOperation(
         for id, proj_code in enumerate(codeset):
             self.logger.info(f'Starting operation: {id+1}/{len(codeset)} ({format_str(proj_code, 15, concat=True, shorten=True)})')
         
-            fh = None
+            fh = 'PhaseLog'
 
             logid = id
             if jobid is not None:
                 logid = jobid
-                fh = 'PhaseLog'
 
             status = func(
                 proj_code, 
@@ -339,7 +338,6 @@ class GroupOperation(
 
         :returns:   None
         """
-
         so = ScanOperation(
             proj_code, self.workdir, groupID=self.groupID,
             verbose=self._verbose, bypass=bypass, 
