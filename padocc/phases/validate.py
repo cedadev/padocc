@@ -860,9 +860,13 @@ class ValidateOperation(ProjectOperation):
     Bypass switch contained here with all switches.
     """
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        """
+        No current validate-specific parameters
+        """
 
         self.phase = 'validate'
+        super().__init__(*args, **kwargs)
+
 
     def _run(
             self,
