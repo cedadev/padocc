@@ -5,7 +5,6 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 from typing import Callable
 
 class StatusMixin:
-
     """
     Methods relating to the ProjectOperation class, in terms
     of determining the status of previous runs.
@@ -23,6 +22,12 @@ class StatusMixin:
 
     @classmethod
     def help(cls, func: Callable = print):
+        """
+        Helper function displays basic functions for use.
+
+        :param func:        (Callable) provide an alternative to 'print' function
+            for displaying help information.
+        """
         func('Status Options:')
         func(' > project.get_last_run() - Get the last performed phase and time it occurred')
         func(' > project.get_last_status() - Get the status of the previous core operation.')

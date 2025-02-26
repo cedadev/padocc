@@ -74,9 +74,12 @@ class DirectoryMixin(LoggedOperation):
 
     def _setup_workdir(self):
         """
-        Setup working directory for this object
-        if it does not already exist.
+        Setup working directory for this object.
+
+        The directory will be created if it does not 
+        already exist.
         """
+
         if self.workdir is None:
             raise ValueError(
                 'Working directory not defined.'
@@ -91,8 +94,10 @@ class DirectoryMixin(LoggedOperation):
 
     def _setup_groupdir(self):
         """
-        Setup group directory for this object
-        if it does not already exist.
+        Setup group directory for this object.
+
+        The directory will be created if it does not 
+        already exist.
         """
         if self.groupID:  
             # Create group directory
@@ -112,6 +117,7 @@ class DirectoryMixin(LoggedOperation):
     def _setup_cache(self, dir):
         """
         Set up the personal cache for this directory object.
+        
         Note: Typically only Project Operators use a file
         cache, but this feature could be implemented for 
         Groups in the future.

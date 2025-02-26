@@ -2,7 +2,7 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-from typing import Union, Callable
+from typing import Union, Callable, Any
 import xarray as xr
 import os
 
@@ -31,6 +31,12 @@ class DatasetHandlerMixin:
 
     @classmethod
     def help(cls, func: Callable = print):
+        """
+        Helper function to describe basic functions from this mixin
+
+        :param func:        (Callable) provide an alternative to 'print' function
+            for displaying help information.
+        """
         func('Dataset Handling:')
         func(' > project.dataset - Default product Filehandler (pointer) property')
         func(' > project.dataset_attributes - Fetch metadata from the default dataset')
@@ -43,6 +49,11 @@ class DatasetHandlerMixin:
     def save_ds_filehandlers(self):
         """
         Save all dataset files that already exist
+
+        Product filehandlers include kerchunk files, 
+        stores (via parquet) and zarr stores. The CFA 
+        filehandler is not currently editable, so is not
+        included here.
         """
 
         if self.kfile.file_exists():
@@ -55,7 +66,7 @@ class DatasetHandlerMixin:
     @property
     def kfile(self) -> Union[KerchunkFile,None]:
         """
-        Retrieve the kfile filehandler, create if not present
+        Retrieve the kfile filehandler or create if not present
         """
                 
         if self._kfile is None:
@@ -69,7 +80,7 @@ class DatasetHandlerMixin:
     @property
     def kstore(self) -> Union[KerchunkStore,None]:
         """
-        Retrieve the kstore filehandler, create if not present
+        Retrieve the kstore filehandler or create if not present
         """        
         if self._kfile is None:
             self._kfile = KerchunkStore(
@@ -84,6 +95,8 @@ class DatasetHandlerMixin:
         self
     ) -> Union[KerchunkFile, GenericStore, CFADataset, None]:
         """
+        Gets the product filehandler corresponding to cloud format.
+
         Generic dataset property, links to the correct
         cloud format, given the Project's ``cloud_format``
         property with other configurations applied.
@@ -111,8 +124,10 @@ class DatasetHandlerMixin:
     @property
     def cfa_dataset(self) -> xr.Dataset:
         """
-        Retrieve a read-only xarray representation 
-        of a CFA dataset
+        Gets the product filehandler for the CFA dataset.
+
+        The CFA filehandler is currently read-only, and can
+        be used to open an xarray representation of the dataset.
         """
 
         if not self._cfa_dataset:
@@ -133,7 +148,7 @@ class DatasetHandlerMixin:
     @property
     def zstore(self) -> Union[ZarrStore, None]:
         """
-        Retrieve a filehandler for the zarr store
+        Retrieve the filehandler for the zarr store
         """
         
         if self._zstore is None:
@@ -146,13 +161,20 @@ class DatasetHandlerMixin:
 
     def update_attribute(
             self, 
-            attribute, 
-            value, 
-            target: str = 'kfile',
-        ):
+            attribute: str, 
+            value: Any, 
+            target: str = 'dataset',
+        ) -> None:
         """
-        Update an attribute within a 
-        dataset representation's metadata.
+        Update an attribute within a dataset representation's metadata.
+
+        :param attribute:   (str) The name of an attribute within the metadata
+            property of the corresponding filehandler.
+
+        :param value:       (Any) The new value to set for this attribute.
+
+        :param target:      (str) The target product filehandler, uses the 
+            generic dataset filehandler if not otherwise specified.
         """
 
         if hasattr(self,target):
@@ -165,7 +187,6 @@ class DatasetHandlerMixin:
     @property
     def dataset_attributes(self) -> dict:
         """
-        Fetch a dictionary of the metadata for the dataset
-        where possible.
+        Fetch a dictionary of the metadata for the dataset.
         """
         return self.dataset.get_meta()
