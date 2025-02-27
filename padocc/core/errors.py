@@ -3,11 +3,11 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import json
-import os
 import logging
+import os
 import traceback
-
 from typing import Optional, Union
+
 
 def error_handler(
         err : Exception, 

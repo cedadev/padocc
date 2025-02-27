@@ -3,19 +3,19 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import json
-import os
-import yaml
-from datetime import datetime
 import logging
-from typing import Iterator
-from typing import Optional, Union
-import xarray as xr
-import fsspec
+import os
 import re
+from datetime import datetime
+from typing import Iterator, Optional, Union
 
-from .logs import LoggedOperation, FalseLogger
+import fsspec
+import xarray as xr
+import yaml
+
+from .errors import ChunkDataError, KerchunkDecodeError
+from .logs import FalseLogger, LoggedOperation
 from .utils import format_str
-from .errors import KerchunkDecodeError, ChunkDataError
 
 
 class FileIOMixin(LoggedOperation):
@@ -150,6 +150,13 @@ class FileIOMixin(LoggedOperation):
         ) -> None:
         """
         Migrate the file to a new location.
+
+        :param new_dir:     (str) New directory for filehandler being moved.
+
+        :param new_name:    (str) New name for filehandler if required.
+
+        :param new_extension:   (str) New extension if required (e.g. changing
+            log-type).
         """
 
         if not os.access(new_dir, os.W_OK):
@@ -176,7 +183,9 @@ class FileIOMixin(LoggedOperation):
         
     def __set_filepath(self, filepath) -> None:
         """
-        Private method to hard reset the filepath
+        Private method to hard reset the filepath.
+
+        :param filepath: (str) Reset dir and filename via a single filepath.
         """
 
         components = '/'.join(filepath.split("/"))
@@ -214,13 +223,30 @@ class ListFileHandler(FileIOMixin):
             init_value: Union[list, None] = None,
             **kwargs) -> None:
         
+        """
+        Initialisation for list filehandlers.
+
+        :param dir:     (str) The path to the directory in which this file can be found.
+
+        :param filename: (str) The name of the file on the filesystem.
+        
+        :param extension: (str) Extension to apply to this handler, if not default txt.
+        
+        :param init_value:  (list) Initial value to apply to this filehandler.
+        """
+        
+        
         super().__init__(dir, filename, **kwargs)
 
         self._value: list    = init_value or []
         self._extension: str = extension or 'txt'
 
     def append(self, newvalue: Union[str,list]) -> None:
-        """Add a new value to the internal list"""
+        """
+        Add a new value to the internal list.
+
+        :param newvalue:    (str|list) New value to append to current list.
+        """
         self._obtain_value()
 
         if isinstance(newvalue, list):

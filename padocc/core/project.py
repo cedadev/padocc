@@ -2,32 +2,22 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-import os
 import glob
-import yaml
 import logging
+import os
+from typing import Callable, Union
 
-from typing import Union, Callable
+import yaml
 
 from .errors import error_handler
-from .utils import (
-    extract_file, 
-    BypassSwitch, 
-    apply_substitutions, 
-    phases, 
-    file_configs, 
-    FILE_DEFAULT,
-    print_fmt_str
-)
+from .filehandlers import (CSVFileHandler, JSONFileHandler, ListFileHandler,
+                           LogFileHandler)
 from .logs import reset_file_handler
+from .mixins import (DatasetHandlerMixin, DirectoryMixin, PropertiesMixin,
+                     StatusMixin)
+from .utils import (FILE_DEFAULT, BypassSwitch, apply_substitutions,
+                    extract_file, file_configs, phases, print_fmt_str)
 
-from .mixins import DirectoryMixin, DatasetHandlerMixin, StatusMixin, PropertiesMixin
-from .filehandlers import (
-    JSONFileHandler, 
-    CSVFileHandler,
-    ListFileHandler,
-    LogFileHandler,
-)
 
 class ProjectOperation(
     DirectoryMixin, 
@@ -72,18 +62,18 @@ class ProjectOperation(
 
         :param ft_kwargs:
 
-        :param logger:
+        :param logger:              (logging.Logger) Logger supplied to this Operation.
                                     
         :param bypass:              (BypassSwitch) instance of BypassSwitch class containing multiple
-                                    bypass/skip options for specific events. See utils.BypassSwitch.
+            bypass/skip options for specific events. See utils.BypassSwitch.
 
         :param label:               (str) The label to apply to the logger object.
 
         :param fh:                  (str) Path to logfile for logger object generated in this specific process.
 
         :param logid:               (str) ID of the process within a subset, which is then added to the name
-                                    of the logger - prevents multiple processes with different logfiles getting
-                                    loggers confused.
+            of the logger - prevents multiple processes with different logfiles getting
+            loggers confused.
 
         :param verbose:         (int) Level of verbosity for log messages (see core.init_logger).
 

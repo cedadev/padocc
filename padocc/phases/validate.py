@@ -2,21 +2,16 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
-import xarray as xr
 import json
-from datetime import datetime
-
 import random
+from datetime import datetime
+from typing import Optional, Union
+
 import numpy as np
+import xarray as xr
 
-from typing import Union, Optional
-
-from padocc.core import ProjectOperation
-from padocc.core import LoggedOperation
-from padocc.core import BypassSwitch
-
+from padocc.core import BypassSwitch, LoggedOperation, ProjectOperation
 from padocc.core.errors import ValidationError
-
 from padocc.core.filehandlers import JSONFileHandler
 from padocc.core.utils import format_tuple
 

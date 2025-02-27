@@ -1,8 +1,9 @@
 import os
+
 import xarray
 
-from padocc import ProjectOperation
 import padocc.core.filehandlers as fhs
+from padocc import ProjectOperation
 
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 

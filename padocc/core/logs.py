@@ -4,7 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import logging
 import os
-from typing import Union, Callable
+from typing import Callable, Union
 
 levels = [
     logging.WARN,

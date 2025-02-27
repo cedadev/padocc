@@ -2,26 +2,21 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-import os
-import yaml
 import logging
-from typing import Optional, Union, Callable
+import os
+from typing import Callable, Optional, Union
 
-from padocc.core import BypassSwitch, FalseLogger
-from padocc.core.utils import format_str, print_fmt_str
-from padocc.core import ProjectOperation
-from padocc.phases import (
-    ScanOperation,
-    ComputeOperation,
-    KerchunkDS, 
-    ZarrDS, 
-    KNOWN_PHASES,
-    ValidateOperation,
-)
-from padocc.core.mixins import DirectoryMixin
+import yaml
+
+from padocc.core import BypassSwitch, FalseLogger, ProjectOperation
 from padocc.core.filehandlers import CSVFileHandler, ListFileHandler
+from padocc.core.mixins import DirectoryMixin
+from padocc.core.utils import format_str, print_fmt_str
+from padocc.phases import (KNOWN_PHASES, ComputeOperation, KerchunkDS,
+                           ScanOperation, ValidateOperation, ZarrDS)
 
-from .mixins import AllocationsMixin, InitialisationMixin, EvaluationsMixin, ModifiersMixin
+from .mixins import (AllocationsMixin, EvaluationsMixin, InitialisationMixin,
+                     ModifiersMixin)
 
 COMPUTE = {
     'kerchunk':KerchunkDS,
@@ -494,6 +489,7 @@ class GroupOperation(
         into Filehandler objects
         """
         import glob
+
         # Check filesystem for objects
         proj_codes = [g.split('/')[-1].strip('.txt') for g in glob.glob(f'{self.proj_codes_dir}/*.txt')]
 

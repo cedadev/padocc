@@ -4,6 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 from typing import Callable, Union
 
+
 class PropertiesMixin:
     """
     Properties relating to the ProjectOperation class that

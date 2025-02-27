@@ -1,5 +1,4 @@
 from padocc import GroupOperation
-
 from padocc.core.utils import BypassSwitch
 
 WORKDIR = 'padocc/tests/auto_testdata_dir'

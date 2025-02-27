@@ -2,12 +2,13 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-import os
 import logging
+import os
 from typing import Callable
 
 from ..logs import LoggedOperation, levels
 from ..utils import BypassSwitch
+
 
 class DirectoryMixin(LoggedOperation):
     """

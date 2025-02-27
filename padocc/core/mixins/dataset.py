@@ -2,17 +2,14 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-from typing import Union, Callable, Any
-import xarray as xr
 import os
+from typing import Any, Callable, Union
 
-from ..filehandlers import (
-    KerchunkFile,
-    KerchunkStore,
-    ZarrStore,
-    CFADataset,
-    GenericStore
-)
+import xarray as xr
+
+from ..filehandlers import (CFADataset, GenericStore, KerchunkFile,
+                            KerchunkStore, ZarrStore)
+
 
 class DatasetHandlerMixin:
     """
