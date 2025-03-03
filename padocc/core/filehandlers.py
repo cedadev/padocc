@@ -741,7 +741,7 @@ class KerchunkFile(JSONFileHandler):
         :param copy:    (str) Path to new copy location and filename (minus extension).
         """
         if self._dryrun:
-            print(f'[DRYRUN]: cp {self.filepath} {copy}.{self._extension}')
+            self.logger.info(f'[DRYRUN]: cp {self.filepath} {copy}.{self._extension}')
         else:
             os.system(f'cp {self.filepath} {copy}.{self._extension}')
 
@@ -857,7 +857,7 @@ class GenericStore(LoggedOperation):
         :param copy:    (str) New full path + name for external copy of the store (minus extension).
         """
         if self._dryrun:
-            print(f'[DRYRUN]: cp -R {self.store_path} {copy}.{self._extension}/')
+            self.logger.info(f'[DRYRUN]: cp -R {self.store_path} {copy}.{self._extension}/')
         else:
             os.system(f'cp -R {self.store_path} {copy}.{self._extension}/')
 
@@ -1303,7 +1303,7 @@ class CFADataset(LoggedOperation):
             at the point of release.
         """
         if self._dryrun:
-            print(f'[DRYRUN]: cp {self.filepath} {copy}.{self._extension}')
+            self.logger.info(f'[DRYRUN]: cp {self.filepath} {copy}.{self._extension}')
         else:
             os.system(f'cp {self.filepath} {copy}.{self._extension}')
 

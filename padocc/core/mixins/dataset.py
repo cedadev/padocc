@@ -69,7 +69,9 @@ class DatasetHandlerMixin:
         if self._kfile is None:
             self._kfile = KerchunkFile(
                 self.dir,
-                self.outproduct
+                self.outproduct,
+                logger=self.logger,
+                **self.fh_kwargs,
             )
 
         return self._kfile
@@ -82,7 +84,9 @@ class DatasetHandlerMixin:
         if self._kfile is None:
             self._kfile = KerchunkStore(
                 self.dir,
-                self.outproduct
+                self.outproduct,
+                logger=self.logger,
+                **self.fh_kwargs,
             )
 
         return self._kfile
@@ -131,6 +135,7 @@ class DatasetHandlerMixin:
             self._cfa_dataset = CFADataset(
                 self.cfa_path,
                 identifier=self.proj_code,
+                logger=self.logger,
                 **self.fh_kwargs
             )
 
@@ -152,7 +157,9 @@ class DatasetHandlerMixin:
         if self._zstore is None:
             self._zstore = ZarrStore(
                 self.dir,
-                self.outproduct
+                self.outproduct,
+                logger=self.logger,
+                **self.fh_kwargs,
             )
 
         return self._zstore
