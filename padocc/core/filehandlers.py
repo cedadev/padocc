@@ -613,12 +613,19 @@ class KerchunkFile(JSONFileHandler):
                 if self._value[key][0][0] == sub:
                     self._value[key][0] = replace + self._value[key][0]
 
-    def add_kerchunk_history(self, version_no: str) -> None:
+    def update_history(
+            self, 
+            addition: str,
+            new_version: str,
+        ) -> None:
         """
-        Add kerchunk variables to the metadata for this dataset, including 
-        creation/update date and version/revision number.
+        Update the history with a new addition.
+        
+        Sets the new version/revision automatically.
 
-        :param version_no:  (str) Specific version number for the history
+        :param addition:    (str) Message to add to dataset history.
+
+        :param new_version:  (str) Specific version number for the history
             entry being applied.
         """
 
@@ -634,24 +641,16 @@ class KerchunkFile(JSONFileHandler):
         
         attrs = attrs['.zattrs']
 
-        # Format for different uses
-        now = datetime.now()
-        if 'history' in attrs:
-            hist = attrs.get('history','')
+        now   = datetime.now()
 
-            if isinstance(hist, str):
-                hist = hist.split('\n')
+        hist = attrs.get('history',[])
+        if isinstance(hist, str):
+            hist = hist.split('\n')
+        hist.append(addition)
 
-            if 'Kerchunk' in hist[-1]:
-                hist[-1] = 'Kerchunk file updated on ' + now.strftime("%D")
-            else:
-                hist.append('Kerchunk file created on ' + now.strftime("%D"))
-            attrs['history'] = '\n'.join(hist)
-        else:
-            attrs['history'] = 'Kerchunk file created on ' + now.strftime("%D") + '\n'
-        
-        attrs['padocc_revision'] = version_no
-        attrs['padocc_creation_date'] = now.strftime("%d%m%yT%H%M%S")
+        attrs['history'] = '\n'.join(hist)
+        attrs['padocc_revision'] = new_version
+        attrs['padocc_last_changed'] = now.strftime("%d%m%yT%H%M%S")
         
         self.set_meta(attrs)
 
@@ -826,7 +825,7 @@ class GenericStore(LoggedOperation):
             dryrun=dryrun,
             thorough=thorough)
 
-    def _update_history(
+    def update_history(
             self,
             addition: str,
             new_version: str,
@@ -844,7 +843,14 @@ class GenericStore(LoggedOperation):
         attrs = self._meta['refs']['.zattrs']
         now   = datetime.now()
 
-        attrs['history'].append(addition)
+        now   = datetime.now()
+
+        hist = attrs.get('history',[])
+        if isinstance(hist, str):
+            hist = hist.split('\n')
+        hist.append(addition)
+
+        attrs['history'] = '\n'.join(hist)
         attrs['padocc_revision'] = new_version
         attrs['padocc_last_changed'] = now.strftime("%d%m%yT%H%M%S")
 
@@ -1181,6 +1187,35 @@ class CFADataset(LoggedOperation):
         super().__init__(**kwargs)
 
         self._correct_existing_files()
+
+    def update_history(
+            self,
+            addition: str,
+            new_version: str,
+        ) -> None:
+        """
+        Update the history with a new addition.
+        
+        Sets the new version/revision automatically.
+
+        :param addition:    (str) Message to add to dataset history.
+
+        :param new_version: (str) New version the message applies to.
+        """
+
+        attrs = self.get_meta()
+        now   = datetime.now()
+
+        hist = attrs.get('history',[])
+        if isinstance(hist, str):
+            hist = hist.split('\n')
+        hist.append(addition)
+
+        attrs['history'] = '\n'.join(hist)
+        attrs['padocc_revision'] = new_version
+        attrs['padocc_last_changed'] = now.strftime("%d%m%yT%H%M%S")
+
+        self.set_meta(attrs)
 
     @property
     def filepath(self):

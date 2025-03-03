@@ -200,17 +200,26 @@ class PropertiesMixin:
         """
         return self.detail_cfg.get(index='driver', default='src')
     
-    def minor_version_increment(self):
+    def minor_version_increment(self, addition: Union[str,None] = None):
         """
         Increment the minor x.Y number for the version.
 
         Use this function for when properties of the cloud file have been changed.
+
+        :param addition:    (str) Reason for version change; attribute change or otherwise.
         """
+
+        addition = addition or 'Minor increment.'
         
         major, minor = self.version_no.split('.')
         minor = str(int(minor)+1)
 
         self.version_no = f'{major}.{minor}'
+
+        self.dataset.update_history(
+            addition = f'Minor: {addition}',
+            new_version = self.version_no,
+        )
 
     def major_version_increment(self):
         """
