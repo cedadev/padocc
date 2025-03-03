@@ -130,7 +130,8 @@ class DatasetHandlerMixin:
         if not self._cfa_dataset:
             self._cfa_dataset = CFADataset(
                 self.cfa_path,
-                self.proj_code
+                identifier=self.proj_code,
+                **self.fh_kwargs
             )
 
         return self._cfa_dataset
@@ -140,7 +141,7 @@ class DatasetHandlerMixin:
         """
         Path to the CFA object for this project.
         """
-        return f'{self.dir}/{self.proj_code}_{self.version_no}.nca'
+        return f'{self.dir}/{self.proj_code}'
     
     @property
     def zstore(self) -> Union[ZarrStore, None]:
