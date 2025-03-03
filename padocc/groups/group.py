@@ -268,7 +268,7 @@ class GroupOperation(
                 proj_code, 
                 mode=mode, 
                 logid=logid, 
-                label=phase, 
+                label=f'{self._label}_{phase}', 
                 fh=fh, 
                 bypass=bypass,
                 run_kwargs=run_kwargs,
@@ -315,6 +315,7 @@ class GroupOperation(
             proj_code, self.workdir, groupID=self.groupID,
             verbose=self._verbose, bypass=bypass, 
             dryrun=self._dryrun, **kwargs)
+
         status = so.run(mode=mode, **self.fh_kwargs, **run_kwargs)
         so.save_files()
         return status
