@@ -3,13 +3,15 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import os
-import binpacking
 from typing import Callable
 
+import binpacking
+
 from padocc import ProjectOperation
-from padocc.phases import KNOWN_PHASES
-from padocc.core.utils import times, BypassSwitch
 from padocc.core.filehandlers import ListFileHandler
+from padocc.core.utils import BypassSwitch, times
+from padocc.phases import KNOWN_PHASES
+
 
 class AllocationsMixin:
     """

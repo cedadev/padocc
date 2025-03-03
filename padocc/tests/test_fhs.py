@@ -1,14 +1,10 @@
 import os
+
 import yaml
 
-from padocc.core.filehandlers import (
-    JSONFileHandler,
-    KerchunkFile,
-    ListFileHandler,
-    LogFileHandler,
-    CSVFileHandler
-
-)
+from padocc.core.filehandlers import (CSVFileHandler, JSONFileHandler,
+                                      KerchunkFile, ListFileHandler,
+                                      LogFileHandler)
 
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 

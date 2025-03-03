@@ -6,8 +6,9 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
 import argparse
 
-from padocc.core.utils import BypassSwitch, get_attribute
 from padocc import GroupOperation, phase_map
+from padocc.core.utils import BypassSwitch, get_attribute
+
 
 def get_args():
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')

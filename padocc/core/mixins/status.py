@@ -4,8 +4,8 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 from typing import Callable
 
-class StatusMixin:
 
+class StatusMixin:
     """
     Methods relating to the ProjectOperation class, in terms
     of determining the status of previous runs.
@@ -23,14 +23,45 @@ class StatusMixin:
 
     @classmethod
     def help(cls, func: Callable = print):
+        """
+        Helper function displays basic functions for use.
+
+        :param func:        (Callable) provide an alternative to 'print' function
+            for displaying help information.
+        """
         func('Status Options:')
         func(' > project.get_last_run() - Get the last performed phase and time it occurred')
         func(' > project.get_last_status() - Get the status of the previous core operation.')
         func(' > project.get_log_contents() - Get the log contents of a previous core operation')
 
+    def update_status(
+            self, 
+            phase : str, 
+            status: str, 
+            jobid : str = ''
+        ) -> None: 
+        """
+        Update the status of a project
+
+        Status updates performed via the status log filehandler,
+        during phased operation of the pipeline.
+
+        :param phase:   (str) Phased operation being performed.
+
+        :param status:  (str) Status of phased operation outcome
+
+        :param jobid:   (str) ID of SLURM job in which this operation has taken place.
+        """
+        self.status_log.update_status(phase, status, jobid=jobid)
+        self.status_log.close()
+
     def set_last_run(self, phase: str, time : str) -> None:
         """
         Set the phase and time of the last run for this project.
+
+        :param phase:   (str) Phased operation of last run.
+
+        :param time:    (str) Timestamp for operation.
         """
         lr = (phase, time)
         self.base_cfg['last_run'] = lr
@@ -49,6 +80,8 @@ class StatusMixin:
     def get_log_contents(self, phase: str) -> str:
         """
         Get the contents of the log file as a string
+
+        :param phase:   (str) Phased operation from which to pull logs.
         """
 
         if phase in self.phase_logs:
@@ -59,6 +92,14 @@ class StatusMixin:
     def show_log_contents(self, phase: str, halt : bool = False, func: Callable = print):
         """
         Format the contents of the log file to print.
+
+        :param phase:   (str) Phased operation to pull log data from.
+
+        :param halt:    (bool) Stop and display log data, wait for input before
+            continuing.
+
+        :param func:        (Callable) provide an alternative to 'print' function
+            for displaying help information.
         """
 
         logfh = self.get_log_contents(phase=phase)
