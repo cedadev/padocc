@@ -3,15 +3,12 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import datetime
-from typing import Union, Optional
 from collections.abc import Callable
+from typing import Optional, Union
 
 from padocc import ProjectOperation
-from padocc.core.utils import (
-    format_str,
-    format_float,
-    deformat_float
-)
+from padocc.core.utils import deformat_float, format_float, format_str
+
 
 class EvaluationsMixin:
     """

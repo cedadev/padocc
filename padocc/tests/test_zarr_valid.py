@@ -1,10 +1,9 @@
 from padocc import GroupOperation
-
 from padocc.core.utils import BypassSwitch
 
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 
-class TestValidate:
+class TestZarrValidate:
     def test_validate(self, workdir=WORKDIR):
         groupID = 'padocc-test-suite'
 

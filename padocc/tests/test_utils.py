@@ -1,5 +1,6 @@
 import os
 
+
 class TestSetup:
     def test_setup(self):
         os.system('mkdir padocc/tests/auto_testdata_dir')

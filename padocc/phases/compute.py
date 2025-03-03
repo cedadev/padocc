@@ -2,39 +2,25 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
-import os
-import json
-from datetime import datetime
-import fsspec
-import xarray as xr
-import numpy as np
 import base64
+import json
 import logging
+import os
+from datetime import datetime
 from typing import Optional, Union
 
+import fsspec
+import numpy as np
 import rechunker
+import xarray as xr
 
-from padocc.core import ProjectOperation
-
-from padocc.core import (
-    FalseLogger,
-    LoggedOperation
-)
-from padocc.core.utils import (
-    find_closest,
-    make_tuple
-)
-
-from padocc.core.errors import (
-    PartialDriverError,
-    KerchunkDriverFatalError,
-    ConcatFatalError,
-    SourceNotFoundError,
-    ComputeError
-)
-
-from padocc.phases.validate import ValidateDatasets
+from padocc.core import FalseLogger, LoggedOperation, ProjectOperation
+from padocc.core.errors import (ComputeError, ConcatFatalError,
+                                KerchunkDriverFatalError, PartialDriverError,
+                                SourceNotFoundError)
 from padocc.core.filehandlers import JSONFileHandler, ZarrStore
+from padocc.core.utils import find_closest, make_tuple
+from padocc.phases.validate import ValidateDatasets
 
 CONCAT_MSG = 'See individual files for more details'    
 
@@ -316,23 +302,23 @@ class ComputeOperation(ProjectOperation):
 
         results = self._run_cfa(file_limit=file_limit)
 
-        print(results)
+        if results is None:
+            return 'Fatal'
+        
+        self.base_cfg['data_properties'] = results
+        self.base_cfg.close()
 
         # Check results values
         success = len(results.keys()) > 0
         for s in results.values():
             if s == 'Unknown':
                 success = False
-
-        if results is not None:
-            # Save results
-            self.base_cfg['data_properties'] = results
-            self.base_cfg.close()
         
         if success:
             self.detail_cfg['CFA'] = True
             self.detail_cfg.close()
             return 'Success'
+        
         return 'Fatal'
 
     def _run_cfa(
@@ -647,8 +633,9 @@ class ComputeOperation(ProjectOperation):
 
         # Non identical variables identifiable by either data errors (the data changes between files)
         # Or size errors (the array size is different - data must be different in this case.)
-        derrs   = set(vd.report['report']['data'].get('data_errors',{}))
-        sizerrs = set(vd.report['report']['data']['variables'].get('size_errors',{}))
+        derrs    = set(vd.report['report']['data'].get('data_errors',{}))
+        var_errs = vd.report['report']['data'].get('variables',{})
+        sizerrs  = set(var_errs.get('size_errors',{}))
 
         vars = derrs | sizerrs
 
@@ -906,9 +893,9 @@ class KerchunkDS(ComputeOperation):
         Concatenating to Parquet-format Kerchunk store
         """
 
-        from kerchunk.combine import MultiZarrToZarr
         from fsspec import filesystem
         from fsspec.implementations.reference import LazyReferenceMapper
+        from kerchunk.combine import MultiZarrToZarr
 
         self.logger.debug('Starting parquet-write process')
 

@@ -2,12 +2,13 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-import os
 import logging
+import os
 from typing import Callable
 
 from ..logs import LoggedOperation, levels
 from ..utils import BypassSwitch
+
 
 class DirectoryMixin(LoggedOperation):
     """
@@ -46,6 +47,39 @@ class DirectoryMixin(LoggedOperation):
             logid : str = None, 
             verbose : int = 0
         ):
+        """
+        Directory Mixin Initialisation
+        
+        :param workdir: (str) Path to the current working directory.
+        
+        :param groupID: (str) Name of current dataset group.
+        
+        :param forceful:    (bool) Continue with processing even if final output file 
+            already exists.
+        
+        :param dryrun:      (bool) If True will prevent output files being generated
+            or updated and instead will demonstrate commands that would otherwise happen.
+        
+        :param thorough:    (bool) From args.quality - if True will create all files 
+            from scratch, otherwise saved refs from previous runs will be loaded.
+        
+        :param logger:      (logging.Logger) Logger supplied to this Operation.
+        
+        :param bypass:      (BypassSwitch) instance of BypassSwitch class containing multiple
+            bypass/skip options for specific events. See utils.BypassSwitch.
+
+        :param label:       (str) The label to apply to the logger object.
+
+        :param fh:          (str) Path to logfile for logger object generated in this specific process.
+            If the fh parameter is set to 'PhaseLog' which occurs from the GroupOperation's config options,
+            the fh parameter will be reset in this mixin to point at the Project's correct phase log file.
+        
+        :param logid:       (str) ID of the process within a subset, which is then added to the name
+            of the logger - prevents multiple processes with different logfiles getting
+            loggers confused.
+        
+        :param verbose:     (int) Level of verbosity for log messages (see core.init_logger).
+        """
         
         self.workdir = workdir
         self.groupID = groupID
@@ -54,6 +88,14 @@ class DirectoryMixin(LoggedOperation):
 
         if verbose in levels:
             verbose = levels.index(verbose)
+
+        if fh == 'PhaseLog':
+            if not hasattr(self, 'phase'):
+                raise ValueError(
+                    'Running jobs with no phase operation is not supported'
+                )
+            
+            fh = f'{self.dir}/phase_logs/{self.phase}.log'
 
         super().__init__(
             logger,
@@ -74,9 +116,12 @@ class DirectoryMixin(LoggedOperation):
 
     def _setup_workdir(self):
         """
-        Setup working directory for this object
-        if it does not already exist.
+        Setup working directory for this object.
+
+        The directory will be created if it does not 
+        already exist.
         """
+
         if self.workdir is None:
             raise ValueError(
                 'Working directory not defined.'
@@ -91,8 +136,10 @@ class DirectoryMixin(LoggedOperation):
 
     def _setup_groupdir(self):
         """
-        Setup group directory for this object
-        if it does not already exist.
+        Setup group directory for this object.
+
+        The directory will be created if it does not 
+        already exist.
         """
         if self.groupID:  
             # Create group directory
@@ -109,12 +156,16 @@ class DirectoryMixin(LoggedOperation):
         self._setup_workdir()
         self._setup_groupdir()
 
-    def _setup_cache(self, dir):
+    def _setup_cache(self, dir: str):
         """
         Set up the personal cache for this directory object.
+        
         Note: Typically only Project Operators use a file
         cache, but this feature could be implemented for 
         Groups in the future.
+
+        :param dir:     (str) Cache directory (normally just the project 
+            directory)
         """
         self.cache = f'{dir}/cache'
 

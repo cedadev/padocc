@@ -2,32 +2,21 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-import os
 import glob
-import yaml
 import logging
+import os
+from typing import Callable, Union
 
-from typing import Union, Callable
+import yaml
 
 from .errors import error_handler
-from .utils import (
-    extract_file, 
-    BypassSwitch, 
-    apply_substitutions, 
-    phases, 
-    file_configs, 
-    FILE_DEFAULT,
-    print_fmt_str
-)
-from .logs import reset_file_handler
+from .filehandlers import (CSVFileHandler, JSONFileHandler, ListFileHandler,
+                           LogFileHandler)
+from .mixins import (DatasetHandlerMixin, DirectoryMixin, PropertiesMixin,
+                     StatusMixin)
+from .utils import (FILE_DEFAULT, BypassSwitch, apply_substitutions,
+                    extract_file, file_configs, phases, print_fmt_str)
 
-from .mixins import DirectoryMixin, DatasetHandlerMixin, StatusMixin, PropertiesMixin
-from .filehandlers import (
-    JSONFileHandler, 
-    CSVFileHandler,
-    ListFileHandler,
-    LogFileHandler,
-)
 
 class ProjectOperation(
     DirectoryMixin, 
@@ -35,7 +24,9 @@ class ProjectOperation(
     StatusMixin,
     PropertiesMixin):
     """
-    PADOCC Project Operation class, able to access project files
+    PADOCC Project Operation class.
+    
+    Able to access project files
     and perform some simple functions. Single-project operations
     always inherit from this class (e.g. Scan, Compute, Validate)
     """
@@ -68,22 +59,25 @@ class ProjectOperation(
 
         :param groupID:         (str) Name of current dataset group.
 
-        :param first_time:
+        :param first_time:      (bool) Activate for first-time setup of new project (creates files
+            instead of reading empty ones), this is automatically activated when using the Group Init
+            function.
 
-        :param ft_kwargs:
+        :param ft_kwargs:       (dict) Arguments provided on first time setup of the new project, stored
+            in the project base config.
 
-        :param logger:
+        :param logger:              (logging.Logger) Logger supplied to this Operation.
                                     
         :param bypass:              (BypassSwitch) instance of BypassSwitch class containing multiple
-                                    bypass/skip options for specific events. See utils.BypassSwitch.
+            bypass/skip options for specific events. See utils.BypassSwitch.
 
         :param label:               (str) The label to apply to the logger object.
 
         :param fh:                  (str) Path to logfile for logger object generated in this specific process.
 
         :param logid:               (str) ID of the process within a subset, which is then added to the name
-                                    of the logger - prevents multiple processes with different logfiles getting
-                                    loggers confused.
+            of the logger - prevents multiple processes with different logfiles getting
+            loggers confused.
 
         :param verbose:         (int) Level of verbosity for log messages (see core.init_logger).
 
@@ -99,6 +93,8 @@ class ProjectOperation(
         :returns: None
 
         """
+
+        self.proj_code = proj_code
 
         self.mem_allowed = mem_allowed
 
@@ -122,19 +118,11 @@ class ProjectOperation(
             raise ValueError(
                 f'The group "{groupID}" has not been initialised - not present in the working directory'
             )
-        
-        self.proj_code = proj_code
 
         # Need a first-time initialisation implementation for some elements.
 
-        if fh == 'PhaseLog':
-            if not hasattr(self, 'phase'):
-                raise ValueError(
-                    'Running jobs with no phase operation is not supported'
-                )
-            
-            fh = f'{self.dir}/phase_logs/{self.phase}.log'
-            self.logger = reset_file_handler(self.logger, verbose=verbose, fh=fh)
+        if fh is not None:
+            self.logger.info('Logging to filesystem file is enabled')
     
         self._create_dirs(first_time=first_time)
 
@@ -173,14 +161,16 @@ class ProjectOperation(
         self.stage = None
 
     def __str__(self):
+        """String representation of project"""
         return f'<PADOCC Project: {self.proj_code} ({self.groupID})>'
     
     def __repr__(self):
+        """Yaml info dump representation"""
         return yaml.dump(self.info())
 
     def info(self):
         """
-        Display some info about this particular project
+        Display some info about this particular project.
         """
         return {
             self.proj_code: {
@@ -196,6 +186,9 @@ class ProjectOperation(
     def help(self, func: Callable = print_fmt_str):
         """
         Public user functions for the project operator.
+
+        :param func:        (Callable) provide an alternative to 'print' function
+            for displaying help information.
         """
         func('Project Operator:')
         func(' > project.info() - Get some information about this project')
@@ -215,8 +208,9 @@ class ProjectOperation(
             **kwargs
         ) -> str:
         """
-        Main function for running any project operation. All 
-        subclasses act as plugins for this function, and require a
+        Main function for running any project operation. 
+        
+        All subclasses act as plugins for this function, and require a
         ``_run`` method called from here. This means all error handling
         with status logs and log files can be dealt with here.
         
@@ -224,6 +218,23 @@ class ProjectOperation(
         with kerchunk mode), see the additional parameters of ``run`` in
         the source code for the phase you are running. In this example, 
         see ``padocc.phases.compute:KerchunkDS._run``
+
+        :param mode:            (str) Cloud format to use for any operations. Default value is 
+            'kerchunk' and any changes via the 'cloud_format' parameter to this project are taken
+            into account. Note: Setting the mode for a specific operation using THIS argument,
+            will reset the cloud format stored property for this class.
+
+        :param bypass:          (BypassSwitch) instance of BypassSwitch class containing multiple
+            bypass/skip options for specific events. See utils.BypassSwitch.
+
+        :param forceful:        (bool) Continue with processing even if final output file 
+            already exists.
+
+        :param dryrun:          (bool) If True will prevent output files being generated
+            or updated and instead will demonstrate commands that would otherwise happen.
+
+        :param thorough:        (bool) From args.quality - if True will create all files 
+            from scratch, otherwise saved refs from previous runs will be loaded.
         
         """
 
@@ -261,6 +272,7 @@ class ProjectOperation(
 
     @property
     def dir(self):
+        """Project directory property, relative to workdir."""
         if self.groupID:
             return f'{self.workdir}/in_progress/{self.groupID}/{self.proj_code}'
         else:
@@ -269,7 +281,9 @@ class ProjectOperation(
     def file_exists(self, file : str):
         """
         Check if a named file exists (without extension).
-        This can be any generic filehandler attached."""
+
+        This can be any generic filehandler attached.
+        """
         if hasattr(self, file):
             fhandle = getattr(self, file)
         return fhandle.file_exists()
@@ -277,6 +291,8 @@ class ProjectOperation(
     def delete_project(self, ask: bool = True):
         """
         Delete a project
+
+        :param ask: (bool) Will ask an 'are you sure' message if not False.
         """
         if self._dryrun:
             self.logger.info('Skipped Deleting directory in dryrun mode.')
@@ -290,11 +306,43 @@ class ProjectOperation(
         os.system(f'rm -rf {self.dir}')
         self.logger.info(f'All internal files for {self.proj_code} deleted.')
 
+    def complete_project(self, move_to: str) -> None:
+        """
+        Move project to a completeness directory
+
+        :param move_to:     (str) Path to completeness directory to extract content.
+        """
+
+        self.logger.debug(f' > {self.proj_code} [{self.cloud_format}]')
+
+        status = self.get_last_status()
+        if 'validate' not in status:
+            self.logger.warning(
+                f'Most recent phase for {self.proj_code} is NOT validation - '
+                'please re-validate any changes or ensure products are otherwise validated.'
+            )
+
+        self.save_files()
+
+        # Spawn copy of dataset
+        complete_dataset = f'{move_to}/{self.complete_product}'
+        self.dataset.spawn_copy(complete_dataset)
+
+        # Spawn copy of cfa dataset
+        complete_cfa = self.cfa_path.replace(self.dir, move_to) + '_' + self.version_no
+        self.cfa_dataset.spawn_copy(complete_cfa)
+
+        if not self._dryrun:
+            self.update_status('complete','Success')
+
     def migrate(cls, newgroupID: str):
         """
         Migrate this project to a new group.
-        1. Move the whole project directory on the filesystem.
-        2. Move all associated filehandlers (individually?)
+
+        Moves the whole project directory on the filesystem and 
+        moves all associated filehandlers (individually).
+
+        :param newgroupID:  (str) ID of new group to move this project to.
         """
         cls.logger.info(f'Migrating project {cls.proj_code}')
         
@@ -327,29 +375,19 @@ class ProjectOperation(
         del cls
         return new_cls
 
-    def update_status(
-            self, 
-            phase : str, 
-            status: str, 
-            jobid : str = ''
-        ) -> None: 
+    def save_files(self) -> None:
         """
-        Mapper to update the status of the project
-        via the status log filehandler.
-        """
-        self.status_log.update_status(phase, status, jobid=jobid)
-
-    def save_files(self):
-        """
-        Save all filehandlers associated with this 
-        group.
+        Save all filehandlers associated with this group.
         """
         self.base_cfg.close()
         self.detail_cfg.close()
         self.allfiles.close()
         self.status_log.close()
 
-    def _get_phase(self):
+        # Save dataset filehandlers
+        self.save_ds_filehandlers()
+
+    def _get_phase(self) -> str:
         """
         Gets the highest phase this project has currently undertaken successfully
         """
@@ -365,8 +403,10 @@ class ProjectOperation(
             max_sid = max(sid, max_sid)
         return phases[max_sid]
 
-    def _configure_filelist(self):
+    def _configure_filelist(self) -> None:
         """
+        Configure the filelist for this project.
+
         Set the contents of the filelist based on
         the values provided in the base config,
         either filepath to a text file or a pattern.
@@ -399,14 +439,26 @@ class ProjectOperation(
 
     def _setup_config(
             self, 
-            pattern : str = None, 
-            updates : str = None, 
-            removals : str = None,
-            substitutions: dict = None,
+            pattern : Union[str,None] = None, 
+            updates : Union[str,None] = None, 
+            removals : Union[str,None] = None,
+            substitutions: Union[dict,None] = None,
             **kwargs,
         ) -> None:
         """
         Create base cfg json file with all required parameters.
+
+        :param pattern:     (str) File pattern or path to file containing
+            a list of source files that this project includes.
+
+        :param updates:     (str) Path to json file containing updates. Updates
+            should be of the form ``{'update_attribute': 'update_value'}``.
+
+        :param removals:    (str) Path to json file containing removals. Removals
+            should be of the form ``{'remove_attribute'}``
+
+        :param substitutions: (dict) The substitutions applied to the set of files
+            identified by the pattern.
         """
 
         self.logger.debug(f'Constructing the config file for {self.proj_code}')
@@ -421,9 +473,14 @@ class ProjectOperation(
                 config['substitutions'] = substitutions
             self.base_cfg.set(config | kwargs)
 
-    def _dir_exists(self, checkdir : str = None):
+    def _dir_exists(
+            self, 
+            checkdir: Union[str,None] = None) -> bool:
         """
-        Check a directory exists on the filesystem
+        Check a directory exists on the filesystem.
+
+        :param checkdir:    (str) Check this directory exists. Defaults
+            to the project directory for this project.
         """
         if not checkdir:
             checkdir = self.dir
@@ -432,9 +489,14 @@ class ProjectOperation(
             return True
         return False
 
-    def _create_dirs(self, first_time : bool = None):
+    def _create_dirs(
+            self, 
+            first_time : bool = None
+        ) -> None:
         """
-        Create Project directory and other required directories
+        Create Project directory and other required directories.
+
+        :param first_time:  (bool) Skip creating existing directories if this is true.
         """
         if not self._dir_exists():
             if self._dryrun:

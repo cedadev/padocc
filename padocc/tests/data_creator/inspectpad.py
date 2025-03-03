@@ -1,5 +1,5 @@
-from padocc.phases import ScanOperation, KerchunkDS
 from padocc.core.utils import BypassSwitch
+from padocc.phases import KerchunkDS, ScanOperation
 
 WORKDIR = '/home/users/dwest77/cedadev/padocc/padocc/tests/auto_testdata_dir'
 

@@ -3,7 +3,7 @@ from padocc.core.utils import BypassSwitch
 
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 
-class TestCompute:
+class TestZarrCompute:
     def test_compute_basic(self, workdir=WORKDIR):
         groupID = 'padocc-test-suite'
 
