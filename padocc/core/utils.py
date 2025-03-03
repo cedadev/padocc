@@ -26,7 +26,6 @@ phases = [
     'scan',
     'compute',
     'validate',
-    'catalog'
 ]
 
 BASE_CFG = {
