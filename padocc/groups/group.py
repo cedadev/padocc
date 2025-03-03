@@ -2,26 +2,21 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-import os
-import yaml
 import logging
-from typing import Optional, Union, Callable
+import os
+from typing import Callable, Optional, Union
 
-from padocc.core import BypassSwitch, FalseLogger
-from padocc.core.utils import format_str, print_fmt_str
-from padocc.core import ProjectOperation
-from padocc.phases import (
-    ScanOperation,
-    ComputeOperation,
-    KerchunkDS, 
-    ZarrDS, 
-    KNOWN_PHASES,
-    ValidateOperation,
-)
-from padocc.core.mixins import DirectoryMixin
+import yaml
+
+from padocc.core import BypassSwitch, FalseLogger, ProjectOperation
 from padocc.core.filehandlers import CSVFileHandler, ListFileHandler
+from padocc.core.mixins import DirectoryMixin
+from padocc.core.utils import format_str, print_fmt_str
+from padocc.phases import (KNOWN_PHASES, ComputeOperation, KerchunkDS,
+                           ScanOperation, ValidateOperation, ZarrDS)
 
-from .mixins import AllocationsMixin, InitialisationMixin, EvaluationsMixin, ModifiersMixin
+from .mixins import (AllocationsMixin, EvaluationsMixin, InitialisationMixin,
+                     ModifiersMixin)
 
 COMPUTE = {
     'kerchunk':KerchunkDS,
@@ -146,6 +141,35 @@ class GroupOperation(
             
         return self.get_project(proj_code)
     
+    def complete_group(
+            self, 
+            move_to: str,
+            repeat_id: str = 'main'
+        ):
+        """
+        Complete all projects for a group.
+        """
+
+        self.logger.info("Verifying completion directory exists")
+        if not os.path.isdir(move_to):
+            os.makedirs(move_to)
+
+        if not os.access(move_to, os.W_OK):
+            raise OSError(
+                f'Directory {move_to} is not writable'
+            )
+        
+        proj_list = self.proj_codes[repeat_id].get()
+        self.logger.info(
+            f"Completing {len(proj_list)}/{len(self)} "
+            f"projects for {self.groupID}"
+        )
+
+        for proj in proj_list:
+            proj_op = self[proj]
+            proj_op.complete_project(move_to)
+
+    
     def get_stac_representation(
             self, 
             stac_mapping: dict, 
@@ -257,12 +281,11 @@ class GroupOperation(
         for id, proj_code in enumerate(codeset):
             self.logger.info(f'Starting operation: {id+1}/{len(codeset)} ({format_str(proj_code, 15, concat=True, shorten=True)})')
         
-            fh = None
+            fh = 'PhaseLog'
 
             logid = id
             if jobid is not None:
                 logid = jobid
-                fh = 'PhaseLog'
 
             status = func(
                 proj_code, 
@@ -310,7 +333,6 @@ class GroupOperation(
 
         :returns:   None
         """
-
         so = ScanOperation(
             proj_code, self.workdir, groupID=self.groupID,
             verbose=self._verbose, bypass=bypass, 
@@ -468,6 +490,7 @@ class GroupOperation(
         into Filehandler objects
         """
         import glob
+
         # Check filesystem for objects
         proj_codes = [g.split('/')[-1].strip('.txt') for g in glob.glob(f'{self.proj_codes_dir}/*.txt')]
 

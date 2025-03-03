@@ -1,6 +1,8 @@
+import os
+
 import netCDF4
 import numpy as np
-import os
+
 
 def create_dims(ds, dims, ignore_attrs):
 

@@ -6,6 +6,7 @@ from typing import Callable
 
 from padocc import ProjectOperation
 
+
 class ModifiersMixin:
     """
     Modifiers to the group in terms of the projects associated,

@@ -7,14 +7,15 @@ SHEPARD:
 Serialised Handler for Enabling Padocc Aggregations via Recurrent Deployment
 """
 
-import os
-import yaml
 import argparse
-from typing import Union
 import glob
 import json
 import time
 from datetime import datetime
+import os
+from typing import Union
+
+import yaml
 
 from padocc.core.logs import LoggedOperation, clear_loggers
 from padocc.core.utils import phases, BypassSwitch

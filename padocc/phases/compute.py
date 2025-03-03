@@ -2,39 +2,25 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
-import os
-import json
-from datetime import datetime
-import fsspec
-import xarray as xr
-import numpy as np
 import base64
+import json
 import logging
+import os
+from datetime import datetime
 from typing import Optional, Union
 
+import fsspec
+import numpy as np
 import rechunker
+import xarray as xr
 
-from padocc.core import ProjectOperation
-
-from padocc.core import (
-    FalseLogger,
-    LoggedOperation
-)
-from padocc.core.utils import (
-    find_closest,
-    make_tuple
-)
-
-from padocc.core.errors import (
-    PartialDriverError,
-    KerchunkDriverFatalError,
-    ConcatFatalError,
-    SourceNotFoundError,
-    ComputeError
-)
-
-from padocc.phases.validate import ValidateDatasets
+from padocc.core import FalseLogger, LoggedOperation, ProjectOperation
+from padocc.core.errors import (ComputeError, ConcatFatalError,
+                                KerchunkDriverFatalError, PartialDriverError,
+                                SourceNotFoundError)
 from padocc.core.filehandlers import JSONFileHandler, ZarrStore
+from padocc.core.utils import find_closest, make_tuple
+from padocc.phases.validate import ValidateDatasets
 
 CONCAT_MSG = 'See individual files for more details'    
 
@@ -907,9 +893,9 @@ class KerchunkDS(ComputeOperation):
         Concatenating to Parquet-format Kerchunk store
         """
 
-        from kerchunk.combine import MultiZarrToZarr
         from fsspec import filesystem
         from fsspec.implementations.reference import LazyReferenceMapper
+        from kerchunk.combine import MultiZarrToZarr
 
         self.logger.debug('Starting parquet-write process')
 

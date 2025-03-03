@@ -3,11 +3,11 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import json
-import os
 import logging
+import os
 import traceback
-
 from typing import Optional, Union
+
 
 def error_handler(
         err : Exception, 
@@ -16,7 +16,7 @@ def error_handler(
         subset_bypass: bool = False,
         jobid: Optional[str] = None,
         status_fh: Optional[object] = None
-    ):
+    ) -> str:
 
     """
     This function should be used at top-level loops over project codes ONLY - 
@@ -25,6 +25,17 @@ def error_handler(
     1. Single slurm job failed - raise Error
     2. Single serial job failed - raise Error
     3. One of a set of tasks failed - print error for that dataset as traceback.
+
+    :param err:     (Exception) Error raised within some part of the pipeline.
+
+    :param logger:  (logging.Logger) Logging operator for any messages.
+
+    :param subset_bypass:   (bool) Skip raising an error if this operation
+        is part of a sequence.
+
+    :param jobid:   (str) The ID of the SLURM job if present.
+
+    :param status_fh:   (object) Padocc Filehandler to update status.
     """
 
     def get_status(tb: list) -> str:
@@ -157,7 +168,7 @@ class ChunkDataError(KerchunkException): # Keep
             proj_code: Union[str,None] = None, 
             groupdir: Union[str,None] = None
         ) -> None:
-        self.message = f'Decoding resulted in overflow - received chunk data contains junk (attempted 3 times)'
+        self.message = 'Decoding resulted in overflow - received chunk data contains junk (attempted 3 times)'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'

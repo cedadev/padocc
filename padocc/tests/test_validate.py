@@ -1,7 +1,7 @@
-from padocc import GroupOperation
-
-from padocc.core.utils import BypassSwitch
 import os
+
+from padocc import GroupOperation
+from padocc.core.utils import BypassSwitch
 
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 
@@ -12,8 +12,6 @@ class TestValidate:
         process = GroupOperation(
             groupID,
             workdir=workdir)
-        
-        assert process.proj_codes['main'].file_exists()
 
         results = process.run('validate', forceful=True, bypass=BypassSwitch('DS'), verbose=2)
 

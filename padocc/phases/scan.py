@@ -2,22 +2,21 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-import math
 import json
-import numpy as np
-import re
 import logging
-import yaml
-
+import math
+import re
 from typing import Union
 
-from padocc.core import ProjectOperation
+import numpy as np
+import yaml
 
-from padocc.core import FalseLogger
+from padocc.core import FalseLogger, ProjectOperation
 from padocc.core.errors import ConcatFatalError
 from padocc.core.filehandlers import JSONFileHandler
 
-from .compute import KerchunkDS, ZarrDS, ComputeOperation
+from .compute import ComputeOperation, KerchunkDS, ZarrDS
+
 
 def _format_float(value: float, logger: logging.Logger = FalseLogger()) -> str:
     """
