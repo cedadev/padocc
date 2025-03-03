@@ -59,6 +59,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#group-subsets-repeats">3. Group subsets/repeats</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#merging-and-unmerging-groups">4. Merging and Unmerging Groups</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#manipulating-projects">5. Manipulating Projects</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#completion-of-a-group-of-projects">6. Completion of a group of projects</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#using-the-projectoperation-class">Using the ProjectOperation class</a><ul>
@@ -303,6 +304,19 @@
 <p class="admonition-title">Note</p>
 <p>Developer note (05/02/25): The transfer project mechanism is currently in alpha deployment, and is known to exhibit inconsistent behaviour when trying to transfer a project to a new uninitialised group. This is an ongoing issue.</p>
 </div>
+</section>
+<section id="completion-of-a-group-of-projects">
+<h3>6. Completion of a group of projects<a class="headerlink" href="#completion-of-a-group-of-projects" title="Permalink to this heading"></a></h3>
+<p>As of padocc v1.3.2, the Group operator now includes a <code class="docutils literal notranslate"><span class="pre">complete_group</span></code> method, which can be used to extract all created products from all projects in a group. This replaces the previous method which would involve running the validation phase in a specific way. This method requires a <strong>completion directory</strong> where all products will be copied. Project codes and revisions are applied at this stage to the copied products, whereas inside the pipeline most products are not referred to by their project codes.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># With my_group initialised with &#39;verbose as true&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">my_group</span><span class="o">.</span><span class="n">complete_group</span><span class="p">(</span><span class="s1">&#39;my_home_dir/completed_datasets&#39;</span><span class="p">)</span>
+<span class="go">INFO [group-operation]: Verifying completion directory exists</span>
+<span class="go">INFO [group-operation]: Completing 2/2 projects for my-group</span>
+<span class="go">INFO [group-operation]: Updated new status: complete - Success</span>
+<span class="go">INFO [group-operation]: Updated new status: complete - Success</span>
+</pre></div>
+</div>
+<p>You can then check inside the <code class="docutils literal notranslate"><span class="pre">completed_datasets</span></code> directory to verify all products are present. For each kerchunk/zarr dataset you will also see a <code class="docutils literal notranslate"><span class="pre">.nca</span></code> CFA dataset file, which follows the Climate Forecast Aggregation conventions (see <a class="reference external" href="https://cedadev.github.io/CFAPyX/">https://cedadev.github.io/CFAPyX/</a> for more details). These can be used locally with Xarray to open the dataset.</p>
 </section>
 </section>
 <section id="using-the-projectoperation-class">
