@@ -52,7 +52,30 @@ class LoggedOperation:
             thorough: bool = None,
             verbose: int = 0
         ) -> None:
+        """
+        Initialise a logged operation.
 
+        :param logger:              (logging.Logger) Logger supplied to this Operation.
+
+        :param label:               (str) The label to apply to the logger object.
+
+        :param fh:                  (str) Path to logfile for logger object generated in this specific process.
+
+        :param logid:               (str) ID of the process within a subset, which is then added to the name
+            of the logger - prevents multiple processes with different logfiles getting
+            loggers confused.
+
+        :param verbose:         (int) Level of verbosity for log messages (see core.init_logger).
+
+        :param forceful:        (bool) Continue with processing even if final output file 
+            already exists.
+
+        :param dryrun:          (bool) If True will prevent output files being generated
+            or updated and instead will demonstrate commands that would otherwise happen.
+
+        :param thorough:        (bool) From args.quality - if True will create all files 
+            from scratch, otherwise saved refs from previous runs will be loaded.
+        """
         self._logid = logid
         self._verbose = verbose
 
@@ -81,7 +104,7 @@ class LoggedOperation:
         pass
 
     @property
-    def fh_kwargs(self):
+    def fh_kwargs(self) -> dict:
         return {
             'dryrun': self._dryrun,
             'forceful': self._forceful,
@@ -89,7 +112,7 @@ class LoggedOperation:
         }
     
     @fh_kwargs.setter
-    def fh_kwargs(self, value):
+    def fh_kwargs(self, value: dict) -> None:
         self._set_fh_kwargs(**value)
 
     def _set_fh_kwargs(
@@ -99,8 +122,18 @@ class LoggedOperation:
             thorough: bool = None
         ) -> None:
         """
-        Set the FH Kwargs for all objects,
-        override but default to current value if not specified.
+        Set the FH Kwargs for all objects.
+
+        Override but defaults to current value if not specified.
+
+        :param forceful:        (bool) Continue with processing even if final output file 
+            already exists.
+
+        :param dryrun:          (bool) If True will prevent output files being generated
+            or updated and instead will demonstrate commands that would otherwise happen.
+
+        :param thorough:        (bool) From args.quality - if True will create all files 
+            from scratch, otherwise saved refs from previous runs will be loaded.
         """
         self._forceful = forceful or self._forceful
         self._dryrun   = dryrun or self._dryrun
