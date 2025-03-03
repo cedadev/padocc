@@ -60,6 +60,8 @@ class DatasetHandlerMixin:
         self.kstore.close()
         self.zstore.close()
 
+        self.cfa_dataset.close()
+
     @property
     def kfile(self) -> Union[KerchunkFile,None]:
         """
@@ -188,6 +190,9 @@ class DatasetHandlerMixin:
         meta[attribute] = value
 
         getattr(self, target).set_meta(meta)
+        if target != 'cfa_dataset' and self.cloud_format != 'cfa':
+            # Also update the CFA dataset.
+            self.cfa_dataset.set_meta(meta)
 
     @property
     def dataset_attributes(self) -> dict:
