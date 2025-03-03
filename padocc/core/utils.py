@@ -230,7 +230,7 @@ def mem_to_val(value: str) -> float:
     suff = suffixes[value.split(' ')[1]]
     return float(value.split(' ')[0]) * suff
 
-def extract_file(input_file: str):
+def extract_file(input_file: str) -> list:
     """
     Extract content from a padocc-external file.
 
@@ -241,16 +241,6 @@ def extract_file(input_file: str):
     with open(input_file) as f:
         content = [r.strip() for r in f.readlines()]
     return content
-
-def find_zarrays(refs: dict) -> dict:
-    """
-    Quick way of extracting all the zarray components of a ref set.
-    """
-    zarrays = {}
-    for r in refs['refs'].keys():
-        if '.zarray' in r:
-            zarrays[r] = refs['refs'][r]
-    return zarrays
 
 def find_closest(num: int, closest: float) -> int:
     """
@@ -286,7 +276,9 @@ def apply_substitutions(
         This is in the case were substitutions are specified for different levels
         of input files.
 
-    :param subs:    (dict) The substitutions applied
+    :param subs:    (dict) The substitutions applied to the content.
+
+    :param content: (list) The set of filepaths to apply substitutions.
     """
     if not subs:
         return content, ""
@@ -301,12 +293,22 @@ def apply_substitutions(
     return content.split('\n') , ""
 
 class BypassSwitch:
-    """Class to represent all bypass switches throughout the pipeline.
+    """
+    Switch container class for multiple error switches.
+    
+    Class to represent all bypass switches throughout the pipeline.
     Requires a switch string which is used to enable/disable specific pipeline 
     switches stored in this class.
     """
 
-    def __init__(self, switch='D'):
+    def __init__(self, switch: str = 'D'):
+        """
+        Initialisation of switch
+        
+        :param switch:  (str) Raw input from CLI or otherwise, referring to specific
+            switch parameters
+        """
+        
         if switch.startswith('+'):
             switch = 'D' + switch[1:]
         self.switch = switch

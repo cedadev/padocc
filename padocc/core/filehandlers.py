@@ -6,8 +6,10 @@ import json
 import logging
 import os
 import re
+import glob
 from datetime import datetime
-from typing import Iterator, Optional, Union
+from typing import Iterator, Optional, Union, Any
+import netCDF4
 
 import fsspec
 import xarray as xr
@@ -255,7 +257,10 @@ class ListFileHandler(FileIOMixin):
         self._value.append(newvalue)
 
     def remove(self, oldvalue: str) -> None:
-        """Remove a value from the internal list"""
+        """
+        Remove a value from the internal list
+        
+        :param oldvalue:    (str) Remove past value from list."""
         self._obtain_value()
         
         self._value.remove(oldvalue)
@@ -264,6 +269,9 @@ class ListFileHandler(FileIOMixin):
         """
         Reset the value as a whole for this 
         filehandler.
+
+        :param value:   (list) Reset the ``_value`` property for this filehandler
+            to the new value.
         """
         if len(value) == 0:
             self.logger.warning(f'No value given to ListFileHandler {self.filepath}')
@@ -276,8 +284,10 @@ class ListFileHandler(FileIOMixin):
 
     def __contains__(self, item: str) -> bool:
         """
-        Check if the item value is contained in
-        this list."""
+        Check if the item value is contained in this list.
+        
+        :param item:    (str) Index item from list filehandler.
+        """
         self._obtain_value()
 
         return item in self._value
@@ -310,6 +320,8 @@ class ListFileHandler(FileIOMixin):
     def __getitem__(self, index: int) -> str:
         """
         Override FileIOMixin class for getting index
+
+        :param index:   (int) Index item by position.
         """
         self._obtain_value()
 
@@ -325,7 +337,11 @@ class ListFileHandler(FileIOMixin):
     
     def __setitem__(self, index: int, value: str) -> None:
         """
-        Enables setting items in filehandlers 'fh[0] = 1'
+        Enables setting items in filehandlers 'fh[0] = 1'.
+
+        :param index:   (int) Set item by position in list.
+
+        :param value:   (str) New value to set for item at position.
         """
         self._obtain_value()
 
@@ -398,6 +414,15 @@ class JSONFileHandler(FileIOMixin):
             init_value: Union[dict,None] = None,
             **kwargs
         ) -> None:
+        """
+        :param dir:     (str) The path to the directory in which this file can be found.
+
+        :param filename: (str) The name of the file on the filesystem.
+        
+        :param conf:    (dict) Dictionary to apply as default values for this filehandler.
+        
+        :param init_value:  (list) Initial value to apply to this filehandler.
+        """
 
         super().__init__(dir, filename, **kwargs)
         self._conf: dict  = conf or {}
@@ -407,13 +432,17 @@ class JSONFileHandler(FileIOMixin):
     def set(self, value: dict) -> None:
         """
         Set the value of the whole dictionary.
+
+        :param value:   (dict) New value to set for this filehandler.
         """
         self._value = dict(value)
 
     def __contains__(self, key: str):
         """
-        Check if the dict for this filehandler
-        contains this key."""
+        Check if the dict for this filehandler contains this key.
+        
+        :param key:     (str) Key to check in this filehandlers dictionary value.
+        """
         self._obtain_value()
 
         return key in self._value.keys()
@@ -445,6 +474,8 @@ class JSONFileHandler(FileIOMixin):
         """
         Enables indexing for filehandlers. 
         Dict-based filehandlers accept string keys only.
+
+        :param index:   (str) Key to use for getting a value from the dictionary.
         """
         self._obtain_value()
 
@@ -454,7 +485,7 @@ class JSONFileHandler(FileIOMixin):
         return None
     
     def create_file(self) -> None:
-        """JSON files require entry of a single dict on creation"""
+        """JSON files require entry of a single dict on creation."""
         super().create_file()
 
         if not self._dryrun:
@@ -467,7 +498,11 @@ class JSONFileHandler(FileIOMixin):
             default: Union[str,None] = None
         ) -> Union[str,dict,None]:
         """
-        Safe method to get a value from this filehandler
+        Safe method to get a value from this filehandler.
+
+        :param index:   (str) Key in dictionary.
+
+        :param default: (str) Default value for this item in the dictionary.
         """
         self._obtain_value()
 
@@ -480,6 +515,10 @@ class JSONFileHandler(FileIOMixin):
         """
         Enables setting items in filehandlers.
         Dict-based filehandlers accept string keys only.
+
+        :param index:   (str) Key in dictionary.
+
+        :param value:   (str) value to set for this key.
         """
         self._obtain_value()
         self._value[index] = value
@@ -487,6 +526,8 @@ class JSONFileHandler(FileIOMixin):
     def _obtain_value(self, index: Union[str,None] = None) -> None:
         """
         Obtain the value for this filehandler.
+
+        :param index:   (str) Key in dictionary.
         """
         if self._value == {}:
             self._obtain_value_from_file()
@@ -559,7 +600,11 @@ class KerchunkFile(JSONFileHandler):
             replace: str = 'https://dap.ceda.ac.uk'
         ) -> None:
         """
-        Add the download link to this Kerchunk File
+        Add the download link to this Kerchunk File.
+
+        :param sub:     (str) Substitution value to be replaced.
+
+        :param replace: (str) Replacement value in download links.
         """
         self._obtain_value()
 
@@ -572,6 +617,9 @@ class KerchunkFile(JSONFileHandler):
         """
         Add kerchunk variables to the metadata for this dataset, including 
         creation/update date and version/revision number.
+
+        :param version_no:  (str) Specific version number for the history
+            entry being applied.
         """
 
         from datetime import datetime
@@ -613,7 +661,13 @@ class KerchunkFile(JSONFileHandler):
             retry: bool = False,
             **kwargs) -> xr.Dataset:
         """
-        Open the kerchunk file as a dataset"""
+        Open the kerchunk file as a dataset
+        
+        :param fsspec_kwargs:   (dict) Kwargs applied to fsspec mapper.
+
+        :param retry:   (bool) Unused property for multiple tries when searching for kerchunk
+            dataset.
+        """
 
         default_fsspec = {'target_options':{'compression':None}}
         if fsspec_kwargs is not None:
@@ -670,7 +724,9 @@ class KerchunkFile(JSONFileHandler):
     
     def set_meta(self, values: dict):
         """
-        Reset the metadata dictionary
+        Reset the metadata dictionary.
+
+        :param values:  (dict) Fully replace all zattrs in kerchunk dataset.
         """
         if 'refs' not in self._value:
             raise ValueError(
@@ -681,6 +737,8 @@ class KerchunkFile(JSONFileHandler):
     def spawn_copy(self, copy: str):
         """
         Spawn a copy of this file (not filehandler)
+
+        :param copy:    (str) Path to new copy location and filename (minus extension).
         """
         if self._dryrun:
             print(f'[DRYRUN]: cp {self.filepath} {copy}.{self._extension}')
@@ -718,6 +776,37 @@ class GenericStore(LoggedOperation):
             thorough : bool = False,
             verbose  : int = 0
         ) -> None:
+        """
+        :param parent_dir:          (str) Directory to place this store.
+
+        :param store_name:          (str) Name of this particular store.
+
+        :param metadata_name:       (str) Stores contain multiple files including one metadata file, which
+            is identified using its own filehandler.
+        
+        :param extension:           (str) Extension for this store, where different stores have different
+            extensions.
+
+        :param logger:              (logging.Logger) Logger supplied to this Operation.
+
+        :param label:               (str) The label to apply to the logger object.
+
+        :param fh:                  (str) Path to logfile for logger object generated in this specific process.
+
+        :param logid:               (str) ID of the process within a subset, which is then added to the name
+            of the logger - prevents multiple processes with different logfiles getting
+            loggers confused.
+
+        :param verbose:         (int) Level of verbosity for log messages (see core.init_logger).
+
+        :param forceful:        (bool) Continue with processing even if final output file 
+            already exists.
+
+        :param dryrun:          (bool) If True will prevent output files being generated
+            or updated and instead will demonstrate commands that would otherwise happen.
+
+        :param thorough:        (bool) From args.quality - if True will create all files 
+            from scratch, otherwise saved refs from previous runs will be loaded."""
 
         self._parent_dir: str = parent_dir
         self._store_name: str = store_name
@@ -743,8 +832,13 @@ class GenericStore(LoggedOperation):
             new_version: str,
         ) -> None:
         """
-        Update the history with a new addition, 
-        and set the new version/revision.
+        Update the history with a new addition.
+        
+        Sets the new version/revision automatically.
+
+        :param addition:    (str) Message to add to dataset history.
+
+        :param new_version: (str) New version the message applies to.
         """
 
         attrs = self._meta['refs']['.zattrs']
@@ -759,6 +853,8 @@ class GenericStore(LoggedOperation):
     def spawn_copy(self, copy: str):
         """
         Spawn a copy of this store (not filehandler)
+
+        :param copy:    (str) New full path + name for external copy of the store (minus extension).
         """
         if self._dryrun:
             print(f'[DRYRUN]: cp -R {self.store_path} {copy}.{self._extension}/')
@@ -807,6 +903,8 @@ class GenericStore(LoggedOperation):
     def set_meta(self, values: dict):
         """
         Reset the metadata dictionary
+
+        :param values:  (dict) Complete set of metadata for this store.
         """
         if 'refs' not in self._meta:
             raise ValueError(
@@ -816,7 +914,10 @@ class GenericStore(LoggedOperation):
 
     def __contains__(self, key: str) -> bool:
         """
-        Check if a key exists in the zattrs file"""
+        Check if a key exists in the metadata file.
+
+        :param key: (str) Key to be checked in the metadata for this store.
+        """
         return key in self._meta
     
     def __str__(self) -> str:
@@ -832,11 +933,23 @@ class GenericStore(LoggedOperation):
         return f'<PADOCC Store: {format_str(self._store_name,10)}>'
 
     def __getitem__(self, index: str) -> Union[str,dict,None]:
-        """Get an attribute from the zarr store"""
+        """
+        Get an attribute from the zarr store
+        
+        :param index:   (str) Key in the metadata to attempt retrieval.
+        """
+        # Fail if improperly indexed with nonexistant key.
         return self._meta[index]
     
     def __setitem__(self, index: str, value: str) -> None:
-        """Set an attribute in the zarr store"""
+        """
+        Set an attribute in the zarr store
+        
+        :param index:   (str) Key in the metadata to attempt retrieval.
+        
+        :param value:   (str) Value to set for the key in the metadata.
+        """
+        # Fail if improperly indexed with nonexistant key.
         self._meta[index] = value
 
 class ZarrStore(GenericStore):
@@ -858,7 +971,12 @@ class ZarrStore(GenericStore):
             **kwargs
         ) -> None:
 
-        super().__init__(parent_dir, store_name, **kwargs)
+        super().__init__(
+            parent_dir, 
+            store_name, 
+            metadata_name='.zattrs',
+            extension='zarr',
+            **kwargs)
 
     def __repr__(self) -> str:
         """Programmatic representation"""
@@ -945,14 +1063,27 @@ class LogFileHandler(ListFileHandler):
             **kwargs
         ) -> None:
 
+        """
+        Initialisation of a log file retrievable via padocc.
+
+        :param dir:     (str) The path to the directory in which this file can be found.
+
+        :param filename: (str) The name of the file on the filesystem.
+        
+        :param extra_path:  (str) Extra directory structure to apply to the directory.
+        """
+
         self._extra_path = extra_path
         super().__init__(dir, filename, **kwargs)
 
         self._extension = 'log'
 
     @property
-    def file(self) -> str:
-        return f'{self._extra_path}{self._file}.{self._extension}'
+    def filepath(self) -> str:
+        """
+        Returns the full filepath attribute.
+        """
+        return f'{self._dir}/{self._extra_path}{self.file}'
 
 class CSVFileHandler(ListFileHandler):
     """CSV File handler for padocc config files"""
@@ -964,6 +1095,13 @@ class CSVFileHandler(ListFileHandler):
             filename: str, 
             **kwargs
         ) -> None:
+        """
+        Initialisation of the CSV filehandler.
+
+        :param dir:     (str) The path to the directory in which this file can be found.
+
+        :param filename: (str) The name of the file on the filesystem.
+        """
 
         super().__init__(dir, filename, **kwargs)
 
@@ -1016,17 +1154,17 @@ class CFADataset(LoggedOperation):
 
     def __init__(
             self, 
-            filepath: str, 
+            filepath : str, 
             identifier: str,
-            logger   : Optional[Union[logging.Logger,FalseLogger]] = None, 
-            label    : Union[str,None] = None,
-            fh       : Optional[str] = None,
-            logid    : Optional[str] = None,
-            dryrun   : bool = False,
-            forceful : bool = False,
-            thorough : bool = False,
-            verbose  : int = 0
+            **kwargs
             ):
+        """
+        Initialisation of the CFA Dataset Filehandler.
+        
+        :param dir:     (str) The path to the directory in which this file can be found.
+
+        :param filename: (str) The name of the file on the filesystem.
+        """
 
         if 'CFA' not in xr.backends.list_engines():
             raise ImportError(
@@ -1034,19 +1172,19 @@ class CFADataset(LoggedOperation):
                 'at https://github.com/cedadev/CFAPyX'
             )
         
-        self._filepath = filepath
-        self._ident = identifier
+        self._extension = 'nca'
+        self._ident     = identifier
+        self._filepath  = filepath
+        self._meta      = None
 
         # All filehandlers are logged operations
-        super().__init__(
-            logger,
-            label=label,
-            fh=fh,
-            logid=logid,
-            verbose=verbose,
-            dryrun=dryrun,
-            forceful=forceful,
-            thorough=thorough)
+        super().__init__(**kwargs)
+
+        self._correct_existing_files()
+
+    @property
+    def filepath(self):
+        return f'{self._filepath}.{self._extension}'
 
     def __str__(self) -> str:
         """String representation of CFA Dataset"""
@@ -1054,24 +1192,121 @@ class CFADataset(LoggedOperation):
     
     def __repr__(self) -> str:
         """Programmatic representation of CFA Dataset"""
-        return self.__str__
+        return self.__str__()
     
-    def get_meta(self) -> dict:
+    def __getitem__(self, index: str) -> Any:
         """
-        Get the metadata/attributes for this dataset
+        Get an attribute from the metadata.
+        
+        :param index:   (str) Name of an attribute in the metadata.
+        """
+        self._load_meta()
+        return self._meta[index]
+    
+    def __setitem__(self, index: str, value: Any) -> None:
+        """
+        Set an attribute within the metadata.
+
+        :param index:   (str) Name of an attribute in the metadata.
+
+        :param value:   (Any) New value to apply.
+        """
+        self._load_meta()
+        self._meta[index] = value
+
+    def _correct_existing_files(self) -> None:
+        """
+        Correction applied to pre-1.3.2 nca files.
         """
 
-        return {}
+        dir = self.filepath.replace(
+            self.filepath.split('/')[-1],
+            ''
+        )
+        files = sorted(glob.glob(f'{dir}/*.{self._extension}'))
+        if len(files) == 0:
+            self.logger.debug('No 1.3.2 related file issues.')
+            return
+        if len(files) > 1:
+            self.logger.warning(
+                'Applying corrections to CFA datasets. The following files will be deleted:'
+            )
+            for f in files[1:]:
+                self.logger.warning(f' > {f.split("/")[-1]}')
+            self.logger.warning(f' -> {files[0].split("/")[-1]} will be preserved')
+            inp = input('Accept changes? (Y/N): ')
+            if inp != 'Y':
+                raise ValueError(
+                    'Changes not permitted to CFA Dataset - please '
+                    f'remove files {files[1:]} to continue.'
+                )
+            
+            if self._dryrun:
+                self.logger.info(f'DRYRUN Skipped deleting CFA files: {files}')
+                return
+
+            for f in files[1:]:
+                os.system(f'rm {f}')
+            os.system(f'mv {files[0]} {self.filepath}')
+        else:
+            if files[0] != self.filepath:
+                if self._dryrun:
+                    self.logger.info(f'DRYRUN Skipped moving file {files[0]}')
+                else:
+                    os.system(f'mv {files[0]} {self.filepath}')
+
+    def _load_meta(self) -> None:
+        """
+        Load the metadata for this filehandler."""
+        if self._meta is not None:
+            return
+
+        self._meta = {}
+        ds = netCDF4.Dataset(self.filepath)
+        for nca in ds.ncattrs():
+            self._meta[nca] = ds.getncattr(nca)
+        ds.close()
+
+    def close(self) -> None:
+        """
+        Set the meta attribute for this dataset.
+        """
+        if self._meta is None:
+            return
+        
+        ds = netCDF4.Dataset(self.filepath, mode='w')
+        for k, v in self._meta.items():
+            ds.setncattr(k, v)
+        ds.close()
+
+    def get_meta(self) -> dict:
+        """
+        Get the metadata/attributes for this dataset.
+        """
+        self._load_meta()
+        return self._meta
+    
+    def set_meta(self, new_value: dict) -> None:
+        """
+        Set the whole meta attribute for this dataset.
+
+        :param new_value:   (dict) New metadata contents.
+        """
+        self._meta = new_value
 
     def spawn_copy(self, copy: str):
         """
         Spawn a copy of this file (not filehandler)
+
+        :param copy:    (str) For the CFA filehandler, copy should be the full path
+            to the new location, minus the extension. This should include the version number
+            at the point of release.
         """
         if self._dryrun:
-            print(f'[DRYRUN]: cp {self._filepath} {copy}')
+            print(f'[DRYRUN]: cp {self.filepath} {copy}.{self._extension}')
         else:
-            os.system(f'cp {self._filepath} {copy}')
+            os.system(f'cp {self.filepath} {copy}.{self._extension}')
 
     def open_dataset(self, **kwargs) -> xr.Dataset:
         """Open the CFA Dataset [READ-ONLY]"""
-        return xr.open_dataset(self._filepath, engine='CFA',**kwargs)
+        return xr.open_dataset(self.filepath, engine='CFA',**kwargs)
