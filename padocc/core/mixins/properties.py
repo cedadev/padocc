@@ -221,6 +221,13 @@ class PropertiesMixin:
             new_version = self.version_no,
         )
 
+        # Also update the CFA dataset history.
+        if self.cloud_format != 'cfa':
+            self.cfa_dataset.update_history(
+                addition = f'Minor: {addition}',
+                new_version = self.version_no,
+            )
+
     def major_version_increment(self):
         """
         Increment the major X.y part of the version number.
