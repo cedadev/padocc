@@ -194,6 +194,31 @@ class DatasetHandlerMixin:
             # Also update the CFA dataset.
             self.cfa_dataset.set_meta(meta)
 
+    def remove_attribute(
+            self, 
+            attribute: str, 
+            target: str = 'dataset',
+        ) -> None:
+        """
+        Remove an attribute within a dataset representation's metadata.
+
+        :param attribute:   (str) The name of an attribute within the metadata
+            property of the corresponding filehandler.
+
+        :param target:      (str) The target product filehandler, uses the 
+            generic dataset filehandler if not otherwise specified.
+        """
+
+        if hasattr(self,target):
+            meta = getattr(self,target).get_meta()
+
+        meta.pop(attribute)
+
+        getattr(self, target).set_meta(meta)
+        if target != 'cfa_dataset' and self.cloud_format != 'cfa':
+            # Also update the CFA dataset.
+            self.cfa_dataset.set_meta(meta)
+
     @property
     def dataset_attributes(self) -> dict:
         """
