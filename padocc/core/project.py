@@ -518,3 +518,31 @@ class ProjectOperation(
         else:
             if first_time:
                 self.logger.warning(f'"{logdir}" already exists.')
+
+    def preprocess(
+            self,
+            preprocess_script: str,
+            preprocess_opts: dict,
+            **kwargs
+        ) -> None:
+        """
+        Perform a preprocessing step on all input files to the group.
+        """
+
+        # Iterate over all source files for this project
+        # Run conversion script with output file/format specified.
+        # Reset allfiles using the output conventions for each file.
+
+        def apply_output_changes():
+            pass
+
+        filelist = self.allfiles.get()
+
+        new_source = []
+        for file in filelist:
+            os.system(
+                f'{preprocess_script} {file} -o {apply_output_changes(file)}'
+            )
+            new_source.append(apply_output_changes(file))
+        
+        self.allfiles.set(new_source)

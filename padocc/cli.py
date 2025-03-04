@@ -78,6 +78,14 @@ def main():
         if args.phase == 'new':
             group.save_files()
             return
+        
+        if args.phase == 'preprocess':
+            group.preprocess_all(
+                repeat_id=args.repeat_id,
+                proj_code=args.proj_code,
+                subset=args.subset,
+                mem_allowed=args.mem_allowed
+            )
 
         if args.phase == 'init':
             group.init_from_file(args.input)
