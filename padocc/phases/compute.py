@@ -352,7 +352,7 @@ class ComputeOperation(ProjectOperation):
 
             cfa.create()
             if file_limit is None:
-                cfa.write(instance.cfa_path)
+                cfa.write(instance.cfa_path + '.nca')
 
             return {
                 'aggregated_dims': make_tuple(cfa.agg_dims),
