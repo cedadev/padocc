@@ -418,13 +418,11 @@ class ProjectOperation(
                 '"pattern" attribute missing from base config.'
             )
         
-        if pattern.endswith('.txt'):
-            content = extract_file(pattern)
-            if 'substitutions' in self.base_cfg:
-                content, status = apply_substitutions('datasets', subs=self.base_cfg['substitutions'], content=content)
-                if status:
-                    self.logger.warning(status)
-            self.allfiles.set(content) 
+        if isinstance(pattern, list):
+            # New feature to handle the moles-format data.
+            fileset = pattern
+        elif pattern.endswith('.txt'):
+            fileset = extract_file(pattern)
         else:
             # Pattern is a wildcard set of files
             if 'latest' in pattern:
@@ -434,12 +432,16 @@ class ProjectOperation(
             fileset = sorted(glob.glob(pattern, recursive=True))
             if len(fileset) == 0:
                 raise ValueError(f'pattern {pattern} returned no files.')
-
-            self.allfiles.set(sorted(glob.glob(pattern, recursive=True)))
+        
+        if 'substitutions' in self.base_cfg:
+            fileset, status = apply_substitutions('datasets', subs=self.base_cfg['substitutions'], content=fileset)
+            if status:
+                self.logger.warning(status)
+        self.allfiles.set(fileset) 
 
     def _setup_config(
             self, 
-            pattern : Union[str,None] = None, 
+            pattern : Union[str,list,None] = None, 
             updates : Union[str,None] = None, 
             removals : Union[str,None] = None,
             substitutions: Union[dict,None] = None,
