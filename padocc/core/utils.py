@@ -29,6 +29,10 @@ phases = [
     'catalog'
 ]
 
+source_opts = [
+    '.nc'
+]
+
 BASE_CFG = {
     'proj_code':None,
     'pattern':None,
