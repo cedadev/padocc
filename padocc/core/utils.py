@@ -12,8 +12,7 @@ import fsspec
 import numpy as np
 import xarray as xr
 
-from .errors import (ChunkDataError, KerchunkDecodeError, MissingKerchunkError,
-                     MissingVariableError)
+from .errors import MissingVariableError
 
 times = {
     'scan'    :'10:00', # No prediction possible prior to scanning
@@ -27,6 +26,12 @@ phases = [
     'compute',
     'validate',
     'catalog'
+]
+
+parallel_modes = [
+    'scan',
+    'compute',
+    'validate'
 ]
 
 BASE_CFG = {
