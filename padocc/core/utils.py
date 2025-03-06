@@ -12,8 +12,7 @@ import fsspec
 import numpy as np
 import xarray as xr
 
-from .errors import (ChunkDataError, KerchunkDecodeError, MissingKerchunkError,
-                     MissingVariableError)
+from .errors import MissingVariableError
 
 times = {
     'scan'    :'10:00', # No prediction possible prior to scanning
@@ -29,8 +28,16 @@ phases = [
     'catalog'
 ]
 
+# Which files acceptable to pull from Moles Tags file.
 source_opts = [
     '.nc'
+]
+
+# Which operations are parallelisable.
+parallel_modes = [
+    'scan',
+    'compute',
+    'validate'
 ]
 
 BASE_CFG = {

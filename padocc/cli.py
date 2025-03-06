@@ -34,7 +34,8 @@ def get_args():
     parser.add_argument('-C','--cloud-format', dest='mode', default='kerchunk', help='Output format required.')
     parser.add_argument('-i', '--input', dest='input', help='input file (for init phase)')
 
-    # Unused v1.3
+    # Parallel deployment
+    parser.add_argument('--parallel', dest='parallel', help='Add for parallel deployment with SLURM')
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
     parser.add_argument('--mem-allowed', dest='mem_allowed', default='100MB', help='Memory allowed for Zarr rechunking')
@@ -82,6 +83,21 @@ def main():
         if args.phase == 'init':
             group.init_from_file(args.input)
             return
+        
+        if args.parallel:
+            group.deploy_parallel(
+                args.phase,
+                source=args.venvpath,
+                band_increase=args.band_increase,
+                binpack=args.binpack,
+                time_allowed=args.time_allowed,
+                memory=args.memory,
+                subset=args.subset,
+                repeat_id=args.repeat_id,
+                bypass=args.bypass,
+                mode=args.mode,
+                new_version=args.new_version
+            )
 
         group.run(
             args.phase,
