@@ -316,8 +316,6 @@ class ComputeOperation(ProjectOperation):
 
         results = self._run_cfa(file_limit=file_limit)
 
-        print(results)
-
         # Check results values
         success = len(results.keys()) > 0
         for s in results.values():

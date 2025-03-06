@@ -186,7 +186,6 @@ class DatasetHandlerMixin:
             **zarr_kwargs
         )
 
-
     @property
     def dataset_attributes(self) -> dict:
         """
