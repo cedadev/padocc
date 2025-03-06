@@ -2,7 +2,8 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-from typing import Callable
+from typing import Callable, Union
+
 
 class PropertiesMixin:
     """
@@ -22,6 +23,12 @@ class PropertiesMixin:
 
     @classmethod
     def help(cls, func: Callable = print):
+        """
+        Helper function displays basic functions for use.
+
+        :param func:        (Callable) provide an alternative to 'print' function
+            for displaying help information.
+        """
         func('Extra Properties:')
         func(' > project.outpath - path to the output product (Kerchunk/Zarr)')
         func(' > project.outproduct - name of the output product (minus extension)')
@@ -36,8 +43,7 @@ class PropertiesMixin:
 
     def _check_override(self, key, mapper) -> str:
         """
-        'Mostly' redundant function to ensure properties
-        generated from the detail file are in place.
+        Ensure properties generated from the detail file are in place.
 
         'Override' parameters are the only editable 
         properties in the base config file once the
@@ -57,35 +63,46 @@ class PropertiesMixin:
         return None
     
     @property
-    def outpath(self):
+    def outpath(self) -> str:
         """
-        Path to the output product. Takes
-        into account the cloud format and type.
+        Path to the output product. 
+        
+        Takes into account the cloud format and type.
         Extension is applied via the Filehandler that this
         string is applied to.
         """
         return f'{self.dir}/{self.outproduct}'
     
     @property
-    def outproduct(self):
+    def complete_product(self) -> str:
+        """
+        Return the name of the actual dataset.
+
+        Products are referred to by revision only
+        within the project directory, but on completion
+        these will be copied out of the pipeline, 
+        where they are renamed with the project code
+        and revision for the actual dataset.
+        """
+        return f'{self.proj_code}.{self.revision}'
+
+    @property
+    def outproduct(self) -> str:
         """
         File/directory name for the output product.
+
         Revision takes into account cloud format and
         type where applicable.
         """
-        if self.stage == 'complete':
-            return f'{self.proj_code}.{self.revision}'
-        else:
-            vn = f'{self.revision}a'
-            if self._is_trial:
-                vn = f'trial-{vn}'
-            return vn
+        vn = f'{self.revision}a'
+        if self._is_trial:
+            vn = f'trial-{vn}'
+        return vn
     
     @property
     def revision(self) -> str:
         """
-        Revision takes into account cloud format and
-        type where applicable.
+        Revision takes into account cloud format and type.
         """
 
         if self.cloud_format is None:
@@ -111,16 +128,19 @@ class PropertiesMixin:
     @property
     def cloud_format(self) -> str:
         """
+        Obtain the cloud format for this project.
+
         Check multiple options from base and detail
         configs to find the cloud format for this project.
-        
         The default is to use kerchunk.
         """
         return self._check_override('cloud_type','scanned_with') or 'kerchunk'
 
     @cloud_format.setter
-    def cloud_format(self, value):
+    def cloud_format(self, value: str):
         """
+        Reset the cloud format value.
+
         Override the cloud format, can be used
         to switch conversion method at any time.
         """
@@ -136,13 +156,14 @@ class PropertiesMixin:
         return self._check_override('file_type','type')
     
     @file_type.setter
-    def file_type(self, value):
+    def file_type(self, value: Union[str, None]):
         """
-        Override the file type determined
-        during scanning, where applicable.
+        Override the file type determined during scanning.
         
-        Best example: Changing from json to parquet
-        for kerchunk storage.
+        Changing from json to parquet for kerchunk storage, 
+        or switching to Zarr will require changing the file type,
+        to ``parq`` or None respectively.
+
         """
         
         type_map = {
@@ -171,26 +192,46 @@ class PropertiesMixin:
     @property
     def source_format(self) -> str:
         """
-        Get the source format of the files, 
-        as determined during the scanning process.
+        Get the source format of the files.
 
+        This is determined during the scanning process.
         Note: This returns the driver used in the kerchunk
         scanning process if that step has been completed.
         """
         return self.detail_cfg.get(index='driver', default='src')
     
-    def minor_version_increment(self):
+    def minor_version_increment(self, addition: Union[str,None] = None):
         """
+        Increment the minor x.Y number for the version.
+
         Use this function for when properties of the cloud file have been changed.
+
+        :param addition:    (str) Reason for version change; attribute change or otherwise.
         """
+
+        addition = addition or 'Minor increment.'
         
         major, minor = self.version_no.split('.')
         minor = str(int(minor)+1)
 
         self.version_no = f'{major}.{minor}'
 
+        self.dataset.update_history(
+            addition = f'Minor: {addition}',
+            new_version = self.version_no,
+        )
+
+        # Also update the CFA dataset history.
+        if self.cloud_format != 'cfa':
+            self.cfa_dataset.update_history(
+                addition = f'Minor: {addition}',
+                new_version = self.version_no,
+            )
+
     def major_version_increment(self):
         """
+        Increment the major X.y part of the version number.
+
         Use this function for major changes to the cloud file 
         - e.g. replacement of source file data.
         """
@@ -203,33 +244,21 @@ class PropertiesMixin:
 
     def get_stac_representation(self, stac_mapping: dict) -> dict:
         """
-        Gets the stac representation of this project
-        according to the provided mapping.
-        
-        Stac mappings should follow the intended stac
-        record structure, where the value of each 
-        lowest-level key in the mapping is given as a tuple
-        of sources for that value from the project. The last
-        value in the tuple is the default parameter, if all
-        sources are unavailable.
-        
-        E.g ```
-        {
-            "experiment_id": ("property@experiment_id",None),
-            "source_fmt": ("detail_cfg@source_type",None)
-        }
-        ```
+        Apply all required substitutions to the stac representation.
+
+        :param stac_mapping:    (dict) A padocc-map-compliant dictionary
+            for extracting properties into a dictionary for STAC record-making.
         """
 
         record = self._get_stac_representation(stac_mapping)
-
-        # Add substitutions somehow
+        return record
+        # Add substitutions - currently not implemented.
 
     def _get_stac_representation(self, stac_mapping: dict) -> dict:
         """
-        Gets the stac representation of this project
-        according to the provided mapping.
+        Gets the stac representation of this project.
         
+        This is according to the provided mapping.
         Stac mappings should follow the intended stac
         record structure, where the value of each 
         lowest-level key in the mapping is given as a tuple
@@ -267,3 +296,21 @@ class PropertiesMixin:
             if record[k] is None:
                 record[k] = v[-1]
         return record
+    
+    def apply_defaults(
+            self, 
+            defaults: dict, 
+            target: str = 'dataset',
+            remove: Union[list,None] = None
+        ):
+        """
+        Apply a default selection of attributes to a dataset.
+        """
+
+        for attr, val in defaults.items():
+            self.update_attribute(attr, val, target=target)
+
+        for attr in remove:
+            self.remove_attribute(attr, target=target)
+
+        self.save_files()

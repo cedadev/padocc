@@ -2,15 +2,15 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-import os
-import logging
 import json
-
+import logging
+import os
 from typing import Callable
 
 from padocc import ProjectOperation
 from padocc.core import FalseLogger
-from padocc.core.utils import extract_file, apply_substitutions, file_configs
+from padocc.core.utils import apply_substitutions, extract_file, file_configs
+
 
 def _get_input(
         workdir : str,

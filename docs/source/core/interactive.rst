@@ -231,6 +231,22 @@ A project can also be transferred between two group instances using the followin
 
     Developer note (05/02/25): The transfer project mechanism is currently in alpha deployment, and is known to exhibit inconsistent behaviour when trying to transfer a project to a new uninitialised group. This is an ongoing issue.
 
+6. Completion of a group of projects
+------------------------------------
+
+As of padocc v1.3.2, the Group operator now includes a ``complete_group`` method, which can be used to extract all created products from all projects in a group. This replaces the previous method which would involve running the validation phase in a specific way. This method requires a **completion directory** where all products will be copied. Project codes and revisions are applied at this stage to the copied products, whereas inside the pipeline most products are not referred to by their project codes.
+
+.. code:: python
+    
+    >>> # With my_group initialised with 'verbose as true'
+    >>> my_group.complete_group('my_home_dir/completed_datasets')
+    INFO [group-operation]: Verifying completion directory exists
+    INFO [group-operation]: Completing 2/2 projects for my-group
+    INFO [group-operation]: Updated new status: complete - Success
+    INFO [group-operation]: Updated new status: complete - Success
+
+You can then check inside the ``completed_datasets`` directory to verify all products are present. For each kerchunk/zarr dataset you will also see a ``.nca`` CFA dataset file, which follows the Climate Forecast Aggregation conventions (see https://cedadev.github.io/CFAPyX/ for more details). These can be used locally with Xarray to open the dataset.
+
 Using the ProjectOperation class
 ================================
 

@@ -1,0 +1,18 @@
+# Release Notes for version 1.3.2
+
+## Bug Fixes
+ - Fixed bug with logging to filesystem filehandler.
+ - Fixed bug with failed CFA checks, and ensured results are saved when successful.
+ - Fixed issue with validation where no size errors are present.
+
+## Documentation
+ - Revised docstrings for all core modules.
+
+## New Features
+ - Added completion workflow for projects and groups.
+ - Added `spawn_copy` method for filehandlers, fits into completion workflow.
+ - Added logging for ALL project datasets instances.
+ - Revised CFA dataset filepath, added forward-compatible checker.
+ - Added CFA metadata write ability.
+ - Added Automatic CFA dataset updates when ANY other dataset metadata is updated.
+ - Added Automatic history addition if minor version is incremented.

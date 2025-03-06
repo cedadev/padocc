@@ -7,9 +7,11 @@ def pytest_collection_modifyitems(items):
         "TestInit",
         "TestScan",
         "TestCompute",
-        "TestGroup",
+        "TestZarrCompute",
+        "TestZarrValidate"
         "TestValidate",
-        "TestProject"
+        "TestGroup",
+        #"TestProject"
     ]
 
     sorted_items = items.copy()
