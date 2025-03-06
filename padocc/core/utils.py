@@ -28,6 +28,12 @@ phases = [
     'catalog'
 ]
 
+# Which files acceptable to pull from Moles Tags file.
+source_opts = [
+    '.nc'
+]
+
+# Which operations are parallelisable.
 parallel_modes = [
     'scan',
     'compute',
