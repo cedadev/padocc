@@ -809,13 +809,13 @@ class ZarrStore(GenericStore):
         """
         Open the ZarrStore as an xarray dataset
         """
-        return xr.open_dataset(self._store_path, engine='zarr', **zarr_kwargs)
+        return xr.open_dataset(self.store_path, engine='zarr', **zarr_kwargs)
 
     def write_to_s3(
             self, 
             credentials: Union[dict, str],
             bucket_id: str,
-            name_ovewrite: Union[str, None] = None,
+            name_overwrite: Union[str, None] = None,
             s3_kwargs: dict = None,
             **zarr_kwargs):
         """
@@ -844,17 +844,17 @@ class ZarrStore(GenericStore):
         else:
             creds = credentials
 
-        self.logger.info(f'Connecting to {credentials["endpoint_url"]}')
+        self.logger.info(f'Connecting to {creds["endpoint_url"]}')
 
         remote_s3 = s3fs.S3FileSystem(
-            secret = credentials['secret'],
-            key = credentials['token'],
-            client_kwargs = {'endpoint_url': credentials['endpoint_url']},
+            secret = creds['secret'],
+            key = creds['token'],
+            client_kwargs = {'endpoint_url': creds['endpoint_url']},
             **default_s3
         )
 
         if name_overwrite is not None:
-            name = f'{bucket_id}/{name_overwrite}.{self._extension}
+            name = f'{bucket_id}/{name_overwrite}.{self._extension}'
         else:
             name = f'{bucket_id}/{self._store_name}.{self._extension}'
 
