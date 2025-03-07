@@ -41,7 +41,7 @@ The ingestion/cataloging phase is not currently implemented for public use but m
    Installation <core/installation>
    Command Line Tool <core/cli>
    Interactive Notebook/Shell <core/interactive>
-   Extra Details <core/extras>
+   Extra Features <core/extras>
    Extras for CEDA Staff <core/ceda_staff>
    Complex (Parallel) Operation <core/complex_operation>
 
