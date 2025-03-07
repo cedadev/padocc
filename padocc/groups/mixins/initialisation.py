@@ -5,7 +5,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 import json
 import logging
 import os
-from typing import Callable
+from typing import Callable, Union
 
 from padocc import ProjectOperation
 from padocc.core import FalseLogger
@@ -166,7 +166,12 @@ class InitialisationMixin:
     def init_from_stac(self):
         pass
 
-    def init_from_file(self, input_file: str, substitutions: dict = None):
+    def init_from_file(
+            self, 
+            input_file: str, 
+            substitutions: dict = None,
+            remote_s3: Union[dict, str, None] = None,
+        ) -> None:
         """
         Run initialisation by loading configurations from input sources, determine
         input file type and use appropriate functions to instantiate group and project
@@ -214,7 +219,7 @@ class InitialisationMixin:
                 self.logger.debug('Ingesting csv file')
 
                 group_config = extract_file(input_file)
-            self._init_group(group_config, substitutions=substitutions)
+            self._init_group(group_config, substitutions=substitutions, remote_s3=remote_s3)
 
         else:
             # Only base-cfg style files are accepted here.
@@ -227,9 +232,13 @@ class InitialisationMixin:
 
             with open(input_file) as f:
                 provided_config = json.load(f)
-            self._init_project(provided_config)
+            self._init_project(provided_config, remote_s3=remote_s3)
 
-    def _init_project(self, config: dict):
+    def _init_project(
+            self, 
+            config: dict, 
+            remote_s3: Union[dict, str, None] = None
+        ) -> None:
         """
         Create a first-time ProjectOperation and save created files. 
         """
@@ -245,11 +254,17 @@ class InitialisationMixin:
             logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful,
+            remote_s3=remote_s3
         )
 
         proj_op.save_files()
 
-    def _init_group(self, datasets : list, substitutions: dict = None):
+    def _init_group(
+            self, 
+            datasets : list, 
+            substitutions: dict = None,
+            remote_s3: Union[dict, str, None] = None,
+        ) -> None:
         """
         Create a new group within the working directory, and all 
         associated projects.
@@ -319,6 +334,7 @@ class InitialisationMixin:
                 ft_kwargs=cfg_values,
                 dryrun=self._dryrun,
                 forceful=self._forceful,
+                remote_s3=remote_s3
             )
 
             proj_op.update_status('init','Success')
