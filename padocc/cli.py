@@ -7,7 +7,16 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 import argparse
 
 from padocc import GroupOperation, phase_map
-from padocc.core.utils import BypassSwitch, get_attribute
+from padocc.core.utils import BypassSwitch, get_attribute, list_groups
+
+def check_specials(args: dict) -> bool:
+    """
+    Check and perform any special features requested
+    """
+
+    if args.phase == 'list':
+        list_groups(args.workdir)
+        return True
 
 
 def get_args():
@@ -35,7 +44,7 @@ def get_args():
     parser.add_argument('-i', '--input', dest='input', help='input file (for init phase)')
 
     # Parallel deployment
-    parser.add_argument('--parallel', dest='parallel', help='Add for parallel deployment with SLURM')
+    parser.add_argument('--parallel', dest='parallel', action='store_true',help='Add for parallel deployment with SLURM')
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
     parser.add_argument('--mem-allowed', dest='mem_allowed', default='100MB', help='Memory allowed for Zarr rechunking')
@@ -63,6 +72,10 @@ def main():
         return
     
     bypass=BypassSwitch(args.bypass)
+
+    # Generic special features
+    if check_specials(args):
+        return
 
     if args.groupID is not None:
         group = GroupOperation(
@@ -98,6 +111,7 @@ def main():
                 mode=args.mode,
                 new_version=args.new_version
             )
+            return
 
         group.run(
             args.phase,

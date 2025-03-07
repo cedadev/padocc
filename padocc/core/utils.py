@@ -6,11 +6,13 @@ import json
 import math
 import os
 import re
-from typing import Any, Union
+import glob
+from typing import Any, Union, Callable
 
 import fsspec
 import numpy as np
 import xarray as xr
+from datetime import datetime
 
 from .errors import MissingVariableError
 
@@ -81,6 +83,36 @@ FILE_DEFAULT = {
     'kerchunk':'json',
     'zarr':None,
 }
+
+def list_groups(workdir: str, func: Callable = print):
+    """
+    List groups in the existing working directory
+    """
+
+    if not os.path.isdir(workdir):
+        func('[ERROR] Workdir does not exist')
+        return False
+    
+    if workdir.endswith('/'):
+        workdir = workdir[:-1]
+    topdir = workdir.split('/')[-1]
+    
+    func(f'Groups in {topdir}')
+
+    fileset = glob.glob(f'{workdir}/groups/*/datasets.csv')
+    for f in fileset:
+        groupID = f.split('/')[-2]
+
+        with open(f) as g:
+            length = len(g.readlines())
+
+        msg = f' > {groupID}: {length} '
+        if length == 0:
+            msg += '(empty)'
+        func(msg)
+
+def timestamp():
+    return datetime.strftime(datetime.now(),'%d/%m/%y %H:%M:%S')
 
 def make_tuple(item: Any) -> tuple:
     """
@@ -251,6 +283,18 @@ def extract_file(input_file: str) -> list:
     """
     with open(input_file) as f:
         content = [r.strip() for r in f.readlines()]
+    return content
+
+def extract_json(input_file: str) -> list:
+    """
+    Extract content from a padocc-external file.
+
+    Use filehandlers for files within the pipeline.
+
+    :param input_file: (str) Pipeline-external file.
+    """
+    with open(input_file) as f:
+        content = json.load(f)
     return content
 
 def find_closest(num: int, closest: float) -> int:
