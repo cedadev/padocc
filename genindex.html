@@ -50,7 +50,8 @@
 <li class="toctree-l1"><a class="reference internal" href="core/installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/cli.html">Command Line Tool</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/interactive.html">Interactive Notebook/Shell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core/extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/extras.html">Extra Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
@@ -116,6 +117,7 @@
  | <a href="#T"><strong>T</strong></a>
  | <a href="#U"><strong>U</strong></a>
  | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
  | <a href="#Z"><strong>Z</strong></a>
  
 </div>
@@ -130,11 +132,17 @@
       </ul></li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.modifiers.ModifiersMixin.add_project">add_project() (padocc.groups.mixins.modifiers.ModifiersMixin method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/project_source.html#padocc.core.mixins.dataset.DatasetHandlerMixin.add_s3_config">add_s3_config() (padocc.core.mixins.dataset.DatasetHandlerMixin method)</a>
+</li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.allocations.AllocationsMixin">AllocationsMixin (class in padocc.groups.mixins.allocations)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.ListFileHandler.append">append() (padocc.core.filehandlers.ListFileHandler method)</a>
+</li>
+      <li><a href="source_code/phase_source.html#padocc.phases.validate.PresliceSet.apply">apply() (padocc.phases.validate.PresliceSet method)</a>
+</li>
+      <li><a href="source_code/project_source.html#padocc.core.mixins.properties.PropertiesMixin.apply_defaults">apply_defaults() (padocc.core.mixins.properties.PropertiesMixin method)</a>
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.utils.apply_substitutions">apply_substitutions() (in module padocc.core.utils)</a>
 </li>
@@ -159,6 +167,8 @@
       <li><a href="source_code/project_source.html#padocc.core.mixins.dataset.DatasetHandlerMixin.cfa_path">cfa_path (padocc.core.mixins.dataset.DatasetHandlerMixin property)</a>
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.CFADataset">CFADataset (class in padocc.core.filehandlers)</a>
+</li>
+      <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.check_attribute">check_attribute() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
 </li>
       <li><a href="source_code/phase_source.html#padocc.phases.validate.check_for_nan">check_for_nan() (in module padocc.phases.validate)</a>
 </li>
@@ -230,6 +240,8 @@
 </li>
       <li><a href="source_code/project_source.html#padocc.core.project.ProjectOperation.delete_project">delete_project() (padocc.core.project.ProjectOperation method)</a>
 </li>
+      <li><a href="source_code/group_source.html#padocc.groups.mixins.allocations.AllocationsMixin.deploy_parallel">deploy_parallel() (padocc.groups.mixins.allocations.AllocationsMixin method)</a>
+</li>
       <li><a href="source_code/project_source.html#padocc.core.project.ProjectOperation.dir">dir (padocc.core.project.ProjectOperation property)</a>
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.directory.DirectoryMixin">DirectoryMixin (class in padocc.core.mixins.directory)</a>
@@ -244,13 +256,15 @@
 </li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin">EvaluationsMixin (class in padocc.groups.mixins.evaluations)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="core/extras.html#padocc.core.errors.ExpectMemoryError">ExpectMemoryError</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="core/extras.html#padocc.core.errors.ExpectTimeoutError">ExpectTimeoutError</a>
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.utils.extract_file">extract_file() (in module padocc.core.utils)</a>
+</li>
+      <li><a href="source_code/misc_source.html#padocc.core.utils.extract_json">extract_json() (in module padocc.core.utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -312,8 +326,8 @@
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.status.StatusMixin.get_log_contents">get_log_contents() (padocc.core.mixins.status.StatusMixin method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/group_source.html#padocc.groups.mixins.allocations.get_lotus_reqs">get_lotus_reqs() (in module padocc.groups.mixins.allocations)</a>
+</li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.CFADataset.get_meta">get_meta() (padocc.core.filehandlers.CFADataset method)</a>
 
       <ul>
@@ -321,8 +335,14 @@
 </li>
         <li><a href="source_code/misc_source.html#padocc.core.filehandlers.KerchunkFile.get_meta">(padocc.core.filehandlers.KerchunkFile method)</a>
 </li>
+        <li><a href="source_code/misc_source.html#padocc.core.filehandlers.ZarrStore.get_meta">(padocc.core.filehandlers.ZarrStore method)</a>
+</li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.get_project">get_project() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
+</li>
+      <li><a href="source_code/project_source.html#padocc.core.mixins.status.StatusMixin.get_report">get_report() (padocc.core.mixins.status.StatusMixin method)</a>
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.properties.PropertiesMixin.get_stac_representation">get_stac_representation() (padocc.core.mixins.properties.PropertiesMixin method)</a>
 
@@ -424,6 +444,8 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/misc_source.html#padocc.core.utils.list_groups">list_groups() (in module padocc.core.utils)</a>
+</li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.ListFileHandler">ListFileHandler (class in padocc.core.filehandlers)</a>
 </li>
   </ul></td>
@@ -617,8 +639,6 @@
         <li><a href="source_code/group_source.html#module-padocc.groups.group">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     padocc.groups.mixins.allocations
 
@@ -626,6 +646,8 @@
         <li><a href="source_code/group_source.html#module-padocc.groups.mixins.allocations">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     padocc.groups.mixins.evaluations
 
@@ -677,6 +699,10 @@
       </ul></li>
       <li><a href="core/extras.html#padocc.core.errors.PartialDriverError">PartialDriverError</a>
 </li>
+      <li><a href="source_code/misc_source.html#padocc.core.filehandlers.JSONFileHandler.pop">pop() (padocc.core.filehandlers.JSONFileHandler method)</a>
+</li>
+      <li><a href="source_code/phase_source.html#padocc.phases.validate.PresliceSet">PresliceSet (class in padocc.phases.validate)</a>
+</li>
       <li><a href="source_code/misc_source.html#padocc.core.utils.print_fmt_str">print_fmt_str() (in module padocc.core.utils)</a>
 </li>
       <li><a href="source_code/project_source.html#padocc.core.project.ProjectOperation">ProjectOperation (class in padocc.core.project)</a>
@@ -691,18 +717,22 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.ListFileHandler.remove">remove() (padocc.core.filehandlers.ListFileHandler method)</a>
 </li>
+      <li><a href="source_code/project_source.html#padocc.core.mixins.dataset.DatasetHandlerMixin.remove_attribute">remove_attribute() (padocc.core.mixins.dataset.DatasetHandlerMixin method)</a>
+</li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.remove_by_status">remove_by_status() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.FileIOMixin.remove_file">remove_file() (padocc.core.filehandlers.FileIOMixin method)</a>
 </li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.modifiers.ModifiersMixin.remove_project">remove_project() (padocc.groups.mixins.modifiers.ModifiersMixin method)</a>
 </li>
-      <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.remove_subset">remove_subset() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
+      <li><a href="source_code/project_source.html#padocc.core.mixins.dataset.DatasetHandlerMixin.remove_s3_config">remove_s3_config() (padocc.core.mixins.dataset.DatasetHandlerMixin method)</a>
 </li>
-      <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.repeat_by_status">repeat_by_status() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
+      <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.remove_subset">remove_subset() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.repeat_by_status">repeat_by_status() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
+</li>
       <li><a href="source_code/phase_source.html#padocc.phases.validate.ValidateDatasets.replace_dataset">replace_dataset() (padocc.phases.validate.ValidateDatasets method)</a>
 </li>
       <li><a href="source_code/phase_source.html#padocc.phases.validate.ValidateDatasets.replace_preslice">replace_preslice() (padocc.phases.validate.ValidateDatasets method)</a>
@@ -773,6 +803,8 @@
       </ul></li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.status.StatusMixin">StatusMixin (class in padocc.core.mixins.status)</a>
 </li>
+      <li><a href="source_code/misc_source.html#padocc.core.filehandlers.ZarrStore.store">store (padocc.core.filehandlers.ZarrStore property)</a>
+</li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.GenericStore.store_path">store_path (padocc.core.filehandlers.GenericStore property)</a>
 </li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.summarise_data">summarise_data() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
@@ -841,6 +873,22 @@
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.properties.PropertiesMixin.version_no">version_no (padocc.core.mixins.properties.PropertiesMixin property)</a>
 </li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/extras.html#padocc.core.errors.worst_error">worst_error() (in module padocc.core.errors)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/misc_source.html#padocc.core.filehandlers.ZarrStore.write_to_s3">write_to_s3() (padocc.core.filehandlers.ZarrStore method)</a>
+
+      <ul>
+        <li><a href="source_code/project_source.html#padocc.core.mixins.dataset.DatasetHandlerMixin.write_to_s3">(padocc.core.mixins.dataset.DatasetHandlerMixin method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 

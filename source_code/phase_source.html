@@ -53,7 +53,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
@@ -97,6 +98,10 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-padocc.phases.validate">Validate Operations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.phases.validate.PresliceSet"><code class="docutils literal notranslate"><span class="pre">PresliceSet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.validate.PresliceSet.apply"><code class="docutils literal notranslate"><span class="pre">PresliceSet.apply()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.phases.validate.Report"><code class="docutils literal notranslate"><span class="pre">Report</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.phases.validate.ValidateDatasets"><code class="docutils literal notranslate"><span class="pre">ValidateDatasets</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#padocc.phases.validate.ValidateDatasets.control_dataset_var"><code class="docutils literal notranslate"><span class="pre">ValidateDatasets.control_dataset_var()</span></code></a></li>
@@ -260,6 +265,19 @@ otherwise if unsuccessful.</p>
 </section>
 <section id="module-padocc.phases.validate">
 <span id="validate-operations"></span><h2>Validate Operations<a class="headerlink" href="#module-padocc.phases.validate" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="padocc.phases.validate.PresliceSet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.validate.</span></span><span class="sig-name descname"><span class="pre">PresliceSet</span></span><a class="headerlink" href="#padocc.phases.validate.PresliceSet" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Preslice Object for handling slices applied to datasets.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.phases.validate.PresliceSet.apply">
+<span class="sig-name descname"><span class="pre">apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_arr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataArray</span></span></span><a class="headerlink" href="#padocc.phases.validate.PresliceSet.apply" title="Permalink to this definition"></a></dt>
+<dd><p>Apply a preslice operation to a data array</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="padocc.phases.validate.Report">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.validate.</span></span><span class="sig-name descname"><span class="pre">Report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.validate.Report" title="Permalink to this definition"></a></dt>

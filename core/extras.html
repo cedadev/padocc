@@ -5,7 +5,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>A Deeper Dive into PADOCC Mechanics &mdash; PADOCC Package v1.1 documentation</title>
+  <title>Beneficial Extra Features &mdash; PADOCC Package v1.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
@@ -23,7 +23,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Complex Operations" href="complex_operation.html" />
+    <link rel="next" title="Extra Details for CEDA Staff" href="ceda_staff.html" />
     <link rel="prev" title="Running padocc interactively (Notebook/Shell)" href="interactive.html" /> 
 </head>
 
@@ -53,33 +53,42 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool</a></li>
 <li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Extra Details</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#revision-numbers">Revision Numbers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#the-validation-report">The Validation Report</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#bypassswitch-options">BypassSwitch Options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#custom-pipeline-errors">Custom Pipeline Errors</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ArchiveConnectError"><code class="docutils literal notranslate"><span class="pre">ArchiveConnectError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ChunkDataError"><code class="docutils literal notranslate"><span class="pre">ChunkDataError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ComputeError"><code class="docutils literal notranslate"><span class="pre">ComputeError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ConcatFatalError"><code class="docutils literal notranslate"><span class="pre">ConcatFatalError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ConcatenationError"><code class="docutils literal notranslate"><span class="pre">ConcatenationError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ExpectMemoryError"><code class="docutils literal notranslate"><span class="pre">ExpectMemoryError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ExpectTimeoutError"><code class="docutils literal notranslate"><span class="pre">ExpectTimeoutError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.KerchunkDecodeError"><code class="docutils literal notranslate"><span class="pre">KerchunkDecodeError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.KerchunkDriverFatalError"><code class="docutils literal notranslate"><span class="pre">KerchunkDriverFatalError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.KerchunkException"><code class="docutils literal notranslate"><span class="pre">KerchunkException</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.MissingKerchunkError"><code class="docutils literal notranslate"><span class="pre">MissingKerchunkError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.MissingVariableError"><code class="docutils literal notranslate"><span class="pre">MissingVariableError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.NoOverwriteError"><code class="docutils literal notranslate"><span class="pre">NoOverwriteError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.NoValidTimeSlicesError"><code class="docutils literal notranslate"><span class="pre">NoValidTimeSlicesError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.PartialDriverError"><code class="docutils literal notranslate"><span class="pre">PartialDriverError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.SourceNotFoundError"><code class="docutils literal notranslate"><span class="pre">SourceNotFoundError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ValidationError"><code class="docutils literal notranslate"><span class="pre">ValidationError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.error_handler"><code class="docutils literal notranslate"><span class="pre">error_handler()</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Extra Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#remote-connection-to-object-storage">Remote connection to object storage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#remote-s3-configuration">Remote s3 configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#padocc-mechanics">PADOCC Mechanics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#revision-numbers">Revision Numbers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-validation-report">The Validation Report</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bypassswitch-options">BypassSwitch Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#custom-pipeline-errors">Custom Pipeline Errors</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ArchiveConnectError"><code class="docutils literal notranslate"><span class="pre">ArchiveConnectError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ChunkDataError"><code class="docutils literal notranslate"><span class="pre">ChunkDataError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ComputeError"><code class="docutils literal notranslate"><span class="pre">ComputeError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ConcatFatalError"><code class="docutils literal notranslate"><span class="pre">ConcatFatalError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ConcatenationError"><code class="docutils literal notranslate"><span class="pre">ConcatenationError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ExpectMemoryError"><code class="docutils literal notranslate"><span class="pre">ExpectMemoryError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ExpectTimeoutError"><code class="docutils literal notranslate"><span class="pre">ExpectTimeoutError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.KerchunkDecodeError"><code class="docutils literal notranslate"><span class="pre">KerchunkDecodeError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.KerchunkDriverFatalError"><code class="docutils literal notranslate"><span class="pre">KerchunkDriverFatalError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.KerchunkException"><code class="docutils literal notranslate"><span class="pre">KerchunkException</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.MissingKerchunkError"><code class="docutils literal notranslate"><span class="pre">MissingKerchunkError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.MissingVariableError"><code class="docutils literal notranslate"><span class="pre">MissingVariableError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.NoOverwriteError"><code class="docutils literal notranslate"><span class="pre">NoOverwriteError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.NoValidTimeSlicesError"><code class="docutils literal notranslate"><span class="pre">NoValidTimeSlicesError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.PartialDriverError"><code class="docutils literal notranslate"><span class="pre">PartialDriverError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.SourceNotFoundError"><code class="docutils literal notranslate"><span class="pre">SourceNotFoundError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ValidationError"><code class="docutils literal notranslate"><span class="pre">ValidationError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.error_handler"><code class="docutils literal notranslate"><span class="pre">error_handler()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.worst_error"><code class="docutils literal notranslate"><span class="pre">worst_error()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1"><a class="reference internal" href="complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
@@ -111,7 +120,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">A Deeper Dive into PADOCC Mechanics</li>
+      <li class="breadcrumb-item active">Beneficial Extra Features</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/core/extras.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -121,10 +130,30 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="a-deeper-dive-into-padocc-mechanics">
-<h1>A Deeper Dive into PADOCC Mechanics<a class="headerlink" href="#a-deeper-dive-into-padocc-mechanics" title="Permalink to this heading"></a></h1>
+  <section id="beneficial-extra-features">
+<h1>Beneficial Extra Features<a class="headerlink" href="#beneficial-extra-features" title="Permalink to this heading"></a></h1>
+<section id="remote-connection-to-object-storage">
+<h2>Remote connection to object storage<a class="headerlink" href="#remote-connection-to-object-storage" title="Permalink to this heading"></a></h2>
+<p><strong>new for v1.3.3</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">padocc</span></code> now has the capability to write to s3 storage endpoints for zarr stores, as well as using s3 object storage as the immediate storage medium for zarr datasets. This means that zarr stores generated via padocc can be written to object storage on creation, without filling up local disk space. Future updates will also include transfer mechanisms for Kerchunk datasets, where the kerchunk data must be edited then transferred.</p>
+<section id="remote-s3-configuration">
+<h3>Remote s3 configuration<a class="headerlink" href="#remote-s3-configuration" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>The following configuration details must be passed to one of the entrypoints for remote s3 connections for padocc:</dt><dd><ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">add_project</span></code> function when creating a new project.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">add_s3_config</span></code> function for an existing project.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Remote s3 config:</p>
+<p>For JASMIN object store tenancies see the <a class="reference external" href="https://accounts.jasmin.ac.uk/services/object_store/">Object Store Services Portal</a>, plus the <a class="reference external" href="https://help.jasmin.ac.uk/docs/short-term-project-storage/using-the-jasmin-object-store/">documentation page</a> for how to set up s3 credentials. It is best to keep the credentials in a separate file as this config info will be copied to all projects being accessed.</p>
+<p>Once this config has been added to the project, any subsequent compute operation will generate zarr data in the given object store space. Note: The creation may induce errors if interrupted halfway through. Simply delete the content on the object store and start again - this is a bug and will be fixed in due course.</p>
+</section>
+</section>
+<section id="padocc-mechanics">
+<h2>PADOCC Mechanics<a class="headerlink" href="#padocc-mechanics" title="Permalink to this heading"></a></h2>
 <section id="revision-numbers">
-<h2>Revision Numbers<a class="headerlink" href="#revision-numbers" title="Permalink to this heading"></a></h2>
+<h3>Revision Numbers<a class="headerlink" href="#revision-numbers" title="Permalink to this heading"></a></h3>
 <p>The PADOCC revision numbers for each product are auto-generated using the following rules.</p>
 <blockquote>
 <div><ul class="simple">
@@ -136,7 +165,7 @@
 </div></blockquote>
 </section>
 <section id="the-validation-report">
-<h2>The Validation Report<a class="headerlink" href="#the-validation-report" title="Permalink to this heading"></a></h2>
+<h3>The Validation Report<a class="headerlink" href="#the-validation-report" title="Permalink to this heading"></a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">ValidateDatasets</span></code> class produces a validation report for both data and metadata validations.
 This is designed to be fairly simple to interpret, while still being machine-readable.
 The following headings which may be found in the report have the following meanings:</p>
@@ -160,7 +189,7 @@ These are considered <strong>fatal</strong> errors that need a major correction 
 </ul>
 </section>
 <section id="bypassswitch-options">
-<h2>BypassSwitch Options<a class="headerlink" href="#bypassswitch-options" title="Permalink to this heading"></a></h2>
+<h3>BypassSwitch Options<a class="headerlink" href="#bypassswitch-options" title="Permalink to this heading"></a></h3>
 <p>Certain non-fatal errors may be bypassed using the Bypass flag:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Format</span><span class="p">:</span> <span class="o">-</span><span class="n">b</span> <span class="s2">&quot;D&quot;</span>
 
@@ -176,7 +205,7 @@ These are considered <strong>fatal</strong> errors that need a major correction 
 </div>
 </section>
 <section id="custom-pipeline-errors">
-<h2>Custom Pipeline Errors<a class="headerlink" href="#custom-pipeline-errors" title="Permalink to this heading"></a></h2>
+<h3>Custom Pipeline Errors<a class="headerlink" href="#custom-pipeline-errors" title="Permalink to this heading"></a></h3>
 <p><strong>A summary of the custom errors that are experienced through running the pipeline.</strong></p>
 <span class="target" id="module-padocc.core.errors"></span><dl class="py exception">
 <dt class="sig sig-object py" id="padocc.core.errors.ArchiveConnectError">
@@ -292,7 +321,7 @@ These are considered <strong>fatal</strong> errors that need a major correction 
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="padocc.core.errors.ValidationError">
-<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.errors.</span></span><span class="sig-name descname"><span class="pre">ValidationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.errors.ValidationError" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.errors.</span></span><span class="sig-name descname"><span class="pre">ValidationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report_err</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.errors.ValidationError" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#padocc.core.errors.KerchunkException" title="padocc.core.errors.KerchunkException"><code class="xref py py-class docutils literal notranslate"><span class="pre">KerchunkException</span></code></a></p>
 <p>One or more checks within validation have failed - most likely elementwise comparison of data.</p>
 </dd></dl>
@@ -321,6 +350,13 @@ is part of a sequence.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="padocc.core.errors.worst_error">
+<span class="sig-prename descclassname"><span class="pre">padocc.core.errors.</span></span><span class="sig-name descname"><span class="pre">worst_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padocc.core.errors.worst_error" title="Permalink to this definition"></a></dt>
+<dd><p>Determine the worst error level and return as a string.</p>
+</dd></dl>
+
+</section>
 </section>
 </section>
 
@@ -329,7 +365,7 @@ is part of a sequence.</p></li>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="interactive.html" class="btn btn-neutral float-left" title="Running padocc interactively (Notebook/Shell)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="complex_operation.html" class="btn btn-neutral float-right" title="Complex Operations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="ceda_staff.html" class="btn btn-neutral float-right" title="Extra Details for CEDA Staff" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

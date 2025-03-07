@@ -53,7 +53,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
@@ -77,9 +78,12 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.groups.mixins.allocations.AllocationsMixin"><code class="docutils literal notranslate"><span class="pre">AllocationsMixin</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.allocations.AllocationsMixin.create_allocations"><code class="docutils literal notranslate"><span class="pre">AllocationsMixin.create_allocations()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.allocations.AllocationsMixin.deploy_parallel"><code class="docutils literal notranslate"><span class="pre">AllocationsMixin.deploy_parallel()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#padocc.groups.mixins.allocations.get_lotus_reqs"><code class="docutils literal notranslate"><span class="pre">get_lotus_reqs()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.groups.mixins.evaluations.EvaluationsMixin"><code class="docutils literal notranslate"><span class="pre">EvaluationsMixin</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.evaluations.EvaluationsMixin.check_attribute"><code class="docutils literal notranslate"><span class="pre">EvaluationsMixin.check_attribute()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.evaluations.EvaluationsMixin.get_project"><code class="docutils literal notranslate"><span class="pre">EvaluationsMixin.get_project()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.evaluations.EvaluationsMixin.merge_subsets"><code class="docutils literal notranslate"><span class="pre">EvaluationsMixin.merge_subsets()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.groups.mixins.evaluations.EvaluationsMixin.remove_by_status"><code class="docutils literal notranslate"><span class="pre">EvaluationsMixin.remove_by_status()</span></code></a></li>
@@ -183,21 +187,37 @@ existing class.</p>
 <p>Use case: GroupOperation [ONLY]</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.groups.mixins.allocations.AllocationsMixin.create_allocations">
-<span class="sig-name descname"><span class="pre">create_allocations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band_increase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">binpack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#padocc.groups.mixins.allocations.AllocationsMixin.create_allocations" title="Permalink to this definition"></a></dt>
-<dd><p>Function for assembling all allocations and bands for packing. Allocations contain multiple processes within
-a single SLURM job such that the estimates for time sum to less than the time allowed for that SLURM job. Bands
-are single process per job, based on a default time plus any previous attempts (use –allow-band-increase flag
-to enable band increases with successive attempts if previous jobs timed out)</p>
+<span class="sig-name descname"><span class="pre">create_allocations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band_increase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">binpack</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#padocc.groups.mixins.allocations.AllocationsMixin.create_allocations" title="Permalink to this definition"></a></dt>
+<dd><p>Function for assembling all allocations and bands for packing.</p>
+<p>Allocations contain multiple processes within a single SLURM job such 
+that the estimates for time sum to less than the time allowed for that SLURM job. 
+Bands are single process per job, based on a default time plus any previous 
+attempts (use –allow-band-increase flag to enable band increases with successive 
+attempts if previous jobs timed out)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>A list of tuple objects such that each tuple represents an array to submit to slurm with
-the attributes (label, time, number_of_datasets). Note: The list of datasets to apply in
-each array job is typcially saved under proj_codes/&lt;repeat_id&gt;/&lt;label&gt;.txt (allocations use
-allocations/&lt;x&gt;.txt in place of the label)</p>
+<dd class="field-odd"><p>A list of tuple objects such that each tuple represents an array 
+to submit to slurm with the attributes (label, time, number_of_datasets). 
+Note: The list of datasets to apply in each array job is typcially saved 
+under proj_codes/&lt;repeat_id&gt;/&lt;label&gt;.txt (allocations use allocations/&lt;x&gt;.txt 
+in place of the label)</p>
 </dd>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.allocations.AllocationsMixin.deploy_parallel">
+<span class="sig-name descname"><span class="pre">deploy_parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band_increase:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">binpack:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_allowed:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subset:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'main'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass:</span> <span class="pre">~padocc.core.utils.BypassSwitch</span> <span class="pre">=</span> <span class="pre">&lt;padocc.core.utils.BypassSwitch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'kerchunk'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_version:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func:</span> <span class="pre">~typing.Callable</span> <span class="pre">=</span> <span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.groups.mixins.allocations.AllocationsMixin.deploy_parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Organise parallel deployment via SLURM.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padocc.groups.mixins.allocations.get_lotus_reqs">
+<span class="sig-prename descclassname"><span class="pre">padocc.groups.mixins.allocations.</span></span><span class="sig-name descname"><span class="pre">get_lotus_reqs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.mixins.allocations.get_lotus_reqs" title="Permalink to this definition"></a></dt>
+<dd><p>Extract Lotus config from filesystem.</p>
+<p>Use default if no config supplied.</p>
 </dd></dl>
 
 <span class="target" id="module-padocc.groups.mixins.evaluations"></span><dl class="py class">
@@ -212,6 +232,12 @@ classes. The mixin classes here will explicitly state
 where they are designed to be used, as an extension of an 
 existing class.</p>
 <p>Use case: GroupOperation [ONLY]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.mixins.evaluations.EvaluationsMixin.check_attribute">
+<span class="sig-name descname"><span class="pre">check_attribute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_id:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'main'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func:</span> <span class="pre">~collections.abc.Callable</span> <span class="pre">=</span> <span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.mixins.evaluations.EvaluationsMixin.check_attribute" title="Permalink to this definition"></a></dt>
+<dd><p>Check an attribute across all projects.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.groups.mixins.evaluations.EvaluationsMixin.get_project">
 <span class="sig-name descname"><span class="pre">get_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.mixins.evaluations.EvaluationsMixin.get_project" title="Permalink to this definition"></a></dt>
@@ -285,7 +311,7 @@ existing class.</p>
 <p>Use case: GroupOperation [ONLY]</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.groups.mixins.initialisation.InitialisationMixin.init_from_file">
-<span class="sig-name descname"><span class="pre">init_from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitutions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.mixins.initialisation.InitialisationMixin.init_from_file" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">init_from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitutions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote_s3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.groups.mixins.initialisation.InitialisationMixin.init_from_file" title="Permalink to this definition"></a></dt>
 <dd><p>Run initialisation by loading configurations from input sources, determine
 input file type and use appropriate functions to instantiate group and project
 directories.</p>
@@ -316,8 +342,18 @@ existing class.</p>
 <p>Use case: GroupOperation [ONLY]</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.groups.mixins.modifiers.ModifiersMixin.add_project">
-<span class="sig-name descname"><span class="pre">add_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.mixins.modifiers.ModifiersMixin.add_project" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">add_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote_s3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">moles_tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.mixins.modifiers.ModifiersMixin.add_project" title="Permalink to this definition"></a></dt>
 <dd><p>Add a project to this group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> – (str | dict) The configuration details to add new project. Can either be 
+a path to a json file or json content directly. Can also be either a properly formatted
+base config file (needs <code class="docutils literal notranslate"><span class="pre">proj_code</span></code>, <code class="docutils literal notranslate"><span class="pre">pattern</span></code> etc.) or a moles_esgf input file.</p></li>
+<li><p><strong>moles_tags</strong> – (bool) Option for CEDA staff to integrate output from another package.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">

@@ -53,7 +53,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
@@ -79,6 +80,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.add_s3_config"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.add_s3_config()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.cfa_dataset"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.cfa_dataset</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.cfa_path"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.cfa_path</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.dataset"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.dataset</span></code></a></li>
@@ -86,8 +88,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.help"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.help()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.kfile"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.kfile</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.kstore"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.kstore</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.remove_attribute"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.remove_attribute()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.remove_s3_config"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.remove_s3_config()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.save_ds_filehandlers"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.save_ds_filehandlers()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.update_attribute"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.update_attribute()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.write_to_s3"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.write_to_s3()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.zstore"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin.zstore</span></code></a></li>
 </ul>
 </li>
@@ -97,6 +102,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.apply_defaults"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.apply_defaults()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.cloud_format"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.cloud_format</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.complete_product"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.complete_product</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.file_type"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.file_type</span></code></a></li>
@@ -115,6 +121,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.status.StatusMixin.get_last_run"><code class="docutils literal notranslate"><span class="pre">StatusMixin.get_last_run()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.status.StatusMixin.get_last_status"><code class="docutils literal notranslate"><span class="pre">StatusMixin.get_last_status()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.status.StatusMixin.get_log_contents"><code class="docutils literal notranslate"><span class="pre">StatusMixin.get_log_contents()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.status.StatusMixin.get_report"><code class="docutils literal notranslate"><span class="pre">StatusMixin.get_report()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.status.StatusMixin.help"><code class="docutils literal notranslate"><span class="pre">StatusMixin.help()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.status.StatusMixin.set_last_run"><code class="docutils literal notranslate"><span class="pre">StatusMixin.set_last_run()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.status.StatusMixin.show_log_contents"><code class="docutils literal notranslate"><span class="pre">StatusMixin.show_log_contents()</span></code></a></li>
@@ -157,7 +164,7 @@
 <p>Source code for individual project operations and mixin behaviours.</p>
 <span class="target" id="module-padocc.core.project"></span><dl class="py class">
 <dt class="sig sig-object py" id="padocc.core.project.ProjectOperation">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.project.</span></span><span class="sig-name descname"><span class="pre">ProjectOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_time:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ft_kwargs:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger:</span> <span class="pre">~logging.Logger</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass:</span> <span class="pre">~padocc.core.utils.BypassSwitch</span> <span class="pre">=</span> <span class="pre">&lt;padocc.core.utils.BypassSwitch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem_allowed:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.project.</span></span><span class="sig-name descname"><span class="pre">ProjectOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_time:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ft_kwargs:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger:</span> <span class="pre">~logging.Logger</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass:</span> <span class="pre">~padocc.core.utils.BypassSwitch</span> <span class="pre">=</span> <span class="pre">&lt;padocc.core.utils.BypassSwitch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem_allowed:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote_s3:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation" title="Permalink to this definition"></a></dt>
 <dd><p>PADOCC Project Operation class.</p>
 <p>Able to access project files
 and perform some simple functions. Single-project operations
@@ -279,6 +286,20 @@ classes. The mixin classes here will explicitly state
 where they are designed to be used, as an extension of an 
 existing class.</p>
 <p>Use case: ProjectOperation [ONLY]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.mixins.dataset.DatasetHandlerMixin.add_s3_config">
+<span class="sig-name descname"><span class="pre">add_s3_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">remote_s3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.add_s3_config" title="Permalink to this definition"></a></dt>
+<dd><p>Add remote_s3 configuration for this project</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>remote_s3</strong> – (dict | str) Remote s3 config argument, either
+dictionary or path to a json file on disk. It is not advised to enter
+credentials here, see the documentation in Extra Features for more
+details.</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="padocc.core.mixins.dataset.DatasetHandlerMixin.cfa_dataset">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cfa_dataset</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dataset</span></em><a class="headerlink" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.cfa_dataset" title="Permalink to this definition"></a></dt>
@@ -333,6 +354,28 @@ for displaying help information.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.mixins.dataset.DatasetHandlerMixin.remove_attribute">
+<span class="sig-name descname"><span class="pre">remove_attribute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'dataset'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.remove_attribute" title="Permalink to this definition"></a></dt>
+<dd><p>Remove an attribute within a dataset representation’s metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>attribute</strong> – (str) The name of an attribute within the metadata
+property of the corresponding filehandler.</p></li>
+<li><p><strong>target</strong> – (str) The target product filehandler, uses the 
+generic dataset filehandler if not otherwise specified.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.mixins.dataset.DatasetHandlerMixin.remove_s3_config">
+<span class="sig-name descname"><span class="pre">remove_s3_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.remove_s3_config" title="Permalink to this definition"></a></dt>
+<dd><p>Remove remote_s3 configuration from this project</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.mixins.dataset.DatasetHandlerMixin.save_ds_filehandlers">
 <span class="sig-name descname"><span class="pre">save_ds_filehandlers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.save_ds_filehandlers" title="Permalink to this definition"></a></dt>
 <dd><p>Save all dataset files that already exist</p>
@@ -357,6 +400,13 @@ generic dataset filehandler if not otherwise specified.</p></li>
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.mixins.dataset.DatasetHandlerMixin.write_to_s3">
+<span class="sig-name descname"><span class="pre">write_to_s3</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">credentials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bucket_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name_ovewrite</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'zstore'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_as</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'zarr'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s3_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">zarr_kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.mixins.dataset.DatasetHandlerMixin.write_to_s3" title="Permalink to this definition"></a></dt>
+<dd><p>Write one of the active <code class="docutils literal notranslate"><span class="pre">dataset</span></code> objects to 
+an s3 zarr store</p>
 </dd></dl>
 
 <dl class="py property">
@@ -413,6 +463,12 @@ classes. The mixin classes here will explicitly state
 where they are designed to be used, as an extension of an 
 existing class.</p>
 <p>Use case: ProjectOperation [ONLY]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.apply_defaults">
+<span class="sig-name descname"><span class="pre">apply_defaults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">defaults</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'dataset'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.apply_defaults" title="Permalink to this definition"></a></dt>
+<dd><p>Apply a default selection of attributes to a dataset.</p>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.cloud_format">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cloud_format</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.cloud_format" title="Permalink to this definition"></a></dt>
@@ -559,6 +615,12 @@ existing class.</p>
 <dd class="field-odd"><p><strong>phase</strong> – (str) Phased operation from which to pull logs.</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.mixins.status.StatusMixin.get_report">
+<span class="sig-name descname"><span class="pre">get_report</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#padocc.core.mixins.status.StatusMixin.get_report" title="Permalink to this definition"></a></dt>
+<dd><p>Get the validation report if present for this project.</p>
 </dd></dl>
 
 <dl class="py method">

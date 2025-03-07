@@ -24,7 +24,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Projects in PADOCC" href="../operations/projects.html" />
-    <link rel="prev" title="A Deeper Dive into PADOCC Mechanics" href="extras.html" /> 
+    <link rel="prev" title="Extra Details for CEDA Staff" href="ceda_staff.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -53,8 +53,12 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool</a></li>
 <li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="extras.html">Extra Details</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Complex (Parallel) Operation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extras.html">Extra Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Complex (Parallel) Operation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#parallelisation-with-slurm">Parallelisation with SLURM</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
 <ul>
@@ -97,21 +101,31 @@
              
   <section id="complex-operations">
 <h1>Complex Operations<a class="headerlink" href="#complex-operations" title="Permalink to this heading"></a></h1>
+<section id="parallelisation-with-slurm">
+<h2>Parallelisation with SLURM<a class="headerlink" href="#parallelisation-with-slurm" title="Permalink to this heading"></a></h2>
+<p>Padocc now supports parallelisation via LOTUS on JASMIN, through the SLURM batch job manager. Use the CLI flag <code class="docutils literal notranslate"><span class="pre">--parallel</span></code> to deploy sets (arrays) of jobs to the cluster. Typically an array job will constitute processing multiple datasets at once, i.e all datasets in a given group. To deploy a subset of a group, see the documentation around <strong>repeat IDs</strong> and how to create subsets within the group based on past runs and other conditions.</p>
+<p>LOTUS2 is currently in development on JASMIN and once the cluster is deployed and stable the documentation on how to switch to LOTUS2 will be provided here.</p>
+<p>Here is an example of deploying a set of jobs to SLURM.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ padocc compute -G my-test-group --parallel -vv
+</pre></div>
+</div>
+<p>This will deploy all jobs with debug logs, meaning all log outputs will be displayed. All projects covered by this deployment have their own log files that can be accessed using interactive means per project, and the results from a deployment can be most easily viewed using the <code class="docutils literal notranslate"><span class="pre">status</span></code> special feature (see Extra Details).</p>
 <dl class="simple">
-<dt>Sections to be covered:</dt><dd><ul class="simple">
-<li><p>SLURM (sbatch)</p></li>
-<li><p>allocations</p></li>
+<dt>Other parameters that can be passed as flags for parallel deployments are listed here:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-t</span> <span class="pre">TIME_ALLOWED</span></code>: Time limit for this set of jobs (default applied per phase unless specified.)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-M</span> <span class="pre">MEMORY</span></code>: Memory limit for each job (default applies per phase.)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">VENVPATH</span></code>: Must be supplied for all jobs to have the correct environment, or will use the current active environment.</p></li>
 </ul>
 </dd>
 </dl>
-<p><strong>coming soon!</strong></p>
+</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="extras.html" class="btn btn-neutral float-left" title="A Deeper Dive into PADOCC Mechanics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ceda_staff.html" class="btn btn-neutral float-left" title="Extra Details for CEDA Staff" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="../operations/projects.html" class="btn btn-neutral float-right" title="Projects in PADOCC" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

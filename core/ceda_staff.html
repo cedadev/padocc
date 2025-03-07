@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extra Details for CEDA Staff &mdash; PADOCC Package v1.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3dd8cc91"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Complex Operations" href="complex_operation.html" />
+    <link rel="prev" title="Beneficial Extra Features" href="extras.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            PADOCC Package
+              <img src="../_static/padocc_wt.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extras.html">Extra Features</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Extras for CEDA Staff</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#cci-fill-group-using-moles-esgf-tag-results">CCI: Fill group using Moles ESGF Tag results</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-an-empty-group">1. Create an empty group</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#add-new-projects-using-the-moles-esgf-json-contents">2. Add new projects using the <code class="docutils literal notranslate"><span class="pre">moles_esgf.json</span></code> contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#cci-alter-dataset-attributes-using-cci-tagger-jsons">CCI: Alter dataset attributes using CCI Tagger JSONs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="complex_operation.html">Complex (Parallel) Operation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../operations/projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/groups.html">The Group Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/mixins.html">Core Mixins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/shepard.html">SHEPARD</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/project_source.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/phase_source.html">Phases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PADOCC Package</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Extra Details for CEDA Staff</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/core/ceda_staff.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="extra-details-for-ceda-staff">
+<h1>Extra Details for CEDA Staff<a class="headerlink" href="#extra-details-for-ceda-staff" title="Permalink to this heading"></a></h1>
+<p><strong>Last Updated: 4th March 2025</strong></p>
+<p>The following content has been documented to help CEDA staff users specifically, and involves integration of other packages.</p>
+<section id="cci-fill-group-using-moles-esgf-tag-results">
+<h2>CCI: Fill group using Moles ESGF Tag results<a class="headerlink" href="#cci-fill-group-using-moles-esgf-tag-results" title="Permalink to this heading"></a></h2>
+<p>For CCI projects, it can be faster and easier to initialise an empty group and the fill this group via the <code class="docutils literal notranslate"><span class="pre">esgf_drs.json</span></code> file created using the <code class="docutils literal notranslate"><span class="pre">cci-tag-scanner</span></code> package. The process for doing this is documented here. See the <code class="docutils literal notranslate"><span class="pre">cci-tag-scanner</span></code> <a class="reference external" href="https://github.com/cedadev/cci-tag-scanner">repo</a> for instructions on how to run the moles tagging script.</p>
+<section id="create-an-empty-group">
+<h3>1. Create an empty group<a class="headerlink" href="#create-an-empty-group" title="Permalink to this heading"></a></h3>
+<p>This can be done interactively or using the console.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ padocc new -G my_group
+</pre></div>
+</div>
+<p>Or interactively…</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padocc</span> <span class="kn">import</span> <span class="n">GroupOperation</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Access your working directory from the external environment - if already defined</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">os</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">workdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;WORKDIR&quot;</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">my_group</span> <span class="o">=</span> <span class="n">GroupOperation</span><span class="p">(</span><span class="s1">&#39;my_group&#39;</span><span class="p">,</span><span class="n">workdir</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="add-new-projects-using-the-moles-esgf-json-contents">
+<h3>2. Add new projects using the <code class="docutils literal notranslate"><span class="pre">moles_esgf.json</span></code> contents<a class="headerlink" href="#add-new-projects-using-the-moles-esgf-json-contents" title="Permalink to this heading"></a></h3>
+<p>Either the content can be provided directly or the filepath, but in either case it must be done interactively.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my_group</span><span class="o">.</span><span class="n">add_project</span><span class="p">(</span><span class="s1">&#39;moles_esgf.json&#39;</span><span class="p">,</span> <span class="n">moles_tags</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">INFO [group-operation]: Rejected UNKNOWN_DRS - /neodc/esacci/fire/data/burned_area/Sentinel3_SYN/pixel/v1.1 - not all files are friendly.</span>
+<span class="go">INFO [group-operation]: Rejected esacci.fire.mon.l3s.ba.multi-sensor.multi-platform.syn.v1-1.pixel - not all files are friendly.</span>
+<span class="go">DEBUG [group-operation]: Creating file &quot;main.txt&quot;</span>
+<span class="go">DEBUG [group-operation]: Creating operator for project esacci.fire.mon.l4.ba.multi-sensor.multi-platform.syn.v1-1.grid</span>
+<span class="go">DEBUG [group-operation]: Constructing the config file for esacci.fire.mon.l4.ba.multi-sensor.multi-platform.syn.v1-1.grid</span>
+<span class="go">DEBUG [group-operation]: Creating file &quot;base-cfg.json&quot;</span>
+<span class="go">DEBUG [group-operation]: Skipped setting value in detail-cfg.json</span>
+<span class="go">DEBUG [group-operation]: Creating file &quot;allfiles.txt&quot;</span>
+<span class="go">DEBUG [group-operation]: Skipped setting value in status_log.csv</span>
+<span class="go">DEBUG [group-operation]: Skipped setting value in kj1.1a.json</span>
+<span class="go">DEBUG [group-operation]: No 1.3.2 related file issues.</span>
+<span class="go">DEBUG [group-operation]: Skipped setting value in faultlist.csv</span>
+<span class="go">DEBUG [group-operation]: Skipped setting value in datasets.csv</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">my_group</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="go">DEBUG [group-operation]: Creating operator for project esacci.fire.mon.l4.ba.multi-sensor.multi-platform.syn.v1-1.grid</span>
+<span class="go">DEBUG [group-operation]: Creating file &quot;status_log.csv&quot;</span>
+<span class="go">DEBUG [group-operation]: content length: 10</span>
+<span class="go">esacci.fire.mon.l4.ba.multi-sensor.multi-platform.syn.v1-1.grid:</span>
+<span class="go">File count: 10</span>
+<span class="go">Group: my_group</span>
+<span class="go">Phase: init</span>
+<span class="go">Revision: kj1.1</span>
+</pre></div>
+</div>
+<p>In the above example, the <code class="docutils literal notranslate"><span class="pre">UNKNOWN_DRS</span></code> option was ignored since the DRS was not issued (normally meaning non-data files like READMEs), as well as the first DRS, which contained only a set of <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> files which are not processable by padocc. The third option with the drs <code class="docutils literal notranslate"><span class="pre">esacci.fire.mon.l4.ba.multi-sensor.multi-platform.syn.v1-1.grid</span></code> was identified as valid and all subsequent files were created.</p>
+<p>It was then possible to identify this project as the 0th member of this group, with 10 files identified from the input source. In this way, it is possible to add many projects to this group from one moles tags file. And multiple groups can be merged, which adds further options for creating groups.</p>
+</section>
+</section>
+<section id="cci-alter-dataset-attributes-using-cci-tagger-jsons">
+<h2>CCI: Alter dataset attributes using CCI Tagger JSONs<a class="headerlink" href="#cci-alter-dataset-attributes-using-cci-tagger-jsons" title="Permalink to this heading"></a></h2>
+<p>In many cases the CCI tagger json files contain expected default values for different datasets. Padocc has now implemented an <code class="docutils literal notranslate"><span class="pre">apply_defaults</span></code> method per-project which can be used to reassign values in the cloud dataset.</p>
+<p>In contrast to the first CCI-specific case, this section must be performed via the interactive shell, and it requires opening the JSON file and passing the correct content:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">json</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;fire_syn_v1.1_input.json&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">refs</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">defaults</span> <span class="o">=</span> <span class="n">refs</span><span class="p">[</span><span class="s1">&#39;defaults&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">my_group</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="o">.</span><span class="n">apply_defaults</span><span class="p">(</span><span class="n">defaults</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This will apply the default attributes to the ‘dataset’ filehandler, which is specified by the <code class="docutils literal notranslate"><span class="pre">cloud_format</span></code>. If you wish to apply these attributes to a specific product, use the <code class="docutils literal notranslate"><span class="pre">target</span></code> kwarg to specify e.g <code class="docutils literal notranslate"><span class="pre">kfile</span></code>, <code class="docutils literal notranslate"><span class="pre">zstore</span></code>. This function can also be used to remove specific values, especially if you’re using the defaults to correct a naming issue.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Quick example of how you can extract the current value of any property from the main dataset.</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;PRODUCT_VERSION&#39;</span><span class="p">:</span><span class="n">p</span><span class="o">.</span><span class="n">dataset_attributes</span><span class="p">[</span><span class="s1">&#39;product_version&#39;</span><span class="p">]}</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">p</span><span class="o">.</span><span class="n">apply_defaults</span><span class="p">(</span><span class="n">defaults</span><span class="p">,</span> <span class="n">remove</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;product_version&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>This will effectively rename the <code class="docutils literal notranslate"><span class="pre">product_version</span></code> parameter to <code class="docutils literal notranslate"><span class="pre">PRODUCT_VERSION</span></code>. Also, performing the functions using the <code class="docutils literal notranslate"><span class="pre">apply_defaults</span></code> method will automatically update the base <code class="docutils literal notranslate"><span class="pre">CFA</span></code> dataset alongside the target dataset.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="extras.html" class="btn btn-neutral float-left" title="Beneficial Extra Features" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="complex_operation.html" class="btn btn-neutral float-right" title="Complex Operations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024, Centre of Environmental Data Analysis Developers,Scientific and Technical Facilities Council (STFC),UK Research and Innovation (UKRI). BSD 2-Clause License. All rights reserved..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>  
+
+  <style>
+    /* Sidebar header (and topbar for mobile) */
+    .wy-side-nav-search, .wy-nav-top {
+      background: #e92603;
+    }
+
+    .caption-text, .header h1 {
+        color: #ef4d5a
+    }
+
+    .note {
+        background: #BEEF9E
+    }
+    .admonition-title {
+        background: #335145
+    }
+
+    .wy-nav-side {
+        background: #001711;
+    }
+
+  </style>
+
+
+</body>
+</html>

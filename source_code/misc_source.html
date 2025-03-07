@@ -52,7 +52,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
@@ -105,6 +106,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler.close"><code class="docutils literal notranslate"><span class="pre">JSONFileHandler.close()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler.create_file"><code class="docutils literal notranslate"><span class="pre">JSONFileHandler.create_file()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler.get"><code class="docutils literal notranslate"><span class="pre">JSONFileHandler.get()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler.pop"><code class="docutils literal notranslate"><span class="pre">JSONFileHandler.pop()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler.set"><code class="docutils literal notranslate"><span class="pre">JSONFileHandler.set()</span></code></a></li>
 </ul>
 </li>
@@ -134,7 +136,10 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.filehandlers.ZarrStore"><code class="docutils literal notranslate"><span class="pre">ZarrStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ZarrStore.get_meta"><code class="docutils literal notranslate"><span class="pre">ZarrStore.get_meta()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ZarrStore.open_dataset"><code class="docutils literal notranslate"><span class="pre">ZarrStore.open_dataset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ZarrStore.store"><code class="docutils literal notranslate"><span class="pre">ZarrStore.store</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ZarrStore.write_to_s3"><code class="docutils literal notranslate"><span class="pre">ZarrStore.write_to_s3()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-padocc.core.utils">Utilities</a><ul>
@@ -142,11 +147,13 @@
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.apply_substitutions"><code class="docutils literal notranslate"><span class="pre">apply_substitutions()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.deformat_float"><code class="docutils literal notranslate"><span class="pre">deformat_float()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.extract_file"><code class="docutils literal notranslate"><span class="pre">extract_file()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.extract_json"><code class="docutils literal notranslate"><span class="pre">extract_json()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.find_closest"><code class="docutils literal notranslate"><span class="pre">find_closest()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.format_float"><code class="docutils literal notranslate"><span class="pre">format_float()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.format_str"><code class="docutils literal notranslate"><span class="pre">format_str()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.format_tuple"><code class="docutils literal notranslate"><span class="pre">format_tuple()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.get_attribute"><code class="docutils literal notranslate"><span class="pre">get_attribute()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.list_groups"><code class="docutils literal notranslate"><span class="pre">list_groups()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.make_tuple"><code class="docutils literal notranslate"><span class="pre">make_tuple()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.mem_to_val"><code class="docutils literal notranslate"><span class="pre">mem_to_val()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.utils.print_fmt_str"><code class="docutils literal notranslate"><span class="pre">print_fmt_str()</span></code></a></li>
@@ -506,6 +513,12 @@ operations on component files.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.filehandlers.JSONFileHandler.pop">
+<span class="sig-name descname"><span class="pre">pop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.JSONFileHandler.pop" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper for <code class="docutils literal notranslate"><span class="pre">pop</span></code> function of a dict.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.JSONFileHandler.set">
 <span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.JSONFileHandler.set" title="Permalink to this definition"></a></dt>
 <dd><p>Set the value of the whole dictionary.</p>
@@ -708,7 +721,7 @@ to the new value.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.ZarrStore">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.filehandlers.</span></span><span class="sig-name descname"><span class="pre">ZarrStore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.filehandlers.ZarrStore" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.filehandlers.</span></span><span class="sig-name descname"><span class="pre">ZarrStore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote_s3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.filehandlers.ZarrStore" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#padocc.core.filehandlers.GenericStore" title="padocc.core.filehandlers.GenericStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenericStore</span></code></a></p>
 <p>Filehandler for Zarr stores in PADOCC.
 Enables manipulation of Zarr store on filesystem
@@ -717,11 +730,31 @@ and setting metadata attributes.</p>
 <h2>Added Behaviours<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h2>
 <ol class="arabic simple">
 <li><p>Open dataset - open the zarr store.</p></li>
+<li><p>Write to s3 - write a disk-based zarr store to s3.</p></li>
 </ol>
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.filehandlers.ZarrStore.get_meta">
+<span class="sig-name descname"><span class="pre">get_meta</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.ZarrStore.get_meta" title="Permalink to this definition"></a></dt>
+<dd><p>Override super function in case of remote s3.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.ZarrStore.open_dataset">
 <span class="sig-name descname"><span class="pre">open_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">zarr_kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dataset</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.ZarrStore.open_dataset" title="Permalink to this definition"></a></dt>
 <dd><p>Open the ZarrStore as an xarray dataset</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padocc.core.filehandlers.ZarrStore.store">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">store</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">object</span></em><a class="headerlink" href="#padocc.core.filehandlers.ZarrStore.store" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the store path or s3 store object as required.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.filehandlers.ZarrStore.write_to_s3">
+<span class="sig-name descname"><span class="pre">write_to_s3</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">credentials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bucket_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name_overwrite</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s3_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">zarr_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.filehandlers.ZarrStore.write_to_s3" title="Permalink to this definition"></a></dt>
+<dd><p>Write zarr store to an S3 Object Store
+bucket directly from padocc</p>
 </dd></dl>
 
 </section>
@@ -770,6 +803,18 @@ of input files.</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="padocc.core.utils.extract_file">
 <span class="sig-prename descclassname"><span class="pre">padocc.core.utils.</span></span><span class="sig-name descname"><span class="pre">extract_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#padocc.core.utils.extract_file" title="Permalink to this definition"></a></dt>
+<dd><p>Extract content from a padocc-external file.</p>
+<p>Use filehandlers for files within the pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_file</strong> – (str) Pipeline-external file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padocc.core.utils.extract_json">
+<span class="sig-prename descclassname"><span class="pre">padocc.core.utils.</span></span><span class="sig-name descname"><span class="pre">extract_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#padocc.core.utils.extract_json" title="Permalink to this definition"></a></dt>
 <dd><p>Extract content from a padocc-external file.</p>
 <p>Use filehandlers for files within the pipeline.</p>
 <dl class="field-list simple">
@@ -851,6 +896,12 @@ value of variable from Environment or ParseArgs object, or reports failure.</p>
 <dd class="field-even"><p>Value of either environment variable or argparse value.</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padocc.core.utils.list_groups">
+<span class="sig-prename descclassname"><span class="pre">padocc.core.utils.</span></span><span class="sig-name descname"><span class="pre">list_groups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workdir:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func:</span> <span class="pre">~typing.Callable</span> <span class="pre">=</span> <span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.utils.list_groups" title="Permalink to this definition"></a></dt>
+<dd><p>List groups in the existing working directory</p>
 </dd></dl>
 
 <dl class="py function">
