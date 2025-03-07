@@ -155,12 +155,18 @@ class DatasetHandlerMixin:
         """
         Retrieve the filehandler for the zarr store
         """
+
+        remote_s3 = self.base_cfg.get('remote_s3',None)
+
+        if remote_s3 is not None:
+            remote_s3['store_name'] = self.complete_product
         
         if self._zstore is None:
             self._zstore = ZarrStore(
                 self.dir,
                 self.outproduct,
                 logger=self.logger,
+                remote_s3=remote_s3,
                 **self.fh_kwargs,
             )
 
@@ -254,6 +260,21 @@ class DatasetHandlerMixin:
             s3_kwargs=s3_kwargs,
             **zarr_kwargs
         )
+
+    def add_s3_config(
+           self,
+           remote_s3: Union[dict, str, None] = None, 
+        ) -> None:
+        """
+        Add remote_s3 configuration for this project
+        """
+        self.base_cfg['remote_s3'] = remote_s3
+
+    def remove_s3_config(self):
+        """
+        Remove remote_s3 configuration from this project
+        """
+        self.base_cfg.pop('remote_s3')
 
     @property
     def dataset_attributes(self) -> dict:
