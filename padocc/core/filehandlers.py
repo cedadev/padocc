@@ -976,6 +976,8 @@ class ZarrStore(GenericStore):
     ----------------
     
     1. Open dataset - open the zarr store.
+
+    2. Write to s3 - write a disk-based zarr store to s3.
     """
 
     def __init__(

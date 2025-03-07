@@ -372,8 +372,10 @@ class ComputeOperation(ProjectOperation):
     def _run_with_timings(self, func, **kwargs) -> str:
         """
         Configure all required steps for Kerchunk processing.
-        - Check if output files already exist.
-        - Configure timings post-run.
+
+
+        Check if output files already exist and configure 
+        timings post-run.
         """
 
         # Timed func call
