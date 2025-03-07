@@ -987,7 +987,7 @@ class ZarrStore(GenericStore):
         ) -> None:
 
         if remote_s3:
-            parent_dir = f'{remote_s3["s3_url"]}/{remote_s3["bucket_id"]}'
+            parent_dir = f's3://{remote_s3["bucket_id"]}'
             store_name = remote_s3["store_name"]
 
         self._remote_s3 = remote_s3
@@ -1023,8 +1023,9 @@ class ZarrStore(GenericStore):
         
         # Optional extra kwargs for s3 connection.
         s3_kwargs = self._remote_s3.get('s3_kwargs',None)
-        target    = f'{self.store_path}.{self._extension}'
+        target = self.store_path
 
+        self.logger.debug(f'Target store: {target}')
         # Internal s3 store created from known config
         return self._store(
             target,
