@@ -162,7 +162,7 @@ class AllocationsMixin:
     def deploy_parallel(
             self,
             phase           : str,
-            source          : str = None,
+            source          : str,
             band_increase   : str = None,
             forceful        : bool = None,
             dryrun          : bool = None,
@@ -181,6 +181,13 @@ class AllocationsMixin:
         """
         Organise parallel deployment via SLURM.
         """
+
+        source = source or os.environ.get('VIRTUAL_ENV')
+
+        if source is None:
+            raise ValueError(
+                'Source virtual environment is required.'
+            )
 
         if phase not in parallel_modes:
             raise ValueError(

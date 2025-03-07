@@ -454,10 +454,11 @@ class GroupOperation(
         """
 
         if name == 'main':
-            raise ValueError(
-                'Operation not permitted - removing the main codeset'
-                'cannot be achieved using this function.'
+            self.logger.debug(
+                'Removing the main codeset '
+                'cannot be achieved using this function - skipped.'
             )
+            return
         
         if name not in self.proj_codes:
             self.logger.warning(

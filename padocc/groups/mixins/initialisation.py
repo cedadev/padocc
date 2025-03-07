@@ -245,6 +245,8 @@ class InitialisationMixin:
         default_cfg = file_configs['base_cfg']
         default_cfg.update(config)
 
+        self.logger.debug(f'Initialising project {config["proj_code"]}')
+
         proj_op = ProjectOperation(
             config['proj_code'],
             self.workdir,
@@ -256,7 +258,7 @@ class InitialisationMixin:
             forceful=self._forceful,
             remote_s3=remote_s3
         )
-
+        proj_op.update_status('init','Success')
         proj_op.save_files()
 
     def _init_group(

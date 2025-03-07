@@ -81,16 +81,30 @@ class ModifiersMixin:
         else:
             configs.append(config)
 
+        new_codes = []
+        recombine = False
         for config in configs:
 
             if config['proj_code'] in self.proj_codes['main']:
                 self.logger.warning(
-                    f'proj_code {config["proj_code"]} already exists for this group - skipping'
+                    f'proj_code {config["proj_code"]} already exists for this group.'
                 )
-                continue
+                if not self._forceful:
+                    continue
+                # Recombine sets if contains duplicates and doing overwrites.
+                recombine = True
+
+            new_codes.append(config['proj_code'])
 
             self._init_project(config, remote_s3=remote_s3)
-            self.proj_codes['main'].append(config['proj_code'])
+
+        if recombine:
+            self._add_proj_codeset('temp',new_codes)
+            self.merge_subsets(['main','temp'], 'main')
+            self._delete_proj_codeset('temp')
+        else:
+            for code in new_codes:
+                self.proj_codes['main'].append(code)
         self.save_files()
 
     def remove_project(self, proj_code: str, ask: bool = True) -> None:
