@@ -11,7 +11,7 @@ import numpy as np
 import xarray as xr
 
 from padocc.core import BypassSwitch, LoggedOperation, ProjectOperation
-from padocc.core.errors import ValidationError
+from padocc.core.errors import ValidationError, worst_error
 from padocc.core.filehandlers import JSONFileHandler
 from padocc.core.utils import format_tuple, timestamp
 
@@ -737,7 +737,7 @@ class ValidateDatasets(LoggedOperation):
         tbox = test[slice_applied]
         cbox = control[slice_applied]
 
-        if check_for_nan(cbox, BypassSwitch(), self.logger):
+        if check_for_nan(cbox, BypassSwitch(), self.logger, label=var):
             return self._validate_selection(test, control, current+1, var, recursion_limit=recursion_limit)
         else:
             return self._compare_data(var, slice_applied, tbox, cbox)
@@ -908,10 +908,12 @@ class ValidateOperation(ProjectOperation):
         # Save report
         vd.save_report()
 
-        self.update_status('validate',vd.pass_fail,jobid=self._logid)
-
         if vd.pass_fail == 'Fatal':
-            raise ValidationError(vd.data_report)
+            err = worst_error(vd.report)
+            print(f'ERROR: {err}')
+            raise ValidationError(err)
+        else:
+            self.update_status('validate',vd.pass_fail,jobid=self._logid)
         
         return vd.pass_fail
 

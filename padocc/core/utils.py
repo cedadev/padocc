@@ -47,7 +47,7 @@ BASE_CFG = {
     'pattern':None,
     'updates':None,
     'removals':None,
-    'version_no':'1.1',
+    'version_no':'1.0',
     'data_properties':{
         'aggregated_dims':'Unknown',
         'pure_dims': 'Unknown',
@@ -99,9 +99,9 @@ def list_groups(workdir: str, func: Callable = print):
     
     func(f'Groups in {topdir}')
 
-    fileset = glob.glob(f'{workdir}/groups/*/datasets.csv')
+    fileset = glob.glob(f'{workdir}/groups/*/proj_codes/main.txt')
     for f in fileset:
-        groupID = f.split('/')[-2]
+        groupID = f.split('/')[-3]
 
         with open(f) as g:
             length = len(g.readlines())
