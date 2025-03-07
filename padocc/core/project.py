@@ -15,8 +15,8 @@ from .filehandlers import (CSVFileHandler, JSONFileHandler, ListFileHandler,
 from .mixins import (DatasetHandlerMixin, DirectoryMixin, PropertiesMixin,
                      StatusMixin)
 from .utils import (FILE_DEFAULT, BypassSwitch, apply_substitutions,
-                    extract_file, file_configs, phases, print_fmt_str)
-
+                    extract_file, file_configs, phases, print_fmt_str,
+                    extract_json)
 
 class ProjectOperation(
     DirectoryMixin, 
@@ -48,6 +48,7 @@ class ProjectOperation(
             dryrun     : bool = None,
             thorough   : bool = None,
             mem_allowed: Union[str,None] = None,
+            remote_s3  : Union[dict, str, None] = None,
         ) -> None:
         """
         Initialisation for a ProjectOperation object to handle all interactions
@@ -89,6 +90,9 @@ class ProjectOperation(
 
         :param thorough:        (bool) From args.quality - if True will create all files 
             from scratch, otherwise saved refs from previous runs will be loaded.
+
+        :param remote_s3:       (dict | str) Path to config file or dict containing remote s3
+            configurations.
 
         :returns: None
 
@@ -159,6 +163,14 @@ class ProjectOperation(
         self._is_trial = False
 
         self.stage = None
+
+        # Remote s3 direct connection
+        if isinstance(remote_s3,str):
+            remote_s3 = extract_json()
+
+        if remote_s3 is not None:
+            self.base_cfg['remote_s3'] = remote_s3
+            self.base_cfg.close()
 
     def __str__(self):
         """String representation of project"""
@@ -254,7 +266,7 @@ class ProjectOperation(
             )
             self.cloud_format = mode
             self.file_type = FILE_DEFAULT[mode]
-
+            
         try:
             status = self._run(mode=mode, **kwargs)
             self.save_files()
