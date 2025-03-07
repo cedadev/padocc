@@ -17,11 +17,40 @@ def check_specials(args: dict) -> bool:
     if args.phase == 'list':
         list_groups(args.workdir)
         return True
+    
+    group = GroupOperation(
+            args.groupID,
+            args.workdir,
+            verbose=args.verbose,
+            dryrun=args.dryrun,
+            forceful=args.forceful
+        )
+    
+    if args.phase == 'add':
+        moles_tags = (args.special == 'moles')
+        group.add_project(args.input, moles_tags=moles_tags)
+        return True
+    
+    if args.phase == 'status':
+        group.summarise_status()
+        return True
+    
+    if args.phase == 'check':
+        group.check_attribute(args.special)
+        return True
+
+    if args.phase == 'complete':
+        group.complete_group(
+            args.special,
+            repeat_id=args.repeat_id)
+        return True
 
 
 def get_args():
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')
     parser.add_argument('phase', type=str, help='Phase of the pipeline to initiate')
+
+    parser.add_argument('--special', dest='special', help='See documentation for use cases.')
 
     # Action-based - standard flags
     parser.add_argument('-f','--forceful',dest='forceful',action='store_true', help='Force overwrite of steps if previously done')
