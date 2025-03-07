@@ -166,7 +166,8 @@ class ScanOperation(ProjectOperation):
         if nfiles < 3:
             self.detail_cfg.set({'skipped':True})
             self.logger.info(f'Skip scanning phase (only found {nfiles} files) >> proceed directly to compute')
-            return None
+            self.update_status('scan','Success',jobid=self._logid)
+            return
         
 
         # Create all files in mini-kerchunk set here. Then try an assessment.
@@ -424,6 +425,9 @@ class ScanOperation(ProjectOperation):
 
         details['driver'] = '/'.join(set(ctypes))
 
+        if total_chunks > 1e8:
+            self.cloud_format = 'zarr'
+
         if override_type:
             details['type'] = override_type
         else:
@@ -433,7 +437,7 @@ class ScanOperation(ProjectOperation):
         existing_details.update(details)
 
         self.detail_cfg.set(existing_details)
-        self.detail_cfg.close()
+        self.save_files()
 
 if __name__ == '__main__':
     print('Kerchunk Pipeline Config Scanner - run using master scripts')

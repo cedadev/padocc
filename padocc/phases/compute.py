@@ -384,6 +384,9 @@ class ComputeOperation(ProjectOperation):
         timings      = self._get_timings()
         detail       = self.detail_cfg.get()
 
+        if not detail.get('timings',None):
+            detail['timings'] = {}
+
         if timings:
             self.logger.info('Export timings for this process - all refs created from scratch.')
             detail['timings']['convert_actual'] = timings['convert_actual']
@@ -1024,7 +1027,8 @@ class ZarrDS(ComputeOperation):
         Create the Zarr Store
         """
 
-        self.combine_kwargs = self.detail_cfg['kwargs'].get('combine_kwargs',{})
+        kwargs = self.detail_cfg.get('kwargs', {})
+        self.combine_kwargs = kwargs.get('combine_kwargs',{})
 
         # Open all files for this process (depending on limiter)
         self.logger.debug('Starting timed section for estimation of whole process')
@@ -1088,23 +1092,36 @@ class ZarrDS(ComputeOperation):
                         '-f or -Q on the commandline to clear or overwrite'
                         'existing store'
                     )
+        if self.base_cfg.get('rechunk',False):
     
-        # Perform Rechunking
-        self.logger.info(f'Starting Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
-        if not self._dryrun:
-            t1 = datetime.now()
+            # Perform Rechunking
+            self.logger.info(f'Starting Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
+            if not self._dryrun:
+                t1 = datetime.now()
 
-            rechunker.rechunk(
-                combined_ds, 
-                concat_dim_rechunk, 
-                self.mem_allowed, 
-                self.zstore.store,
-                temp_store=self.tempstore.store_path).execute()
-            
-            self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
-            self.logger.info(f'Concluded Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
+                rechunker.rechunk(
+                    combined_ds, 
+                    concat_dim_rechunk, 
+                    self.mem_allowed, 
+                    self.zstore.store,
+                    temp_store=self.tempstore.store_path).execute()
+                
+                self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
+                self.logger.info(f'Concluded Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
+            else:
+                self.logger.info('Skipped rechunking step.')
         else:
-            self.logger.info('Skipped rechunking step.')
+            self.logger.info(f'Starting Zarr Conversion')
+            if not self._dryrun:
+                t1 = datetime.now()
+
+                combined_ds.to_zarr(self.zstore.store)
+                
+                self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
+                self.logger.info(f'Concluded Conversion - {(datetime.now()-t1).total_seconds():.2f}s')
+            else:
+                self.logger.info('Skipped conversion writing')
+
 
     def _get_rechunk_scheme(self, ds):
         """
