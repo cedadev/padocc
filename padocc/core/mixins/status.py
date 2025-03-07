@@ -76,7 +76,10 @@ class StatusMixin:
         """
         Gets the last line of the correct log file
         """
-        return self.status_log[-1]
+        try:
+            return self.status_log[-1]
+        except IndexError:
+            return None
 
     def get_log_contents(self, phase: str) -> str:
         """

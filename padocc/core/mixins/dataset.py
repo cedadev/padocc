@@ -267,6 +267,11 @@ class DatasetHandlerMixin:
         ) -> None:
         """
         Add remote_s3 configuration for this project
+
+        :param remote_s3:   (dict | str) Remote s3 config argument, either
+            dictionary or path to a json file on disk. It is not advised to enter
+            credentials here, see the documentation in Extra Features for more
+            details.
         """
         self.base_cfg['remote_s3'] = remote_s3
 
