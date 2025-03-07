@@ -42,6 +42,7 @@ class ModifiersMixin:
     def add_project(
             self,
             config: Union[str,dict],
+            remote_s3: Union[dict, str, None] = None,
             moles_tags: bool = False,
         ):
         """
@@ -88,7 +89,7 @@ class ModifiersMixin:
                 )
                 continue
 
-            self._init_project(config)
+            self._init_project(config, remote_s3=remote_s3)
             self.proj_codes['main'].append(config['proj_code'])
         self.save_files()
 
