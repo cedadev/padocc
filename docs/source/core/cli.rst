@@ -15,6 +15,9 @@ The command-line tool ``padocc`` allows quick deployments of serial and parallel
 
     2. Set the working directory ``WORKDIR`` environment variable. All pipeline directories and files will be created under this directory, which includes all the groups you define. It is suggested to have only one working directory where possible, although if a distinction is needed for different groups of datasets, using multiple working directories can be done with user discretion.
 
+Using the CLI Tool
+==================
+
 General Command Form
 --------------------
 The general form of a command for padocc should be to call the command line tool ``padocc`` with a minimum of the ``phase`` argument specified afterwards. E.g:
@@ -59,6 +62,21 @@ This optional first step allows you to create empty groups in the workspace that
     $ padocc new -G my-new-group
 
 There is no particular advantage to creating empty groups but this may be beneficial for organisation of multiple new groups where the data is still being collected.
+
+Special Functions
+=================
+
+The following accepted options to the ``phase`` argument act as shortcuts to specific functions in padocc available via an interactive session. These functions are now available via the CLI in a limited capacity, and use the ``--special`` kwarg as a catch-all for providing configuration info to these functions.
+ - ``list``: Lists all groups in the current workspace and their contents.
+ - ``status``: Shows status of all projects in a group (requires ``-G`` flag)
+ - ``add``: Enables adding projects to a group, including via the moles tags option (requires ``-G``, moles enabled via ``--special moles``)
+ - ``check``: Check an attribute in all projects across the group (requires ``-G``, supply attribute via ``--special <attribute>``)
+ - ``complete``: Enables the completion workflow for complete projects (requires ``-G``, supply completion directory via ``--special <dir>``)
+
+Pipeline Functions
+==================
+
+The following descriptions are for main pipeline functions, most of which are parallelisable with the ``--parallel`` flag.
 
 Initialise a group
 ------------------

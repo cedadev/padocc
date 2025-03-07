@@ -63,15 +63,9 @@ class EvaluationsMixin:
         for proj_code in self.proj_codes[repeat_id]:
             proj_op = self.get_project(proj_code)
 
-            source, attr = attribute.split('@')
-            if source == 'detail':
-                val = proj_op.detail_cfg.get(attr, None)
-            elif source == 'base':
-                val = proj_op.base_cfg.get(attr, None)
-            else:
-                raise ValueError(
-                    f'Unrecognised source: {source}'
-                )
+            val = proj_op.detail_cfg.get(attribute, None)
+            if val is None:
+                val = proj_op.base_cfg.get(attribute, None)
             func(f' > {proj_code}: {val}')
 
     def repeat_by_status(
