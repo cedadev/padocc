@@ -92,7 +92,7 @@ class AllocationsMixin:
         time_bands = {}
 
         for p in proj_codes:
-            proj_op = ProjectOperation(p, self.workdir, groupID=self.groupID, dryrun=self.dryrun, **kwargs)
+            proj_op = ProjectOperation(p, self.workdir, groupID=self.groupID, dryrun=self._dryrun, **kwargs)
             lr      = proj_op.base_cfg['last_run']
             timings = proj_op.detail_cfg['timings']
             nfiles  = proj_op.detail_cfg['num_files']
@@ -193,10 +193,7 @@ class AllocationsMixin:
             'thorough' : thorough or self._thorough,
             'verbose' : verbose or self._verbose,
             'binpack' : binpack,
-            'time_allowed' : time_allowed,
-            'memory'  : memory,
             'subset'  : subset,
-            'repeat_id' : repeat_id,
             'bypass' : bypass,
             'mode' : mode,
             'new_version' : new_version,
@@ -204,10 +201,10 @@ class AllocationsMixin:
 
         # Ensure directories are created for logs
         self._setup_slurm_directories()
-        sbatch_dir  = f'{self.dir}/sbatch/'
+        sbatch_dir  = f'{self.groupdir}/sbatch'
 
         # Perform allocation assignments here.
-        if not time_allowed:
+        if binpack:
             allocations = self.create_allocations(
                 phase, repeat_id,
                 band_increase=band_increase, binpack=binpack
@@ -216,16 +213,12 @@ class AllocationsMixin:
             for alloc in allocations:
                 func(f'{alloc[0]}: ({alloc[1]}) - {alloc[2]} Jobs')
 
-            deploy = input('Deploy the above allocated dataset jobs with these timings? (Y/N) ')
-            if deploy != 'Y':
-                raise KeyboardInterrupt
-
             for aid, alloc in enumerate(allocations):
 
                 sbatch = ListFileHandler(
                     sbatch_dir, 
                     f'{phase}_{repeat_id}_{aid}.sbatch', 
-                    self.logger, 
+                    logger=self.logger, 
                     dryrun=self._dryrun, 
                     forceful=self._forceful)
                 
@@ -235,6 +228,7 @@ class AllocationsMixin:
                     phase, 
                     source, 
                     jobname,
+                    repeat_id,
                     sbatch, 
                     group_length=alloc[2],
                     sbatch_kwargs=sbatch_kwargs,
@@ -245,7 +239,7 @@ class AllocationsMixin:
             sbatch = ListFileHandler(
                 sbatch_dir, 
                 f'{phase}_{repeat_id}.sbatch', 
-                self.logger, 
+                logger=self.logger, 
                 dryrun=self._dryrun, 
                 forceful=self._forceful)
             
@@ -254,15 +248,11 @@ class AllocationsMixin:
             num_datasets = len(self.proj_codes[repeat_id].get())
             self.logger.info(f'All Datasets: {time_allowed} ({num_datasets})')
 
-            # Always check before deploying a significant number of jobs.
-            deploy = input('Deploy the above allocated dataset jobs with these timings? (Y/N) ')
-            if deploy != 'Y':
-                raise KeyboardInterrupt
-
             self._create_slurm_script(
                     phase, 
                     source, 
                     jobname,
+                    repeat_id,
                     sbatch,
                     group_length=num_datasets,
                     sbatch_kwargs=sbatch_kwargs,
@@ -275,6 +265,7 @@ class AllocationsMixin:
             phase: str,
             source: str,
             jobname: str,
+            repeat_id: str,
             sbatch: ListFileHandler,
             group_length: int,
             sbatch_kwargs: dict,
@@ -291,10 +282,10 @@ class AllocationsMixin:
         time   = time or times[phase]
         memory = memory or '2G'
 
-        outfile = f'{self.dir}/outs/{jobname}'
-        errfile = f'{self.dir}/errs/{jobname}'
+        outfile = f'{self.groupdir}/outs/{jobname}'
+        errfile = f'{self.groupdir}/errs/{jobname}'
 
-        sbatch_flags = self._sbatch_kwargs(time, memory, sbatch_kwargs)
+        sbatch_flags = self._sbatch_kwargs(time, memory, repeat_id, **sbatch_kwargs)
 
         lotus_requirements = get_lotus_reqs(self.logger)
   
@@ -313,11 +304,13 @@ class AllocationsMixin:
 
             f'export WORKDIR={self.workdir}',
 
-            f'padocc {phase} $SLURM_ARRAY_TASK_ID {sbatch_flags}',
+            f'padocc {phase} -p $SLURM_ARRAY_TASK_ID {sbatch_flags}',
         ]
 
-        sbatch.update(sbatch_contents)
+        sbatch.set(sbatch_contents)
         sbatch.close()
+
+        self.logger.info(f'{jobname}: {time} ({group_length})')
 
         if self._dryrun:
             self.logger.info('DRYRUN: sbatch command: ')
@@ -341,7 +334,7 @@ class AllocationsMixin:
         Assemble all flags and options for CLI via SLURM.
         """
 
-        sbatch_kwargs = f'-G {self.groupID} -t {time} -M {memory} -r {repeat_id}'
+        sbatch_kwargs = f'-G {self.groupID} -t {time} -M {memory} -r {repeat_id} '
 
         bool_options = {
             'forceful' : '-f',
@@ -373,7 +366,8 @@ class AllocationsMixin:
                     f'"{kwarg}" option not recognised - '
                     f'please choose from {list(bool_kwargs.keys())}'
                 )
-            optional.append(bool_options[kwarg])
+            if bool_kwargs[kwarg]:
+                optional.append(bool_options[kwarg])
 
         return sbatch_kwargs + ' '.join(optional)
 
@@ -387,7 +381,7 @@ class AllocationsMixin:
                 if self._dryrun:
                     self.logger.debug(f"DRYRUN: Skipped creating {dirx}")
                     continue
-                os.makedirs(f'{self.dir}/{dirx}')
+                os.makedirs(f'{self.groupdir}/{dirx}')
 
     def _create_allocations(
             self, 
