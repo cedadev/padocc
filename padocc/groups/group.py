@@ -333,12 +333,12 @@ class GroupOperation(
 
         :returns:   None
         """
-        so = ScanOperation(
+        scan = ScanOperation(
             proj_code, self.workdir, groupID=self.groupID,
             verbose=self._verbose, bypass=bypass, 
             dryrun=self._dryrun, **kwargs)
-        status = so.run(mode=mode, **self.fh_kwargs, **run_kwargs)
-        so.save_files()
+        status = scan.run(mode=mode, **self.fh_kwargs, **run_kwargs)
+        scan.save_files()
         return status
 
     def _compute_config(
@@ -387,20 +387,14 @@ class GroupOperation(
 
         ds = COMPUTE[mode]
 
-        proj_op = ds(
-            proj_code,
-            self.workdir,
-            groupID=self.groupID,
-            logger=self.logger,
-            bypass=bypass,
-            **kwargs
+        compute = ds(
+            proj_code, self.workdir, groupID=self.groupID,
+            verbose=self._verbose, bypass=bypass,
+            dryrun=self._dryrun, **kwargs
         )
-        status = proj_op.run(
-            mode=mode, 
-            **self.fh_kwargs,
-            **run_kwargs
-        )
-        proj_op.save_files()
+
+        status = compute.run(mode=mode, **self.fh_kwargs, **run_kwargs)
+        compute.save_files()
         return status
     
     def _validate_config(
@@ -415,22 +409,21 @@ class GroupOperation(
         self.logger.debug(f"Starting validation for {proj_code}")
 
         try:
-            vop = ValidateOperation(
-                proj_code,
-                workdir=self.workdir,
-                groupID=self.groupID,
-                bypass=bypass,
-                **kwargs)
+            valid = ValidateOperation(
+                proj_code, self.workdir, groupID=self.groupID,
+                verbose=self._verbose, bypass=bypass,
+                dryrun=self._dryrun, **kwargs)
         except TypeError:
             raise ValueError(
                 f'{proj_code}, {self.groupID}, {self.workdir}'
             )
         
-        status = vop.run(
+        status = valid.run(
             mode=mode,
             **self.fh_kwargs,
             **run_kwargs
         )
+        valid.save_files()
         return status
 
     def _save_proj_codes(self):
