@@ -13,7 +13,7 @@ import xarray as xr
 from padocc.core import BypassSwitch, LoggedOperation, ProjectOperation
 from padocc.core.errors import ValidationError
 from padocc.core.filehandlers import JSONFileHandler
-from padocc.core.utils import format_tuple
+from padocc.core.utils import format_tuple, timestamp
 
 SUFFIXES = []
 SUFFIX_LIST = []
@@ -871,6 +871,8 @@ class ValidateOperation(ProjectOperation):
         """
         Run hook for project operation run method
         """
+        self.set_last_run(self.phase, timestamp())
+        self.logger.info("Starting validation")
 
         if mode != self.cloud_format and mode is not None:
             self.cloud_format = mode

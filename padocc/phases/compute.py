@@ -19,7 +19,7 @@ from padocc.core.errors import (ComputeError, ConcatFatalError,
                                 KerchunkDriverFatalError, PartialDriverError,
                                 SourceNotFoundError)
 from padocc.core.filehandlers import JSONFileHandler, ZarrStore
-from padocc.core.utils import find_closest, make_tuple
+from padocc.core.utils import find_closest, make_tuple, timestamp
 from padocc.phases.validate import ValidateDatasets
 
 CONCAT_MSG = 'See individual files for more details'    
@@ -1009,6 +1009,7 @@ class ZarrDS(ComputeOperation):
         """
         Recommended way of running an operation - includes timers etc.
         """
+        self.set_last_run(self.phase, timestamp())
         # Run CFA in super class.
         _ = super()._run(file_limit=self.limiter)
 
@@ -1097,7 +1098,7 @@ class ZarrDS(ComputeOperation):
                 combined_ds, 
                 concat_dim_rechunk, 
                 self.mem_allowed, 
-                self.zstore.store_path,
+                self.zstore.store,
                 temp_store=self.tempstore.store_path).execute()
             
             self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
@@ -1148,5 +1149,5 @@ class ZarrDS(ComputeOperation):
         return concat_dim_rechunk, dim_sizes, cpf/self.limiter, volume/self.limiter
 
 if __name__ == '__main__':
-    print('Serial Processor for Kerchunk Pipeline - run with single_run.py')
+    print('Serial Processor for Kerchunk Pipeline')
     

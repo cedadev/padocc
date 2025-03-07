@@ -14,6 +14,7 @@ import yaml
 from padocc.core import FalseLogger, ProjectOperation
 from padocc.core.errors import ConcatFatalError
 from padocc.core.filehandlers import JSONFileHandler
+from padocc.core.utils import timestamp
 
 from .compute import ComputeOperation, KerchunkDS, ZarrDS
 
@@ -157,6 +158,7 @@ class ScanOperation(ProjectOperation):
         ) -> None:
         """Main process handler for scanning phase"""
 
+        self.set_last_run(self.phase, timestamp())
         self.logger.info(f'Starting scan-{mode} operation for {self.proj_code}')
 
         nfiles = len(self.allfiles)
