@@ -5,7 +5,7 @@ Beneficial Extra Features
 Remote connection to object storage
 ===================================
 
-**new for v1.3.3**
+**New for v1.3.3!**
 
 ``padocc`` now has the capability to write to s3 storage endpoints for zarr stores, as well as using s3 object storage as the immediate storage medium for zarr datasets. This means that zarr stores generated via padocc can be written to object storage on creation, without filling up local disk space. Future updates will also include transfer mechanisms for Kerchunk datasets, where the kerchunk data must be edited then transferred.
 
@@ -19,6 +19,7 @@ The following configuration details must be passed to one of the entrypoints for
 Remote s3 config:
 
 .. code::
+
   {
     "s3_url":"http://<tenancy-name-o>.s3.jc.rl.ac.uk",
     "bucket_id":"my-existing-bucket",
@@ -38,7 +39,7 @@ Revision Numbers
 
 The PADOCC revision numbers for each product are auto-generated using the following rules.
 
- * All projects begin with the revision number ``1.1``.
+ * All projects begin with the revision number ``1.0``.
  * The first number denotes major updates to the product, for instance where a data source file has been replaced.
  * The second number denotes minor changes like alterations to attributes and metadata.
  * The letters prefixed to the revision numbers identify the file type for the product. For example a zarr store has the letter ``z`` applied, while a Kerchunk (parquet) store has ``kp``.
