@@ -11,10 +11,10 @@ Currently the Pipeline supports writing JSON/Parquet Kerchunk files for input Ne
 
 ![Kerchunk Pipeline](docs/source/_images/pipeline.png)
 
-## Pre-release b
-Release date: 20th January 2025
+## Release 1.3.3
+Release date: 7th March 2025
 
-This pre-release contains updated source code and source code documentation, but some of the main descriptors that are hand-written (not `source`) may be out of date. Please refer to the release notes for details on what has changed.
+See the ![release notes](https://github.com/cedadev/padocc/releases/tag/v1.3.3) for details.
 
 This package acknowledges contributions by [Matt Brown](matbro@ceh.ac.uk) as a pre-release tester.
 
