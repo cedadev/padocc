@@ -1,0 +1,41 @@
+# Release Notes for version 1.3.3
+
+## Bug Fixes
+ - Fixed a bug with the CFA dataset extension not being applied to the path.
+ - Fixed the github repo link on the index page.
+ - Fixed filesystem logging issues for compute phase - now runs well in parallel operation too!
+
+## General Changes
+ - Added `remote_attribute` function applied to datasets in a project.
+ - Added documentation for all core modules.
+
+## Feature Addition: Parallelisation
+ - Moved `create_sbatch` to `deploy_parallel` for SLURM operation
+ - Fixed several bugs with existing parallel deployment code, not been updated in a while.
+ - Added hook for LOTUS2 when ready.
+ - Added `parallel` flag for parallel deployments for groups.
+
+## Feature Addition: S3 write
+ - Added `write_to_s3` function for zarr filehandler.
+ - Added `store` properties to zarr filehandlers to easily connect to s3.
+ - Added `remote_s3` option to Projects so zarr stores can be configured to write to s3.
+ - Added input capacity for s3 when creating projects in the following functions. *
+    - Add project (group)
+    - Init project (group)
+    - Add/Remove s3 (group/project)
+
+## Feature Addition: Special Features
+ - Consolidated special features in CLI, added `list` option.
+
+### Coming Soon:
+ - `write_to_s3` workflow for kerchunk. Needs:
+    - File Transfer mechanism to s3 for kerchunk file.
+    - File Transfer mechanism to s3 for NetCDF files (with options)
+    - Auto rewrite for Kerchunk to fix paths to s3 netcdf files.
+
+## Feature Addition: Validation Report
+ - Added getter function for validation report for each project.
+
+## Feature Addition: CCI Integrations
+ - Added `moles_tags` option to `add_project` for a new way to add projects to groups (+ documentation)
+ - Added `apply_defaults` option for projects to apply default attributes to dataset filehandlers (+CFA, + documentation)
