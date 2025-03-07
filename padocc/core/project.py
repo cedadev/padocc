@@ -341,8 +341,9 @@ class ProjectOperation(
         self.dataset.spawn_copy(complete_dataset)
 
         # Spawn copy of cfa dataset
-        complete_cfa = self.cfa_path.replace(self.dir, move_to) + '_' + self.version_no
-        self.cfa_dataset.spawn_copy(complete_cfa)
+        if self.detail_cfg.get('CFA',False):
+            complete_cfa = self.cfa_path.replace(self.dir, move_to) + '_' + self.version_no
+            self.cfa_dataset.spawn_copy(complete_cfa)
 
         if not self._dryrun:
             self.update_status('complete','Success')
