@@ -19,4 +19,4 @@ class TestZarrValidate:
 
 if __name__ == '__main__':
     #workdir = '/home/users/dwest77/cedadev/padocc/padocc/tests/auto_testdata_dir'
-    TestValidate().test_validate()#workdir=workdir)
+    TestZarrValidate().test_validate()#workdir=workdir)

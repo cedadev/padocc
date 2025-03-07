@@ -6,14 +6,15 @@ import json
 import math
 import os
 import re
-from typing import Any, Union
+import glob
+from typing import Any, Union, Callable
 
 import fsspec
 import numpy as np
 import xarray as xr
+from datetime import datetime
 
-from .errors import (ChunkDataError, KerchunkDecodeError, MissingKerchunkError,
-                     MissingVariableError)
+from .errors import MissingVariableError
 
 times = {
     'scan'    :'10:00', # No prediction possible prior to scanning
@@ -29,12 +30,24 @@ phases = [
     'catalog'
 ]
 
+# Which files acceptable to pull from Moles Tags file.
+source_opts = [
+    '.nc'
+]
+
+# Which operations are parallelisable.
+parallel_modes = [
+    'scan',
+    'compute',
+    'validate'
+]
+
 BASE_CFG = {
     'proj_code':None,
     'pattern':None,
     'updates':None,
     'removals':None,
-    'version_no':'1.1',
+    'version_no':'1.0',
     'data_properties':{
         'aggregated_dims':'Unknown',
         'pure_dims': 'Unknown',
@@ -70,6 +83,36 @@ FILE_DEFAULT = {
     'kerchunk':'json',
     'zarr':None,
 }
+
+def list_groups(workdir: str, func: Callable = print):
+    """
+    List groups in the existing working directory
+    """
+
+    if not os.path.isdir(workdir):
+        func('[ERROR] Workdir does not exist')
+        return False
+    
+    if workdir.endswith('/'):
+        workdir = workdir[:-1]
+    topdir = workdir.split('/')[-1]
+    
+    func(f'Groups in {topdir}')
+
+    fileset = glob.glob(f'{workdir}/groups/*/proj_codes/main.txt')
+    for f in fileset:
+        groupID = f.split('/')[-3]
+
+        with open(f) as g:
+            length = len(g.readlines())
+
+        msg = f' > {groupID}: {length} '
+        if length == 0:
+            msg += '(empty)'
+        func(msg)
+
+def timestamp():
+    return datetime.strftime(datetime.now(),'%d/%m/%y %H:%M:%S')
 
 def make_tuple(item: Any) -> tuple:
     """
@@ -240,6 +283,18 @@ def extract_file(input_file: str) -> list:
     """
     with open(input_file) as f:
         content = [r.strip() for r in f.readlines()]
+    return content
+
+def extract_json(input_file: str) -> list:
+    """
+    Extract content from a padocc-external file.
+
+    Use filehandlers for files within the pipeline.
+
+    :param input_file: (str) Pipeline-external file.
+    """
+    with open(input_file) as f:
+        content = json.load(f)
     return content
 
 def find_closest(num: int, closest: float) -> int:

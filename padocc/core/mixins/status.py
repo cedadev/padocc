@@ -4,6 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 from typing import Callable
 
+from padocc.core.filehandlers import JSONFileHandler
 
 class StatusMixin:
     """
@@ -75,7 +76,10 @@ class StatusMixin:
         """
         Gets the last line of the correct log file
         """
-        return self.status_log[-1]
+        try:
+            return self.status_log[-1]
+        except IndexError:
+            return None
 
     def get_log_contents(self, phase: str) -> str:
         """
@@ -121,3 +125,20 @@ class StatusMixin:
         Setup for running this specific component interactively.
         """
         return f'padocc <operation> -G {self.groupID} -p {self.proj_code} -vv'
+    
+    def get_report(self) -> dict:
+        """
+        Get the validation report if present for this project.
+        """
+
+        full_report = {'data':None, 'metadata':None}
+
+        meta_fh = JSONFileHandler(self.dir, 'metadata_report',logger=self.logger, **self.fh_kwargs)
+        data_fh = JSONFileHandler(self.dir, 'data_report',logger=self.logger, **self.fh_kwargs)
+
+        if meta_fh.file_exists():
+            full_report['metadata'] = meta_fh.get()
+        if data_fh.file_exists():
+            full_report['data'] = data_fh.get()
+
+        return full_report

@@ -15,8 +15,8 @@ from .filehandlers import (CSVFileHandler, JSONFileHandler, ListFileHandler,
 from .mixins import (DatasetHandlerMixin, DirectoryMixin, PropertiesMixin,
                      StatusMixin)
 from .utils import (FILE_DEFAULT, BypassSwitch, apply_substitutions,
-                    extract_file, file_configs, phases, print_fmt_str)
-
+                    extract_file, file_configs, phases, print_fmt_str,
+                    extract_json)
 
 class ProjectOperation(
     DirectoryMixin, 
@@ -48,6 +48,7 @@ class ProjectOperation(
             dryrun     : bool = None,
             thorough   : bool = None,
             mem_allowed: Union[str,None] = None,
+            remote_s3  : Union[dict, str, None] = None,
         ) -> None:
         """
         Initialisation for a ProjectOperation object to handle all interactions
@@ -89,6 +90,9 @@ class ProjectOperation(
 
         :param thorough:        (bool) From args.quality - if True will create all files 
             from scratch, otherwise saved refs from previous runs will be loaded.
+
+        :param remote_s3:       (dict | str) Path to config file or dict containing remote s3
+            configurations.
 
         :returns: None
 
@@ -159,6 +163,14 @@ class ProjectOperation(
         self._is_trial = False
 
         self.stage = None
+
+        # Remote s3 direct connection
+        if isinstance(remote_s3,str):
+            remote_s3 = extract_json()
+
+        if remote_s3 is not None:
+            self.base_cfg['remote_s3'] = remote_s3
+            self.base_cfg.close()
 
     def __str__(self):
         """String representation of project"""
@@ -254,7 +266,7 @@ class ProjectOperation(
             )
             self.cloud_format = mode
             self.file_type = FILE_DEFAULT[mode]
-
+            
         try:
             status = self._run(mode=mode, **kwargs)
             self.save_files()
@@ -329,8 +341,9 @@ class ProjectOperation(
         self.dataset.spawn_copy(complete_dataset)
 
         # Spawn copy of cfa dataset
-        complete_cfa = self.cfa_path.replace(self.dir, move_to) + '_' + self.version_no
-        self.cfa_dataset.spawn_copy(complete_cfa)
+        if self.detail_cfg.get('CFA',False):
+            complete_cfa = self.cfa_path.replace(self.dir, move_to) + '_' + self.version_no
+            self.cfa_dataset.spawn_copy(complete_cfa)
 
         if not self._dryrun:
             self.update_status('complete','Success')
@@ -418,13 +431,11 @@ class ProjectOperation(
                 '"pattern" attribute missing from base config.'
             )
         
-        if pattern.endswith('.txt'):
-            content = extract_file(pattern)
-            if 'substitutions' in self.base_cfg:
-                content, status = apply_substitutions('datasets', subs=self.base_cfg['substitutions'], content=content)
-                if status:
-                    self.logger.warning(status)
-            self.allfiles.set(content) 
+        if isinstance(pattern, list):
+            # New feature to handle the moles-format data.
+            fileset = pattern
+        elif pattern.endswith('.txt'):
+            fileset = extract_file(pattern)
         else:
             # Pattern is a wildcard set of files
             if 'latest' in pattern:
@@ -434,12 +445,16 @@ class ProjectOperation(
             fileset = sorted(glob.glob(pattern, recursive=True))
             if len(fileset) == 0:
                 raise ValueError(f'pattern {pattern} returned no files.')
-
-            self.allfiles.set(sorted(glob.glob(pattern, recursive=True)))
+        
+        if 'substitutions' in self.base_cfg:
+            fileset, status = apply_substitutions('datasets', subs=self.base_cfg['substitutions'], content=fileset)
+            if status:
+                self.logger.warning(status)
+        self.allfiles.set(fileset) 
 
     def _setup_config(
             self, 
-            pattern : Union[str,None] = None, 
+            pattern : Union[str,list,None] = None, 
             updates : Union[str,None] = None, 
             removals : Union[str,None] = None,
             substitutions: Union[dict,None] = None,

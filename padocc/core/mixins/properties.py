@@ -296,3 +296,21 @@ class PropertiesMixin:
             if record[k] is None:
                 record[k] = v[-1]
         return record
+    
+    def apply_defaults(
+            self, 
+            defaults: dict, 
+            target: str = 'dataset',
+            remove: Union[list,None] = None
+        ):
+        """
+        Apply a default selection of attributes to a dataset.
+        """
+
+        for attr, val in defaults.items():
+            self.update_attribute(attr, val, target=target)
+
+        for attr in remove:
+            self.remove_attribute(attr, target=target)
+
+        self.save_files()

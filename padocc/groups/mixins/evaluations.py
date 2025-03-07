@@ -48,6 +48,26 @@ class EvaluationsMixin:
             **self.fh_kwargs
         )
 
+    def check_attribute(
+            self, 
+            attribute: str,
+            repeat_id: str = 'main',
+            func: Callable = print
+        ):
+        """
+        Check an attribute across all projects.
+        """
+
+        func(f'Checking {attribute} for {self.groupID}')
+
+        for proj_code in self.proj_codes[repeat_id]:
+            proj_op = self.get_project(proj_code)
+
+            val = proj_op.detail_cfg.get(attribute, None)
+            if val is None:
+                val = proj_op.base_cfg.get(attribute, None)
+            func(f' > {proj_code}: {val}')
+
     def repeat_by_status(
             self, 
             status: str, 
@@ -129,11 +149,11 @@ class EvaluationsMixin:
             
             newset = newset + self.proj_codes[subset].get()
 
-        self._add_proj_codeset(combined_id, newset)
-
         if remove_after:
             for subset in subset_list:
                 self._delete_proj_codeset(subset)
+
+        self._add_proj_codeset(combined_id, newset)
 
         self._save_proj_codes()
 
@@ -412,6 +432,9 @@ class EvaluationsMixin:
         proj_op = self.get_project(proj_code)
 
         current = proj_op.get_last_status()
+        if current is None:
+            return {}, 0
+
         entry   = current.split(',')
 
         phase  = entry[0]

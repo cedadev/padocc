@@ -155,12 +155,18 @@ class DatasetHandlerMixin:
         """
         Retrieve the filehandler for the zarr store
         """
+
+        remote_s3 = self.base_cfg.get('remote_s3',None)
+
+        if remote_s3 is not None:
+            remote_s3['store_name'] = self.complete_product
         
         if self._zstore is None:
             self._zstore = ZarrStore(
                 self.dir,
                 self.outproduct,
                 logger=self.logger,
+                remote_s3=remote_s3,
                 **self.fh_kwargs,
             )
 
@@ -193,6 +199,87 @@ class DatasetHandlerMixin:
         if target != 'cfa_dataset' and self.cloud_format != 'cfa':
             # Also update the CFA dataset.
             self.cfa_dataset.set_meta(meta)
+
+    def remove_attribute(
+            self, 
+            attribute: str, 
+            target: str = 'dataset',
+        ) -> None:
+        """
+        Remove an attribute within a dataset representation's metadata.
+
+        :param attribute:   (str) The name of an attribute within the metadata
+            property of the corresponding filehandler.
+
+        :param target:      (str) The target product filehandler, uses the 
+            generic dataset filehandler if not otherwise specified.
+        """
+
+        if hasattr(self,target):
+            meta = getattr(self,target).get_meta()
+
+        meta.pop(attribute)
+
+        getattr(self, target).set_meta(meta)
+        if target != 'cfa_dataset' and self.cloud_format != 'cfa':
+            # Also update the CFA dataset.
+            self.cfa_dataset.set_meta(meta)
+
+    def write_to_s3(
+            self,
+            credentials: Union[dict, str],
+            bucket_id: str,
+            name_ovewrite: Union[str, None] = None,
+            dataset_type: str = 'zstore',
+            write_as: str = 'zarr',
+            s3_kwargs: dict = None,
+            **zarr_kwargs
+        ) -> None:
+        """
+        Write one of the active ``dataset`` objects to 
+        an s3 zarr store
+        """
+
+        if write_as != 'zarr':
+            raise NotImplementedError(
+                'Non-zarr transfers not yet supported.'
+            )
+
+        if not hasattr(self, dataset_type):
+            raise ValueError(
+                f'Project has no attribute {dataset_type}'
+            )
+
+        ds = getattr(self, dataset_type)
+        name_overwrite = name_overwrite or f'{self.proj_code}_{self.revision}'
+
+        ds.write_to_s3(
+            credentials,
+            bucket_id,
+            name_overwrite=name_overwrite,
+            s3_kwargs=s3_kwargs,
+            **zarr_kwargs
+        )
+
+    def add_s3_config(
+           self,
+           remote_s3: Union[dict, str, None] = None, 
+        ) -> None:
+        """
+        Add remote_s3 configuration for this project
+
+        :param remote_s3:   (dict | str) Remote s3 config argument, either
+            dictionary or path to a json file on disk. It is not advised to enter
+            credentials here, see the documentation in Extra Features for more
+            details.
+        """
+        self.base_cfg['remote_s3'] = remote_s3
+
+    def remove_s3_config(self):
+        """
+        Remove remote_s3 configuration from this project
+        """
+        self.base_cfg.pop('remote_s3')
 
     @property
     def dataset_attributes(self) -> dict:

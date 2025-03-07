@@ -17,7 +17,7 @@ import yaml
 
 from .errors import ChunkDataError, KerchunkDecodeError
 from .logs import FalseLogger, LoggedOperation
-from .utils import format_str
+from .utils import format_str, extract_json
 
 
 class FileIOMixin(LoggedOperation):
@@ -483,6 +483,14 @@ class JSONFileHandler(FileIOMixin):
             return self._value[index]
         
         return None
+    
+    def pop(self, index: str, default: Any = None) -> Any:
+        """
+        Wrapper for ``pop`` function of a dict.
+        """
+        self._obtain_value()
+
+        return self._value.pop(index, default)
     
     def create_file(self) -> None:
         """JSON files require entry of a single dict on creation."""
@@ -968,14 +976,23 @@ class ZarrStore(GenericStore):
     ----------------
     
     1. Open dataset - open the zarr store.
+
+    2. Write to s3 - write a disk-based zarr store to s3.
     """
 
     def __init__(
             self,
             parent_dir: str,
             store_name: str,
+            remote_s3: Union[dict,None] = None,
             **kwargs
         ) -> None:
+
+        if remote_s3:
+            parent_dir = f's3://{remote_s3["bucket_id"]}'
+            store_name = remote_s3["store_name"]
+
+        self._remote_s3 = remote_s3
 
         super().__init__(
             parent_dir, 
@@ -988,11 +1005,119 @@ class ZarrStore(GenericStore):
         """Programmatic representation"""
         return f'<PADOCC ZarrStore: {format_str(self._store_name,10)}>'
     
+    def get_meta(self) -> dict:
+        """
+        Override super function in case of remote s3.
+        """
+
+        if self._remote_s3 is not None:
+            raise NotImplementedError
+        
+        return super().get_meta()
+
+    @property
+    def store(self) -> Union[str,object]:
+        """
+        Returns the store path or s3 store object as required.
+        """
+        if self._remote_s3 is None:
+            return self.store_path
+        
+        # Optional extra kwargs for s3 connection.
+        s3_kwargs = self._remote_s3.get('s3_kwargs',None)
+        target = self.store_path
+
+        self.logger.debug(f'Target store: {target}')
+        # Internal s3 store created from known config
+        return self._store(
+            target,
+            self._remote_s3['s3_credentials'],
+            s3_kwargs,
+        )
+
     def open_dataset(self, **zarr_kwargs) -> xr.Dataset:
         """
         Open the ZarrStore as an xarray dataset
         """
         return xr.open_dataset(self.store_path, engine='zarr', **zarr_kwargs)
+
+    def write_to_s3(
+            self, 
+            credentials: Union[dict, str],
+            bucket_id: str,
+            name_overwrite: Union[str, None] = None,
+            s3_kwargs: dict = None,
+            ds: Union[xr.Dataset,None] = None,
+            **zarr_kwargs):
+        """
+        Write zarr store to an S3 Object Store
+        bucket directly from padocc
+        """
+
+        self.logger.info(f'Configuring s3 connection')
+
+        if name_overwrite is not None:
+            target = f'{bucket_id}/{name_overwrite}.{self._extension}'
+        else:
+            target = f'{bucket_id}/{self._store_name}.{self._extension}'
+
+        self.logger.info(f'Writing to {target}')
+
+        # Internal s3 store function
+        s3_store = self._store(
+            target,
+            credentials,
+            s3_kwargs
+        )
+
+        ds = ds or self.open_dataset(**zarr_kwargs)
+        ds.to_zarr(store=s3_store, mode='w')
+
+        self.logger.info(f'Zarr store {target} written.')
+
+    def _store(
+            self,
+            target: str,
+            s3_file_or_json: Union[str,dict],
+            s3_kwargs: Union[dict,None] = None,
+        ) -> object:
+        """
+        Internal private store object retriever.
+        
+        Takes all configuration parameters required 
+        to access a writable store for this object.
+        """
+
+        try:
+            import s3fs
+        except ImportError:
+            raise ValueError(
+                "s3fs package not installed in your environment - please "
+                "install with pip or otherwise."
+            )
+
+        # Optional extra kwargs for s3 connection.
+        default_s3 = {'anon':False}
+        s3_kwargs = s3_kwargs or {}
+        default_s3.update(s3_kwargs)
+        
+        # Extract credentials for accessing the store.
+        if isinstance(s3_file_or_json, str):
+            creds = extract_json(s3_file_or_json)
+        else:
+            creds = s3_file_or_json
+
+        self.logger.info(f'Connecting to {creds["endpoint_url"]}')
+
+        # Create remote_s3 connection.
+        remote_s3 = s3fs.S3FileSystem(
+            secret = creds['secret'],
+            key = creds['token'],
+            client_kwargs = {'endpoint_url': creds['endpoint_url']},
+            **default_s3
+        )
+
+        return s3fs.S3Map(target, s3=remote_s3)
 
 class KerchunkStore(GenericStore):
     """

@@ -11,9 +11,9 @@ import numpy as np
 import xarray as xr
 
 from padocc.core import BypassSwitch, LoggedOperation, ProjectOperation
-from padocc.core.errors import ValidationError
+from padocc.core.errors import ValidationError, worst_error
 from padocc.core.filehandlers import JSONFileHandler
-from padocc.core.utils import format_tuple
+from padocc.core.utils import format_tuple, timestamp
 
 SUFFIXES = []
 SUFFIX_LIST = []
@@ -121,6 +121,9 @@ def _recursive_set(source: dict, keyset: list, value):
     return source
 
 class PresliceSet:
+    """
+    Preslice Object for handling slices applied to datasets.
+    """
 
     def __init__(self):
         self._preslice_set = {}
@@ -610,9 +613,10 @@ class ValidateDatasets(LoggedOperation):
             self.logger.debug(f'Validating data for {var}')
             self._validate_selection(var, testvar, controlvar)
 
-    def _validate_shapes(self,var: str, test, control, ignore=None):
+    def _validate_shapes(self, var: str, test, control, ignore=None):
         """
         Ensure all variable shapes are consistent across all datasets.
+
         Allowances dict contains configurations for skipping some shape tests
         in the case for example of a virtual dimension.
         """
@@ -672,6 +676,14 @@ class ValidateDatasets(LoggedOperation):
     def _validate_dimvalues(self, dim: str, test_range, control_range, ignore=None):
         """
         Validate that the first and last values of the dimension arrays are equal.
+
+        :param dim:         (str) The name of the current dimension.
+
+        :param test_range:        (obj) The cloud-format first and last values.
+
+        :param control_range:     (obj) The native-format first and last values.
+
+        :param ignore:      (bool) Option to ignore specific dimension.
         """
         if ignore:
             self.logger.debug(f'Skipped {dim}')
@@ -693,6 +705,14 @@ class ValidateDatasets(LoggedOperation):
     def _validate_dimlens(self, dim: str, test, control, ignore=None):
         """
         Validate dimension lengths are consistent
+
+        :param dim:     (str) The name of the current dimension.
+
+        :param test:        (obj) The cloud-format (Kerchunk) dataset selection
+
+        :param control:     (obj) The native dataset selection
+
+        :param ignore:      (bool) Option to ignore specific dimension.
         """
         if ignore:
             self.logger.debug(f'Skipped {dim}')
@@ -716,6 +736,12 @@ class ValidateDatasets(LoggedOperation):
         General purpose validation for a specific variable from multiple sources.
         Both inputs are expected to be xarray DataArray objects but the control could
         instead by a NetCDF4 Dataset object. We expect both objects to be of the same size.
+
+        :param var:           (str) The name of the variable described by this box selection
+
+        :param test:            (obj) The cloud-format (Kerchunk) dataset selection
+
+        :param control:         (obj) The native dataset selection
         """
         if test.size != control.size:
             self.logger.error(
@@ -737,7 +763,7 @@ class ValidateDatasets(LoggedOperation):
         tbox = test[slice_applied]
         cbox = control[slice_applied]
 
-        if check_for_nan(cbox, BypassSwitch(), self.logger):
+        if check_for_nan(cbox, BypassSwitch(), self.logger, label=var):
             return self._validate_selection(test, control, current+1, var, recursion_limit=recursion_limit)
         else:
             return self._compare_data(var, slice_applied, tbox, cbox)
@@ -862,7 +888,6 @@ class ValidateOperation(ProjectOperation):
         self.phase = 'validate'
         super().__init__(*args, **kwargs)
 
-
     def _run(
             self,
             mode: str = 'kerchunk',
@@ -870,7 +895,12 @@ class ValidateOperation(ProjectOperation):
         ) -> None:
         """
         Run hook for project operation run method
+
+        :param mode:    (str) Cloud format to use, overriding the known cloud format from 
+            previous steps.
         """
+        self.set_last_run(self.phase, timestamp())
+        self.logger.info("Starting validation")
 
         if mode != self.cloud_format and mode is not None:
             self.cloud_format = mode
@@ -906,10 +936,12 @@ class ValidateOperation(ProjectOperation):
         # Save report
         vd.save_report()
 
-        self.update_status('validate',vd.pass_fail,jobid=self._logid)
-
         if vd.pass_fail == 'Fatal':
-            raise ValidationError(vd.data_report)
+            err = worst_error(vd.report)
+            print(f'ERROR: {err}')
+            raise ValidationError(err)
+        else:
+            self.update_status('validate',vd.pass_fail,jobid=self._logid)
         
         return vd.pass_fail
 

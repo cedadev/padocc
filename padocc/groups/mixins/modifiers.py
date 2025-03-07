@@ -2,9 +2,12 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-from typing import Callable
+import json
+
+from typing import Callable, Union
 
 from padocc import ProjectOperation
+from padocc.core.utils import BASE_CFG, source_opts
 
 
 class ModifiersMixin:
@@ -38,18 +41,70 @@ class ModifiersMixin:
 
     def add_project(
             self,
-            config: dict,
-            ):
+            config: Union[str,dict],
+            remote_s3: Union[dict, str, None] = None,
+            moles_tags: bool = False,
+        ):
         """
         Add a project to this group. 
-        """
-        if config['proj_code'] in self.proj_codes['main']:
-            raise ValueError(
-                f'proj_code {config["proj_code"]} already exists for this group.'
-            )
 
-        self._init_project(config)
-        self.proj_codes['main'].append(config['proj_code'])
+        :param config:  (str | dict) The configuration details to add new project. Can either be 
+            a path to a json file or json content directly. Can also be either a properly formatted
+            base config file (needs ``proj_code``, ``pattern`` etc.) or a moles_esgf input file.
+
+        :param moles_tags:  (bool) Option for CEDA staff to integrate output from another package.
+        """
+
+        if isinstance(config, str):
+            if config.endswith('.json'):
+                with open(config) as f:
+                    config = json.load(f)
+            else:
+                config = json.loads(config)
+        
+        configs = []
+        if moles_tags:
+            for key, fileset in config.items():
+                conf = dict(BASE_CFG)
+                conf['proj_code'] = key
+                conf['pattern'] = fileset
+
+                accept = True
+                for f in fileset:
+                    if str('.' + f.split('.')[-1]) not in source_opts:
+                        accept = False
+
+                if accept:
+                    configs.append(conf)
+                else:
+                    self.logger.info(f'Rejected {key} - not all files are friendly.')
+        else:
+            configs.append(config)
+
+        new_codes = []
+        recombine = False
+        for config in configs:
+
+            if config['proj_code'] in self.proj_codes['main']:
+                self.logger.warning(
+                    f'proj_code {config["proj_code"]} already exists for this group.'
+                )
+                if not self._forceful:
+                    continue
+                # Recombine sets if contains duplicates and doing overwrites.
+                recombine = True
+
+            new_codes.append(config['proj_code'])
+
+            self._init_project(config, remote_s3=remote_s3)
+
+        if recombine:
+            self._add_proj_codeset('temp',new_codes)
+            self.merge_subsets(['main','temp'], 'main')
+            self._delete_proj_codeset('temp')
+        else:
+            for code in new_codes:
+                self.proj_codes['main'].append(code)
         self.save_files()
 
     def remove_project(self, proj_code: str, ask: bool = True) -> None:

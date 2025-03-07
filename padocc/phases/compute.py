@@ -19,7 +19,7 @@ from padocc.core.errors import (ComputeError, ConcatFatalError,
                                 KerchunkDriverFatalError, PartialDriverError,
                                 SourceNotFoundError)
 from padocc.core.filehandlers import JSONFileHandler, ZarrStore
-from padocc.core.utils import find_closest, make_tuple
+from padocc.core.utils import find_closest, make_tuple, timestamp
 from padocc.phases.validate import ValidateDatasets
 
 CONCAT_MSG = 'See individual files for more details'    
@@ -352,7 +352,7 @@ class ComputeOperation(ProjectOperation):
 
             cfa.create()
             if file_limit is None:
-                cfa.write(instance.cfa_path)
+                cfa.write(instance.cfa_path + '.nca')
 
             return {
                 'aggregated_dims': make_tuple(cfa.agg_dims),
@@ -372,8 +372,10 @@ class ComputeOperation(ProjectOperation):
     def _run_with_timings(self, func, **kwargs) -> str:
         """
         Configure all required steps for Kerchunk processing.
-        - Check if output files already exist.
-        - Configure timings post-run.
+
+
+        Check if output files already exist and configure 
+        timings post-run.
         """
 
         # Timed func call
@@ -383,6 +385,9 @@ class ComputeOperation(ProjectOperation):
 
         timings      = self._get_timings()
         detail       = self.detail_cfg.get()
+
+        if not detail.get('timings',None):
+            detail['timings'] = {}
 
         if timings:
             self.logger.info('Export timings for this process - all refs created from scratch.')
@@ -1009,6 +1014,7 @@ class ZarrDS(ComputeOperation):
         """
         Recommended way of running an operation - includes timers etc.
         """
+        self.set_last_run(self.phase, timestamp())
         # Run CFA in super class.
         _ = super()._run(file_limit=self.limiter)
 
@@ -1023,7 +1029,8 @@ class ZarrDS(ComputeOperation):
         Create the Zarr Store
         """
 
-        self.combine_kwargs = self.detail_cfg['kwargs'].get('combine_kwargs',{})
+        kwargs = self.detail_cfg.get('kwargs', {})
+        self.combine_kwargs = kwargs.get('combine_kwargs',{})
 
         # Open all files for this process (depending on limiter)
         self.logger.debug('Starting timed section for estimation of whole process')
@@ -1087,23 +1094,36 @@ class ZarrDS(ComputeOperation):
                         '-f or -Q on the commandline to clear or overwrite'
                         'existing store'
                     )
+        if self.base_cfg.get('rechunk',False):
     
-        # Perform Rechunking
-        self.logger.info(f'Starting Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
-        if not self._dryrun:
-            t1 = datetime.now()
+            # Perform Rechunking
+            self.logger.info(f'Starting Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
+            if not self._dryrun:
+                t1 = datetime.now()
 
-            rechunker.rechunk(
-                combined_ds, 
-                concat_dim_rechunk, 
-                self.mem_allowed, 
-                self.zstore.store_path,
-                temp_store=self.tempstore.store_path).execute()
-            
-            self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
-            self.logger.info(f'Concluded Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
+                rechunker.rechunk(
+                    combined_ds, 
+                    concat_dim_rechunk, 
+                    self.mem_allowed, 
+                    self.zstore.store,
+                    temp_store=self.tempstore.store_path).execute()
+                
+                self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
+                self.logger.info(f'Concluded Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
+            else:
+                self.logger.info('Skipped rechunking step.')
         else:
-            self.logger.info('Skipped rechunking step.')
+            self.logger.info(f'Starting Zarr Conversion')
+            if not self._dryrun:
+                t1 = datetime.now()
+
+                combined_ds.to_zarr(self.zstore.store)
+                
+                self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
+                self.logger.info(f'Concluded Conversion - {(datetime.now()-t1).total_seconds():.2f}s')
+            else:
+                self.logger.info('Skipped conversion writing')
+
 
     def _get_rechunk_scheme(self, ds):
         """
@@ -1148,5 +1168,5 @@ class ZarrDS(ComputeOperation):
         return concat_dim_rechunk, dim_sizes, cpf/self.limiter, volume/self.limiter
 
 if __name__ == '__main__':
-    print('Serial Processor for Kerchunk Pipeline - run with single_run.py')
+    print('Serial Processor for Kerchunk Pipeline')
     
