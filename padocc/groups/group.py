@@ -136,9 +136,11 @@ class GroupOperation(
         """
         if isinstance(index, int):
             proj_code = self.proj_codes['main'][index]
+        elif index.isnumeric():
+            proj_code = self.proj_codes['main'][int(index)]
         else:
             proj_code = index
-            
+
         return self.get_project(proj_code)
     
     def complete_group(
