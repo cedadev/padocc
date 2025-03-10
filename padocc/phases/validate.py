@@ -138,7 +138,7 @@ class PresliceSet:
         if var not in self._preslice_set:
             return self._default_preslice(data_arr)
         else:
-            return data_arr.sel(**self._preslice_set[var])
+            return data_arr.isel(**self._preslice_set[var])
 
     def _default_preslice(self, data_arr: xr.DataArray) -> xr.DataArray:
         """
@@ -976,17 +976,26 @@ class ValidateOperation(ProjectOperation):
             for dim in sample[var].dims:
 
                 if len(sample[dim]) < 2:
-                    slice_dim = slice(None,None)
+
+                    dim_array = np.array(test[dim])
+                    index = np.where(dim_array == np.array(sample[dim][0]))[0][0]
+                    stop = index + 1
+                    pos0 = index #np.array(test[dim][index], dtype=test[dim].dtype)
+                    end = stop # np.array(test[dim][stop], dtype=test[dim].dtype)
+
                 else:
-                    pos0 = np.array(sample[dim][0], dtype=sample[dim].dtype)
-                    pos1 = np.array(sample[dim][1], dtype=sample[dim].dtype)
+                    # Switch to selection not iselection if needed later?
+                    #pos0 = np.array(sample[dim][0], dtype=sample[dim].dtype)
+                    #pos1 = np.array(sample[dim][1], dtype=sample[dim].dtype)
 
-                    end = np.array(sample[dim][-1], dtype=sample[dim].dtype) + (pos1-pos0)
+                    #end = np.array(sample[dim][-1], dtype=sample[dim].dtype) + (pos1-pos0)
+                    pos0 = 0
+                    end  = len(sample[dim])
 
-                    slice_dim = slice(
-                        pos0,
-                        end
-                    )
+                slice_dim = slice(
+                    pos0,
+                    end
+                )
                 preslice_var[dim] = slice_dim
             preslice.add_preslice(preslice_var, var)
 
