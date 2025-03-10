@@ -1,10 +1,13 @@
 # Release Notes for version 1.3.4
 
 ## Bug Fixes
- - Fixed a bug with the CFA dataset extension not being applied to the path.
- - Fixed the github repo link on the index page.
- - Fixed filesystem logging issues for compute phase - now runs well in parallel operation too!
+ - Fixed error handling with validator (Issue #73)
+ - Fixed worst_error bugs (Issue #72)
+ - Fixed identical variables bug (Issue #71)
+ - Fixed Preslice time issues (Issue #70)
+ - Fixed Data Formatting in validator (Issue #69)
+ - Fixed Dimension specs for zarr (Issue #67)
+ - Fixed Remote s3 config file option (Issue #66)
 
 ## General Changes
- - Added `remote_attribute` function applied to datasets in a project.
- - Added documentation for all core modules.
+ - Added `report` special function.
