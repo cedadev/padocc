@@ -615,6 +615,7 @@ class ComputeOperation(ProjectOperation):
         test_files = [self.allfiles[0], self.allfiles[-1]]
         datasets   = [xr.open_dataset(t) for t in test_files]
         dimensions = datasets[0].dims
+        allvars    = datasets[0].variables
 
         vd = ValidateDatasets(
             datasets,
@@ -651,6 +652,9 @@ class ComputeOperation(ProjectOperation):
         # Concat dims will vary across files, identicals will not.
 
         identical_dims = [dim for dim in dimensions if dim not in vars]
+        identical_vars = [var for var in allvars if var not in vars]
+
+        identical_dims = list(set(identical_dims + identical_vars))
         
         
         return concat_dims, identical_dims
