@@ -9,6 +9,7 @@ import xarray as xr
 
 from ..filehandlers import (CFADataset, GenericStore, KerchunkFile,
                             KerchunkStore, ZarrStore)
+from ..utils import extract_json
 
 
 class DatasetHandlerMixin:
@@ -229,7 +230,7 @@ class DatasetHandlerMixin:
             self,
             credentials: Union[dict, str],
             bucket_id: str,
-            name_ovewrite: Union[str, None] = None,
+            name_overwrite: Union[str, None] = None,
             dataset_type: str = 'zstore',
             write_as: str = 'zarr',
             s3_kwargs: dict = None,
@@ -273,6 +274,10 @@ class DatasetHandlerMixin:
             credentials here, see the documentation in Extra Features for more
             details.
         """
+
+        if isinstance(remote_s3, str):
+            remote_s3 = extract_json(remote_s3)
+
         self.base_cfg['remote_s3'] = remote_s3
 
     def remove_s3_config(self):
