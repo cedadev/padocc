@@ -90,14 +90,14 @@ def worst_error(report: dict) -> str:
     vars = report['metadata'].get('variables',None)
     if vars is not None:
         for etype in ['missing','order']:
-            for k, v in vars:
+            for k, v in vars.items():
                 if v['type'] == etype:
                     return f'Warn-{k}_{etype}'
     
     dims = report['metadata'].get('dims', None)
     if dims is not None:
         for etype in ['order']:
-            for k, v in dims:
+            for k, v in dims.items():
                 if v['type'] == etype:
                     return f'Warn-{k}_{etype}'
     
