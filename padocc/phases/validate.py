@@ -754,7 +754,7 @@ class ValidateDatasets(LoggedOperation):
             self.logger.debug('Maximum recursion depth reached')
             self.logger.info(f'Validation for {var} not performed')
 
-            self._data_report[f'data_errors.{var}'] = {
+            self._data_report[f'variables.data_errors.{var}'] = {
                 'type':'grow_box_exceeded'
             }
             return None
@@ -860,13 +860,13 @@ class ValidateDatasets(LoggedOperation):
             bypassed.append('mean')
 
         if errors:
-            self._data_report[f'data_errors.{vname}'] = {
+            self._data_report[f'variables.data_errors.{vname}'] = {
                 'type':','.join(errors),
                 'topleft':start,
                 'bottomright':stop,
             }
         if bypassed:
-            self._data_report[f'bypassed.{vname}'] = ','.join(bypassed)
+            self._data_report[f'variables.bypassed.{vname}'] = ','.join(bypassed)
 
         self.logger.info(f'Data validation complete for {vname}')
 
