@@ -615,7 +615,7 @@ class ComputeOperation(ProjectOperation):
         test_files = [self.allfiles[0], self.allfiles[-1]]
         datasets   = [xr.open_dataset(t) for t in test_files]
         dimensions = datasets[0].dims
-        allvars    = datasets[0].variables
+        variables  = datasets[0].variables
 
         vd = ValidateDatasets(
             datasets,
@@ -635,27 +635,26 @@ class ComputeOperation(ProjectOperation):
             )
         )
 
-        dims = vd.report['report']['data'].get('dimensions',{})
+        dim_errs = vd.report['report']['data'].get('dimensions',{})
+        var_errs = vd.report['report']['data'].get('variables',{})
 
         # Non identical variables identifiable by either data errors (the data changes between files)
         # Or size errors (the array size is different - data must be different in this case.)
-        derrs    = set(vd.report['report']['data'].get('data_errors',{}))
-        var_errs = vd.report['report']['data'].get('variables',{})
+        derrs    = set(var_errs.get('data_errors',{}))
         sizerrs  = set(var_errs.get('size_errors',{}))
 
         vars = derrs | sizerrs
 
         concat_dims = []
-        if 'data_errors' in dims:
-            concat_dims = [dim for dim in dims['data_errors'].keys()]
+        if 'data_errors' in dim_errs:
+            concat_dims = [dim for dim in dim_errs['data_errors'].keys()]
 
         # Concat dims will vary across files, identicals will not.
 
         identical_dims = [dim for dim in dimensions if dim not in vars]
-        identical_vars = [var for var in allvars if var not in vars]
+        identical_vars = [var for var in variables if var not in vars]
 
         identical_dims = list(set(identical_dims + identical_vars))
-        
         
         return concat_dims, identical_dims
 

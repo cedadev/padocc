@@ -99,7 +99,7 @@ def valid_project_code(proj_code: str) -> bool:
         raise ValueError(
             'Project code must not be solely numeric'
         )
-    if any(letter not in proj_code for letter in invalid):
+    if any(letter in proj_code for letter in invalid):
         raise ValueError(
             f'Project code must not contain any of {invalid}'
         )

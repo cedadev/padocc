@@ -80,8 +80,15 @@ def worst_error(report: dict) -> str:
     # Check all data issues that would be fatal.
     if 'data' in report:
         section = report['data']
+        
+        # Improvements are possible.
+        vars = section.get('variables',{})
         for err in priority:
-            if err in section:
+            if err in vars:
+                return f'Fatal-{err}'
+        dims = section.get('dimensions', {})
+        for err in priority:
+            if err in dims:
                 return f'Fatal-{err}'
 
     if 'metadata' not in report:
