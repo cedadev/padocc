@@ -936,12 +936,12 @@ class ValidateOperation(ProjectOperation):
         # Save report
         vd.save_report()
 
+        err = worst_error(vd.report)
         if vd.pass_fail == 'Fatal':
-            err = worst_error(vd.report)
-            print(f'ERROR: {err}')
             raise ValidationError(err)
         else:
-            self.update_status('validate',vd.pass_fail,jobid=self._logid)
+            err = err or 'Success'
+            self.update_status('validate',err, jobid=self._logid)
         
         return vd.pass_fail
 
