@@ -1047,10 +1047,7 @@ class ZarrDS(ComputeOperation):
             # Determine concatenation dimensions
             if self.base_cfg['data_properties']['aggregated_vars'] == 'Unknown':
                 # Determine dimension specs for concatenation.
-                self._determine_dim_specs([
-                    xr.open_dataset(self.allfiles[0]),
-                    xr.open_dataset(self.allfiles[1])
-                ])
+                self._determine_dim_specs()
             if not self.combine_kwargs['concat_dims']:
                 self.logger.error('No concatenation dimensions - unsupported for zarr conversion')
                 raise NotImplementedError
