@@ -84,6 +84,27 @@ FILE_DEFAULT = {
     'zarr':None,
 }
 
+invalid = list('(){}[]<>:;')
+
+def valid_project_code(proj_code: str) -> bool:
+    """
+    Validate project code for type checks etc.
+    
+    """
+    # Validate project code
+    if not isinstance(proj_code,str):
+        raise ValueError(
+            f'Project code must be of type "str", not {type(proj_code)}')
+    if proj_code.isnumeric():
+        raise ValueError(
+            'Project code must not be solely numeric'
+        )
+    if any(letter not in proj_code for letter in invalid):
+        raise ValueError(
+            f'Project code must not contain any of {invalid}'
+        )
+    return True
+
 def list_groups(workdir: str, func: Callable = print):
     """
     List groups in the existing working directory

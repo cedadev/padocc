@@ -9,7 +9,8 @@ from typing import Callable, Union
 
 from padocc import ProjectOperation
 from padocc.core import FalseLogger
-from padocc.core.utils import apply_substitutions, extract_file, file_configs
+from padocc.core.utils import apply_substitutions, extract_file, \
+    file_configs, valid_project_code
 
 
 def _get_input(
@@ -242,6 +243,13 @@ class InitialisationMixin:
         """
         Create a first-time ProjectOperation and save created files. 
         """
+
+        status = valid_project_code(config['proj_code'])
+        if not status:
+            raise ValueError(
+                'One or more failed project code checks'
+            )
+
         default_cfg = file_configs['base_cfg']
         default_cfg.update(config)
 

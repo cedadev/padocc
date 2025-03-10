@@ -5,6 +5,7 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 ## PADOCC CLI for entrypoint scripts
 
 import argparse
+import yaml
 
 from padocc import GroupOperation, phase_map
 from padocc.core.utils import BypassSwitch, get_attribute, list_groups
@@ -45,6 +46,17 @@ def check_specials(args: dict) -> bool:
             repeat_id=args.repeat_id)
         return True
 
+    if args.phase == 'report':
+        if args.proj_code is None:
+            raise ValueError(
+                'Must choose a project to inspect the report for this group'
+            )
+        
+        proj = group[args.proj_code]
+        report = proj.get_report()
+        print(report)
+        print(yaml.dump(report))
+        return True
 
 def get_args():
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')

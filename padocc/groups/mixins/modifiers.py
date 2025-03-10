@@ -7,8 +7,7 @@ import json
 from typing import Callable, Union
 
 from padocc import ProjectOperation
-from padocc.core.utils import BASE_CFG, source_opts
-
+from padocc.core.utils import BASE_CFG, source_opts, valid_project_code
 
 class ModifiersMixin:
     """
@@ -93,6 +92,12 @@ class ModifiersMixin:
                     continue
                 # Recombine sets if contains duplicates and doing overwrites.
                 recombine = True
+
+            status = valid_project_code(config['proj_code'])
+            if not status:
+                raise ValueError(
+                    'One or more failed project code checks'
+                )
 
             new_codes.append(config['proj_code'])
 

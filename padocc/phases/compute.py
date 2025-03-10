@@ -615,6 +615,7 @@ class ComputeOperation(ProjectOperation):
         test_files = [self.allfiles[0], self.allfiles[-1]]
         datasets   = [xr.open_dataset(t) for t in test_files]
         dimensions = datasets[0].dims
+        allvars    = datasets[0].variables
 
         vd = ValidateDatasets(
             datasets,
@@ -651,6 +652,9 @@ class ComputeOperation(ProjectOperation):
         # Concat dims will vary across files, identicals will not.
 
         identical_dims = [dim for dim in dimensions if dim not in vars]
+        identical_vars = [var for var in allvars if var not in vars]
+
+        identical_dims = list(set(identical_dims + identical_vars))
         
         
         return concat_dims, identical_dims
@@ -1043,10 +1047,7 @@ class ZarrDS(ComputeOperation):
             # Determine concatenation dimensions
             if self.base_cfg['data_properties']['aggregated_vars'] == 'Unknown':
                 # Determine dimension specs for concatenation.
-                self._determine_dim_specs([
-                    xr.open_dataset(self.allfiles[0]),
-                    xr.open_dataset(self.allfiles[1])
-                ])
+                self._determine_dim_specs()
             if not self.combine_kwargs['concat_dims']:
                 self.logger.error('No concatenation dimensions - unsupported for zarr conversion')
                 raise NotImplementedError

@@ -38,7 +38,14 @@ class EvaluationsMixin:
     def get_project(self, proj_code: str):
         """
         Get a project operation from this group
+
+        Works on string codes only.
         """
+
+        if not isinstance(proj_code, str):
+            raise ValueError(
+                f'GetProject function takes string as input, not {type(proj_code)}'
+            )
 
         return ProjectOperation(
             proj_code,

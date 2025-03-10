@@ -138,7 +138,7 @@ class PresliceSet:
         if var not in self._preslice_set:
             return self._default_preslice(data_arr)
         else:
-            return data_arr.sel(**self._preslice_set[var])
+            return data_arr.isel(**self._preslice_set[var])
 
     def _default_preslice(self, data_arr: xr.DataArray) -> xr.DataArray:
         """
@@ -754,7 +754,7 @@ class ValidateDatasets(LoggedOperation):
             self.logger.debug('Maximum recursion depth reached')
             self.logger.info(f'Validation for {var} not performed')
 
-            self._data_report[f'data_errors.{var}'] = {
+            self._data_report[f'variables.data_errors.{var}'] = {
                 'type':'grow_box_exceeded'
             }
             return None
@@ -860,13 +860,13 @@ class ValidateDatasets(LoggedOperation):
             bypassed.append('mean')
 
         if errors:
-            self._data_report[f'data_errors.{vname}'] = {
+            self._data_report[f'variables.data_errors.{vname}'] = {
                 'type':','.join(errors),
                 'topleft':start,
                 'bottomright':stop,
             }
         if bypassed:
-            self._data_report[f'bypassed.{vname}'] = ','.join(bypassed)
+            self._data_report[f'variables.bypassed.{vname}'] = ','.join(bypassed)
 
         self.logger.info(f'Data validation complete for {vname}')
 
@@ -936,12 +936,12 @@ class ValidateOperation(ProjectOperation):
         # Save report
         vd.save_report()
 
+        err = worst_error(vd.report)
         if vd.pass_fail == 'Fatal':
-            err = worst_error(vd.report)
-            print(f'ERROR: {err}')
             raise ValidationError(err)
         else:
-            self.update_status('validate',vd.pass_fail,jobid=self._logid)
+            err = err or 'Success'
+            self.update_status('validate',err, jobid=self._logid)
         
         return vd.pass_fail
 
@@ -976,17 +976,26 @@ class ValidateOperation(ProjectOperation):
             for dim in sample[var].dims:
 
                 if len(sample[dim]) < 2:
-                    slice_dim = slice(None,None)
+
+                    dim_array = np.array(test[dim])
+                    index = np.where(dim_array == np.array(sample[dim][0]))[0][0]
+                    stop = index + 1
+                    pos0 = index #np.array(test[dim][index], dtype=test[dim].dtype)
+                    end = stop # np.array(test[dim][stop], dtype=test[dim].dtype)
+
                 else:
-                    pos0 = np.array(sample[dim][0], dtype=sample[dim].dtype)
-                    pos1 = np.array(sample[dim][1], dtype=sample[dim].dtype)
+                    # Switch to selection not iselection if needed later?
+                    #pos0 = np.array(sample[dim][0], dtype=sample[dim].dtype)
+                    #pos1 = np.array(sample[dim][1], dtype=sample[dim].dtype)
 
-                    end = np.array(sample[dim][-1], dtype=sample[dim].dtype) + (pos1-pos0)
+                    #end = np.array(sample[dim][-1], dtype=sample[dim].dtype) + (pos1-pos0)
+                    pos0 = 0
+                    end  = len(sample[dim])
 
-                    slice_dim = slice(
-                        pos0,
-                        end
-                    )
+                slice_dim = slice(
+                    pos0,
+                    end
+                )
                 preslice_var[dim] = slice_dim
             preslice.add_preslice(preslice_var, var)
 
