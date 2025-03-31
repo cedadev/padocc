@@ -605,7 +605,7 @@ class KerchunkFile(JSONFileHandler):
     def add_download_link(
             self,
             sub: str = '/',
-            replace: str = 'https://dap.ceda.ac.uk'
+            replace: str = 'https://dap.ceda.ac.uk/'
         ) -> None:
         """
         Add the download link to this Kerchunk File.
@@ -616,10 +616,15 @@ class KerchunkFile(JSONFileHandler):
         """
         self._obtain_value()
 
-        for key in self._value.keys():
-            if len(self._value[key]) == 3:
-                if self._value[key][0][0] == sub:
-                    self._value[key][0] = replace + self._value[key][0]
+        refs = self._value['refs']
+
+        for key in refs.keys():
+            try:
+                if len(refs[key]) == 3:
+                    if refs[key][0][0:len(sub)] == sub:
+                        refs[key][0] = replace + refs[key][0][len(sub):]
+            except TypeError:
+                pass
 
     def update_history(
             self, 
@@ -1141,7 +1146,7 @@ class KerchunkStore(GenericStore):
         super().__init__(
             parent_dir, store_name, 
             metadata_name='.zmetadata',
-            extension='parq',
+            extension='parquet',
             **kwargs)
 
     def __repr__(self) -> str:
