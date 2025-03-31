@@ -487,7 +487,10 @@ class GroupOperation(
         import glob
 
         # Check filesystem for objects
-        proj_codes = [g.split('/')[-1].strip('.txt') for g in glob.glob(f'{self.proj_codes_dir}/*.txt')]
+        proj_codes = []
+        for g in glob.glob(f'{self.proj_codes_dir}/*.txt'):
+            proj_codes.append(g.split('/')[-1].replace('.txt','') )
+            # Found Interesting python string-strip bug wi
 
         if not proj_codes:
             # Running for the first time
@@ -497,6 +500,7 @@ class GroupOperation(
             )
             
         for p in proj_codes:
+            self.logger.debug(f'proj_code file: {p}')
             self.proj_codes[p] = ListFileHandler(
                 self.proj_codes_dir, 
                 p, 
