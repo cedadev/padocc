@@ -63,6 +63,10 @@ class PropertiesMixin:
         return None
     
     @property
+    def cfa_enabled(self):
+        return self.detail_cfg.get(index='CFA',default=False) and not self.base_cfg.get(index='disable_CFA',default=False)
+
+    @property
     def outpath(self) -> str:
         """
         Path to the output product. 
