@@ -301,7 +301,7 @@ class ComputeOperation(ProjectOperation):
                 'of a different `DS` operator (Kerchunk/Zarr supported).'
             )
         
-        if self.base_cfg.get('disable_CFA',False) or not self.detail_cfg.get('CFA',False):
+        if not self.cfa_enabled:
             # Bypass CFA if deactivated.
             return 'CFASkipped'
         
