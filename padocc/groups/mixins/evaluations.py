@@ -121,12 +121,10 @@ class EvaluationsMixin:
                         if status in status_dict[phase]:
                             new_code_ids = new_code_ids + status_dict[phase][status]
 
-        print(new_code_ids)
         new_codes = []
         for id in new_code_ids:
             new_codes.append(self.proj_codes['main'][id])
 
-        print(new_codes)
         self._add_proj_codeset(
                 new_repeat_id,
                 new_codes
