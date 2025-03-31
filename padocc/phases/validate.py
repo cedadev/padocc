@@ -689,10 +689,6 @@ class ValidateDatasets(LoggedOperation):
             self.logger.debug(f'Skipped {dim}')
             return
 
-        self.logger.debug(test_range)
-        self.logger.debug(control_range)
-        self.logger.debug(test_range == control_range)
-
         if test_range != control_range:
             if test_range[0] == test_range[1]:
                 test_range = [test_range[0]]
