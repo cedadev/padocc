@@ -689,6 +689,10 @@ class ValidateDatasets(LoggedOperation):
             self.logger.debug(f'Skipped {dim}')
             return
 
+        self.logger.debug(test_range)
+        self.logger.debug(control_range)
+        self.logger.debug(test_range == control_range)
+
         if test_range != control_range:
             if test_range[0] == test_range[1]:
                 test_range = [test_range[0]]
@@ -729,8 +733,8 @@ class ValidateDatasets(LoggedOperation):
             var: str,
             test: xr.DataArray,
             control: xr.DataArray,
-            current : int = 1,
-            recursion_limit : int = 10, 
+            current : int = 100,
+            recursion_limit : int = 1, 
         ) -> bool:
         """
         General purpose validation for a specific variable from multiple sources.
@@ -750,7 +754,7 @@ class ValidateDatasets(LoggedOperation):
             )
             return
 
-        if current >= recursion_limit:
+        if current <= recursion_limit:
             self.logger.debug('Maximum recursion depth reached')
             self.logger.info(f'Validation for {var} not performed')
 
@@ -760,11 +764,12 @@ class ValidateDatasets(LoggedOperation):
             return None
         
         slice_applied = slice_all_dims(test, current)
+        self.logger.debug(f'Applying slice {slice_applied} to {var}')
         tbox = test[slice_applied]
         cbox = control[slice_applied]
 
         if check_for_nan(cbox, BypassSwitch(), self.logger, label=var):
-            return self._validate_selection(test, control, current+1, var, recursion_limit=recursion_limit)
+            return self._validate_selection(var, test, control, current-1, recursion_limit=recursion_limit)
         else:
             return self._compare_data(var, slice_applied, tbox, cbox)
 
@@ -880,13 +885,20 @@ class ValidateOperation(ProjectOperation):
     Class logger attribute so this doesn't need to be passed between functions.
     Bypass switch contained here with all switches.
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self, 
+            proj_code,
+            workdir,
+            parallel: bool = False,
+            **kwargs):
         """
         No current validate-specific parameters
         """
 
         self.phase = 'validate'
-        super().__init__(*args, **kwargs)
+        super().__init__(proj_code, workdir, **kwargs)
+        if parallel:
+            self.update_status(self.phase, 'Pending',jobid=self._logid)
 
     def _run(
             self,
@@ -921,7 +933,7 @@ class ValidateOperation(ProjectOperation):
         # Run metadata testing
         vd.validate_metadata()
 
-        if self.detail_cfg.get(index='CFA'):
+        if self.cfa_enabled:
             self.logger.info('CFA-enabled validation')
             control = self._open_cfa()
             vd.replace_dataset(control, label=self.source_format)
