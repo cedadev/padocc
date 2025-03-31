@@ -18,7 +18,7 @@ from padocc.core import FalseLogger, LoggedOperation, ProjectOperation
 from padocc.core.errors import (ComputeError, ConcatFatalError,
                                 KerchunkDriverFatalError, PartialDriverError,
                                 SourceNotFoundError)
-from padocc.core.filehandlers import JSONFileHandler, ZarrStore
+from padocc.core.filehandlers import JSONFileHandler, ZarrStore, KerchunkFile
 from padocc.core.utils import find_closest, make_tuple, timestamp
 from padocc.phases.validate import ValidateDatasets
 
@@ -163,6 +163,7 @@ class ComputeOperation(ProjectOperation):
             skip_concat : bool = False, 
             label : str = 'compute',
             is_trial: bool = False,
+            parallel: bool = False,
             **kwargs
         ) -> None:
         """
@@ -203,6 +204,9 @@ class ComputeOperation(ProjectOperation):
             thorough=thorough,
             label=label,
             **kwargs)
+        
+        if parallel:
+            self.update_status(self.phase, 'Pending',jobid=self._logid)
         
         self._is_trial = is_trial
 
@@ -296,6 +300,10 @@ class ComputeOperation(ProjectOperation):
                 f'have specified to use {mode} which requires the use '
                 'of a different `DS` operator (Kerchunk/Zarr supported).'
             )
+        
+        if self.base_cfg.get('disable_CFA',False) or not self.detail_cfg.get('CFA',False):
+            # Bypass CFA if deactivated.
+            return 'CFASkipped'
         
         if file_limit == len(self.allfiles):
             file_limit = None
@@ -667,7 +675,7 @@ class ComputeOperation(ProjectOperation):
         t1 = datetime.now()
         self.logger.info("Starting dimension specs determination")
 
-        if 'CFA' in self.detail_cfg:
+        if self.detail_cfg.get('CFA',False):
             self.logger.info('Extracting dim info from CFA report')
             concat_dims, identical_dims, report = self._dims_via_cfa()
             self._data_properties = report
@@ -770,13 +778,14 @@ class KerchunkDS(ComputeOperation):
                 ctype = list(converter.drivers.keys())[0]
 
             ## Connect to Cache File
-            CacheFile = JSONFileHandler(self.cache, f'{x}', 
+            CacheFile = KerchunkFile(self.cache, f'{x}', 
                                             dryrun=self._dryrun, forceful=self._forceful,
                                             logger=self.logger)
             
             ## Attempt to load the cache file
             if not self._thorough:
                 self.logger.info(f'Attempting cache file load: {x+1}/{self.limiter}')
+
                 ref = CacheFile.get()
                 if ref:
                     self.logger.info(f' > Loaded ref')
@@ -796,6 +805,11 @@ class KerchunkDS(ComputeOperation):
                         raise err
                     else:
                         partials.append(x)
+
+                # Debug Option for now
+                CacheFile.set(ref)
+                CacheFile.add_download_link()
+                ref = CacheFile.get()
 
             if not ref:
                 continue
@@ -843,7 +857,11 @@ class KerchunkDS(ComputeOperation):
 
         self.logger.info('Starting concatenation of refs')
         if len(refs) > 1:
-            self._determine_dim_specs()
+
+            self.combine_kwargs = self.detail_cfg.get('combine_kwargs',{})
+
+            if not self.combine_kwargs.get('concat_dims',False):
+                self._determine_dim_specs()
 
         t1 = datetime.now()  
         if self.file_type == 'parq':
@@ -907,12 +925,12 @@ class KerchunkDS(ComputeOperation):
 
         self.logger.debug('Starting parquet-write process')
 
-        out = LazyReferenceMapper.create(self.record_size, str(self.kstore), fs = filesystem("file"), **self.pre_kwargs)
+        out = LazyReferenceMapper.create(str(self.kstore.store_path), fs = filesystem("file"), **self.pre_kwargs)
 
-        out_dict = MultiZarrToZarr(
+        _ = MultiZarrToZarr(
             refs,
             out=out,
-            remote_protocol='file',
+            remote_protocol='https',
             **self.combine_kwargs
         ).translate()
         
@@ -937,6 +955,9 @@ class KerchunkDS(ComputeOperation):
             if self.detail_cfg['virtual_concat']:
                 refs, vdim = self._construct_virtual_dim(refs)
                 self.combine_kwargs['concat_dims'] = [vdim]
+
+            self.logger.debug(f'Concat Dim(s): {self.combine_kwargs["concat_dims"]}')
+            self.logger.debug(f'Identical Dim(s): {self.combine_kwargs["identical_dims"]}')
 
             try:
                 mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
@@ -1044,7 +1065,7 @@ class ZarrDS(ComputeOperation):
         if len(self.allfiles) > 1:
             
             # Determine concatenation dimensions
-            if self.base_cfg['data_properties']['aggregated_vars'] == 'Unknown':
+            if not self.combine_kwargs.get('concat_dims',False):
                 # Determine dimension specs for concatenation.
                 self._determine_dim_specs()
             if not self.combine_kwargs['concat_dims']:
