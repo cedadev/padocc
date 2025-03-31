@@ -94,20 +94,39 @@ class EvaluationsMixin:
             specific_error=status
         )
 
-        new_code_ids = []
-        if phase is not None:
-            # New codes are in the status_dict
-            if status in status_dict[phase]:
-                new_code_ids = status_dict[phase][status]
+        if phase == 'complete':
+            new_code_ids = status_dict['complete']
         else:
-            for phase in status_dict.keys():
-                if status in status_dict[phase]:
-                    new_code_ids = new_code_ids + status_dict[phase][status]
+            new_code_ids = []
+            if phase is not None:
 
+                # Pull any statuses
+                if status == 'Any':
+                    for status in status_dict[phase].keys():
+                        new_code_ids = new_code_ids + status_dict[phase][status]
+                        print(len(new_code_ids), status)
+                else:
+                    # Specific status from the dict for this phase
+                    if status in status_dict[phase]:
+                        new_code_ids = status_dict[phase][status]
+            else:
+                # Run for all phases
+                for phase in status_dict.keys():
+                    # Pull any statuses
+                    if status == 'Any':
+                        for status in status_dict[phase].keys():
+                            new_code_ids = new_code_ids + status_dict[phase][status]
+                    else:
+                        # Specific status for the current phase
+                        if status in status_dict[phase]:
+                            new_code_ids = new_code_ids + status_dict[phase][status]
+
+        print(new_code_ids)
         new_codes = []
         for id in new_code_ids:
             new_codes.append(self.proj_codes['main'][id])
 
+        print(new_codes)
         self._add_proj_codeset(
                 new_repeat_id,
                 new_codes
@@ -258,7 +277,7 @@ class EvaluationsMixin:
                 float(chunk_data['chunks_per_file'])
             )
             total_chunks.append(
-                int(chunk_data['total_chunks'])
+                int(chunk_data['total_chunks'].split('.')[0])
             )
 
         # Render Outputs
@@ -272,11 +291,11 @@ class EvaluationsMixin:
         else:
             ot.append('Source Files: Unknown')
         if len(source_data) > 0:
-            ot.append(f'Source Data: {format_float(sum(source_data))} [Avg. {np.mean(source_data):.2f} per project]')
+            ot.append(f'Source Data: {format_float(sum(source_data))} [Avg. {format_float(np.mean(source_data))} per project]')
         else:
             ot.append('Source Data: Unknown')
         if len(cloud_data) > 0:
-            ot.append(f'Cloud Data: {format_float(sum(cloud_data))} [Avg. {np.mean(cloud_data):.2f} per project]')
+            ot.append(f'Cloud Data: {format_float(sum(cloud_data))} [Avg. {format_float(np.mean(cloud_data))} per project]')
         else:
             ot.append('Cloud Data: Unknown')
         ot.append('')
@@ -289,12 +308,37 @@ class EvaluationsMixin:
         ot.append('')
         if len(chunks_per_file) > 0:
             ot.append(
-                f'Chunks per File: {format_float(sum(chunks_per_file))} [Avg. {np.mean(chunks_per_file):.2f} per project]')
+                f'Chunks per File: {sum(chunks_per_file):.2f} [Avg. {np.mean(chunks_per_file):.2f} per project]')
         if len(total_chunks) > 0:
             ot.append(
-                f'Total Chunks: {format_float(sum(total_chunks))} [Avg. {np.mean(total_chunks):.2f} per project]')
+                f'Total Chunks: {sum(total_chunks):.2f} [Avg. {np.mean(total_chunks):.2f} per project]')
         
         func('\n'.join(ot))
+
+    def match_data_reports(
+            self,
+            sample_report
+        ) -> dict:
+
+        matches = {}
+        def check_keys(test, control):
+            matched = True
+            for k, v in test.items():
+                if isinstance(v, dict):
+                    try:
+                        matched = check_keys(test[k], control[k])
+                    except KeyError:
+                        matched = False
+                if k not in control:
+                    matched = False
+            return matched
+        
+        for pc in self.proj_codes['main']:
+            proj = self[pc]
+            matches[pc] = check_keys(proj.get_report()['data'], sample_report['data'])
+
+        return matches
+            
 
     def summarise_status(
             self, 
@@ -434,7 +478,6 @@ class EvaluationsMixin:
         """
         Assess the status of a single project
         """
-
         # Open the specific project
         proj_op = self.get_project(proj_code)
 
@@ -470,8 +513,8 @@ class EvaluationsMixin:
             if total_match and halt:
                 proj_op.show_log_contents(specific_phase, halt=halt)
 
-        if status == 'complete':
-            status_dict['complete'] += 1
+        if phase == 'complete':
+            status_dict['complete'].append(pid)
         else:
             if status in status_dict[phase]:
                 status_dict[phase][status].append(pid)
