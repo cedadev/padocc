@@ -249,10 +249,11 @@ class GroupOperation(
             'compute': self._compute_config,
             'validate': self._validate_config,
         }
-
+        is_parallel = False
         jobid = None
         if os.getenv('SLURM_ARRAY_JOB_ID'):
             jobid = f"{os.getenv('SLURM_ARRAY_JOB_ID')}-{os.getenv('SLURM_ARRAY_TASK_ID')}"
+            is_parallel = True
 
         # Select set of datasets from repeat_id
 
@@ -297,6 +298,7 @@ class GroupOperation(
                 fh=fh, 
                 bypass=bypass,
                 run_kwargs=run_kwargs,
+                parallel=is_parallel,
                 **kwargs)
             
             if status in results:
