@@ -152,10 +152,12 @@ def deformat_float(item: str) -> str:
 
     :param item:    (str) Byte value to format into a float.
     """
-    units = ['','K','M','G','T','P']
+    units = ['','K','M','G','T','P','E','Y']
     value, suffix = item.split(' ')
 
-    ord = units.index(suffix)*1000
+    suffix = suffix.replace('B','')
+
+    ord = 1000**(units.index(suffix))
     return float(value)*ord
 
 def format_float(value: float) -> str:
