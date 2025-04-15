@@ -217,6 +217,7 @@ class ProjectOperation(
             forceful : bool = None,
             thorough : bool = None,
             dryrun : bool = None,
+            parallel: bool = False,
             **kwargs
         ) -> str:
         """
@@ -251,6 +252,11 @@ class ProjectOperation(
         """
 
         self._bypass = bypass or self._bypass
+
+        if parallel:
+            self.logger.info(f'Parallel Operation: Enabled')
+        else:
+            self.logger.info(f'Parallel Operation: Disabled')
 
         # Reset flags given specific runs
         if forceful is not None:
