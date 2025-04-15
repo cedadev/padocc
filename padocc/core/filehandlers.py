@@ -605,8 +605,9 @@ class KerchunkFile(JSONFileHandler):
     def add_download_link(
             self,
             sub: str = '/',
-            replace: str = 'https://dap.ceda.ac.uk/'
-        ) -> None:
+            replace: str = 'https://dap.ceda.ac.uk/',
+            in_place: bool = True,
+        ) -> Union[None,dict]:
         """
         Add the download link to this Kerchunk File.
 
@@ -616,8 +617,13 @@ class KerchunkFile(JSONFileHandler):
         """
         self._obtain_value()
 
-        refs = self._value['refs']
+        if 'refs' not in self._value:
+            raise ValueError(
+                'No kerchunk refs were loaded, no replacements can be made - ' \
+                f'check {self.filepath}'
+            )
 
+        refs = self._value.pop('refs')
         for key in refs.keys():
             try:
                 if len(refs[key]) == 3:
@@ -625,6 +631,15 @@ class KerchunkFile(JSONFileHandler):
                         refs[key][0] = replace + refs[key][0][len(sub):]
             except TypeError:
                 pass
+        
+        if in_place:
+            self._value['refs'] = refs
+            return None
+        
+        return {
+            'refs':refs,
+            **self._value
+        }
 
     def update_history(
             self, 
