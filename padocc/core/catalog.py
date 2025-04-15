@@ -17,7 +17,7 @@ def catalog_ceda(
         version: str,
         index: str = 'ceda-cloud-products',
         hosts: Union[list,None] = None
-        ):
+    ):
     """
     Catalog the output product of this project.
     """
