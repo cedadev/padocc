@@ -4,7 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 import json
 
-from typing import Callable, Union
+from typing import Callable, Union, Any
 
 from padocc import ProjectOperation
 from padocc.core.utils import BASE_CFG, source_opts, valid_project_code
@@ -38,6 +38,38 @@ class ModifiersMixin:
             ' > group.unmerge() - Split one group into two sets, '
             'given a list of datasets to move into the new group.')
 
+    def set_all_values(self, attr: str, value: Any, repeat_id: str = 'main'):
+        """
+        Set a particular value for all projects in a group.
+        """
+        self.logger.info(f'Applying {attr}:{value} to all projects')
+
+        for project in self.__iter__(repeat_id=repeat_id):
+            try:
+                setattr(project, attr, value)
+            except Exception as err:
+                self.logger.error('Error when trying to apply value to all projects')
+                raise err
+            project.save_files()
+
+        self.logger.info('All projects saved')
+
+    def apply_pfunc(self, pfunc: Callable, repeat_id: str = 'main'):
+        """
+        Apply a custom function across all projects.
+        """
+        self.logger.info(f'Applying {pfunc} to all projects')
+
+        for project in self.__iter__(repeat_id=repeat_id):
+            try:
+                project = pfunc(project)
+            except Exception as err:
+                self.logger.error('Error when trying to perform custom function:')
+                raise err
+            project.save_files()
+
+        self.logger.info('All projects saved')
+
     def add_project(
             self,
             config: Union[str,dict],
@@ -58,6 +90,15 @@ class ModifiersMixin:
             if config.endswith('.json'):
                 with open(config) as f:
                     config = json.load(f)
+            elif config.endswith('.csv'):
+                cfg = {}
+                with open(config) as f:
+                    for line in f.readlines():
+                        key = line.split(',')[0]
+                        fileset = line.split(',')[1]
+                        cfg[key] = fileset
+            
+                config = cfg
             else:
                 config = json.loads(config)
         
