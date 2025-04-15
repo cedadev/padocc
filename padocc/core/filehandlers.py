@@ -602,11 +602,14 @@ class KerchunkFile(JSONFileHandler):
     for local/remote links, and updating content.
     """
 
+    remote = False
+
     def add_download_link(
             self,
             sub: str = '/',
             replace: str = 'https://dap.ceda.ac.uk/',
             in_place: bool = True,
+            remote: bool = True,
         ) -> Union[None,dict]:
         """
         Add the download link to this Kerchunk File.
@@ -616,6 +619,14 @@ class KerchunkFile(JSONFileHandler):
         :param replace: (str) Replacement value in download links.
         """
         self._obtain_value()
+
+        if sub != '/' or replace != 'https://dap.ceda.ac.uk/':
+            if in_place:
+                self.logger.warning(
+                    'Using non-standard download link replacement. If this ',
+                    'will result in a non-remote file please ensure the "remote" ',
+                    'parameter is set to "False" for this operation.'
+                )
 
         if 'refs' not in self._value:
             raise ValueError(
@@ -633,6 +644,7 @@ class KerchunkFile(JSONFileHandler):
                 pass
         
         if in_place:
+            self.remote = remote
             self._value['refs'] = refs
             return None
         

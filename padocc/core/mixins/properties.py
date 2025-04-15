@@ -61,7 +61,7 @@ class PropertiesMixin:
             return self.base_cfg['override'][key]
         
         return None
-    
+
     @property
     def cfa_enabled(self):
         return self.detail_cfg.get(index='CFA',default=False) and not self.base_cfg.get(index='disable_CFA',default=False)
@@ -114,10 +114,11 @@ class PropertiesMixin:
                 'Cloud format not set, revision is unknown'
             )
         
-        if self.file_type is not None:
-            return ''.join((self.cloud_format[0],self.file_type[0],self.version_no))
-        else:
-            return ''.join((self.cloud_format[0],self.version_no))
+        if hasattr(self.dataset,'remote'):
+            if self.dataset.remote:
+                return ''.join((self.cloud_format[0],'r',self.version_no))
+        
+        return ''.join((self.cloud_format[0],self.version_no))
         
     @property
     def version_no(self) -> str:
