@@ -10,6 +10,7 @@ import xarray as xr
 from ..filehandlers import (CFADataset, GenericStore, KerchunkFile,
                             KerchunkStore, ZarrStore)
 from ..utils import extract_json
+from ..catalog import catalog_ceda
 
 
 class DatasetHandlerMixin:
@@ -292,3 +293,28 @@ class DatasetHandlerMixin:
         Fetch a dictionary of the metadata for the dataset.
         """
         return self.dataset.get_meta()
+    
+    def catalog_ceda(
+            self, 
+            final_location: str, 
+            api_key: str, 
+            collection: str,
+            name_replace: Union[str,None] = None,
+        ):
+        """
+        Catalog the output product of this project.
+        """
+
+        # Unique identifier
+        if name_replace is None:
+            name_replace = f'{self.complete_product}.{self.dataset._extension}'
+        
+        catalog_ceda(
+            final_location,
+            name_replace,
+            api_key,
+            self.cloud_format,
+            collection,
+            self.remote,
+            self.version_no,
+        )

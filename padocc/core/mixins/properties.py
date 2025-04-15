@@ -104,6 +104,19 @@ class PropertiesMixin:
         return vn
     
     @property
+    def remote(self) -> bool:
+        """
+        Determine if this project is remotely-accessible
+        """
+
+        if self.cloud_format == 'zarr':
+            return True
+        if hasattr(self.dataset,'remote'):
+            return self.dataset.remote
+        
+        return False
+    
+    @property
     def revision(self) -> str:
         """
         Revision takes into account cloud format and type.

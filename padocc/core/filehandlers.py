@@ -19,7 +19,6 @@ from .errors import ChunkDataError, KerchunkDecodeError
 from .logs import FalseLogger, LoggedOperation
 from .utils import format_str, extract_json
 
-
 class FileIOMixin(LoggedOperation):
     """
     Class for containing Filehandler behaviour which is exactly identical
