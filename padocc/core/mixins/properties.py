@@ -319,3 +319,24 @@ class PropertiesMixin:
             self.remove_attribute(attr, target=target)
 
         self.save_files()
+
+    def set_concat_dims(self, dims: list):
+        """
+        Function to override the concat_kwargs for this project.
+        """
+
+        combine = self.detail_cfg['kwargs'].get('combine_kwargs',{})
+        combine['concat_dims'] = dims
+        self.detail_cfg['kwargs']['combine_kwargs'] = combine
+        self.detail_cfg.close()
+
+    def set_identical_dims(self, dims: list):
+        """
+        Function to override the concat_kwargs for this project.
+        """
+
+        combine = self.detail_cfg['kwargs'].get('combine_kwargs',{})
+        combine['identical_dims'] = dims
+        self.detail_cfg['kwargs']['combine_kwargs'] = combine
+        self.detail_cfg.close()
+        
