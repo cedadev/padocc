@@ -80,18 +80,20 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
 
     return isnan
 
-def slice_all_dims(data_arr: xr.DataArray, intval: int):
+def slice_all_dims(data_arr: xr.DataArray, intval: int, dim_mid: Union[dict[int,None],None] = None):
     """
     Slice all dimensions for the DataArray according 
     to the integer value."""
     shape = tuple(data_arr.shape)
+    dims  = tuple(data_arr.dims)
 
     slice_applied = []
-    for d in shape:
+    for dim, d in zip(dims, shape):
         if d < 8:
             continue
-
         mid = int(d/2)
+        if dim_mid is not None:
+            mid = dim_mid[dim]
         step = int(d/(intval*2))
         slice_applied.append(slice(mid-step,mid+step))
     return tuple(slice_applied)
@@ -542,7 +544,7 @@ class ValidateDatasets(LoggedOperation):
                     'type': 'not_equal'
                 }
 
-    def validate_data(self):
+    def validate_data(self, dim_mid: Union[dict,None] = None):
         """
         Perform data validations using the growbox method for all variable DataArrays.
         """
@@ -611,7 +613,7 @@ class ValidateDatasets(LoggedOperation):
             # Check access to the source data somehow here
             # Initiate growbox method - recursive increasing box size.
             self.logger.debug(f'Validating data for {var}')
-            self._validate_selection(var, testvar, controlvar)
+            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid)
 
     def _validate_shapes(self, var: str, test, control, ignore=None):
         """
@@ -731,6 +733,7 @@ class ValidateDatasets(LoggedOperation):
             control: xr.DataArray,
             current : int = 100,
             recursion_limit : int = 1, 
+            dim_mid: Union[dict,None] = None,
         ) -> bool:
         """
         General purpose validation for a specific variable from multiple sources.
@@ -759,13 +762,13 @@ class ValidateDatasets(LoggedOperation):
             }
             return None
         
-        slice_applied = slice_all_dims(test, current)
+        slice_applied = slice_all_dims(test, current, dim_mid=dim_mid)
         self.logger.debug(f'Applying slice {slice_applied} to {var}')
         tbox = test[slice_applied]
         cbox = control[slice_applied]
 
         if check_for_nan(cbox, BypassSwitch(), self.logger, label=var):
-            return self._validate_selection(var, test, control, current-1, recursion_limit=recursion_limit)
+            return self._validate_selection(var, test, control, current-1, recursion_limit=recursion_limit, dim_mid=dim_mid)
         else:
             return self._compare_data(var, slice_applied, tbox, cbox)
 
@@ -899,6 +902,7 @@ class ValidateOperation(ProjectOperation):
     def _run(
             self,
             mode: str = 'kerchunk',
+            dim_mid: Union[dict,None] = None,
             **kwargs
         ) -> None:
         """
@@ -939,7 +943,7 @@ class ValidateOperation(ProjectOperation):
 
             vd.replace_preslice(preslice, label=self.cloud_format)
 
-        vd.validate_data()
+        vd.validate_data(dim_mid=dim_mid)
 
         # Save report
         vd.save_report()
