@@ -659,8 +659,16 @@ class ComputeOperation(ProjectOperation):
 
         # Concat dims will vary across files, identicals will not.
 
+        # Identical variables cannot have a concat dimension as one of their dimensions.
+        non_identical = []
+        for v in variables:
+            dsr = datasets[0][v]
+            for c in concat_dims:
+                if c in dsr.dims:
+                    non_identical.append(v)
+
         identical_dims = [dim for dim in dimensions if dim not in vars]
-        identical_vars = [var for var in variables if var not in vars]
+        identical_vars = [var for var in variables if (var not in vars and var not in non_identical)]
 
         identical_dims = list(set(identical_dims + identical_vars))
         
