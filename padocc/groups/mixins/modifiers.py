@@ -69,6 +69,40 @@ class ModifiersMixin:
             project.save_files()
 
         self.logger.info('All projects saved')
+    
+    def catalog_ceda(
+            self,
+            final_location: str, 
+            api_key: str, 
+            collection: str,
+            name_list: Union[list,None] = None,
+            repeat_id: str = 'main'
+        ):
+        """
+        Catalog all projects in the group into the 
+        ``ceda-cloud-projects`` index."""
+
+        if name_list is not None:
+            if len(name_list) != len(self.proj_codes[repeat_id]):
+                raise ValueError(
+                    'Insufficient replacement names provided - '
+                    f'needs {len(self.proj_codes[repeat_id])}, '
+                    f'given {len(name_list)}'
+                )
+
+        for pid, proj_code in enumerate(self.proj_codes[repeat_id]):
+
+            name_replace = None
+            if name_list is not None:
+                name_replace = name_list[pid]
+
+            proj = self[proj_code]
+            proj.catalog_ceda(
+                final_location,
+                api_key,
+                collection,
+                name_replace = name_replace
+            )
 
     def add_project(
             self,
