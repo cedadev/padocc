@@ -130,6 +130,13 @@ class GroupOperation(
         """
         return len(self.proj_codes['main'])
     
+    def __iter__(self, repeat_id: str = 'main'):
+        """
+        Iterable group for each project
+        """
+        for proj_code in self.proj_codes['main']:
+            yield self[proj_code]
+    
     def __getitem__(self, index: Union[int,str]) -> ProjectOperation:
         """
         Indexable group allows access to individual projects

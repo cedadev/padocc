@@ -10,7 +10,7 @@ import yaml
 from padocc import GroupOperation, phase_map
 from padocc.core.utils import BypassSwitch, get_attribute, list_groups
 
-def check_specials(args: dict) -> bool:
+def check_shortcuts(args: dict) -> bool:
     """
     Check and perform any special features requested
     """
@@ -28,7 +28,7 @@ def check_specials(args: dict) -> bool:
         )
     
     if args.phase == 'add':
-        moles_tags = (args.special == 'moles')
+        moles_tags = (args.shortcut == 'moles')
         group.add_project(args.input, moles_tags=moles_tags)
         return True
     
@@ -37,12 +37,31 @@ def check_specials(args: dict) -> bool:
         return True
     
     if args.phase == 'check':
-        group.check_attribute(args.special)
+        group.check_attribute(args.shortcut)
         return True
 
     if args.phase == 'complete':
         group.complete_group(
-            args.special,
+            args.shortcut,
+            repeat_id=args.repeat_id)
+        return True
+    
+    if args.phase == 'set_value':
+        attr, value = args.shortcut.split(':')
+        group.set_all_values(
+            attr,
+            value,
+            repeat_id=args.repeat_id
+        )
+    
+    if args.phase == 'pfunc':
+        try:
+            module = __import__(args.shortcut)
+        except ImportError as err:
+            print(f'ERROR: Custom module {args.shortcut} could not be imported')
+
+        group.apply_pfunc(
+            module, 
             repeat_id=args.repeat_id)
         return True
 
@@ -115,7 +134,7 @@ def main():
     bypass=BypassSwitch(args.bypass)
 
     # Generic special features
-    if check_specials(args):
+    if check_shortcuts(args):
         return
 
     if args.groupID is not None:
