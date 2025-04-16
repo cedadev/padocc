@@ -122,7 +122,8 @@ def get_args():
     parser.add_argument('-i','--input', dest='input', help='input file (for init phase)')
 
     # Parallel deployment
-    parser.add_argument('--parallel', dest='parallel',help='Add for parallel deployment with SLURM')
+    parser.add_argument('--parallel', dest='parallel',action='store_true',help='Add for parallel deployment with SLURM')
+    parser.add_argument('--parallel_project', dest='parallel_project',action='store_true',help='Add for parallel deployment with SLURM for internal project conversion.')
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
     parser.add_argument('--mem-allowed', dest='mem_allowed', default='100MB', help='Memory allowed for Zarr rechunking')
@@ -175,8 +176,7 @@ def main():
             group.init_from_file(args.input)
             return
         
-        kwargs = {}
-        if args.parallel == 'group':
+        if args.parallel:
             group.deploy_parallel(
                 args.phase,
                 source=args.venvpath,
@@ -191,8 +191,10 @@ def main():
                 new_version=args.new_version
             )
             return
-        elif args.parallel == 'project':
-            kwargs = {
+        
+        run_kwargs = {}
+        if args.parallel_project:
+            run_kwargs = {
                 'compute_subset':args.subset.split('/')[0],
                 'compute_total':args.subset.split('/')[1]
             }
@@ -204,7 +206,7 @@ def main():
             proj_code=args.proj_code,
             subset=args.subset,
             mem_allowed=args.mem_allowed,
-            run_kwargs=kwargs
+            run_kwargs=run_kwargs
         )
 
     else:
