@@ -726,6 +726,8 @@ class KerchunkDS(ComputeOperation):
             self,
             check_dimensions: bool = False,
             ctype: Union[str,None] = None,
+            compute_subset: Union[str,None] = None,
+            compute_total: Union[str,None] = None,
             **kwargs
         ) -> str:
         """
@@ -741,7 +743,9 @@ class KerchunkDS(ComputeOperation):
         status = self._run_with_timings(
             self.create_refs, 
             check_refs=check_dimensions,
-            ctype=ctype
+            ctype=ctype,
+            compute_subset=compute_subset,
+            compute_total=compute_total,
         )
         
         if ctype is None:
@@ -754,7 +758,9 @@ class KerchunkDS(ComputeOperation):
     def create_refs(
             self, 
             check_refs : bool = False,
-            ctype: Union[str,None] = None
+            ctype: Union[str,None] = None,
+            compute_subset: Union[str,None] = None,
+            compute_total: Union[str,None] = None,
         ) -> None:
         """Organise creation and loading of refs
         - Load existing cached refs
@@ -778,7 +784,33 @@ class KerchunkDS(ComputeOperation):
         t1 = datetime.now()
         create_mode = False
 
-        for x, nfile in enumerate(listfiles[:self.limiter]):
+        lim0 = 0
+        lim1 = self.limiter
+
+        if compute_subset is not None:
+            try:
+                cs = int(compute_subset)
+                ct = int(compute_total)
+            except ValueError:
+                raise ValueError(
+                    'Invalid options given for compute_subset/total - '
+                    f'expected numeric, got {compute_subset}, {compute_total}'
+                )
+            
+            group_size = int(len(listfiles)/ct)
+            lim0 = group_size*cs
+            lim1 = group_size*(cs+1)
+            if cs == ct-1:
+                lim1 = -1 # To the end
+
+            self.skip_concat = True
+
+        for x, nfile in enumerate(listfiles[lim0:lim1]):
+
+            x = lim0 + x
+            total = lim1-lim0
+
+            self.logger.info(f'Processing file: {x+1}/{total}')
 
             ref = None
             ## Default Converter Type if not set.
@@ -792,20 +824,27 @@ class KerchunkDS(ComputeOperation):
             
             ## Attempt to load the cache file
             if not self._thorough:
-                self.logger.info(f'Attempting cache file load: {x+1}/{self.limiter}')
+                self.logger.debug(f'Attempting cache file load: {x+1}/{total}')
 
-                ref = CacheFile.get()
-                if ref:
-                    self.logger.info(f' > Loaded ref')
-                    create_mode = False
+                try:
+                    # Remapper if required - removes download links from cached files.
+                    #if x > 6000:
+                    #    self.logger.warning('Removing download links')
+                    #    CacheFile.add_download_link(sub='https://dap.ceda.ac.uk',replace='')
+                    ref = CacheFile.get()
+                    if ref:
+                        self.logger.debug(' > Loaded ref')
+                        create_mode = False
+                except:
+                    ref = None
 
             ## Create cache file from scratch if needed
             if not ref:
                 if not create_mode:
-                    self.logger.info(' > Cache file not found: Switching to create mode')
+                    self.logger.debug(' > Cache file not found: Switching to create mode')
                     create_mode = True
 
-                self.logger.info(f'Creating refs: {x+1}/{self.limiter}')
+                self.logger.debug(f'Creating refs: {x+1}/{total}')
                 try:
                     ref, ctype = converter.run(nfile, extension=ctype, **self.create_kwargs)
                 except KerchunkDriverFatalError as err:
@@ -814,10 +853,11 @@ class KerchunkDS(ComputeOperation):
                     else:
                         partials.append(x)
 
-                # Debug Option for now
-                CacheFile.set(ref)
-                CacheFile.add_download_link()
-                ref = CacheFile.get()
+
+                if ref is not None:
+                    CacheFile.set(ref)
+                    # Get again in case of future changes.
+                    ref = CacheFile.get()
 
             if not ref:
                 continue
@@ -852,6 +892,8 @@ class KerchunkDS(ComputeOperation):
         try:
             if self.success and not self.skip_concat:
                 self._combine_and_save(refs)
+            else:
+                self.logger.info('Concatenation skipped')
         except Exception as err:
             # Any additional parts here.
             raise err
@@ -938,7 +980,6 @@ class KerchunkDS(ComputeOperation):
         _ = MultiZarrToZarr(
             refs,
             out=out,
-            remote_protocol='https',
             **self.combine_kwargs
         ).translate()
         
