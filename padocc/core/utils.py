@@ -86,6 +86,9 @@ FILE_DEFAULT = {
 
 invalid = list('(){}[]<>:;')
 
+def group_exists(group, workdir):
+    return os.path.isdir(f'{workdir}/groups/{group}')
+
 def valid_project_code(proj_code: str) -> bool:
     """
     Validate project code for type checks etc.
