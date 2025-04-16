@@ -369,6 +369,7 @@ class EvaluationsMixin:
         )
 
         num_codes  = len(self.proj_codes[repeat_id])
+        
         ot = []
         ot.append('')
         ot.append(f'Group: {self.groupID}')
