@@ -159,6 +159,7 @@ class ProjectOperation(
         self._kstore = None
         self._zstore = None
         self._cfa_dataset = None
+        self._remote = False
 
         self._is_trial = False
 
@@ -216,6 +217,7 @@ class ProjectOperation(
             bypass: Union[BypassSwitch,None] = None,
             forceful : bool = None,
             thorough : bool = None,
+            verbose: bool = None,
             dryrun : bool = None,
             parallel: bool = False,
             **kwargs
@@ -265,6 +267,8 @@ class ProjectOperation(
             self._thorough = thorough
         if dryrun is not None:
             self._dryrun = dryrun
+        if verbose is not None:
+            self._verbose = verbose
 
         if self.cloud_format != mode:
             self.logger.info(
