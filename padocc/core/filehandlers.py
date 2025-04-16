@@ -14,6 +14,7 @@ import netCDF4
 import fsspec
 import xarray as xr
 import yaml
+import pandas as pd
 
 from .errors import ChunkDataError, KerchunkDecodeError
 from .logs import FalseLogger, LoggedOperation
@@ -601,8 +602,6 @@ class KerchunkFile(JSONFileHandler):
     for local/remote links, and updating content.
     """
 
-    remote = False
-
     def add_download_link(
             self,
             sub: str = '/',
@@ -622,8 +621,8 @@ class KerchunkFile(JSONFileHandler):
         if sub != '/' or replace != 'https://dap.ceda.ac.uk/':
             if in_place:
                 self.logger.warning(
-                    'Using non-standard download link replacement. If this ',
-                    'will result in a non-remote file please ensure the "remote" ',
+                    'Using non-standard download link replacement. If this ' \
+                    'will result in a non-remote file please ensure the "remote" ' \
                     'parameter is set to "False" for this operation.'
                 )
 
@@ -643,7 +642,6 @@ class KerchunkFile(JSONFileHandler):
                 pass
         
         if in_place:
-            self.remote = remote
             self._value['refs'] = refs
             return None
         
@@ -1198,13 +1196,13 @@ class KerchunkStore(GenericStore):
             default_rfs.update(rfs_kwargs)
 
         default_parquet = {
-            'backend_kwargs':{"consolidated": False, "decode_times": False}
+            'backend_kwargs':{"consolidated": False, "decode_times": True}
         }
         default_parquet.update(parquet_kwargs)
 
         from fsspec.implementations.reference import ReferenceFileSystem
         fs = ReferenceFileSystem(
-            self.filepath, 
+            self.store_path, 
             **default_rfs)
         
         return xr.open_dataset(
@@ -1212,6 +1210,33 @@ class KerchunkStore(GenericStore):
             engine="zarr",
             **default_parquet
         )
+    
+    def add_download_link(
+            self,
+            sub: str = '/',
+            replace: str = 'https://dap.ceda.ac.uk/',
+            in_place: bool = True,
+            remote: bool = True,
+        ) -> Union[None,dict]:
+        """
+        Replace existing paths with download links for all parquet files.
+        """
+
+        for file in glob.glob(f'{self.store_path}/**/*.parq',recursive=True):
+            self.logger.debug(f'Editing {file}')
+
+            df = pd.read_parquet(file)
+            for row in range(len(df['path'])):
+                if df['path'][row] is not None:
+                    df.loc[row, 'path'] = replace + df['path'][row][len(sub):]
+            
+            if self._dryrun:
+                self.logger.info(f'DRYRUN: Skipped setting {file}')
+                self.logger.info(df)
+                continue
+            
+            df.to_parquet(file)
+
 
 class LogFileHandler(ListFileHandler):
     """Log File handler for padocc phase logs."""
