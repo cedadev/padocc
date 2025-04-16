@@ -110,11 +110,20 @@ class PropertiesMixin:
         """
 
         if self.cloud_format == 'zarr':
+            self.remote = True
             return True
-        if hasattr(self.dataset,'remote'):
-            return self.dataset.remote
         
-        return False
+        self._remote = self.base_cfg.get('remote',False)
+
+        return self._remote
+    
+    @remote.setter
+    def remote(self, value: bool) -> bool:
+        """
+        Set the value of the remote property and match it with the value in the base_cfg.
+        """
+        self._remote = value
+        self.base_cfg['remote'] = self._remote
     
     @property
     def revision(self) -> str:
@@ -127,10 +136,8 @@ class PropertiesMixin:
                 'Cloud format not set, revision is unknown'
             )
         
-        if hasattr(self.dataset,'remote'):
-            if self.dataset.remote:
-                return ''.join((self.cloud_format[0],'r',self.version_no))
-        
+        if self.remote:
+            return ''.join((self.cloud_format[0],'r',self.version_no))
         return ''.join((self.cloud_format[0],self.version_no))
         
     @property
