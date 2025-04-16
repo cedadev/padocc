@@ -158,7 +158,8 @@ class ScanOperation(ProjectOperation):
             self, 
             mode: str = 'kerchunk', 
             ctype: Union[str,None] = None,
-            mem_allowed: str = '100MB'
+            mem_allowed: str = '100MB',
+            **kwargs
         ) -> None:
         """Main process handler for scanning phase"""
 
@@ -437,6 +438,9 @@ class ScanOperation(ProjectOperation):
             details['type'] = override_type
         else:
             details['type'] = type
+
+        # Override existing details
+        self.file_type = type
 
         existing_details = self.detail_cfg.get()
         existing_details.update(details)
