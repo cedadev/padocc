@@ -8,7 +8,7 @@ import argparse
 import yaml
 
 from padocc import GroupOperation, phase_map
-from padocc.core.utils import BypassSwitch, get_attribute, list_groups
+from padocc.core.utils import BypassSwitch, get_attribute, list_groups, group_exists
 
 def check_shortcuts(args: dict) -> bool:
     """
@@ -19,13 +19,26 @@ def check_shortcuts(args: dict) -> bool:
         list_groups(args.workdir)
         return True
     
-    group = GroupOperation(
-            args.groupID,
-            args.workdir,
-            verbose=args.verbose,
-            dryrun=args.dryrun,
-            forceful=args.forceful
+    if not group_exists(args.groupID, args.workdir):
+        raise ValueError(
+            'Shortcuts can only be performed on existing groups - ' \
+            'use `padocc new -G group` to create a new group.'
         )
+    
+    group = GroupOperation(
+        args.groupID,
+        args.workdir,
+        verbose=args.verbose,
+        dryrun=args.dryrun,
+        forceful=args.forceful
+    )
+
+    if args.phase == 'delete':
+        if args.proj_code is not None:
+            group.remove_project(args.proj_code, ask=True)
+            return True
+        group.delete_group()
+        return True
     
     if args.phase == 'add':
         moles_tags = (args.shortcut == 'moles')
@@ -36,6 +49,10 @@ def check_shortcuts(args: dict) -> bool:
         group.summarise_status()
         return True
     
+    if args.phase == 'summarise':
+        group.summarise_data()
+        return True
+    
     if args.phase == 'check':
         group.check_attribute(args.shortcut)
         return True
@@ -43,7 +60,8 @@ def check_shortcuts(args: dict) -> bool:
     if args.phase == 'complete':
         group.complete_group(
             args.shortcut,
-            repeat_id=args.repeat_id)
+            repeat_id=args.repeat_id,
+            thorough=args.thorough)
         return True
     
     if args.phase == 'set_value':
@@ -81,7 +99,7 @@ def get_args():
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')
     parser.add_argument('phase', type=str, help='Phase of the pipeline to initiate')
 
-    parser.add_argument('--special', dest='special', help='See documentation for use cases.')
+    parser.add_argument('--shortcut', dest='shortcut', help='See documentation for use cases.')
 
     # Action-based - standard flags
     parser.add_argument('-f','--forceful',dest='forceful',action='store_true', help='Force overwrite of steps if previously done')
@@ -101,10 +119,10 @@ def get_args():
 
     # Specialised
     parser.add_argument('-C','--cloud-format', dest='mode', default='kerchunk', help='Output format required.')
-    parser.add_argument('-i', '--input', dest='input', help='input file (for init phase)')
+    parser.add_argument('-i','--input', dest='input', help='input file (for init phase)')
 
     # Parallel deployment
-    parser.add_argument('--parallel', dest='parallel', action='store_true',help='Add for parallel deployment with SLURM')
+    parser.add_argument('--parallel', dest='parallel',help='Add for parallel deployment with SLURM')
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
     parser.add_argument('--mem-allowed', dest='mem_allowed', default='100MB', help='Memory allowed for Zarr rechunking')
@@ -157,7 +175,8 @@ def main():
             group.init_from_file(args.input)
             return
         
-        if args.parallel:
+        kwargs = {}
+        if args.parallel == 'group':
             group.deploy_parallel(
                 args.phase,
                 source=args.venvpath,
@@ -172,6 +191,11 @@ def main():
                 new_version=args.new_version
             )
             return
+        elif args.parallel == 'project':
+            kwargs = {
+                'compute_subset':args.subset.split('/')[0],
+                'compute_total':args.subset.split('/')[1]
+            }
 
         group.run(
             args.phase,
@@ -179,7 +203,8 @@ def main():
             repeat_id=args.repeat_id,
             proj_code=args.proj_code,
             subset=args.subset,
-            mem_allowed=args.mem_allowed
+            mem_allowed=args.mem_allowed,
+            run_kwargs=kwargs
         )
 
     else:
