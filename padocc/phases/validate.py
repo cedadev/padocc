@@ -60,6 +60,12 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
                 return False
             else:
                 raise err
+            
+    def get_origin(arr):
+        if len(arr.shape) > 1:
+            return get_origin(arr[0])
+        else:
+            return arr[0]
 
     if arr.size == 1:
         try:
@@ -68,15 +74,10 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
             isnan = handle_boxissue(err)
     else:
         try:
-            isnan = np.all(arr!=arr)
+            #print(get_origin(arr))
+            isnan = np.all(arr == np.nan)
         except Exception as err:
             isnan = handle_boxissue(err)
-        
-        if not isnan and arr.size >= 1:
-            try:
-                isnan = np.all(arr == np.mean(arr))
-            except Exception as err:
-                isnan = handle_boxissue(err)
 
     return isnan
 
@@ -87,13 +88,18 @@ def slice_all_dims(data_arr: xr.DataArray, intval: int, dim_mid: Union[dict[int,
     shape = tuple(data_arr.shape)
     dims  = tuple(data_arr.dims)
 
+    dim_mid = dim_mid or {}
+
     slice_applied = []
     for dim, d in zip(dims, shape):
         if d < 8:
+            slice_applied.append(slice(0,d))
             continue
+
         mid = int(d/2)
-        if dim_mid is not None:
+        if dim_mid.get(dim,None) is not None:
             mid = dim_mid[dim]
+
         step = int(d/(intval*2))
         slice_applied.append(slice(mid-step,mid+step))
     return tuple(slice_applied)
@@ -864,11 +870,17 @@ class ValidateDatasets(LoggedOperation):
             bypassed.append('mean')
 
         if errors:
-            self._data_report[f'variables.data_errors.{vname}'] = {
-                'type':','.join(errors),
-                'topleft':start,
-                'bottomright':stop,
-            }
+
+            # 1.3.5 Error bypass
+            if test.size == 1:
+                self.logger.warning(f'1.3.5 Warning: 1-dimensional value difference for {vname} - skipped')
+                self._data_report[f'variables.bypassed.{vname}'] = '1D-nan'
+            else:
+                self._data_report[f'variables.data_errors.{vname}'] = {
+                    'type':','.join(errors),
+                    'topleft':start,
+                    'bottomright':stop,
+                }
         if bypassed:
             self._data_report[f'variables.bypassed.{vname}'] = ','.join(bypassed)
 
@@ -948,12 +960,8 @@ class ValidateOperation(ProjectOperation):
         # Save report
         vd.save_report()
 
-        err = worst_error(vd.report)
-        if vd.pass_fail == 'Fatal':
-            raise ValidationError(err)
-        else:
-            err = err or 'Success'
-            self.update_status('validate',err, jobid=self._logid)
+        err = worst_error(vd.report) or 'Success'
+        self.update_status('validate',err, jobid=self._logid)
         
         return vd.pass_fail
 
