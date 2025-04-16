@@ -153,6 +153,7 @@ class GroupOperation(
     def complete_group(
             self, 
             move_to: str,
+            thorough: bool = False,
             repeat_id: str = 'main'
         ):
         """
@@ -176,6 +177,10 @@ class GroupOperation(
 
         for proj in proj_list:
             proj_op = self[proj]
+
+            if thorough and not proj_op.remote:
+                proj_op.add_download_link()
+
             proj_op.complete_project(move_to)
 
     
@@ -416,6 +421,8 @@ class GroupOperation(
             run_kwargs: Union[dict,None] = None,
             **kwargs
         ) -> None:
+
+        bypass = bypass or BypassSwitch()
 
         self.logger.debug(f"Starting validation for {proj_code}")
 
