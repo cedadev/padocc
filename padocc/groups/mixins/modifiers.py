@@ -2,6 +2,7 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
+import os
 import json
 
 from typing import Callable, Union, Any
@@ -382,3 +383,19 @@ class ModifiersMixin:
 
 
         group_A.logger.info("Unmerge operation complete")
+
+    def delete_group(self, ask: bool = True) -> None:
+        """
+        Delete the entire set of files associated with this group.
+        """
+
+        x=input(f'Delete all files relating to group: {self.groupID}? (Y/N) ')
+        if x != 'Y':
+            return
+        
+        for project in self:
+            project.delete_project(ask=False)
+
+        os.system(f'rmdir {self.workdir}/in_progress/{self.groupID}')
+        os.system(f'rm -rf {self.groupdir}')
+        return None
