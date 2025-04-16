@@ -55,12 +55,14 @@ class DatasetHandlerMixin:
         included here.
         """
 
-        if self.kfile.file_exists():
+        if self._kfile is not None:
             self.kfile.close()
 
-        # Stores automatically check if they exist already
-        self.kstore.close()
-        self.zstore.close()
+        if self._kstore is not None:
+            self.kstore.close()
+
+        if self._zstore is not None:
+            self.zstore.close()
 
         self.cfa_dataset.close()
 
@@ -85,15 +87,15 @@ class DatasetHandlerMixin:
         """
         Retrieve the kstore filehandler or create if not present
         """        
-        if self._kfile is None:
-            self._kfile = KerchunkStore(
+        if self._kstore is None:
+            self._kstore = KerchunkStore(
                 self.dir,
                 self.outproduct,
                 logger=self.logger,
                 **self.fh_kwargs,
             )
 
-        return self._kfile
+        return self._kstore
     
     @property
     def dataset(
@@ -293,6 +295,47 @@ class DatasetHandlerMixin:
         Fetch a dictionary of the metadata for the dataset.
         """
         return self.dataset.get_meta()
+    
+    def add_download_link(
+            self,
+            sub: str = '/',
+            replace: str = 'https://dap.ceda.ac.uk/',
+            in_place: bool = True,
+            remote: bool = True,
+        ) -> Union[None,dict]:
+
+        if self.cloud_format != 'kerchunk':
+            raise NotImplementedError(
+                f'Download link replacement not implemented for {self.cloud_format}'
+            )
+        
+        if self.file_type == 'parq':
+            self.kstore.add_download_link(sub=sub, replace=replace, in_place=in_place, remote=remote)
+            self.kstore.close()
+
+            if in_place:
+                old_store = str(self.kfile.store_path)
+                old_vn = str(self.revision)
+                self._remote = remote
+                if self._remote:
+                    os.system(f'mv {old_store}/ {old_store.replace(old_vn, self.revision)}')
+
+                    # Trash old kfile that's no longer pointing at the correct object.
+                    self._kstore = None
+        else:
+            self.kfile.add_download_link(sub=sub, replace=replace, in_place=in_place, remote=remote)
+            # Save the content now.
+            self.kfile.close()
+
+            if in_place:
+                old_file = str(self.kfile.filepath)
+                old_vn = str(self.revision)
+                self._remote = remote
+                if self._remote:
+                    os.system(f'mv {old_file} {old_file.replace(old_vn, self.revision)}')
+
+                    # Trash old kfile that's no longer pointing at the correct object.
+                    self._kfile = None
     
     def catalog_ceda(
             self, 
