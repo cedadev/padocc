@@ -6,6 +6,11 @@ Extra Details for CEDA Staff
 
 The following content has been documented to help CEDA staff users specifically, and involves integration of other packages.
 
+Add Products to Catalog
+=======================
+
+This section is under review and will be filled once a standardised method for cataloging products has been established. This has been implemented in PADOCC but not standardised, so no specific instructions are available.
+
 CCI: Fill group using Moles ESGF Tag results
 ============================================
 
