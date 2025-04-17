@@ -338,11 +338,19 @@ class ProjectOperation(
         self.logger.debug(f' > {self.proj_code} [{self.cloud_format}]')
 
         status = self.get_last_status()
-        if 'validate' not in status:
+
+        if status is None:
+            self.logger.warning(
+                f'Most recent phase for {self.proj_code} is unconfirmed. - '
+                'please re-validate any changes or ensure products are otherwise validated.'
+            )
+        elif 'validate' not in status:
             self.logger.warning(
                 f'Most recent phase for {self.proj_code} is NOT validation - '
                 'please re-validate any changes or ensure products are otherwise validated.'
             )
+        else:
+            pass
 
         self.save_files()
 
@@ -357,6 +365,8 @@ class ProjectOperation(
 
         if not self._dryrun:
             self.update_status('complete','Success')
+
+        self.save_files()
 
     def migrate(cls, newgroupID: str):
         """
