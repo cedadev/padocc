@@ -54,6 +54,19 @@ class EvaluationsMixin:
             logger=self.logger,
             **self.fh_kwargs
         )
+    
+    def combine_reports(
+            self,
+            repeat_id: str = 'main'
+        ) -> dict:
+    
+            combined = {}
+            for proj_code in self.proj_codes['main']:
+                project = self[proj_code]
+
+                report = project.get_report()
+                combined.update(report)
+            return combined
 
     def check_attribute(
             self, 
