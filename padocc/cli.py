@@ -38,9 +38,8 @@ def check_shortcuts(args: dict) -> bool:
             group.remove_project(args.proj_code, ask=True)
             return True
         group.delete_group()
-        return True
     
-    if args.phase == 'get_log':
+    elif args.phase == 'get_log':
         if args.proj_code is not None:
             proj = group[args.proj_code]
             proj.show_log_contents(
@@ -52,42 +51,35 @@ def check_shortcuts(args: dict) -> bool:
             project.show_log_contents(
                 args.shortcut,
                 halt=True)
-            return True
-
     
-    if args.phase == 'add':
+    elif args.phase == 'add':
         moles_tags = (args.shortcut == 'moles')
         group.add_project(args.input, moles_tags=moles_tags)
-        return True
     
-    if args.phase == 'status':
-        group.summarise_status()
-        return True
+    elif args.phase == 'status':
+        group.summarise_status(repeat_id=args.repeat_id)
     
-    if args.phase == 'summarise':
-        group.summarise_data()
-        return True
+    elif args.phase == 'summarise':
+        group.summarise_data(repeat_id=args.repeat_id)
     
-    if args.phase == 'check':
+    elif args.phase == 'check_attr':
         group.check_attribute(args.shortcut)
-        return True
-
-    if args.phase == 'complete':
-        group.complete_group(
-            args.shortcut,
-            repeat_id=args.repeat_id,
-            thorough=args.thorough)
-        return True
     
-    if args.phase == 'set_value':
+    elif args.phase == 'set_attr':
         attr, value = args.shortcut.split(':')
         group.set_all_values(
             attr,
             value,
             repeat_id=args.repeat_id
         )
-    
-    if args.phase == 'pfunc':
+
+    elif args.phase == 'complete':
+        group.complete_group(
+            args.shortcut,
+            repeat_id=args.repeat_id,
+            thorough=args.thorough)
+
+    elif args.phase == 'pfunc':
         try:
             module = __import__(args.shortcut)
         except ImportError as err:
@@ -96,9 +88,8 @@ def check_shortcuts(args: dict) -> bool:
         group.apply_pfunc(
             module, 
             repeat_id=args.repeat_id)
-        return True
 
-    if args.phase == 'report':
+    elif args.phase == 'report':
         if args.proj_code is None:
             # Combine reports for multiple projects.
             report = group.combine_reports(repeat_id=args.repeat_id)
@@ -109,11 +100,18 @@ def check_shortcuts(args: dict) -> bool:
         report = proj.get_report()
         print(report)
         print(yaml.dump(report))
-        return True
+    else:
+        pass
+
+    return True
 
 def get_args():
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')
-    parser.add_argument('phase', type=str, help='Phase of the pipeline to initiate')
+    parser.add_argument('phase', type=str, help='Phase of the pipeline to initiate', choices=[
+        'init','scan','compute','validate', # Core
+        'list', 'add', 'delete', 'complete', 'set_attr', 'check_attr', 'get_log',
+        'status','summarise','report','pfunc'
+    ], metavar="See 'All Operations' section of documentation")
 
     parser.add_argument('--shortcut', dest='shortcut', help='See documentation for use cases.')
 
