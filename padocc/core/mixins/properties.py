@@ -113,7 +113,10 @@ class PropertiesMixin:
             self.remote = True
             return True
         
-        self._remote = self.base_cfg.get('remote',False)
+        if self._remote is None:
+            self._remote = self.base_cfg.get('remote',False)
+
+        self.base_cfg['remote'] = self._remote
 
         return self._remote
     
