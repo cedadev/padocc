@@ -85,9 +85,10 @@ def check_shortcuts(args: dict) -> bool:
 
     if args.phase == 'report':
         if args.proj_code is None:
-            raise ValueError(
-                'Must choose a project to inspect the report for this group'
-            )
+            # Combine reports for multiple projects.
+            report = group.combine_reports(repeat_id=args.repeat_id)
+            print(yaml.dump(report))
+            return True
         
         proj = group[args.proj_code]
         report = proj.get_report()
@@ -120,6 +121,7 @@ def get_args():
     # Specialised
     parser.add_argument('-C','--cloud-format', dest='mode', default='kerchunk', help='Output format required.')
     parser.add_argument('-i','--input', dest='input', help='input file (for init phase)')
+    parser.add_argument('-o','--output', dest='output', help='output file for specific shortcut operations.')
 
     # Parallel deployment
     parser.add_argument('--parallel', dest='parallel',action='store_true',help='Add for parallel deployment with SLURM')
