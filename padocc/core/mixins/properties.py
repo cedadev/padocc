@@ -65,6 +65,17 @@ class PropertiesMixin:
     @property
     def cfa_enabled(self):
         return self.detail_cfg.get(index='CFA',default=False) and not self.base_cfg.get(index='disable_CFA',default=False)
+    
+    @cfa_enabled.setter
+    def cfa_enabled(self, value: bool):
+
+        self.base_cfg['disable_CFA'] = not value
+        if value and not self.detail_cfg.get(index='CFA',default=True):
+            # Has already failed CFA
+            self.logger.warning(
+                "'disable_CFA' has been revoked but CFA conversion has failed before - " \
+                'please rerun the scan phase to retry CFA computation if you wish to use it.'
+            )
 
     @property
     def outpath(self) -> str:
