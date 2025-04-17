@@ -40,6 +40,21 @@ def check_shortcuts(args: dict) -> bool:
         group.delete_group()
         return True
     
+    if args.phase == 'get_log':
+        if args.proj_code is not None:
+            proj = group[args.proj_code]
+            proj.show_log_contents(
+                args.shortcut,
+                halt=False)
+            return True
+        
+        for project in group:
+            project.show_log_contents(
+                args.shortcut,
+                halt=True)
+            return True
+
+    
     if args.phase == 'add':
         moles_tags = (args.shortcut == 'moles')
         group.add_project(args.input, moles_tags=moles_tags)
