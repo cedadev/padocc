@@ -12,6 +12,7 @@ from padocc.core import BypassSwitch, FalseLogger, ProjectOperation
 from padocc.core.filehandlers import CSVFileHandler, ListFileHandler
 from padocc.core.mixins import DirectoryMixin
 from padocc.core.utils import format_str, print_fmt_str
+from padocc.core.errors import MissingVariableError
 from padocc.phases import (KNOWN_PHASES, ComputeOperation, KerchunkDS,
                            ScanOperation, ValidateOperation, ZarrDS)
 
@@ -83,6 +84,15 @@ class GroupOperation(
 
         if label is None:
             label = 'group-operation'
+
+        if workdir is None:
+            try:
+                workdir = os.environ.get('WORKDIR')
+            except:
+                pass
+
+        if workdir is None:
+            raise MissingVariableError('$WORKDIR')
 
         super().__init__(
             workdir,
@@ -176,12 +186,16 @@ class GroupOperation(
         )
 
         for proj in proj_list:
-            proj_op = self[proj]
+            try:
+                proj_op = self[proj]
 
-            if thorough and not proj_op.remote:
-                proj_op.add_download_link()
+                if thorough and not proj_op.remote:
+                    self.logger.info('Adding download link')
+                    proj_op.add_download_link()
 
-            proj_op.complete_project(move_to)
+                proj_op.complete_project(move_to)
+            except Exception as err:
+                self.logger.warning(f'Skipped {proj} - {err}')
 
     
     def get_stac_representation(
