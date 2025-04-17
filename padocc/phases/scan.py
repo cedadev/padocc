@@ -134,6 +134,7 @@ class ScanOperation(ProjectOperation):
             workdir   : str,
             groupID   : str = None, 
             label     : str = 'scan',
+            parallel  : bool = False,
             **kwargs,
         ) -> None:
 
@@ -143,6 +144,9 @@ class ScanOperation(ProjectOperation):
 
         super().__init__(
             proj_code, workdir, groupID=groupID, label=label,**kwargs)
+        
+        if parallel:
+            self.update_status(self.phase, 'Pending',jobid=self._logid)
 
     def help(self, fn=print):
         super().help(fn=fn)
@@ -154,7 +158,8 @@ class ScanOperation(ProjectOperation):
             self, 
             mode: str = 'kerchunk', 
             ctype: Union[str,None] = None,
-            mem_allowed: str = '100MB'
+            mem_allowed: str = '100MB',
+            **kwargs
         ) -> None:
         """Main process handler for scanning phase"""
 
@@ -227,6 +232,7 @@ class ScanOperation(ProjectOperation):
         ctypes   = mini_ds.ctypes
         
         self.logger.info(f'Summarising scan results for {limiter} files')
+
         for count in range(limiter):
             try:
                 volume, chunks_per_file, varchunks = self._summarise_json(count)
@@ -432,6 +438,9 @@ class ScanOperation(ProjectOperation):
             details['type'] = override_type
         else:
             details['type'] = type
+
+        # Override existing details
+        self.file_type = type
 
         existing_details = self.detail_cfg.get()
         existing_details.update(details)

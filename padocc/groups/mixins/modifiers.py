@@ -2,9 +2,10 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
+import os
 import json
 
-from typing import Callable, Union
+from typing import Callable, Union, Any
 
 from padocc import ProjectOperation
 from padocc.core.utils import BASE_CFG, source_opts, valid_project_code
@@ -38,6 +39,72 @@ class ModifiersMixin:
             ' > group.unmerge() - Split one group into two sets, '
             'given a list of datasets to move into the new group.')
 
+    def set_all_values(self, attr: str, value: Any, repeat_id: str = 'main'):
+        """
+        Set a particular value for all projects in a group.
+        """
+        self.logger.info(f'Applying {attr}:{value} to all projects')
+
+        for project in self.__iter__(repeat_id=repeat_id):
+            try:
+                setattr(project, attr, value)
+            except Exception as err:
+                self.logger.error('Error when trying to apply value to all projects')
+                raise err
+            project.save_files()
+
+        self.logger.info('All projects saved')
+
+    def apply_pfunc(self, pfunc: Callable, repeat_id: str = 'main'):
+        """
+        Apply a custom function across all projects.
+        """
+        self.logger.info(f'Applying {pfunc} to all projects')
+
+        for project in self.__iter__(repeat_id=repeat_id):
+            try:
+                project = pfunc(project)
+            except Exception as err:
+                self.logger.error('Error when trying to perform custom function:')
+                raise err
+            project.save_files()
+
+        self.logger.info('All projects saved')
+    
+    def catalog_ceda(
+            self,
+            final_location: str, 
+            api_key: str, 
+            collection: str,
+            name_list: Union[list,None] = None,
+            repeat_id: str = 'main'
+        ):
+        """
+        Catalog all projects in the group into the 
+        ``ceda-cloud-projects`` index."""
+
+        if name_list is not None:
+            if len(name_list) != len(self.proj_codes[repeat_id]):
+                raise ValueError(
+                    'Insufficient replacement names provided - '
+                    f'needs {len(self.proj_codes[repeat_id])}, '
+                    f'given {len(name_list)}'
+                )
+
+        for pid, proj_code in enumerate(self.proj_codes[repeat_id]):
+
+            name_replace = None
+            if name_list is not None:
+                name_replace = name_list[pid]
+
+            proj = self[proj_code]
+            proj.catalog_ceda(
+                final_location,
+                api_key,
+                collection,
+                name_replace = name_replace
+            )
+
     def add_project(
             self,
             config: Union[str,dict],
@@ -58,6 +125,15 @@ class ModifiersMixin:
             if config.endswith('.json'):
                 with open(config) as f:
                     config = json.load(f)
+            elif config.endswith('.csv'):
+                cfg = {}
+                with open(config) as f:
+                    for line in f.readlines():
+                        key = line.split(',')[0]
+                        fileset = line.split(',')[1]
+                        cfg[key] = fileset
+            
+                config = cfg
             else:
                 config = json.loads(config)
         
@@ -307,3 +383,21 @@ class ModifiersMixin:
 
 
         group_A.logger.info("Unmerge operation complete")
+
+    def delete_group(self, ask: bool = True) -> None:
+        """
+        Delete the entire set of files associated with this group.
+        """
+
+        x=input(f'Delete all files relating to group: {self.groupID}? (Y/N) ')
+        if x != 'Y':
+            return
+        
+        for project in self:
+            project.delete_project(ask=False)
+
+        os.system(f'rmdir {self.workdir}/in_progress/{self.groupID}')
+        os.system(f'rm -rf {self.groupdir}')
+
+        self.logger.info(f'Deleted group - {self.groupID}')
+        return None

@@ -12,7 +12,7 @@ The ``padocc`` tool makes it easy to generate data-aggregated access patterns in
 
 Vast amounts of archival data in a variety of formats can be processed using the package's group mechanics and automatic deployment to a job submission system.
 
-**Latest Release: v1.3.3 07/03/2025**: This release now adds a huge number of additional features to both projects and groups (see the CLI and Interactive sections in this documentation for details). Several alpha-stage features are still untested or not well documented, please report any issues to the `github repo <https://github.com/cedadev/padocc>`_. See the `release notes <https://github.com/cedadev/padocc/releases/tag/v1.3.3>`_ for details on newly added features.
+**Latest Release: v1.3.5 17/04/2025**: This release now adds a huge number of additional features to both projects and groups (See the `release notes <https://github.com/cedadev/padocc/releases/tag/v1.3.5>`_ for details). There are still some alpha-stage features that have not been fully tested, please report any issues to the `github repo <https://github.com/cedadev/padocc>`_, especially when using the new **shortcut** CLI options.
 
 Formats that can be generated
 -----------------------------
@@ -22,7 +22,7 @@ You can find out more about Climate Forecast Aggregations `here <https://cedadev
 
 General usage
 -------------
-The pipeline consists of three central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system. The recommended way of running the core phases is to use the `command line tool<core/cli>`.
+The pipeline consists of three central phases, plus many different operations that can be applied to different datasets depending on use cases. These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system. The recommended way of running the core phases is to use the `command line tool<core/cli>`. For a list of operations that go beyond the core phases, see the section entitled All Operations.
 
 To check the status of various elements of the pipeline, including the progress of any group/project in your working directory, it is recommended that you make use of padocc through an `interactive<core/interactive>` interface like a Jupyter Notebook or Shell. Simply import the necessary components and start assessing your projects and groups.
 
@@ -39,8 +39,9 @@ The ingestion/cataloging phase is not currently implemented for public use but m
 
    Inspiration <core/inspiration>
    Installation <core/installation>
-   Command Line Tool <core/cli>
-   Interactive Notebook/Shell <core/interactive>
+   Command Line Tool Examples<core/cli>
+   Interactive Notebook/Shell Examples <core/interactive>
+   All Operations <core/operations>
    Extra Features <core/extras>
    Extras for CEDA Staff <core/ceda_staff>
    Complex (Parallel) Operation <core/complex_operation>

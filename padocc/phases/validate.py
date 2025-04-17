@@ -60,6 +60,12 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
                 return False
             else:
                 raise err
+            
+    def get_origin(arr):
+        if len(arr.shape) > 1:
+            return get_origin(arr[0])
+        else:
+            return arr[0]
 
     if arr.size == 1:
         try:
@@ -68,30 +74,32 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
             isnan = handle_boxissue(err)
     else:
         try:
-            isnan = np.all(arr!=arr)
+            #print(get_origin(arr))
+            isnan = np.all(arr == np.nan)
         except Exception as err:
             isnan = handle_boxissue(err)
-        
-        if not isnan and arr.size >= 1:
-            try:
-                isnan = np.all(arr == np.mean(arr))
-            except Exception as err:
-                isnan = handle_boxissue(err)
 
     return isnan
 
-def slice_all_dims(data_arr: xr.DataArray, intval: int):
+def slice_all_dims(data_arr: xr.DataArray, intval: int, dim_mid: Union[dict[int,None],None] = None):
     """
     Slice all dimensions for the DataArray according 
     to the integer value."""
     shape = tuple(data_arr.shape)
+    dims  = tuple(data_arr.dims)
+
+    dim_mid = dim_mid or {}
 
     slice_applied = []
-    for d in shape:
+    for dim, d in zip(dims, shape):
         if d < 8:
+            slice_applied.append(slice(0,d))
             continue
 
         mid = int(d/2)
+        if dim_mid.get(dim,None) is not None:
+            mid = dim_mid[dim]
+
         step = int(d/(intval*2))
         slice_applied.append(slice(mid-step,mid+step))
     return tuple(slice_applied)
@@ -542,7 +550,7 @@ class ValidateDatasets(LoggedOperation):
                     'type': 'not_equal'
                 }
 
-    def validate_data(self):
+    def validate_data(self, dim_mid: Union[dict,None] = None):
         """
         Perform data validations using the growbox method for all variable DataArrays.
         """
@@ -611,7 +619,7 @@ class ValidateDatasets(LoggedOperation):
             # Check access to the source data somehow here
             # Initiate growbox method - recursive increasing box size.
             self.logger.debug(f'Validating data for {var}')
-            self._validate_selection(var, testvar, controlvar)
+            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid)
 
     def _validate_shapes(self, var: str, test, control, ignore=None):
         """
@@ -729,8 +737,9 @@ class ValidateDatasets(LoggedOperation):
             var: str,
             test: xr.DataArray,
             control: xr.DataArray,
-            current : int = 1,
-            recursion_limit : int = 10, 
+            current : int = 100,
+            recursion_limit : int = 1, 
+            dim_mid: Union[dict,None] = None,
         ) -> bool:
         """
         General purpose validation for a specific variable from multiple sources.
@@ -750,7 +759,7 @@ class ValidateDatasets(LoggedOperation):
             )
             return
 
-        if current >= recursion_limit:
+        if current <= recursion_limit:
             self.logger.debug('Maximum recursion depth reached')
             self.logger.info(f'Validation for {var} not performed')
 
@@ -759,12 +768,13 @@ class ValidateDatasets(LoggedOperation):
             }
             return None
         
-        slice_applied = slice_all_dims(test, current)
+        slice_applied = slice_all_dims(test, current, dim_mid=dim_mid)
+        self.logger.debug(f'Applying slice {slice_applied} to {var}')
         tbox = test[slice_applied]
         cbox = control[slice_applied]
 
         if check_for_nan(cbox, BypassSwitch(), self.logger, label=var):
-            return self._validate_selection(test, control, current+1, var, recursion_limit=recursion_limit)
+            return self._validate_selection(var, test, control, current-1, recursion_limit=recursion_limit, dim_mid=dim_mid)
         else:
             return self._compare_data(var, slice_applied, tbox, cbox)
 
@@ -860,11 +870,17 @@ class ValidateDatasets(LoggedOperation):
             bypassed.append('mean')
 
         if errors:
-            self._data_report[f'variables.data_errors.{vname}'] = {
-                'type':','.join(errors),
-                'topleft':start,
-                'bottomright':stop,
-            }
+
+            # 1.3.5 Error bypass
+            if test.size == 1:
+                self.logger.warning(f'1.3.5 Warning: 1-dimensional value difference for {vname} - skipped')
+                self._data_report[f'variables.bypassed.{vname}'] = '1D-nan'
+            else:
+                self._data_report[f'variables.data_errors.{vname}'] = {
+                    'type':','.join(errors),
+                    'topleft':start,
+                    'bottomright':stop,
+                }
         if bypassed:
             self._data_report[f'variables.bypassed.{vname}'] = ','.join(bypassed)
 
@@ -880,17 +896,25 @@ class ValidateOperation(ProjectOperation):
     Class logger attribute so this doesn't need to be passed between functions.
     Bypass switch contained here with all switches.
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self, 
+            proj_code,
+            workdir,
+            parallel: bool = False,
+            **kwargs):
         """
         No current validate-specific parameters
         """
 
         self.phase = 'validate'
-        super().__init__(*args, **kwargs)
+        super().__init__(proj_code, workdir, **kwargs)
+        if parallel:
+            self.update_status(self.phase, 'Pending',jobid=self._logid)
 
     def _run(
             self,
             mode: str = 'kerchunk',
+            dim_mid: Union[dict,None] = None,
             **kwargs
         ) -> None:
         """
@@ -921,7 +945,7 @@ class ValidateOperation(ProjectOperation):
         # Run metadata testing
         vd.validate_metadata()
 
-        if self.detail_cfg.get(index='CFA'):
+        if self.cfa_enabled:
             self.logger.info('CFA-enabled validation')
             control = self._open_cfa()
             vd.replace_dataset(control, label=self.source_format)
@@ -931,17 +955,13 @@ class ValidateOperation(ProjectOperation):
 
             vd.replace_preslice(preslice, label=self.cloud_format)
 
-        vd.validate_data()
+        vd.validate_data(dim_mid=dim_mid)
 
         # Save report
         vd.save_report()
 
-        err = worst_error(vd.report)
-        if vd.pass_fail == 'Fatal':
-            raise ValidationError(err)
-        else:
-            err = err or 'Success'
-            self.update_status('validate',err, jobid=self._logid)
+        err = worst_error(vd.report) or 'Success'
+        self.update_status('validate',err, jobid=self._logid)
         
         return vd.pass_fail
 

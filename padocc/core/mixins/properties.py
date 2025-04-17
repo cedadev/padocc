@@ -61,7 +61,22 @@ class PropertiesMixin:
             return self.base_cfg['override'][key]
         
         return None
+
+    @property
+    def cfa_enabled(self):
+        return self.detail_cfg.get(index='CFA',default=False) and not self.base_cfg.get(index='disable_CFA',default=False)
     
+    @cfa_enabled.setter
+    def cfa_enabled(self, value: bool):
+
+        self.base_cfg['disable_CFA'] = not value
+        if value and not self.detail_cfg.get(index='CFA',default=True):
+            # Has already failed CFA
+            self.logger.warning(
+                "'disable_CFA' has been revoked but CFA conversion has failed before - " \
+                'please rerun the scan phase to retry CFA computation if you wish to use it.'
+            )
+
     @property
     def outpath(self) -> str:
         """
@@ -100,6 +115,31 @@ class PropertiesMixin:
         return vn
     
     @property
+    def remote(self) -> bool:
+        """
+        Determine if this project is remotely-accessible
+        """
+
+        if self.cloud_format == 'zarr':
+            self.remote = True
+            return True
+        
+        if self._remote is None:
+            self._remote = self.base_cfg.get('remote',False)
+
+        self.base_cfg['remote'] = self._remote
+
+        return self._remote
+    
+    @remote.setter
+    def remote(self, value: bool) -> bool:
+        """
+        Set the value of the remote property and match it with the value in the base_cfg.
+        """
+        self._remote = value
+        self.base_cfg['remote'] = self._remote
+    
+    @property
     def revision(self) -> str:
         """
         Revision takes into account cloud format and type.
@@ -110,10 +150,9 @@ class PropertiesMixin:
                 'Cloud format not set, revision is unknown'
             )
         
-        if self.file_type is not None:
-            return ''.join((self.cloud_format[0],self.file_type[0],self.version_no))
-        else:
-            return ''.join((self.cloud_format[0],self.version_no))
+        if self.remote:
+            return ''.join((self.cloud_format[0],'r',self.version_no))
+        return ''.join((self.cloud_format[0],self.version_no))
         
     @property
     def version_no(self) -> str:
@@ -314,3 +353,24 @@ class PropertiesMixin:
             self.remove_attribute(attr, target=target)
 
         self.save_files()
+
+    def set_concat_dims(self, dims: list):
+        """
+        Function to override the concat_kwargs for this project.
+        """
+
+        combine = self.detail_cfg['kwargs'].get('combine_kwargs',{})
+        combine['concat_dims'] = dims
+        self.detail_cfg['kwargs']['combine_kwargs'] = combine
+        self.detail_cfg.close()
+
+    def set_identical_dims(self, dims: list):
+        """
+        Function to override the concat_kwargs for this project.
+        """
+
+        combine = self.detail_cfg['kwargs'].get('combine_kwargs',{})
+        combine['identical_dims'] = dims
+        self.detail_cfg['kwargs']['combine_kwargs'] = combine
+        self.detail_cfg.close()
+        

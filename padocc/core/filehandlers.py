@@ -14,11 +14,11 @@ import netCDF4
 import fsspec
 import xarray as xr
 import yaml
+import pandas as pd
 
 from .errors import ChunkDataError, KerchunkDecodeError
 from .logs import FalseLogger, LoggedOperation
 from .utils import format_str, extract_json
-
 
 class FileIOMixin(LoggedOperation):
     """
@@ -605,8 +605,10 @@ class KerchunkFile(JSONFileHandler):
     def add_download_link(
             self,
             sub: str = '/',
-            replace: str = 'https://dap.ceda.ac.uk'
-        ) -> None:
+            replace: str = 'https://dap.ceda.ac.uk/',
+            in_place: bool = True,
+            remote: bool = True,
+        ) -> Union[None,dict]:
         """
         Add the download link to this Kerchunk File.
 
@@ -616,10 +618,37 @@ class KerchunkFile(JSONFileHandler):
         """
         self._obtain_value()
 
-        for key in self._value.keys():
-            if len(self._value[key]) == 3:
-                if self._value[key][0][0] == sub:
-                    self._value[key][0] = replace + self._value[key][0]
+        if sub != '/' or replace != 'https://dap.ceda.ac.uk/':
+            if in_place:
+                self.logger.warning(
+                    'Using non-standard download link replacement. If this ' \
+                    'will result in a non-remote file please ensure the "remote" ' \
+                    'parameter is set to "False" for this operation.'
+                )
+
+        if 'refs' not in self._value:
+            raise ValueError(
+                'No kerchunk refs were loaded, no replacements can be made - ' \
+                f'check {self.filepath}'
+            )
+
+        refs = self._value.pop('refs')
+        for key in refs.keys():
+            try:
+                if len(refs[key]) == 3:
+                    if refs[key][0][0:len(sub)] == sub:
+                        refs[key][0] = replace + refs[key][0][len(sub):]
+            except TypeError:
+                pass
+        
+        if in_place:
+            self._value['refs'] = refs
+            return None
+        
+        return {
+            'refs':refs,
+            **self._value
+        }
 
     def update_history(
             self, 
@@ -1141,7 +1170,7 @@ class KerchunkStore(GenericStore):
         super().__init__(
             parent_dir, store_name, 
             metadata_name='.zmetadata',
-            extension='parq',
+            extension='parquet',
             **kwargs)
 
     def __repr__(self) -> str:
@@ -1167,13 +1196,13 @@ class KerchunkStore(GenericStore):
             default_rfs.update(rfs_kwargs)
 
         default_parquet = {
-            'backend_kwargs':{"consolidated": False, "decode_times": False}
+            'backend_kwargs':{"consolidated": False, "decode_times": True}
         }
         default_parquet.update(parquet_kwargs)
 
         from fsspec.implementations.reference import ReferenceFileSystem
         fs = ReferenceFileSystem(
-            self.filepath, 
+            self.store_path, 
             **default_rfs)
         
         return xr.open_dataset(
@@ -1181,6 +1210,33 @@ class KerchunkStore(GenericStore):
             engine="zarr",
             **default_parquet
         )
+    
+    def add_download_link(
+            self,
+            sub: str = '/',
+            replace: str = 'https://dap.ceda.ac.uk/',
+            in_place: bool = True,
+            remote: bool = True,
+        ) -> Union[None,dict]:
+        """
+        Replace existing paths with download links for all parquet files.
+        """
+
+        for file in glob.glob(f'{self.store_path}/**/*.parq',recursive=True):
+            self.logger.debug(f'Editing {file}')
+
+            df = pd.read_parquet(file)
+            for row in range(len(df['path'])):
+                if df['path'][row] is not None:
+                    df.loc[row, 'path'] = replace + df['path'][row][len(sub):]
+            
+            if self._dryrun:
+                self.logger.info(f'DRYRUN: Skipped setting {file}')
+                self.logger.info(df)
+                continue
+            
+            df.to_parquet(file)
+
 
 class LogFileHandler(ListFileHandler):
     """Log File handler for padocc phase logs."""

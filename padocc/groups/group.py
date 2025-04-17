@@ -12,6 +12,7 @@ from padocc.core import BypassSwitch, FalseLogger, ProjectOperation
 from padocc.core.filehandlers import CSVFileHandler, ListFileHandler
 from padocc.core.mixins import DirectoryMixin
 from padocc.core.utils import format_str, print_fmt_str
+from padocc.core.errors import MissingVariableError
 from padocc.phases import (KNOWN_PHASES, ComputeOperation, KerchunkDS,
                            ScanOperation, ValidateOperation, ZarrDS)
 
@@ -84,6 +85,15 @@ class GroupOperation(
         if label is None:
             label = 'group-operation'
 
+        if workdir is None:
+            try:
+                workdir = os.environ.get('WORKDIR')
+            except:
+                pass
+
+        if workdir is None:
+            raise MissingVariableError('$WORKDIR')
+
         super().__init__(
             workdir,
             groupID=groupID, 
@@ -130,6 +140,13 @@ class GroupOperation(
         """
         return len(self.proj_codes['main'])
     
+    def __iter__(self, repeat_id: str = 'main'):
+        """
+        Iterable group for each project
+        """
+        for proj_code in self.proj_codes['main']:
+            yield self[proj_code]
+    
     def __getitem__(self, index: Union[int,str]) -> ProjectOperation:
         """
         Indexable group allows access to individual projects
@@ -146,6 +163,7 @@ class GroupOperation(
     def complete_group(
             self, 
             move_to: str,
+            thorough: bool = False,
             repeat_id: str = 'main'
         ):
         """
@@ -168,8 +186,16 @@ class GroupOperation(
         )
 
         for proj in proj_list:
-            proj_op = self[proj]
-            proj_op.complete_project(move_to)
+            try:
+                proj_op = self[proj]
+
+                if thorough and not proj_op.remote:
+                    self.logger.info('Adding download link')
+                    proj_op.add_download_link()
+
+                proj_op.complete_project(move_to)
+            except Exception as err:
+                self.logger.warning(f'Skipped {proj} - {err}')
 
     
     def get_stac_representation(
@@ -249,10 +275,11 @@ class GroupOperation(
             'compute': self._compute_config,
             'validate': self._validate_config,
         }
-
+        is_parallel = False
         jobid = None
         if os.getenv('SLURM_ARRAY_JOB_ID'):
             jobid = f"{os.getenv('SLURM_ARRAY_JOB_ID')}-{os.getenv('SLURM_ARRAY_TASK_ID')}"
+            is_parallel = True
 
         # Select set of datasets from repeat_id
 
@@ -297,6 +324,7 @@ class GroupOperation(
                 fh=fh, 
                 bypass=bypass,
                 run_kwargs=run_kwargs,
+                parallel=is_parallel,
                 **kwargs)
             
             if status in results:
@@ -408,6 +436,8 @@ class GroupOperation(
             **kwargs
         ) -> None:
 
+        bypass = bypass or BypassSwitch()
+
         self.logger.debug(f"Starting validation for {proj_code}")
 
         try:
@@ -487,7 +517,10 @@ class GroupOperation(
         import glob
 
         # Check filesystem for objects
-        proj_codes = [g.split('/')[-1].strip('.txt') for g in glob.glob(f'{self.proj_codes_dir}/*.txt')]
+        proj_codes = []
+        for g in glob.glob(f'{self.proj_codes_dir}/*.txt'):
+            proj_codes.append(g.split('/')[-1].replace('.txt','') )
+            # Found Interesting python string-strip bug wi
 
         if not proj_codes:
             # Running for the first time
@@ -497,6 +530,7 @@ class GroupOperation(
             )
             
         for p in proj_codes:
+            self.logger.debug(f'proj_code file: {p}')
             self.proj_codes[p] = ListFileHandler(
                 self.proj_codes_dir, 
                 p, 

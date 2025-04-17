@@ -62,6 +62,7 @@ BASE_CFG = {
         'file_type':'json' # Default values
     },
     'last_run': (None, None),
+    'remote': False,
 }
 
 DETAIL_CFG = {
@@ -85,6 +86,9 @@ FILE_DEFAULT = {
 }
 
 invalid = list('(){}[]<>:;')
+
+def group_exists(group, workdir):
+    return os.path.isdir(f'{workdir}/groups/{group}')
 
 def valid_project_code(proj_code: str) -> bool:
     """
@@ -152,10 +156,12 @@ def deformat_float(item: str) -> str:
 
     :param item:    (str) Byte value to format into a float.
     """
-    units = ['','K','M','G','T','P']
+    units = ['','K','M','G','T','P','E','Y']
     value, suffix = item.split(' ')
 
-    ord = units.index(suffix)*1000
+    suffix = suffix.replace('B','')
+
+    ord = 1000**(units.index(suffix))
     return float(value)*ord
 
 def format_float(value: float) -> str:

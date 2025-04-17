@@ -159,6 +159,7 @@ class ProjectOperation(
         self._kstore = None
         self._zstore = None
         self._cfa_dataset = None
+        self._remote = False
 
         self._is_trial = False
 
@@ -216,7 +217,9 @@ class ProjectOperation(
             bypass: Union[BypassSwitch,None] = None,
             forceful : bool = None,
             thorough : bool = None,
+            verbose: bool = None,
             dryrun : bool = None,
+            parallel: bool = False,
             **kwargs
         ) -> str:
         """
@@ -252,6 +255,11 @@ class ProjectOperation(
 
         self._bypass = bypass or self._bypass
 
+        if parallel:
+            self.logger.info(f'Parallel Operation: Enabled')
+        else:
+            self.logger.info(f'Parallel Operation: Disabled')
+
         # Reset flags given specific runs
         if forceful is not None:
             self._forceful = forceful
@@ -259,6 +267,8 @@ class ProjectOperation(
             self._thorough = thorough
         if dryrun is not None:
             self._dryrun = dryrun
+        if verbose is not None:
+            self._verbose = verbose
 
         if self.cloud_format != mode:
             self.logger.info(
@@ -328,11 +338,19 @@ class ProjectOperation(
         self.logger.debug(f' > {self.proj_code} [{self.cloud_format}]')
 
         status = self.get_last_status()
-        if 'validate' not in status:
+
+        if status is None:
+            self.logger.warning(
+                f'Most recent phase for {self.proj_code} is unconfirmed. - '
+                'please re-validate any changes or ensure products are otherwise validated.'
+            )
+        elif 'validate' not in status:
             self.logger.warning(
                 f'Most recent phase for {self.proj_code} is NOT validation - '
                 'please re-validate any changes or ensure products are otherwise validated.'
             )
+        else:
+            pass
 
         self.save_files()
 
@@ -347,6 +365,8 @@ class ProjectOperation(
 
         if not self._dryrun:
             self.update_status('complete','Success')
+
+        self.save_files()
 
     def migrate(cls, newgroupID: str):
         """
