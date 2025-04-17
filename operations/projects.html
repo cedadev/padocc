@@ -1,12 +1,12 @@
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Projects in PADOCC &mdash; PADOCC Package v1.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
   
@@ -17,9 +17,9 @@
   
         <script src="../_static/jquery.js?v=5d32c60e"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3dd8cc91"></script>
-        <script src="../_static/doctools.js?v=888ff710"></script>
-        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="../_static/documentation_options.js?v=45183d27"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -51,8 +51,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../core/inspiration.html">Inspiration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/operations.html">All Operations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/complex_operation.html">Complex (Parallel) Operation</a></li>
@@ -100,14 +101,14 @@
            <div itemprop="articleBody">
              
   <section id="projects-in-padocc">
-<h1>Projects in PADOCC<a class="headerlink" href="#projects-in-padocc" title="Permalink to this heading"></a></h1>
+<h1>Projects in PADOCC<a class="headerlink" href="#projects-in-padocc" title="Link to this heading"></a></h1>
 <p>To differentiate syntax of datasets/datafiles with other packages that have varying definitions of those terms,
 PADOCC uses the term <code class="docutils literal notranslate"><span class="pre">Project</span></code> to refer to a set of files to be aggregated into a single ‘Cloud Product’.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">ProjectOperation</span></code> class within PADOCC allows us to access all information about a specific dataset, including
 fetching data from files within the pipeline directory. This class also inherits from several Mixin classes which
 act as containers for specific behaviours for easier organisation and future debugging.</p>
 <section id="the-project-operator-class">
-<h2>The Project Operator class<a class="headerlink" href="#the-project-operator-class" title="Permalink to this heading"></a></h2>
+<h2>The Project Operator class<a class="headerlink" href="#the-project-operator-class" title="Link to this heading"></a></h2>
 <p>The ‘core’ behaviour of all classes is contained in the <code class="docutils literal notranslate"><span class="pre">ProjectOperation</span></code> class.
 This class has public UI methods like <code class="docutils literal notranslate"><span class="pre">info</span></code> and <code class="docutils literal notranslate"><span class="pre">help</span></code> that give general information about a project,
 and list some of the other public methods available respectively.</p>

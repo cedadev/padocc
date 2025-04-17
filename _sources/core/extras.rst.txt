@@ -42,7 +42,7 @@ The PADOCC revision numbers for each product are auto-generated using the follow
  * All projects begin with the revision number ``1.0``.
  * The first number denotes major updates to the product, for instance where a data source file has been replaced.
  * The second number denotes minor changes like alterations to attributes and metadata.
- * The letters prefixed to the revision numbers identify the file type for the product. For example a zarr store has the letter ``z`` applied, while a Kerchunk (parquet) store has ``kp``.
+ * The cloud format ``k`` or ``z`` comes before the version number, as well as an ``r`` letter which indicates that the file is ``remote-enabled``. This occurs automatically for kerchunk files that have had 'download links' applied - from the command line this can be done as part of the completion workflow.
 
 The Validation Report
 ---------------------

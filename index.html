@@ -1,12 +1,12 @@
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PADOCC - User Documentation &mdash; PADOCC Package v1.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
   
@@ -17,9 +17,9 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=3dd8cc91"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="_static/documentation_options.js?v=45183d27"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -50,8 +50,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="core/inspiration.html">Inspiration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core/cli.html">Command Line Tool</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core/interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/cli.html">Command Line Tool Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/interactive.html">Interactive Notebook/Shell Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/operations.html">All Operations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/extras.html">Extra Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/complex_operation.html">Complex (Parallel) Operation</a></li>
@@ -96,20 +97,20 @@
            <div itemprop="articleBody">
              
   <section id="padocc-user-documentation">
-<h1>PADOCC - User Documentation<a class="headerlink" href="#padocc-user-documentation" title="Permalink to this heading"></a></h1>
+<h1>PADOCC - User Documentation<a class="headerlink" href="#padocc-user-documentation" title="Link to this heading"></a></h1>
 <p><strong>padocc</strong> (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package for aggregating data to enable methods of access for cloud-based applications.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">padocc</span></code> tool makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across <strong>many</strong> datasets simultaneously with validation steps to ensure the outputs are correct.</p>
 <p>Vast amounts of archival data in a variety of formats can be processed using the package’s group mechanics and automatic deployment to a job submission system.</p>
-<p><strong>Latest Release: v1.3.3 07/03/2025</strong>: This release now adds a huge number of additional features to both projects and groups (see the CLI and Interactive sections in this documentation for details). Several alpha-stage features are still untested or not well documented, please report any issues to the <a class="reference external" href="https://github.com/cedadev/padocc">github repo</a>. See the <a class="reference external" href="https://github.com/cedadev/padocc/releases/tag/v1.3.3">release notes</a> for details on newly added features.</p>
+<p><strong>Latest Release: v1.3.5 17/04/2025</strong>: This release now adds a huge number of additional features to both projects and groups (See the <a class="reference external" href="https://github.com/cedadev/padocc/releases/tag/v1.3.5">release notes</a> for details). There are still some alpha-stage features that have not been fully tested, please report any issues to the <a class="reference external" href="https://github.com/cedadev/padocc">github repo</a>, especially when using the new <strong>shortcut</strong> CLI options.</p>
 <section id="formats-that-can-be-generated">
-<h2>Formats that can be generated<a class="headerlink" href="#formats-that-can-be-generated" title="Permalink to this heading"></a></h2>
+<h2>Formats that can be generated<a class="headerlink" href="#formats-that-can-be-generated" title="Link to this heading"></a></h2>
 <p><strong>padocc</strong> is capable of generating both reference files with Kerchunk (JSON or Parquet) and cloud formats like Zarr.
 Additionally, PADOCC creates CF-compliant aggregation files as part of the standard workflow, which means you get CFA-netCDF files as standard!
 You can find out more about Climate Forecast Aggregations <a class="reference external" href="https://cedadev.github.io/CFAPyX/">here</a>, these files are denoted with the extension <code class="docutils literal notranslate"><span class="pre">.nca</span></code> and can be opened using xarray with <code class="docutils literal notranslate"><span class="pre">engine=&quot;CFA&quot;</span></code> if you have the <code class="docutils literal notranslate"><span class="pre">CFAPyX</span></code> package installed.</p>
 </section>
 <section id="general-usage">
-<h2>General usage<a class="headerlink" href="#general-usage" title="Permalink to this heading"></a></h2>
-<p>The pipeline consists of three central phases, with an additional phase for ingesting/cataloging the produced Kerchunk files. These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system. The recommended way of running the core phases is to use the <cite>command line tool&lt;core/cli&gt;</cite>.</p>
+<h2>General usage<a class="headerlink" href="#general-usage" title="Link to this heading"></a></h2>
+<p>The pipeline consists of three central phases, plus many different operations that can be applied to different datasets depending on use cases. These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system. The recommended way of running the core phases is to use the <cite>command line tool&lt;core/cli&gt;</cite>. For a list of operations that go beyond the core phases, see the section entitled All Operations.</p>
 <p>To check the status of various elements of the pipeline, including the progress of any group/project in your working directory, it is recommended that you make use of padocc through an <cite>interactive&lt;core/interactive&gt;</cite> interface like a Jupyter Notebook or Shell. Simply import the necessary components and start assessing your projects and groups.</p>
 <p>For further information around configuring PADOCC for parallel deployment please contact <a class="reference external" href="mailto:daniel&#46;westwood&#37;&#52;&#48;stfc&#46;ac&#46;uk">daniel<span>&#46;</span>westwood<span>&#64;</span>stfc<span>&#46;</span>ac<span>&#46;</span>uk</a>.</p>
 <p>The ingestion/cataloging phase is not currently implemented for public use but may be added in a future update.</p>
@@ -119,8 +120,9 @@ You can find out more about Climate Forecast Aggregations <a class="reference ex
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="core/inspiration.html">Inspiration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core/cli.html">Command Line Tool</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core/interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/cli.html">Command Line Tool Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/interactive.html">Interactive Notebook/Shell Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/operations.html">All Operations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/extras.html">Extra Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/complex_operation.html">Complex (Parallel) Operation</a></li>
@@ -147,7 +149,7 @@ You can find out more about Climate Forecast Aggregations <a class="reference ex
 </section>
 </section>
 <section id="indices-and-tables">
-<h1>Indices and Tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading"></a></h1>
+<h1>Indices and Tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h1>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
@@ -155,7 +157,7 @@ You can find out more about Climate Forecast Aggregations <a class="reference ex
 </ul>
 </section>
 <section id="acknowledgements">
-<h1>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this heading"></a></h1>
+<h1>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Link to this heading"></a></h1>
 <p>PADOCC was developed at the Centre for Environmental Data Analysis, supported by the ESA CCI Knowledge Exchange program and contributing to the development of the Earth Observation Data Hub (EODH).</p>
 <a class="reference internal image-reference" href="_images/ceda.png"><img alt="CEDA Logo" src="_images/ceda.png" style="width: 300px;" /></a>
 <a class="reference internal image-reference" href="_images/esa.png"><img alt="ESA Logo" src="_images/esa.png" style="width: 300px;" /></a>

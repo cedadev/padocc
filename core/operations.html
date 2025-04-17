@@ -1,0 +1,291 @@
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All Non-core Operations &mdash; PADOCC Package v1.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=45183d27"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Beneficial Extra Features" href="extras.html" />
+    <link rel="prev" title="Running padocc interactively (Notebook/Shell)" href="interactive.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            PADOCC Package
+              <img src="../_static/padocc_wt.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">All Operations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#completion-workflow">Completion workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#list-groups">List groups</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#delete-projects-group">Delete Projects/Group</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#get-logs">Get Logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#add-projects">Add Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#group-status">Group Status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#group-summary">Group Summary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#check-attributes">Check Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#set-attributes">Set Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#report">Report</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="extras.html">Extra Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="complex_operation.html">Complex (Parallel) Operation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../operations/projects.html">The Project Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/groups.html">The Group Operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/mixins.html">Core Mixins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operations/shepard.html">SHEPARD</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/project_source.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/phase_source.html">Phases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PADOCC Package</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">All Non-core Operations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/core/operations.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="all-non-core-operations">
+<h1>All Non-core Operations<a class="headerlink" href="#all-non-core-operations" title="Link to this heading"></a></h1>
+<p>Here we provide a list of all operations performed via the command line interface that are not considered <code class="docutils literal notranslate"><span class="pre">core-phased</span></code> operations (i.e are not one of <code class="docutils literal notranslate"><span class="pre">scan</span></code>, <code class="docutils literal notranslate"><span class="pre">compute</span></code> or <code class="docutils literal notranslate"><span class="pre">validate</span></code>). This section is continuously expanding with new operations and features being added. To request a feature, make an issue on the <a class="reference external" href="https://github.com/cedadev/padocc">github repo</a> and add the ‘feature’ type (can also set a ‘label’ for priority - ideally all feature requests should be ‘desired’ only).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Most operations can be filtered to apply to only a subset of the group, most commonly using the repeat_id <code class="docutils literal notranslate"><span class="pre">-r</span></code> flag, where you must have already created the repeat subset using one of the interactive methods e.g <code class="docutils literal notranslate"><span class="pre">group.repeat_by_status()</span></code>.</p>
+</div>
+<section id="completion-workflow">
+<h2>Completion workflow<a class="headerlink" href="#completion-workflow" title="Link to this heading"></a></h2>
+<p>At the point of completing the main pipeline phases, a project or set of projects may be ‘completed’. This involves moving all product files/stores out of the pipeline into a specified directory, and applying any relevant filename changes or configurations. This can now be combined with the <code class="docutils literal notranslate"><span class="pre">-T</span></code> flag to enable download-link replacement at the point of completing the files.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>(Download-link replacement applies to Kerchunk and Kerchunk-Parquet to change all the paths to use dap.ceda.ac.uk, so the kerchunk references work remotely). It is now convention that remotely-accessible kerchunk files have the <code class="docutils literal notranslate"><span class="pre">r</span></code> revision number applied after download-link replacement.</p>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="err">$</span> <span class="n">padocc</span> <span class="n">complete</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">T</span> <span class="o">--</span><span class="n">shortcut</span> <span class="o">&lt;</span><span class="n">completion_directory</span><span class="o">&gt;</span>
+<span class="c1"># Will move all projects under this group into the specified directory AND apply download links to all relevant files.</span>
+</pre></div>
+</div>
+</section>
+<section id="list-groups">
+<h2>List groups<a class="headerlink" href="#list-groups" title="Link to this heading"></a></h2>
+<p>A simple operation to list available groups in your workspace. This, like all other operations on this page, requires the <code class="docutils literal notranslate"><span class="pre">$WORKDIR</span></code> environment variable to be set, or alternatively the use of the <code class="docutils literal notranslate"><span class="pre">-w</span></code> flag to define where the pipeline files are located.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="err">$</span> <span class="n">padocc</span> <span class="nb">list</span>
+</pre></div>
+</div>
+</section>
+<section id="delete-projects-group">
+<h2>Delete Projects/Group<a class="headerlink" href="#delete-projects-group" title="Link to this heading"></a></h2>
+<p>After all projects in a group have been removed, this operation allows all associated files to be removed from the pipeline, in both the <code class="docutils literal notranslate"><span class="pre">in_progress</span></code> project-space and <code class="docutils literal notranslate"><span class="pre">groups</span></code> group-space. Individual projects may also be removed using this operation.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="err">$</span> <span class="n">padocc</span> <span class="n">delete</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">p</span> <span class="o">&lt;</span><span class="n">project_code</span><span class="o">&gt;</span>
+<span class="c1"># To remove a specific project (will be prompted to confirm deletion)</span>
+
+<span class="err">$</span> <span class="n">padocc</span> <span class="n">delete</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span>
+<span class="c1"># This will delete ALL files for this group (will be prompted only for the group as a whole.)</span>
+</pre></div>
+</div>
+</section>
+<section id="get-logs">
+<h2>Get Logs<a class="headerlink" href="#get-logs" title="Link to this heading"></a></h2>
+<p>Fetch a specific log for a specific project that has run previously, or simply fetch logs for all projects in a group, specifying the phase with logs you’re trying to fetch.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="err">$</span> <span class="n">padocc</span> <span class="n">get_log</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">p</span> <span class="o">&lt;</span><span class="n">project_code</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">shortcut</span> <span class="o">&lt;</span><span class="n">phase</span><span class="o">&gt;</span>
+<span class="c1"># Obtain the log file for the &#39;phase&#39; specified by the shortcut.</span>
+
+<span class="err">$</span> <span class="n">padocc</span> <span class="n">get_log</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">shortcut</span> <span class="o">&lt;</span><span class="n">phase</span><span class="o">&gt;</span>
+<span class="c1"># Gets every log file for this &#39;phase&#39; across all projects, will present one at a time.</span>
+</pre></div>
+</div>
+</section>
+<section id="add-projects">
+<h2>Add Projects<a class="headerlink" href="#add-projects" title="Link to this heading"></a></h2>
+<p>Projects can be added using either a CSV or JSON file, consistent with other methods for adding new data.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="err">$</span> <span class="n">padocc</span> <span class="n">add</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">i</span> <span class="o">&lt;</span><span class="n">input_file</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">shortcut</span> <span class="n">moles</span>
+<span class="c1"># Use for adding content consistent with the &#39;moles_esgf_tag&#39; option (CEDA Staff only - see CEDA Staff section).</span>
+
+<span class="err">$</span> <span class="n">padocc</span> <span class="n">add</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">i</span> <span class="o">&lt;</span><span class="n">input_file</span><span class="o">.</span><span class="n">json</span><span class="o">&gt;</span>
+<span class="c1"># Only for files matching the &#39;base_cfg&#39; style of input, which describes a single project.</span>
+</pre></div>
+</div>
+</section>
+<section id="group-status">
+<h2>Group Status<a class="headerlink" href="#group-status" title="Link to this heading"></a></h2>
+<p>Projects report their current status using a <code class="docutils literal notranslate"><span class="pre">status_log</span></code> file in the pipeline. This file is updated after every completed operation or phase, and is updated as <code class="docutils literal notranslate"><span class="pre">Pending</span></code> upon starting a parallelised phase. The group contains a method to collect all statuses from all projects and display this to the user. The command line operation is as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="err">$</span> <span class="n">padocc</span> <span class="n">status</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span>
+<span class="c1"># Will showcase all statuses of all projects</span>
+</pre></div>
+</div>
+<p>Currently no filters can be applied from the command-line, but this will be updated in future versions. All filters can be applied using the <code class="docutils literal notranslate"><span class="pre">group.summarise_status()</span></code> method interactively.</p>
+</section>
+<section id="group-summary">
+<h2>Group Summary<a class="headerlink" href="#group-summary" title="Link to this heading"></a></h2>
+<p>Data statistics from each project can be extracted and combined using the <code class="docutils literal notranslate"><span class="pre">summarise</span></code> operation. An example output is shown below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="err">$</span> <span class="n">padocc</span> <span class="n">summarise</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span>
+
+<span class="n">Summary</span> <span class="n">Report</span><span class="p">:</span> <span class="n">example_group_1</span>
+<span class="n">Project</span> <span class="n">Codes</span><span class="p">:</span> <span class="mi">3</span>
+
+<span class="n">Source</span> <span class="n">Files</span><span class="p">:</span> <span class="mi">44831</span> <span class="p">[</span><span class="n">Avg</span><span class="o">.</span> <span class="mf">14943.67</span> <span class="n">per</span> <span class="n">project</span><span class="p">]</span>
+<span class="n">Source</span> <span class="n">Data</span><span class="p">:</span> <span class="mf">16.08</span> <span class="n">GB</span> <span class="p">[</span><span class="n">Avg</span><span class="o">.</span> <span class="mf">5.36</span> <span class="n">GB</span> <span class="n">per</span> <span class="n">project</span><span class="p">]</span>
+<span class="n">Cloud</span> <span class="n">Data</span><span class="p">:</span> <span class="mf">97.32</span> <span class="n">MB</span> <span class="p">[</span><span class="n">Avg</span><span class="o">.</span> <span class="mf">32.44</span> <span class="n">MB</span> <span class="n">per</span> <span class="n">project</span><span class="p">]</span>
+
+<span class="n">Cloud</span> <span class="n">Formats</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;kerchunk&#39;</span><span class="p">]</span>
+<span class="n">Source</span> <span class="n">Formats</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;hdf5&#39;</span><span class="p">]</span>
+<span class="n">File</span> <span class="n">Types</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;json&#39;</span><span class="p">]</span>
+
+<span class="n">Chunks</span> <span class="n">per</span> <span class="n">File</span><span class="p">:</span> <span class="mf">39.00</span> <span class="p">[</span><span class="n">Avg</span><span class="o">.</span> <span class="mf">13.00</span> <span class="n">per</span> <span class="n">project</span><span class="p">]</span>
+<span class="n">Total</span> <span class="n">Chunks</span><span class="p">:</span> <span class="mf">582803.00</span> <span class="p">[</span><span class="n">Avg</span><span class="o">.</span> <span class="mf">194267.67</span> <span class="n">per</span> <span class="n">project</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Currently no filters can be applied from the command-line, but this will be updated in future versions. All filters can be applied using the <code class="docutils literal notranslate"><span class="pre">group.summarise_data()</span></code> method interactively.</p>
+</section>
+<section id="check-attributes">
+<h2>Check Attributes<a class="headerlink" href="#check-attributes" title="Link to this heading"></a></h2>
+<p>An attribute can be checked across all projects within a group using this operation. The value of the attribute will be shown for each project. This applies to attributes in either the <code class="docutils literal notranslate"><span class="pre">base_cfg</span></code> or <code class="docutils literal notranslate"><span class="pre">detail_cfg</span></code> files which serve as the persistent storage for project attributes.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="err">$</span> <span class="n">padocc</span> <span class="n">check_attr</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">shortcut</span> <span class="n">remote</span>
+
+<span class="o">&gt;</span> <span class="n">project_1</span><span class="p">:</span> <span class="kc">True</span>
+<span class="o">&gt;</span> <span class="n">project_2</span><span class="p">:</span> <span class="kc">False</span>
+<span class="o">&gt;</span> <span class="n">project_3</span><span class="p">:</span> <span class="kc">None</span>
+
+<span class="c1"># Will return None for any project where that parameter cannot be found.</span>
+</pre></div>
+</div>
+</section>
+<section id="set-attributes">
+<h2>Set Attributes<a class="headerlink" href="#set-attributes" title="Link to this heading"></a></h2>
+<p>This operation applies only to memory-loaded attributes of the project, not directly to the <code class="docutils literal notranslate"><span class="pre">base_cfg</span></code> or <code class="docutils literal notranslate"><span class="pre">detail_cfg</span></code> files which act as persistent storage for project attributes. Below is a demonstration of how this setter can be used.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="err">$</span> <span class="n">padocc</span> <span class="n">set_attr</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">shortcut</span> <span class="n">remote</span><span class="p">:</span><span class="kc">True</span>
+<span class="c1"># Will set all &#39;remote&#39; properties in all projects.</span>
+</pre></div>
+</div>
+</section>
+<section id="report">
+<h2>Report<a class="headerlink" href="#report" title="Link to this heading"></a></h2>
+<p>PADOCC now supports obtaining reports from the validator using the command line. This can be used to obtain a specific report for a specific project, or combine all reports into a single document, which has the advantage of combining errors that apply to all projects that can be easily dismissed. Currently there is no mechanism to determine which errors apply to which projects. Please create an issue on the <a class="reference external" href="https://github.com/cedadev/padocc">github repo</a> if this is something you would like to see.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="err">$</span> <span class="n">padocc</span> <span class="n">report</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">p</span> <span class="o">&lt;</span><span class="n">project</span><span class="o">&gt;</span>
+<span class="c1"># Display the report for a single project</span>
+
+<span class="err">$</span> <span class="n">padocc</span> <span class="n">report</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span>
+<span class="c1"># Combine all reports from this group into a single report - useful for quickly identifying if all projects are passable.</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="interactive.html" class="btn btn-neutral float-left" title="Running padocc interactively (Notebook/Shell)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="extras.html" class="btn btn-neutral float-right" title="Beneficial Extra Features" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024, Centre of Environmental Data Analysis Developers,Scientific and Technical Facilities Council (STFC),UK Research and Innovation (UKRI). BSD 2-Clause License. All rights reserved..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>  
+
+  <style>
+    /* Sidebar header (and topbar for mobile) */
+    .wy-side-nav-search, .wy-nav-top {
+      background: #e92603;
+    }
+
+    .caption-text, .header h1 {
+        color: #ef4d5a
+    }
+
+    .note {
+        background: #BEEF9E
+    }
+    .admonition-title {
+        background: #335145
+    }
+
+    .wy-nav-side {
+        background: #001711;
+    }
+
+  </style>
+
+
+</body>
+</html>

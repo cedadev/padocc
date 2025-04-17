@@ -1,12 +1,12 @@
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Complex Operations &mdash; PADOCC Package v1.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
   
@@ -17,9 +17,9 @@
   
         <script src="../_static/jquery.js?v=5d32c60e"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3dd8cc91"></script>
-        <script src="../_static/doctools.js?v=888ff710"></script>
-        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="../_static/documentation_options.js?v=45183d27"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -51,12 +51,17 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool</a></li>
-<li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations.html">All Operations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extras.html">Extra Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Complex (Parallel) Operation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#parallelisation-with-slurm">Parallelisation with SLURM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#enable-disable-cfa-operations">Enable/Disable CFA Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parallelisation-with-slurm">Parallelisation with SLURM</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#lotus-2-configurations">Lotus 2 configurations</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -100,11 +105,14 @@
            <div itemprop="articleBody">
              
   <section id="complex-operations">
-<h1>Complex Operations<a class="headerlink" href="#complex-operations" title="Permalink to this heading"></a></h1>
+<h1>Complex Operations<a class="headerlink" href="#complex-operations" title="Link to this heading"></a></h1>
+<section id="enable-disable-cfa-operations">
+<h2>Enable/Disable CFA Operations<a class="headerlink" href="#enable-disable-cfa-operations" title="Link to this heading"></a></h2>
+<p><strong>PADOCC</strong> uses the Climate Forecast Aggregations as a basis of comparison for any generated cloud formats, to use in the validation process. This base operation can now be disabled using the <code class="docutils literal notranslate"><span class="pre">cfa_enabled</span></code> property of each project. This can be set to False for any group taking too long to compute in CFA (watch out for this in the scan section as if a sample is taking a very long time it is likely the full dataset will take much longer).</p>
+</section>
 <section id="parallelisation-with-slurm">
-<h2>Parallelisation with SLURM<a class="headerlink" href="#parallelisation-with-slurm" title="Permalink to this heading"></a></h2>
+<h2>Parallelisation with SLURM<a class="headerlink" href="#parallelisation-with-slurm" title="Link to this heading"></a></h2>
 <p>Padocc now supports parallelisation via LOTUS on JASMIN, through the SLURM batch job manager. Use the CLI flag <code class="docutils literal notranslate"><span class="pre">--parallel</span></code> to deploy sets (arrays) of jobs to the cluster. Typically an array job will constitute processing multiple datasets at once, i.e all datasets in a given group. To deploy a subset of a group, see the documentation around <strong>repeat IDs</strong> and how to create subsets within the group based on past runs and other conditions.</p>
-<p>LOTUS2 is currently in development on JASMIN and once the cluster is deployed and stable the documentation on how to switch to LOTUS2 will be provided here.</p>
 <p>Here is an example of deploying a set of jobs to SLURM.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ padocc compute -G my-test-group --parallel -vv
 </pre></div>
@@ -118,6 +126,20 @@
 </ul>
 </dd>
 </dl>
+<section id="lotus-2-configurations">
+<h3>Lotus 2 configurations<a class="headerlink" href="#lotus-2-configurations" title="Link to this heading"></a></h3>
+<p>PADOCC is now configured for Lotus 2 deployments on JASMIN. Simply create a Lotus 2 config file which matches the following options.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;lotus_vn&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s2">&quot;partition&quot;</span><span class="p">:</span> <span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;account&quot;</span><span class="p">:</span> <span class="s2">&quot;no-project&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;qos&quot;</span><span class="p">:</span> <span class="s2">&quot;standard&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>See the <a class="reference external" href="https://help.jasmin.ac.uk/docs/software-on-jasmin/rocky9-migration-2024/#new-lotus2-cluster-initial-submission-guide">JASMIN help docs</a> for guidance on how to configure for Lotus 2 deployments.</p>
+<p>This config file is discovered by padocc using the <code class="docutils literal notranslate"><span class="pre">$LOTUS_CFG</span></code> environment variable, which must be set to the location of this file. After this step, no further actions are required, the normal parallelisation methods listed above apply as standard.</p>
+</section>
 </section>
 </section>
 

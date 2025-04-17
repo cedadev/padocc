@@ -1,12 +1,12 @@
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PADOCC Command Line Tool &mdash; PADOCC Package v1.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
   
@@ -17,9 +17,9 @@
   
         <script src="../_static/jquery.js?v=5d32c60e"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3dd8cc91"></script>
-        <script src="../_static/doctools.js?v=888ff710"></script>
-        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="../_static/documentation_options.js?v=45183d27"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -51,7 +51,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Command Line Tool</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Command Line Tool Examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#using-the-cli-tool">Using the CLI Tool</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#general-command-form">General Command Form</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc-cli-flags">Padocc CLI Flags</a></li>
@@ -69,7 +69,8 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations.html">All Operations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extras.html">Extra Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1"><a class="reference internal" href="complex_operation.html">Complex (Parallel) Operation</a></li>
@@ -114,7 +115,7 @@
            <div itemprop="articleBody">
              
   <section id="padocc-command-line-tool">
-<h1>PADOCC Command Line Tool<a class="headerlink" href="#padocc-command-line-tool" title="Permalink to this heading"></a></h1>
+<h1>PADOCC Command Line Tool<a class="headerlink" href="#padocc-command-line-tool" title="Link to this heading"></a></h1>
 <img alt="Stages of the PADOCC workflow" src="../_images/pipeline.png" />
 <p>The command-line tool <code class="docutils literal notranslate"><span class="pre">padocc</span></code> allows quick deployments of serial and parallel processing jobs for your projects and groups within the padocc workspace. The core phases are most readily executed using the command line tool.</p>
 <div class="admonition note">
@@ -126,9 +127,9 @@
 </ol>
 </div>
 <section id="using-the-cli-tool">
-<h2>Using the CLI Tool<a class="headerlink" href="#using-the-cli-tool" title="Permalink to this heading"></a></h2>
+<h2>Using the CLI Tool<a class="headerlink" href="#using-the-cli-tool" title="Link to this heading"></a></h2>
 <section id="general-command-form">
-<h3>General Command Form<a class="headerlink" href="#general-command-form" title="Permalink to this heading"></a></h3>
+<h3>General Command Form<a class="headerlink" href="#general-command-form" title="Link to this heading"></a></h3>
 <p>The general form of a command for padocc should be to call the command line tool <code class="docutils literal notranslate"><span class="pre">padocc</span></code> with a minimum of the <code class="docutils literal notranslate"><span class="pre">phase</span></code> argument specified afterwards. E.g:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>padocc<span class="w"> </span>init
 </pre></div>
@@ -139,7 +140,7 @@
 </div>
 </section>
 <section id="padocc-cli-flags">
-<h3>Padocc CLI Flags<a class="headerlink" href="#padocc-cli-flags" title="Permalink to this heading"></a></h3>
+<h3>Padocc CLI Flags<a class="headerlink" href="#padocc-cli-flags" title="Link to this heading"></a></h3>
 <p>The flags above show all the different possible options for operating the pipeline. Listed here are some of the more common flags that can be applied to most or all of the different <code class="docutils literal notranslate"><span class="pre">phased</span></code> operations for padocc.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">-h, --help            show this help message and exit</span>
 <span class="go">-f, --forceful        Force overwrite of steps if previously done</span>
@@ -157,7 +158,7 @@
 <p>Other flags listed in the command above are described in the Complex Operation section of this documentation.</p>
 </section>
 <section id="create-a-group-from-scratch-optional">
-<h3>Create a group from scratch (optional)<a class="headerlink" href="#create-a-group-from-scratch-optional" title="Permalink to this heading"></a></h3>
+<h3>Create a group from scratch (optional)<a class="headerlink" href="#create-a-group-from-scratch-optional" title="Link to this heading"></a></h3>
 <p>This optional first step allows you to create empty groups in the workspace that can be properly initialised later.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>padocc<span class="w"> </span>new<span class="w"> </span>-G<span class="w"> </span>my-new-group
 </pre></div>
@@ -166,7 +167,7 @@
 </section>
 </section>
 <section id="special-functions">
-<h2>Special Functions<a class="headerlink" href="#special-functions" title="Permalink to this heading"></a></h2>
+<h2>Special Functions<a class="headerlink" href="#special-functions" title="Link to this heading"></a></h2>
 <dl class="simple">
 <dt>The following accepted options to the <code class="docutils literal notranslate"><span class="pre">phase</span></code> argument act as shortcuts to specific functions in padocc available via an interactive session. These functions are now available via the CLI in a limited capacity, and use the <code class="docutils literal notranslate"><span class="pre">--special</span></code> kwarg as a catch-all for providing configuration info to these functions.</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">list</span></code>: Lists all groups in the current workspace and their contents.</p></li>
@@ -179,10 +180,10 @@
 </dl>
 </section>
 <section id="pipeline-functions">
-<h2>Pipeline Functions<a class="headerlink" href="#pipeline-functions" title="Permalink to this heading"></a></h2>
+<h2>Pipeline Functions<a class="headerlink" href="#pipeline-functions" title="Link to this heading"></a></h2>
 <p>The following descriptions are for main pipeline functions, most of which are parallelisable with the <code class="docutils literal notranslate"><span class="pre">--parallel</span></code> flag.</p>
 <section id="initialise-a-group">
-<h3>Initialise a group<a class="headerlink" href="#initialise-a-group" title="Permalink to this heading"></a></h3>
+<h3>Initialise a group<a class="headerlink" href="#initialise-a-group" title="Link to this heading"></a></h3>
 <dl class="simple">
 <dt>The pipeline takes a CSV (or similar) input file from which to instantiate a <code class="docutils literal notranslate"><span class="pre">GroupOperation</span></code>, which includes:</dt><dd><ul class="simple">
 <li><p>creating subdirectories for all associated datasets (projects)</p></li>
@@ -207,7 +208,7 @@
 </div>
 </section>
 <section id="scan">
-<h3>Scan<a class="headerlink" href="#scan" title="Permalink to this heading"></a></h3>
+<h3>Scan<a class="headerlink" href="#scan" title="Link to this heading"></a></h3>
 <p>The first main phase of the pipeline involves scanning a subset of the native source files to determine certain parameters:</p>
 <ul class="simple">
 <li><p>Ensure source files are compatible with one of the available converters for Kerchunk/Zarr etc.:</p></li>
@@ -237,7 +238,7 @@ required in later phases.</p>
 <p>The above demonstrates why the command line tool is easier to use for phased operations, as most of the configurations are known and handled using the various flags. Interactive operations (like checking specific project properties etc.) are not covered by the CLI tool, so need to be completed using an interactive environment.</p>
 </section>
 <section id="compute">
-<h3>Compute<a class="headerlink" href="#compute" title="Permalink to this heading"></a></h3>
+<h3>Compute<a class="headerlink" href="#compute" title="Link to this heading"></a></h3>
 <p>Building the Cloud/reference product for a dataset requires a multi-step process:</p>
 <p>Example for Kerchunk:</p>
 <ul class="simple">
@@ -258,7 +259,7 @@ or deployment and parallelisation across the group of projects.</p>
 </div>
 </section>
 <section id="validate">
-<h3>Validate<a class="headerlink" href="#validate" title="Permalink to this heading"></a></h3>
+<h3>Validate<a class="headerlink" href="#validate" title="Link to this heading"></a></h3>
 <p>Cloud products must be validated against equivalent Xarray objects from CF Aggregations (CFA) where possible, or otherwise using the original NetCDF as separate Xarray Datasets.</p>
 <ul class="simple">
 <li><p>Ensure all variables present in original files are present in the cloud products (barring exceptions where metadata has been altered/corrected)</p></li>
@@ -276,7 +277,7 @@ validator which checks the Xarray representations and identifies differences in 
 </div>
 </section>
 <section id="next-steps">
-<h3>Next Steps<a class="headerlink" href="#next-steps" title="Permalink to this heading"></a></h3>
+<h3>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h3>
 <p>Cloud products that have been validated are moved to a <code class="docutils literal notranslate"><span class="pre">complete</span></code> directory with the project code as the name, plus the revision identifier <cite>abX.X</cite> - learn more about this in the Extra section.
 These can then be linked to a catalog or ingested into the CEDA archive where appropriate.</p>
 </section>

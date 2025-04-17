@@ -1,12 +1,12 @@
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Running padocc interactively (Notebook/Shell) &mdash; PADOCC Package v1.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
   
@@ -17,13 +17,13 @@
   
         <script src="../_static/jquery.js?v=5d32c60e"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3dd8cc91"></script>
-        <script src="../_static/doctools.js?v=888ff710"></script>
-        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="../_static/documentation_options.js?v=45183d27"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Beneficial Extra Features" href="extras.html" />
+    <link rel="next" title="All Non-core Operations" href="operations.html" />
     <link rel="prev" title="PADOCC Command Line Tool" href="cli.html" /> 
 </head>
 
@@ -51,8 +51,8 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Interactive Notebook/Shell</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Interactive Notebook/Shell Examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#using-the-groupoperation-class">Using the GroupOperation class</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#access-a-group-and-view-properties">1. Access a group and view properties</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#get-project-summaries">2. Get project Summaries</a></li>
@@ -72,6 +72,7 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="operations.html">All Operations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extras.html">Extra Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1"><a class="reference internal" href="complex_operation.html">Complex (Parallel) Operation</a></li>
@@ -116,18 +117,18 @@
            <div itemprop="articleBody">
              
   <section id="running-padocc-interactively-notebook-shell">
-<h1>Running padocc interactively (Notebook/Shell)<a class="headerlink" href="#running-padocc-interactively-notebook-shell" title="Permalink to this heading"></a></h1>
+<h1>Running padocc interactively (Notebook/Shell)<a class="headerlink" href="#running-padocc-interactively-notebook-shell" title="Link to this heading"></a></h1>
 <p>The fastest way to access various parameters, properties and attributes of projects and groups in the pipeline is to directly manipulate padocc’s <code class="docutils literal notranslate"><span class="pre">ProjectOperation</span></code> and <code class="docutils literal notranslate"><span class="pre">GroupOperation</span></code> classes. These can also be used to execute the core <code class="docutils literal notranslate"><span class="pre">phased</span></code> operations of the pipeline (e.g init, scan, compute.) but the command line tool is a little more efficient, since the command line flags account for most options you’d need to pass the classes in the case of interactive operations.</p>
 <p>See the source code documentation for any or all of these components described here, which give an explanation of additional arguments that can be used for each method.</p>
 <section id="using-the-groupoperation-class">
-<h2>Using the GroupOperation class<a class="headerlink" href="#using-the-groupoperation-class" title="Permalink to this heading"></a></h2>
+<h2>Using the GroupOperation class<a class="headerlink" href="#using-the-groupoperation-class" title="Link to this heading"></a></h2>
 <p>This class should let you accomplish any and all extra operations or assessments within the pipeline that should be needed, including getting access to individual projects. To see all the available methods along with a brief description, use <code class="docutils literal notranslate"><span class="pre">GroupOperation.help()</span></code> in a python shell.</p>
 <section id="access-a-group-and-view-properties">
-<h3>1. Access a group and view properties<a class="headerlink" href="#access-a-group-and-view-properties" title="Permalink to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padocc</span> <span class="kn">import</span> <span class="n">GroupOperation</span>
+<h3>1. Access a group and view properties<a class="headerlink" href="#access-a-group-and-view-properties" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">padocc</span><span class="w"> </span><span class="kn">import</span> <span class="n">GroupOperation</span>
 
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Access your working directory from the external environment - if already defined</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">os</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">workdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;WORKDIR&quot;</span><span class="p">)</span>
 
 <span class="gp">&gt;&gt;&gt; </span><span class="n">my_group</span> <span class="o">=</span> <span class="n">GroupOperation</span><span class="p">(</span><span class="s1">&#39;my-group&#39;</span><span class="p">,</span><span class="n">workdir</span><span class="p">)</span> <span class="c1"># Add any extra options (e.g verbose) here.</span>
@@ -151,7 +152,7 @@
 </div>
 </section>
 <section id="get-project-summaries">
-<h3>2. Get project Summaries<a class="headerlink" href="#get-project-summaries" title="Permalink to this heading"></a></h3>
+<h3>2. Get project Summaries<a class="headerlink" href="#get-project-summaries" title="Link to this heading"></a></h3>
 <p><strong>see Evaluations Mixin in API reference</strong></p>
 <p>Through the group object, you can obtain a quick summary of the status for each project within the group.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my_group</span><span class="o">.</span><span class="n">summarise_status</span><span class="p">()</span>
@@ -194,7 +195,7 @@
 <p>Once the scan has been computed, the source files will represent the total number and average number of files for each project, the same with source and cloud data, which represent the total size in memory of the data from all files in each project.</p>
 </section>
 <section id="group-subsets-repeats">
-<h3>3. Group subsets/repeats<a class="headerlink" href="#group-subsets-repeats" title="Permalink to this heading"></a></h3>
+<h3>3. Group subsets/repeats<a class="headerlink" href="#group-subsets-repeats" title="Link to this heading"></a></h3>
 <p><strong>see Evaluations Mixin in API reference</strong></p>
 <p>It is sometimes useful to run subsections of groups through some phases of the pipeline, for example where some projects in a group require a different cloud format (e.g. Zarr), or where some projects have previously failed a stage in the pipeline. The group operator allows projects to be grouped based on their current status and/or where they are in the pipeline.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my_group</span><span class="o">.</span><span class="n">repeat_by_status</span><span class="p">(</span><span class="s1">&#39;Success&#39;</span><span class="p">,</span><span class="s1">&#39;main_copy&#39;</span><span class="p">)</span>
@@ -232,14 +233,14 @@
 </div>
 </section>
 <section id="merging-and-unmerging-groups">
-<h3>4. Merging and Unmerging Groups<a class="headerlink" href="#merging-and-unmerging-groups" title="Permalink to this heading"></a></h3>
+<h3>4. Merging and Unmerging Groups<a class="headerlink" href="#merging-and-unmerging-groups" title="Link to this heading"></a></h3>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Due to issues with the <code class="docutils literal notranslate"><span class="pre">transfer-project</span></code> method, this section is not advised for general use yet. If you would like to see this feature added with haste, please contact <a class="reference external" href="mailto:daniel&#46;westwood&#37;&#52;&#48;stfc&#46;ac&#46;uk">daniel<span>&#46;</span>westwood<span>&#64;</span>stfc<span>&#46;</span>ac<span>&#46;</span>uk</a>.</p>
 </div>
 </section>
 <section id="manipulating-projects">
-<h3>5. Manipulating Projects<a class="headerlink" href="#manipulating-projects" title="Permalink to this heading"></a></h3>
+<h3>5. Manipulating Projects<a class="headerlink" href="#manipulating-projects" title="Link to this heading"></a></h3>
 <p><strong>see Modifiers Mixin in API reference</strong></p>
 <p>Projects can be extracted and manipulated via the GroupOperation class directly. See the section further down on ProjectOperation methods specifically - this section covers project manipulations at the group-level.</p>
 <div class="admonition note">
@@ -307,7 +308,7 @@
 </div>
 </section>
 <section id="completion-of-a-group-of-projects">
-<h3>6. Completion of a group of projects<a class="headerlink" href="#completion-of-a-group-of-projects" title="Permalink to this heading"></a></h3>
+<h3>6. Completion of a group of projects<a class="headerlink" href="#completion-of-a-group-of-projects" title="Link to this heading"></a></h3>
 <p>As of padocc v1.3.2, the Group operator now includes a <code class="docutils literal notranslate"><span class="pre">complete_group</span></code> method, which can be used to extract all created products from all projects in a group. This replaces the previous method which would involve running the validation phase in a specific way. This method requires a <strong>completion directory</strong> where all products will be copied. Project codes and revisions are applied at this stage to the copied products, whereas inside the pipeline most products are not referred to by their project codes.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># With my_group initialised with &#39;verbose as true&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">my_group</span><span class="o">.</span><span class="n">complete_group</span><span class="p">(</span><span class="s1">&#39;my_home_dir/completed_datasets&#39;</span><span class="p">)</span>
@@ -321,16 +322,16 @@
 </section>
 </section>
 <section id="using-the-projectoperation-class">
-<h2>Using the ProjectOperation class<a class="headerlink" href="#using-the-projectoperation-class" title="Permalink to this heading"></a></h2>
+<h2>Using the ProjectOperation class<a class="headerlink" href="#using-the-projectoperation-class" title="Link to this heading"></a></h2>
 <p>As stated above, projects can be extracted and manipulated via the GroupOperation class directly. See the note from the section above about why project extraction is crucial and why properties of a project should not be adjusted by referencing the group class.</p>
 <section id="general-access-to-a-project">
-<h3>1. General access to a project<a class="headerlink" href="#general-access-to-a-project" title="Permalink to this heading"></a></h3>
+<h3>1. General access to a project<a class="headerlink" href="#general-access-to-a-project" title="Link to this heading"></a></h3>
 <p>The easiest way to access a specific project within a group is by extracting it from the group itself, as all necessary configurations will be passed on from the group.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">proj</span> <span class="o">=</span> <span class="n">my_group</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># Could also index by &#39;proj_code&#39;</span>
 </pre></div>
 </div>
 <p>Alternatively, a project can be instantiated outside the group class, if the configurations are given accordingly.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padocc</span> <span class="kn">import</span> <span class="n">ProjectOperation</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">padocc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProjectOperation</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">proj</span> <span class="o">=</span> <span class="n">ProjectOperation</span><span class="p">(</span><span class="s1">&#39;padocc-test-1&#39;</span><span class="p">,</span><span class="n">workdir</span><span class="p">,</span> <span class="n">groupID</span><span class="o">=</span><span class="s1">&#39;my_group&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -352,7 +353,7 @@
 <p>See the Extra Details section on how the revisions system works. By default all revisions start as 1.1 with a prefix that denotes the default cloud format ‘kerchunk’ and file type ‘json’.</p>
 </section>
 <section id="editable-properties">
-<h3>2. Editable properties<a class="headerlink" href="#editable-properties" title="Permalink to this heading"></a></h3>
+<h3>2. Editable properties<a class="headerlink" href="#editable-properties" title="Link to this heading"></a></h3>
 <p>Specific properties of any project are ‘editable’, meaning they can be altered through the use of padocc tools, rather than by editing the files themselves (this should be avoided as some data would become out-of-sync, not to mention the difficulty with editing individual files in a large directory structure).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">proj</span><span class="o">.</span><span class="n">cloud_format</span> <span class="o">=</span> <span class="s1">&#39;zarr&#39;</span>
 <span class="go"># This will automatically adjust the &#39;file_type&#39; parameter to None where it is normally &#39;json&#39; as default.</span>
@@ -375,7 +376,7 @@
 </div>
 </section>
 <section id="datasets-attached-to-the-project">
-<h3>3. Datasets attached to the project<a class="headerlink" href="#datasets-attached-to-the-project" title="Permalink to this heading"></a></h3>
+<h3>3. Datasets attached to the project<a class="headerlink" href="#datasets-attached-to-the-project" title="Link to this heading"></a></h3>
 <p><strong>see Datasets Mixin in API reference</strong></p>
 <p>As part of the project, several filehandler objects exist for accessing cloud products that have been created. Each project has a <code class="docutils literal notranslate"><span class="pre">kfile</span></code> , <code class="docutils literal notranslate"><span class="pre">kstore</span></code> and <code class="docutils literal notranslate"><span class="pre">zstore</span></code> filehandler attached that can be accessed as a property. These filehandlers have numerous helpful methods that can be used to inspect the results of the pipeline (see the Filehandlers API reference), but here we focus on the ability to open the dataset.</p>
 <p>Additionally, the <code class="docutils literal notranslate"><span class="pre">dataset</span></code> property of each project points at whichever of the above three options aligns with the current selection of <code class="docutils literal notranslate"><span class="pre">cloud_format</span></code> and <code class="docutils literal notranslate"><span class="pre">file_type</span></code>. There is also a <code class="docutils literal notranslate"><span class="pre">cfa_dataset</span></code> property dataset (see the details of CFA in the Inspiration section)</p>
@@ -394,7 +395,7 @@
 <p>Here we are editing the <code class="docutils literal notranslate"><span class="pre">target_id</span></code> attribute of the kerchunk dataset. Removals are currently not supported, but will almost certainly be included in a future release.</p>
 </section>
 <section id="status-of-the-project">
-<h3>4. Status of the project<a class="headerlink" href="#status-of-the-project" title="Permalink to this heading"></a></h3>
+<h3>4. Status of the project<a class="headerlink" href="#status-of-the-project" title="Link to this heading"></a></h3>
 <p><strong>See Status Mixin in API reference</strong></p>
 <p>Each project includes a few useful functions (also used by methods in the group object) to assess the current status.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">proj</span><span class="o">.</span><span class="n">get_last_run</span><span class="p">()</span>
@@ -411,7 +412,7 @@
 </div>
 </section>
 <section id="stac-representation-of-a-project">
-<h3>5. STAC Representation of a project<a class="headerlink" href="#stac-representation-of-a-project" title="Permalink to this heading"></a></h3>
+<h3>5. STAC Representation of a project<a class="headerlink" href="#stac-representation-of-a-project" title="Link to this heading"></a></h3>
 <p>Finally, to extract the metadata around a project as a STAC record, a mapper can be provided that maps pipeline-based properties to values in the resulting STAC record, which can then be given to the <code class="docutils literal notranslate"><span class="pre">get_stac_representation</span></code> method.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stac_mapper</span> <span class="o">=</span> <span class="p">{</span>
 <span class="go">    &quot;cloud_format&quot;: (&quot;property@cloud_format&quot;,None),</span>
@@ -431,7 +432,7 @@
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="cli.html" class="btn btn-neutral float-left" title="PADOCC Command Line Tool" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="extras.html" class="btn btn-neutral float-right" title="Beneficial Extra Features" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="operations.html" class="btn btn-neutral float-right" title="All Non-core Operations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

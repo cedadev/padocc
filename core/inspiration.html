@@ -1,12 +1,12 @@
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Inspiration for Cloud Formats and Aggregations &mdash; PADOCC Package v1.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
   
@@ -17,9 +17,9 @@
   
         <script src="../_static/jquery.js?v=5d32c60e"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=3dd8cc91"></script>
-        <script src="../_static/doctools.js?v=888ff710"></script>
-        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="../_static/documentation_options.js?v=45183d27"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -56,8 +56,9 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool</a></li>
-<li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations.html">All Operations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extras.html">Extra Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
 <li class="toctree-l1"><a class="reference internal" href="complex_operation.html">Complex (Parallel) Operation</a></li>
@@ -102,9 +103,9 @@
            <div itemprop="articleBody">
              
   <section id="inspiration-for-cloud-formats-and-aggregations">
-<h1>Inspiration for Cloud Formats and Aggregations<a class="headerlink" href="#inspiration-for-cloud-formats-and-aggregations" title="Permalink to this heading"></a></h1>
+<h1>Inspiration for Cloud Formats and Aggregations<a class="headerlink" href="#inspiration-for-cloud-formats-and-aggregations" title="Link to this heading"></a></h1>
 <section id="data-archives">
-<h2>Data Archives<a class="headerlink" href="#data-archives" title="Permalink to this heading"></a></h2>
+<h2>Data Archives<a class="headerlink" href="#data-archives" title="Link to this heading"></a></h2>
 <p>The need for cloud-accessible analysis-ready data is increasing due to high demand for cloud-native applications and wider usability of data.
 Current archival formats and access methods are insufficient for an increasing number of user needs, especially given the volume of data being
 produced by various projects globally.</p>
@@ -115,7 +116,7 @@ and are not as accessible for cloud-based applications. The standard NetCDF/HDF 
 files, so are not able to open files stored either in Object Storage (S3) or served via a download service, without first downloading the whole file.</p>
 </section>
 <section id="distributed-data">
-<h2>Distributed Data<a class="headerlink" href="#distributed-data" title="Permalink to this heading"></a></h2>
+<h2>Distributed Data<a class="headerlink" href="#distributed-data" title="Link to this heading"></a></h2>
 <p>The aim of distributed data aggregations is to make the access of data more effective when dealing with these vast libraries of data.
 Directly accessing the platforms, like JASMIN, where the data is stored is not necessarily possible for all users, and we would like to avoid the dependence
 on download services where GB/TBs of data is copied across multiple sites. Instead, the data may be accessed via a <strong>reference/aggregation file</strong> which provides
@@ -130,7 +131,7 @@ rather than having each chunk as a separate file.</p>
 These references are stored in NetCDF instead of JSON metadata files, which has the advantage of lazily-loaded references from a single file. Read more about CF Aggregations <a class="reference external" href="https://cedadev.github.io/CFAPyX/">here</a>.</p>
 </section>
 <section id="a-workflow-for-data-conversion">
-<h2>A workflow for data conversion<a class="headerlink" href="#a-workflow-for-data-conversion" title="Permalink to this heading"></a></h2>
+<h2>A workflow for data conversion<a class="headerlink" href="#a-workflow-for-data-conversion" title="Link to this heading"></a></h2>
 <p>PADOCC is a tool being actively developed at CEDA to enable large-scale conversion of archival data to some of these new cloud formats, to address the issues above.
 Originally created as part of the ESA Climate Change Initiative project, PADOCC is steadily growing into an essential part of the CEDA ingestion pipeline.
 New datasets deposited into the CEDA archive will soon be automatically converted by PADOCC and represented as part of the growing STAC catalog collection at CEDA.
