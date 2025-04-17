@@ -62,6 +62,7 @@ BASE_CFG = {
         'file_type':'json' # Default values
     },
     'last_run': (None, None),
+    'remote': False,
 }
 
 DETAIL_CFG = {
