@@ -1,0 +1,49 @@
+# Release Notes for version 1.3.5
+
+## Bugs
+- .strip() removed from affected areas.
+
+## General
+- Revised the padocc 'versioning' scheme, now uses 'r' to mean 'remote'.
+- Enabled adding content from CSV to existing group.
+- Added dim_mid option for validator in the case of skewed spatial extent datasets.
+- Added mechanism for changing concat/identical dims for each project.
+- Fixed identical dims check, now cannot include the aggregation dimension.
+- Added project-level cataloging option for CEDA staff
+- Added group-level cataloging option.
+- Updated to poetry 2
+- Added validation bypass for 1-dimensional NaN values - issue #81
+- Added combine reports function - issue #79
+- Fixed project code option for group runs
+- Added default working directory from environment if not specified.
+- Fixed float formatter for group summaries.
+- Added `group_exists` check
+- Fixed bugs in repeat_by_status method
+
+## Parquet Stores
+- kstore extension fixed (.parquet)
+- download link function added.
+
+## Parallelisation
+- Reimplemented Parallelisation
+- Upgraded for Lotus 2
+- Added pending status
+- Added parallelisation per project hook - Not fully implemented yet.
+
+## CFA
+- Added disabling option.
+- Added property to identify if CFA is enabled.
+- Reconfigured to use disable option throughout.
+
+## Kerchunk
+- Added in_place option for download link.
+
+## CLI Operations
+- Added pfunc shortcut
+- Added set_value shortcut
+- Added delete group function and shortcut
+- Added summarise data shortcut
+- Added parallel project flag
+- Added 'thorough' option for completion which includes adding download link.
+- Fixed project code option for group runs - issue #78
+- Added 'get_log' shortcut - issue #77
