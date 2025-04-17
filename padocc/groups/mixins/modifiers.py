@@ -398,4 +398,6 @@ class ModifiersMixin:
 
         os.system(f'rmdir {self.workdir}/in_progress/{self.groupID}')
         os.system(f'rm -rf {self.groupdir}')
+
+        self.logger.info(f'Deleted group - {self.groupID}')
         return None
