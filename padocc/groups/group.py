@@ -253,7 +253,7 @@ class GroupOperation(
     def run(
             self,
             phase: str,
-            mode: str = 'kerchunk',
+            mode: Union[str,None] = None,
             repeat_id: str = 'main',
             proj_code: Optional[str] = None,
             subset: Optional[str] = None,
