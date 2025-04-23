@@ -464,7 +464,7 @@ class ComputeOperation(ProjectOperation):
         Common class method for all conversion types.
         """
         detail = self.detail_cfg.get()
-        detail['combine_kwargs'] = self.combine_kwargs
+        detail['kwargs']['combine_kwargs'] = self.combine_kwargs
         if self.special_attrs:
             detail['special_attrs'] = list(self.special_attrs.keys())
 
@@ -908,7 +908,8 @@ class KerchunkDS(ComputeOperation):
         self.logger.info('Starting concatenation of refs')
         if len(refs) > 1:
 
-            self.combine_kwargs = self.detail_cfg.get('combine_kwargs',{})
+            kwargs = self.detail_cfg.get('kwargs', {})
+            self.combine_kwargs = kwargs.get('combine_kwargs',{})
 
             if not self.combine_kwargs.get('concat_dims',False):
                 self._determine_dim_specs()
