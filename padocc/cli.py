@@ -10,6 +10,20 @@ import yaml
 from padocc import GroupOperation, phase_map
 from padocc.core.utils import BypassSwitch, get_attribute, list_groups, group_exists
 
+SHORTCUTS = [
+    'list',
+    'add',
+    'delete',
+    'get_log',
+    'status',
+    'summarise',
+    'check_attr',
+    'set_attr',
+    'complete',
+    'pfunc',
+    'report',
+]
+
 def check_shortcuts(args: dict) -> bool:
     """
     Check and perform any special features requested
@@ -110,7 +124,7 @@ def get_args():
     parser.add_argument('phase', type=str, help='Phase of the pipeline to initiate', choices=[
         'init','scan','compute','validate', # Core
         'list', 'add', 'delete', 'complete', 'set_attr', 'check_attr', 'get_log',
-        'status','summarise','report','pfunc'
+        'status','summarise','report','pfunc', 'new',
     ], metavar="See 'All Operations' section of documentation")
 
     parser.add_argument('--shortcut', dest='shortcut', help='See documentation for use cases.')
@@ -132,7 +146,7 @@ def get_args():
     parser.add_argument('-p','--proj_code',dest='proj_code',help='Run for a specific project code, within a group or otherwise')
 
     # Specialised
-    parser.add_argument('-C','--cloud-format', dest='mode', default='kerchunk', help='Output format required.')
+    parser.add_argument('-C','--cloud-format', dest='mode', default=None, help='Output format required.')
     parser.add_argument('-i','--input', dest='input', help='input file (for init phase)')
     parser.add_argument('-o','--output', dest='output', help='output file for specific shortcut operations.')
 
@@ -168,8 +182,9 @@ def main():
     bypass=BypassSwitch(args.bypass)
 
     # Generic special features
-    if check_shortcuts(args):
-        return
+    if args.phase in SHORTCUTS:
+        if check_shortcuts(args):
+            return
 
     if args.groupID is not None:
         group = GroupOperation(
