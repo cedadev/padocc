@@ -213,7 +213,7 @@ class ProjectOperation(
         
     def run(
             self,
-            mode: str = 'kerchunk',
+            mode: str = None,
             bypass: Union[BypassSwitch,None] = None,
             forceful : bool = None,
             thorough : bool = None,
@@ -270,12 +270,14 @@ class ProjectOperation(
         if verbose is not None:
             self._verbose = verbose
 
+        mode = mode or self.cloud_format
+
         if self.cloud_format != mode:
             self.logger.info(
                 f'Switching cloud format to {mode}'
             )
             self.cloud_format = mode
-            self.file_type = FILE_DEFAULT[mode]
+            self.save_files()
             
         try:
             status = self._run(mode=mode, **kwargs)
