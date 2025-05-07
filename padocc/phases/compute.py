@@ -121,6 +121,7 @@ class KerchunkConverter(LoggedOperation):
                 return None
         except Exception as err:
             if self._bypass_driver:
+                self.logger.info(f'Bypassing driver error: {err}')
                 return None
             else:
                 raise err
@@ -252,9 +253,11 @@ class ComputeOperation(ProjectOperation):
 
         if thorough:
             self.temp_zattrs.set({})
+        
+        kwargs = self.detail_cfg.get('kwargs',{})
 
-        self.combine_kwargs = {} # Now using agg_dims and identical dims finders.
-        self.create_kwargs  = {'inline_threshold':0}
+        self.combine_kwargs = kwargs.get('combine_kwargs',None) or {}
+        self.create_kwargs  = kwargs.get('create_kwargs',None) or {'inline_threshold':0}
         self.pre_kwargs     = {}
 
         self.special_attrs = {}
@@ -464,7 +467,9 @@ class ComputeOperation(ProjectOperation):
         Common class method for all conversion types.
         """
         detail = self.detail_cfg.get()
-        detail['kwargs']['combine_kwargs'] = self.combine_kwargs
+        kwargs = detail.get('kwargs',{})
+        kwargs['combine_kwargs'] = self.combine_kwargs
+        detail['kwargs'] = kwargs
         if self.special_attrs:
             detail['special_attrs'] = list(self.special_attrs.keys())
 
@@ -789,7 +794,9 @@ class KerchunkDS(ComputeOperation):
 
         if compute_subset is not None:
             try:
-                cs = int(compute_subset)
+                self.skip_concat = compute_subset[0] != 'c'
+
+                cs = int(compute_subset[1:])
                 ct = int(compute_total)
             except ValueError:
                 raise ValueError(
@@ -802,8 +809,6 @@ class KerchunkDS(ComputeOperation):
             lim1 = group_size*(cs+1)
             if cs == ct-1:
                 lim1 = -1 # To the end
-
-            self.skip_concat = True
 
         for x, nfile in enumerate(listfiles[lim0:lim1]):
 
