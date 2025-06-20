@@ -117,7 +117,6 @@ class EvaluationsMixin:
                 if status == 'Any':
                     for status in status_dict[phase].keys():
                         new_code_ids = new_code_ids + status_dict[phase][status]
-                        print(len(new_code_ids), status)
                 else:
                     # Specific status from the dict for this phase
                     if status in status_dict[phase]:

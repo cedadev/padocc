@@ -124,7 +124,7 @@ class AllocationsMixin:
             bins = binpacking.to_constant_volume(time_estms, binsize) # Rounded to 10 mins
         else:
             # Unpack time_estms into established bands
-            print('Skipped Job Allocations - using Bands-only.')
+            self.logger.info('Skipped Job Allocations - using Bands-only.')
             bins = None
             for pc in time_estms.keys():
                 time_estm = time_estms[pc]/60
@@ -407,7 +407,7 @@ class AllocationsMixin:
             if not self._dryrun:
                 os.makedirs(allocation_path)
             else:
-                print(f'Making directories: {allocation_path}')
+                self.logger.info(f'Making directories: {allocation_path}')
 
         for idx, b in enumerate(bins):
             bset = b.keys()
@@ -417,7 +417,7 @@ class AllocationsMixin:
                 with open(f'{allocation_path}/{idx}.txt','w') as f:
                     f.write('\n'.join(bset))
             else:
-                print(f'Writing {len(bset)} to file {idx}.txt')
+                self.logger.info(f'Writing {len(bset)} to file {idx}.txt')
 
     def _create_array_bands(
             self, 
@@ -435,7 +435,7 @@ class AllocationsMixin:
             if not self._dryrun:
                 os.makedirs(bands_path)
             else:
-                print(f'Making directories: {bands_path}')
+                self.logger.info(f'Making directories: {bands_path}')
 
         for b in bands:
             if not self._dryrun:
@@ -444,4 +444,4 @@ class AllocationsMixin:
                 with open(f'{bands_path}/band_{b}.txt','w') as f:
                         f.write('\n'.join(bands[b]))
             else:
-                print(f'Writing {len(bands[b])} to file band_{b}.txt')
+                self.logger.info(f'Writing {len(bands[b])} to file band_{b}.txt')
