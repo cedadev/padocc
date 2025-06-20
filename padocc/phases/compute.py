@@ -558,10 +558,10 @@ class ComputeOperation(ProjectOperation):
             else:
                 # Unrecognised time variable
                 # Check to see if all the same value
-                if len(set(times[k])) == len(self.allfiles):
-                    combined[k] = 'See individual files for details'
-                elif len(set(times[k])) == 1:
+                if len(set(times[k])) == 1:
                     combined[k] = times[k][0]
+                elif len(set(times[k])) == len(self.allfiles):
+                    combined[k] = 'See individual files for details'
                 else:
                     combined[k] = list(set(times[k]))
 
@@ -707,6 +707,7 @@ class ComputeOperation(ProjectOperation):
 
         if self.combine_kwargs['concat_dims'] == []:
             self.logger.info("No concatenation dimensions available - virtual dimension will be constructed.")
+            self.detail_cfg['virtual_concat'] = True
         else:
             self.logger.info(f"Found {self.combine_kwargs['concat_dims']} concatenation dimensions.")
 
