@@ -61,10 +61,11 @@ These are considered non-fatal errors that will need either a minor correction o
 * ``attributes {'type':'not_equal'...}`` - Attributes that are not equal across products.
 
 2. Data Report
-These are considered **fatal** errors that need a major correction or possibly a fix to the pipeline itself.
+These are typically considered **fatal** errors that require further examination, possibly new developments to the pipeline or changes to the native data structures.
 
 * ``size_errors`` - The size of the array is not consistent between products.
 * ``dim_errors`` - Arrays have inconsistent dimensions (where not ignored).
+* ``dtype/precision`` - Variables/Dimensions have been cast to new dtypes/precisions, most often 32-bit to 64-bit precision.
 * ``dim_size_errors`` - The dimensions are consistent for a variable but their sizes are not.
 * ``data_errors`` - The data arrays do not match across products, this is the most fatal of all validation errors. The validator should give an idea of which array comparisons failed.
 * ``data_errors: {'type':'growbox_exceeded'...}`` - The variable in question could not be validated as no area could be identified that is not empty of values.

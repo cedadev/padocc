@@ -12,7 +12,7 @@ The ``padocc`` tool makes it easy to generate data-aggregated access patterns in
 
 Vast amounts of archival data in a variety of formats can be processed using the package's group mechanics and automatic deployment to a job submission system.
 
-**Latest Release: v1.3.5 17/04/2025**: This release now adds a huge number of additional features to both projects and groups (See the `release notes <https://github.com/cedadev/padocc/releases/tag/v1.3.5>`_ for details). There are still some alpha-stage features that have not been fully tested, please report any issues to the `github repo <https://github.com/cedadev/padocc>`_, especially when using the new **shortcut** CLI options.
+**Latest Release: v1.3.6 20/06/25**: This release is mostly related to bug fixes and some minor changes to the validator module (See the `release notes <https://github.com/cedadev/padocc/releases/tag/v1.3.5>`_ for details). There are still some alpha-stage features that have not been fully tested, please report any issues to the `github repo <https://github.com/cedadev/padocc>`_, especially when using the new **shortcut** CLI options.
 
 Formats that can be generated
 -----------------------------
