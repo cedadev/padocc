@@ -459,12 +459,19 @@ class ProjectOperation(
         elif pattern.endswith('.txt'):
             fileset = extract_file(pattern)
         else:
-            # Pattern is a wildcard set of files
-            if 'latest' in pattern:
-                pattern = pattern.replace('latest', os.readlink(pattern))
-            
 
             fileset = sorted(glob.glob(pattern, recursive=True))
+
+            # Pattern is a wildcard set of files
+            if 'latest' in pattern:
+                fileset = [
+                    os.path.abspath(
+                        os.path.join(
+                            fp.split('latest')[0], 'latest',os.readlink(fp)
+                        ) 
+                    )for fp in fileset
+                ]
+            
             if len(fileset) == 0:
                 raise ValueError(f'pattern {pattern} returned no files.')
         
