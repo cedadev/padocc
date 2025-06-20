@@ -253,7 +253,7 @@ class PropertiesMixin:
         major, minor = self.version_no.split('.')
         minor = str(int(minor)+1)
 
-        self.version_no = f'{major}.{minor}'
+        self.base_cfg['version_no'] = f'{major}.{minor}'
 
         self.dataset.update_history(
             addition = f'Minor: {addition}',
