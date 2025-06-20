@@ -299,10 +299,30 @@ class InitialisationMixin:
         proj_codes = []
         for index in range(len(datasets)):
             cfg_values = {}
+            components     = (datasets[index].split('"')[0] + datasets[index].split('"')[2]).split(',')
+
             ds_values  = datasets[index].split(',')
 
             proj_code = ds_values[0].replace(' ','')
             pattern   = ds_values[1].replace(' ','')
+
+            updates, removals = None, None
+
+            if len(components) > 2:
+                updates  = components[2]
+            if len(components) > 3:
+                removals = components[3]
+
+            if '"' in pattern:
+                try:
+                    # Bypass weirdly formatted section
+                    proj_code = datasets[index].split(',')[0].replace(' ','')
+                    pattern = datasets[index].split('"')[1]
+
+                except Exception as err: 
+                    raise ValueError(
+                        f"BYPASS FAILED - {err}"
+                    )
 
             if pattern.endswith('.txt') and substitutions:
                 pattern, status = apply_substitutions('dataset_file', subs=substitutions, content=[pattern])
@@ -322,16 +342,16 @@ class InitialisationMixin:
             proj_codes.append(proj_code)
 
             if len(ds_values) > 2:
-                if os.path.isfile(ds_values[2]):
-                    cfg_values['update'] = _open_json(ds_values[2])
+                if os.path.isfile(updates):
+                    cfg_values['update'] = _open_json(updates)
                 else:
-                    cfg_values['update'] = ds_values[2]
+                    cfg_values['update'] = updates
 
             if len(ds_values) > 3:
-                if os.path.isfile(ds_values[3]):
-                    cfg_values['remove'] = _open_json(ds_values[3])
+                if os.path.isfile(removals):
+                    cfg_values['remove'] = _open_json(removals)
                 else:
-                    cfg_values['remove'] = ds_values[3]
+                    cfg_values['remove'] = removals
 
             self.logger.info(f'Creating directories/filelists for {index+1}/{len(datasets)}')
 
