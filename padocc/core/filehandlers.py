@@ -425,6 +425,7 @@ class JSONFileHandler(FileIOMixin):
         """
 
         super().__init__(dir, filename, **kwargs)
+
         self._conf: dict  = conf or {}
         self._value: dict = init_value or {}
         self._extension: str = 'json'
@@ -540,12 +541,7 @@ class JSONFileHandler(FileIOMixin):
         if self._value == {}:
             self._obtain_value_from_file()
 
-        if index is None:
-            return
-        
-        if self._conf is not None:
-            if index in self._conf:
-                self._apply_conf()
+        self._apply_conf()
 
     def _obtain_value_from_file(self) -> None:
         """
@@ -585,10 +581,9 @@ class JSONFileHandler(FileIOMixin):
         if self._conf is None:
             return
         
-        self._conf.update(self._value)
-
-        self._value = dict(self._conf)
-        self._conf = {}
+        nv = dict(self._conf)
+        nv.update(self._value)
+        self._value = dict(nv)
 
     def close(self) -> None:
         """
@@ -671,12 +666,13 @@ class KerchunkFile(JSONFileHandler):
         # Get current time
         attrs = self.get_meta()
 
-        if attrs is None or not isinstance(attrs,str):
+        if attrs is None:
             raise ValueError(
                 'Attribute "refs" not present in Kerchunk file'
             )
-        
-        attrs = attrs['.zattrs']
+    
+        if isinstance(attrs, str):
+            attrs = json.loads(attrs)
 
         now   = datetime.now()
 
@@ -878,8 +874,6 @@ class GenericStore(LoggedOperation):
         """
 
         attrs = self._meta['refs']['.zattrs']
-        now   = datetime.now()
-
         now   = datetime.now()
 
         hist = attrs.get('history',[])
