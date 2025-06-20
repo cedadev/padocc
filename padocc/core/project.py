@@ -132,8 +132,8 @@ class ProjectOperation(
 
         self.logger.debug(f'Creating operator for project {self.proj_code}')
         # Project FileHandlers
-        self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', logger=self.logger, conf=file_configs['base_cfg'], **self.fh_kwargs)
-        self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', logger=self.logger, conf=file_configs['detail_cfg'], **self.fh_kwargs)
+        self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', conf=file_configs['base_cfg'], logger=self.logger, **self.fh_kwargs)
+        self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', conf=file_configs['detail_cfg'], logger=self.logger, **self.fh_kwargs)
         self.allfiles   = ListFileHandler(self.dir, 'allfiles', logger=self.logger, **self.fh_kwargs)
 
         # ft_kwargs <- stored in base_cfg after this point.
@@ -553,3 +553,22 @@ class ProjectOperation(
         else:
             if first_time:
                 self.logger.warning(f'"{logdir}" already exists.')
+
+    def export_report(
+            self,
+            new_location: str
+        ):
+        """
+        Export report to a new location from within the pipeline.
+        """
+
+        for rep in ['data_report','metadata_report']:
+
+            report = f'{self.dir}/{rep}.json'
+
+            # Try exporting the report file
+            if os.path.isfile(report):
+                new_report = f'{new_location}/{self.proj_code}_{rep}.json'
+                os.system(f'cp {report} {new_report}')
+            else:
+                self.logger.warning(f'Unable to export report for {self.proj_code} - "{rep}" file not found')
