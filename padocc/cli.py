@@ -10,6 +10,10 @@ import yaml
 from padocc import GroupOperation, phase_map
 from padocc.core.utils import BypassSwitch, get_attribute, list_groups, group_exists
 
+# Ensure all directories are created with 775 permissions
+import os
+os.umask(0o002)
+
 SHORTCUTS = [
     'list',
     'add',
@@ -121,11 +125,7 @@ def check_shortcuts(args: dict) -> bool:
 
 def get_args():
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')
-    parser.add_argument('phase', type=str, help='Phase of the pipeline to initiate', choices=[
-        'init','scan','compute','validate', # Core
-        'list', 'add', 'delete', 'complete', 'set_attr', 'check_attr', 'get_log',
-        'status','summarise','report','pfunc', 'new',
-    ], metavar="See 'All Operations' section of documentation")
+    parser.add_argument('phase', type=str, help='Phase of the pipeline to initiate', metavar="See 'All Operations' section of documentation")
 
     parser.add_argument('--shortcut', dest='shortcut', help='See documentation for use cases.')
 
@@ -141,7 +141,7 @@ def get_args():
 
     # Single-job within group
     parser.add_argument('-G','--groupID',   dest='groupID', default=None, help='Group identifier label')
-    parser.add_argument('-s','--subset',    dest='subset',    default=None,   type=int, help='Size of subset within group')
+    parser.add_argument('-s','--subset',    dest='subset',    default=None, help='Size of subset within group')
     parser.add_argument('-r','--repeat_id', dest='repeat_id', default='main', help='Repeat id (main if first time running, <phase>_<repeat> otherwise)')
     parser.add_argument('-p','--proj_code',dest='proj_code',help='Run for a specific project code, within a group or otherwise')
 
@@ -152,7 +152,7 @@ def get_args():
 
     # Parallel deployment
     parser.add_argument('--parallel', dest='parallel',action='store_true',help='Add for parallel deployment with SLURM')
-    parser.add_argument('--parallel_project', dest='parallel_project',action='store_true',help='Add for parallel deployment with SLURM for internal project conversion.')
+    parser.add_argument('--parallel_project', dest='parallel_project',default=None, help='Add for parallel deployment with SLURM for internal project conversion.')
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
     parser.add_argument('--mem-allowed', dest='mem_allowed', default='100MB', help='Memory allowed for Zarr rechunking')
@@ -223,10 +223,10 @@ def main():
             return
         
         run_kwargs = {}
-        if args.parallel_project:
+        if args.parallel_project is not None:
             run_kwargs = {
-                'compute_subset':args.subset.split('/')[0],
-                'compute_total':args.subset.split('/')[1]
+                'compute_subset':args.parallel_project.split('/')[0],
+                'compute_total':args.parallel_project.split('/')[1]
             }
 
         group.run(
