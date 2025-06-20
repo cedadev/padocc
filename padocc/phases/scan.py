@@ -353,7 +353,7 @@ class ScanOperation(ProjectOperation):
                 'forceful':self._forceful,
             }
 
-            fh = JSONFileHandler(self.dir, f'cache/{identifier}', self.logger, **fh_kwargs)
+            fh = JSONFileHandler(self.dir, f'cache/{identifier}', logger=self.logger, **fh_kwargs)
             kdict = fh['refs']
 
             self.logger.debug(f'Starting Analysis of references for {identifier}')
@@ -432,15 +432,15 @@ class ScanOperation(ProjectOperation):
         details['driver'] = '/'.join(set(ctypes))
 
         if total_chunks > 1e8:
-            self.cloud_format = 'zarr'
+            type = 'parq'
 
         if override_type:
-            details['type'] = override_type
-        else:
-            details['type'] = type
+            type = override_type
 
         # Override existing details
         self.file_type = type
+        # File type set in two different places (historic)
+        details['type'] = type
 
         existing_details = self.detail_cfg.get()
         existing_details.update(details)
