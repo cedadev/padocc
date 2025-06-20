@@ -164,11 +164,15 @@ class GroupOperation(
             self, 
             move_to: str,
             thorough: bool = False,
-            repeat_id: str = 'main'
+            repeat_id: str = 'main',
+            report_location: Union[str,None] = None
         ):
         """
         Complete all projects for a group.
         """
+
+        if report_location is None:
+            report_location = os.path.join(move_to, 'reports')
 
         self.logger.info("Verifying completion directory exists")
         if not os.path.isdir(move_to):
@@ -177,6 +181,20 @@ class GroupOperation(
         if not os.access(move_to, os.W_OK):
             raise OSError(
                 f'Directory {move_to} is not writable'
+            )
+
+        if not os.path.isdir(report_location):
+            os.makedirs(report_location)
+
+        if not os.access(report_location, os.W_OK):
+            raise OSError(
+                f'Directory {report_location} is not writable'
+            )
+        
+        if repeat_id not in self.proj_codes:
+            raise ValueError(
+                f'"{repeat_id}" Unrecognised - must '
+                f'be one of {self.proj_codes.keys()}'
             )
         
         proj_list = self.proj_codes[repeat_id].get()
@@ -193,11 +211,14 @@ class GroupOperation(
                     self.logger.info('Adding download link')
                     proj_op.add_download_link()
 
+                # Export report
+                proj_op.export_report(report_location)
+
+                # Export products
                 proj_op.complete_project(move_to)
             except Exception as err:
                 self.logger.warning(f'Skipped {proj} - {err}')
 
-    
     def get_stac_representation(
             self, 
             stac_mapping: dict, 
