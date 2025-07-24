@@ -27,7 +27,6 @@ phases = [
     'scan',
     'compute',
     'validate',
-    'catalog'
 ]
 
 # Which files acceptable to pull from Moles Tags file.

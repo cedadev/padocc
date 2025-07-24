@@ -341,7 +341,7 @@ class GroupOperation(
                 proj_code, 
                 mode=mode, 
                 logid=logid, 
-                label=phase, 
+                label=f'{self._label}_{phase}', 
                 fh=fh, 
                 bypass=bypass,
                 run_kwargs=run_kwargs,
@@ -390,6 +390,7 @@ class GroupOperation(
             dryrun=self._dryrun, **kwargs)
         status = scan.run(mode=mode, **self.fh_kwargs, **run_kwargs)
         scan.save_files()
+
         return status
 
     def _compute_config(

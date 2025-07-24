@@ -49,3 +49,4 @@ build-backend = "poetry.core.masonry.api"
 shepard_deploy = "padocc.operations.shepard:main"
 padocc = "padocc.cli:main"
 padocc_sh = "padocc.shell:main"
+

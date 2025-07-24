@@ -1,6 +1,6 @@
 {
     "workdir":"/Users/daniel.westwood/cedadev/padocc_branches/shepard_dev/padocc/padocc/tests/auto_testdata_dir",
-    "groupID":"padocc-test-suite",
+    "groupID":"padocc-test-suite2",
     "group_file":"/Users/daniel.westwood/cedadev/padocc_branches/shepard_dev/padocc/padocc/tests/data_creator/Aggs.csv",
     "substitutions":{
         "init_file": {

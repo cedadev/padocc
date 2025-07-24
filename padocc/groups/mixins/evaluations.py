@@ -349,6 +349,17 @@ class EvaluationsMixin:
 
         return matches
             
+    def get_codes_by_status(
+            self,
+            repeat_id: str = 'main',
+        ) -> dict:
+            """
+            Public Method for just getting the status dict
+            for a group.
+            """
+
+            status_dict, _ = self._get_status_dict(repeat_id)
+            return status_dict
 
     def summarise_status(
             self, 
