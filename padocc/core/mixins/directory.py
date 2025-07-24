@@ -106,6 +106,8 @@ class DirectoryMixin(LoggedOperation):
             forceful=forceful,
             dryrun=dryrun,
             thorough=thorough)
+        
+        self.logger.debug(f'Logs to {fh}')
     
     @classmethod
     def help(cls, func: Callable = print):

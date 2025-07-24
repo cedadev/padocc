@@ -1,43 +1,52 @@
-[tool.poetry]
+[project]
 name = "padocc"
-version = "1.3.3"
+version = "1.3.6"
 description = "Pipeline to Aggregate Data for Optimised Cloud Capabilities"
-authors = ["Daniel Westwood <daniel.westwood@stfc.ac.uk>"]
+authors = [
+    {name = "Daniel Westwood",email = "daniel.westwood@stfc.ac.uk"}
+]
 license = "BSD 3"
 readme = "README.md"
 include = [
     { path = "padocc/tests/*" }
 ]
+requires-python = ">=3.10,<4.0"
 
-[tool.poetry.dependencies]
-python = "^3.11"
-binpacking = "^1.5.2"
-fsspec = "2024.9.0"
-xarray = "2024.6.0"
-rechunker = "0.5.2"
-kerchunk = "0.2.6"
-h5py = "3.11.0"
-scipy = "1.12.0"
-tifffile = "^2024.9.20"
-cfgrib = "0.9.14.1"
-dask = "2024.7.0"
-distributed = "2024.7.0"
-matplotlib = "3.9.2"
-s3fs = "2024.9.0"
-requests = "2.32.3"
-aiohttp = "3.10.10"
-sphinx = "7.1.2"
+dependencies = [
+    "binpacking (>=1.5.2,<2.0.0)",
+    "fsspec (>=2024.9.0,<2025.0.0)",
+    "xarray (>=2024.6.0,<2025.0.0)",
+    "rechunker (==0.5.2)",
+    "kerchunk (>=0.2.6)",
+    "h5py (>=3.11.0,<4.0.0)",
+    "scipy (>=1.12.0,<2.0.0)",
+    "tifffile (>=2024.9.20,<2025.0.0)",
+    "cfgrib (==0.9.14.1)",
+    "dask (==2024.7.0)",
+    "distributed (==2024.7.0)",
+    "matplotlib (==3.9.2)",
+    "s3fs (==2024.9.0)",
+    "requests (>=2.32.3,<3.0.0)",
+    "aiohttp (>=3.10.10,<4.0.0)",
+    "cfapyx (>=2025.3.18,<2026.0.0)",
+    "myst-nb (>=1.1.2,<2.0.0)",
+    "types-pyyaml (>=6.0.12.20240917,<7.0.0.0)",
+    "zarr (>=2.18.4)",
+    "pytest (>=8.3.5,<9.0.0)",
+    "elasticsearch (>=8.0.0,<9.0.0)"
+]
+
+[tool.poetry.group.dev.dependencies]
+poetry = "^2"
+sphinx = "^7.1.2"
 sphinx-rtd-theme = "2.0.0"
-cfapyx = "2024.11.27"
-myst-nb = "^1.1.2"
-types-pyyaml = "^6.0.12.20240917"
-zarr = "^2.18.4"
-poetry = "^1.8.5"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.scripts]
-shepard = "padocc.groups.shepard:main"
+[project.scripts]
+shepard_deploy = "padocc.operations.shepard:main"
 padocc = "padocc.cli:main"
+padocc_sh = "padocc.shell:main"
+

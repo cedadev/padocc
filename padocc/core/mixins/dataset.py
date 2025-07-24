@@ -9,6 +9,8 @@ import xarray as xr
 
 from ..filehandlers import (CFADataset, GenericStore, KerchunkFile,
                             KerchunkStore, ZarrStore)
+from ..utils import extract_json
+from ..catalog import catalog_ceda
 
 
 class DatasetHandlerMixin:
@@ -53,12 +55,14 @@ class DatasetHandlerMixin:
         included here.
         """
 
-        if self.kfile.file_exists():
+        if self._kfile is not None:
             self.kfile.close()
 
-        # Stores automatically check if they exist already
-        self.kstore.close()
-        self.zstore.close()
+        if self._kstore is not None:
+            self.kstore.close()
+
+        if self._zstore is not None:
+            self.zstore.close()
 
         self.cfa_dataset.close()
 
@@ -83,15 +87,15 @@ class DatasetHandlerMixin:
         """
         Retrieve the kstore filehandler or create if not present
         """        
-        if self._kfile is None:
-            self._kfile = KerchunkStore(
+        if self._kstore is None:
+            self._kstore = KerchunkStore(
                 self.dir,
                 self.outproduct,
                 logger=self.logger,
                 **self.fh_kwargs,
             )
 
-        return self._kfile
+        return self._kstore
     
     @property
     def dataset(
@@ -155,12 +159,18 @@ class DatasetHandlerMixin:
         """
         Retrieve the filehandler for the zarr store
         """
+
+        remote_s3 = self.base_cfg.get('remote_s3',None)
+
+        if remote_s3 is not None:
+            remote_s3['store_name'] = self.complete_product
         
         if self._zstore is None:
             self._zstore = ZarrStore(
                 self.dir,
                 self.outproduct,
                 logger=self.logger,
+                remote_s3=remote_s3,
                 **self.fh_kwargs,
             )
 
@@ -194,9 +204,160 @@ class DatasetHandlerMixin:
             # Also update the CFA dataset.
             self.cfa_dataset.set_meta(meta)
 
+    def remove_attribute(
+            self, 
+            attribute: str, 
+            target: str = 'dataset',
+        ) -> None:
+        """
+        Remove an attribute within a dataset representation's metadata.
+
+        :param attribute:   (str) The name of an attribute within the metadata
+            property of the corresponding filehandler.
+
+        :param target:      (str) The target product filehandler, uses the 
+            generic dataset filehandler if not otherwise specified.
+        """
+
+        if hasattr(self,target):
+            meta = getattr(self,target).get_meta()
+
+        meta.pop(attribute)
+
+        getattr(self, target).set_meta(meta)
+        if target != 'cfa_dataset' and self.cloud_format != 'cfa':
+            # Also update the CFA dataset.
+            self.cfa_dataset.set_meta(meta)
+
+    def write_to_s3(
+            self,
+            credentials: Union[dict, str],
+            bucket_id: str,
+            name_overwrite: Union[str, None] = None,
+            dataset_type: str = 'zstore',
+            write_as: str = 'zarr',
+            s3_kwargs: dict = None,
+            **zarr_kwargs
+        ) -> None:
+        """
+        Write one of the active ``dataset`` objects to 
+        an s3 zarr store
+        """
+
+        if write_as != 'zarr':
+            raise NotImplementedError(
+                'Non-zarr transfers not yet supported.'
+            )
+
+        if not hasattr(self, dataset_type):
+            raise ValueError(
+                f'Project has no attribute {dataset_type}'
+            )
+
+        ds = getattr(self, dataset_type)
+        name_overwrite = name_overwrite or f'{self.proj_code}_{self.revision}'
+
+        ds.write_to_s3(
+            credentials,
+            bucket_id,
+            name_overwrite=name_overwrite,
+            s3_kwargs=s3_kwargs,
+            **zarr_kwargs
+        )
+
+    def add_s3_config(
+           self,
+           remote_s3: Union[dict, str, None] = None, 
+        ) -> None:
+        """
+        Add remote_s3 configuration for this project
+
+        :param remote_s3:   (dict | str) Remote s3 config argument, either
+            dictionary or path to a json file on disk. It is not advised to enter
+            credentials here, see the documentation in Extra Features for more
+            details.
+        """
+
+        if isinstance(remote_s3, str):
+            remote_s3 = extract_json(remote_s3)
+
+        self.base_cfg['remote_s3'] = remote_s3
+
+    def remove_s3_config(self):
+        """
+        Remove remote_s3 configuration from this project
+        """
+        self.base_cfg.pop('remote_s3')
+
     @property
     def dataset_attributes(self) -> dict:
         """
         Fetch a dictionary of the metadata for the dataset.
         """
         return self.dataset.get_meta()
+    
+    def add_download_link(
+            self,
+            sub: str = '/',
+            replace: str = 'https://dap.ceda.ac.uk/',
+            in_place: bool = True,
+            remote: bool = True,
+        ) -> Union[None,dict]:
+
+        if self.cloud_format != 'kerchunk':
+            raise NotImplementedError(
+                f'Download link replacement not implemented for {self.cloud_format}'
+            )
+        
+        if self.file_type == 'parq':
+            self.kstore.add_download_link(sub=sub, replace=replace, in_place=in_place, remote=remote)
+            self.kstore.close()
+
+            if in_place:
+                old_store = str(self.kfile.store_path)
+                old_vn = str(self.revision)
+                self._remote = remote
+                if self._remote:
+                    os.system(f'mv {old_store}/ {old_store.replace(old_vn, self.revision)}')
+
+                    # Trash old kfile that's no longer pointing at the correct object.
+                    self._kstore = None
+        else:
+            self.kfile.add_download_link(sub=sub, replace=replace, in_place=in_place, remote=remote)
+            # Save the content now.
+            self.kfile.close()
+
+            if in_place:
+                old_file = str(self.kfile.filepath)
+                old_vn = str(self.revision)
+                self._remote = remote
+                if self._remote:
+                    os.system(f'mv {old_file} {old_file.replace(old_vn, self.revision)}')
+
+                    # Trash old kfile that's no longer pointing at the correct object.
+                    self._kfile = None
+    
+    def catalog_ceda(
+            self, 
+            final_location: str, 
+            api_key: str, 
+            collection: str,
+            name_replace: Union[str,None] = None,
+        ):
+        """
+        Catalog the output product of this project.
+        """
+
+        # Unique identifier
+        if name_replace is None:
+            name_replace = f'{self.complete_product}.{self.dataset._extension}'
+        
+        catalog_ceda(
+            final_location,
+            name_replace,
+            api_key,
+            self.cloud_format,
+            collection,
+            self.remote,
+            self.version_no,
+        )

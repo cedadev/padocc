@@ -2,10 +2,13 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-from typing import Callable
+import os
+import json
+
+from typing import Callable, Union, Any
 
 from padocc import ProjectOperation
-
+from padocc.core.utils import BASE_CFG, source_opts, valid_project_code
 
 class ModifiersMixin:
     """
@@ -36,20 +39,153 @@ class ModifiersMixin:
             ' > group.unmerge() - Split one group into two sets, '
             'given a list of datasets to move into the new group.')
 
-    def add_project(
+    def set_all_values(self, attr: str, value: Any, repeat_id: str = 'main'):
+        """
+        Set a particular value for all projects in a group.
+        """
+        self.logger.info(f'Applying {attr}:{value} to all projects')
+
+        for project in self.__iter__(repeat_id=repeat_id):
+            try:
+                setattr(project, attr, value)
+            except Exception as err:
+                self.logger.error('Error when trying to apply value to all projects')
+                raise err
+            project.save_files()
+
+        self.logger.info('All projects saved')
+
+    def apply_pfunc(self, pfunc: Callable, repeat_id: str = 'main'):
+        """
+        Apply a custom function across all projects.
+        """
+        self.logger.info(f'Applying {pfunc} to all projects')
+
+        for project in self.__iter__(repeat_id=repeat_id):
+            try:
+                project = pfunc(project)
+            except Exception as err:
+                self.logger.error('Error when trying to perform custom function:')
+                raise err
+            project.save_files()
+
+        self.logger.info('All projects saved')
+    
+    def catalog_ceda(
             self,
-            config: dict,
-            ):
+            final_location: str, 
+            api_key: str, 
+            collection: str,
+            name_list: Union[list,None] = None,
+            repeat_id: str = 'main'
+        ):
         """
-        Add a project to this group. 
-        """
-        if config['proj_code'] in self.proj_codes['main']:
-            raise ValueError(
-                f'proj_code {config["proj_code"]} already exists for this group.'
+        Catalog all projects in the group into the 
+        ``ceda-cloud-projects`` index."""
+
+        if name_list is not None:
+            if len(name_list) != len(self.proj_codes[repeat_id]):
+                raise ValueError(
+                    'Insufficient replacement names provided - '
+                    f'needs {len(self.proj_codes[repeat_id])}, '
+                    f'given {len(name_list)}'
+                )
+
+        for pid, proj_code in enumerate(self.proj_codes[repeat_id]):
+
+            name_replace = None
+            if name_list is not None:
+                name_replace = name_list[pid]
+
+            proj = self[proj_code]
+            proj.catalog_ceda(
+                final_location,
+                api_key,
+                collection,
+                name_replace = name_replace
             )
 
-        self._init_project(config)
-        self.proj_codes['main'].append(config['proj_code'])
+    def add_project(
+            self,
+            config: Union[str,dict],
+            remote_s3: Union[dict, str, None] = None,
+            moles_tags: bool = False,
+        ):
+        """
+        Add a project to this group. 
+
+        :param config:  (str | dict) The configuration details to add new project. Can either be 
+            a path to a json file or json content directly. Can also be either a properly formatted
+            base config file (needs ``proj_code``, ``pattern`` etc.) or a moles_esgf input file.
+
+        :param moles_tags:  (bool) Option for CEDA staff to integrate output from another package.
+        """
+
+        if isinstance(config, str):
+            if config.endswith('.json'):
+                with open(config) as f:
+                    config = json.load(f)
+            elif config.endswith('.csv'):
+                cfg = {}
+                with open(config) as f:
+                    for line in f.readlines():
+                        key = line.split(',')[0]
+                        fileset = line.split(',')[1]
+                        cfg[key] = fileset
+            
+                config = cfg
+            else:
+                config = json.loads(config)
+        
+        configs = []
+        if moles_tags:
+            for key, fileset in config.items():
+                conf = dict(BASE_CFG)
+                conf['proj_code'] = key
+                conf['pattern'] = fileset
+
+                accept = True
+                for f in fileset:
+                    if str('.' + f.split('.')[-1]) not in source_opts:
+                        accept = False
+
+                if accept:
+                    configs.append(conf)
+                else:
+                    self.logger.info(f'Rejected {key} - not all files are friendly.')
+        else:
+            configs.append(config)
+
+        new_codes = []
+        recombine = False
+        for config in configs:
+
+            if config['proj_code'] in self.proj_codes['main']:
+                self.logger.warning(
+                    f'proj_code {config["proj_code"]} already exists for this group.'
+                )
+                if not self._forceful:
+                    continue
+                # Recombine sets if contains duplicates and doing overwrites.
+                recombine = True
+
+            status = valid_project_code(config['proj_code'])
+            if not status:
+                raise ValueError(
+                    'One or more failed project code checks'
+                )
+
+            new_codes.append(config['proj_code'])
+
+            self._init_project(config, remote_s3=remote_s3)
+
+        if recombine:
+            self._add_proj_codeset('temp',new_codes)
+            self.merge_subsets(['main','temp'], 'main')
+            self._delete_proj_codeset('temp')
+        else:
+            for code in new_codes:
+                self.proj_codes['main'].append(code)
         self.save_files()
 
     def remove_project(self, proj_code: str, ask: bool = True) -> None:
@@ -247,3 +383,21 @@ class ModifiersMixin:
 
 
         group_A.logger.info("Unmerge operation complete")
+
+    def delete_group(self, ask: bool = True) -> None:
+        """
+        Delete the entire set of files associated with this group.
+        """
+
+        x=input(f'Delete all files relating to group: {self.groupID}? (Y/N) ')
+        if x != 'Y':
+            return
+        
+        for project in self:
+            project.delete_project(ask=False)
+
+        os.system(f'rmdir {self.workdir}/in_progress/{self.groupID}')
+        os.system(f'rm -rf {self.groupdir}')
+
+        self.logger.info(f'Deleted group - {self.groupID}')
+        return None

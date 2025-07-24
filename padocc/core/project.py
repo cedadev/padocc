@@ -15,8 +15,8 @@ from .filehandlers import (CSVFileHandler, JSONFileHandler, ListFileHandler,
 from .mixins import (DatasetHandlerMixin, DirectoryMixin, PropertiesMixin,
                      StatusMixin)
 from .utils import (FILE_DEFAULT, BypassSwitch, apply_substitutions,
-                    extract_file, file_configs, phases, print_fmt_str)
-
+                    extract_file, file_configs, phases, print_fmt_str,
+                    extract_json)
 
 class ProjectOperation(
     DirectoryMixin, 
@@ -48,6 +48,7 @@ class ProjectOperation(
             dryrun     : bool = None,
             thorough   : bool = None,
             mem_allowed: Union[str,None] = None,
+            remote_s3  : Union[dict, str, None] = None,
         ) -> None:
         """
         Initialisation for a ProjectOperation object to handle all interactions
@@ -90,6 +91,9 @@ class ProjectOperation(
         :param thorough:        (bool) From args.quality - if True will create all files 
             from scratch, otherwise saved refs from previous runs will be loaded.
 
+        :param remote_s3:       (dict | str) Path to config file or dict containing remote s3
+            configurations.
+
         :returns: None
 
         """
@@ -128,8 +132,8 @@ class ProjectOperation(
 
         self.logger.debug(f'Creating operator for project {self.proj_code}')
         # Project FileHandlers
-        self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', logger=self.logger, conf=file_configs['base_cfg'], **self.fh_kwargs)
-        self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', logger=self.logger, conf=file_configs['detail_cfg'], **self.fh_kwargs)
+        self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', conf=file_configs['base_cfg'], logger=self.logger, **self.fh_kwargs)
+        self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', conf=file_configs['detail_cfg'], logger=self.logger, **self.fh_kwargs)
         self.allfiles   = ListFileHandler(self.dir, 'allfiles', logger=self.logger, **self.fh_kwargs)
 
         # ft_kwargs <- stored in base_cfg after this point.
@@ -155,10 +159,19 @@ class ProjectOperation(
         self._kstore = None
         self._zstore = None
         self._cfa_dataset = None
+        self._remote = False
 
         self._is_trial = False
 
         self.stage = None
+
+        # Remote s3 direct connection
+        if isinstance(remote_s3,str):
+            remote_s3 = extract_json()
+
+        if remote_s3 is not None:
+            self.base_cfg['remote_s3'] = remote_s3
+            self.base_cfg.close()
 
     def __str__(self):
         """String representation of project"""
@@ -200,11 +213,13 @@ class ProjectOperation(
         
     def run(
             self,
-            mode: str = 'kerchunk',
+            mode: str = None,
             bypass: Union[BypassSwitch,None] = None,
             forceful : bool = None,
             thorough : bool = None,
+            verbose: bool = None,
             dryrun : bool = None,
+            parallel: bool = False,
             **kwargs
         ) -> str:
         """
@@ -240,6 +255,11 @@ class ProjectOperation(
 
         self._bypass = bypass or self._bypass
 
+        if parallel:
+            self.logger.info(f'Parallel Operation: Enabled')
+        else:
+            self.logger.info(f'Parallel Operation: Disabled')
+
         # Reset flags given specific runs
         if forceful is not None:
             self._forceful = forceful
@@ -247,14 +267,18 @@ class ProjectOperation(
             self._thorough = thorough
         if dryrun is not None:
             self._dryrun = dryrun
+        if verbose is not None:
+            self._verbose = verbose
+
+        mode = mode or self.cloud_format
 
         if self.cloud_format != mode:
             self.logger.info(
                 f'Switching cloud format to {mode}'
             )
             self.cloud_format = mode
-            self.file_type = FILE_DEFAULT[mode]
-
+            self.save_files()
+            
         try:
             status = self._run(mode=mode, **kwargs)
             self.save_files()
@@ -316,11 +340,19 @@ class ProjectOperation(
         self.logger.debug(f' > {self.proj_code} [{self.cloud_format}]')
 
         status = self.get_last_status()
-        if 'validate' not in status:
+
+        if status is None:
+            self.logger.warning(
+                f'Most recent phase for {self.proj_code} is unconfirmed. - '
+                'please re-validate any changes or ensure products are otherwise validated.'
+            )
+        elif 'validate' not in status:
             self.logger.warning(
                 f'Most recent phase for {self.proj_code} is NOT validation - '
                 'please re-validate any changes or ensure products are otherwise validated.'
             )
+        else:
+            pass
 
         self.save_files()
 
@@ -329,11 +361,14 @@ class ProjectOperation(
         self.dataset.spawn_copy(complete_dataset)
 
         # Spawn copy of cfa dataset
-        complete_cfa = self.cfa_path.replace(self.dir, move_to) + '_' + self.version_no
-        self.cfa_dataset.spawn_copy(complete_cfa)
+        if self.detail_cfg.get('CFA',False):
+            complete_cfa = self.cfa_path.replace(self.dir, move_to) + '_' + self.version_no
+            self.cfa_dataset.spawn_copy(complete_cfa)
 
         if not self._dryrun:
             self.update_status('complete','Success')
+
+        self.save_files()
 
     def migrate(cls, newgroupID: str):
         """
@@ -418,28 +453,37 @@ class ProjectOperation(
                 '"pattern" attribute missing from base config.'
             )
         
-        if pattern.endswith('.txt'):
-            content = extract_file(pattern)
-            if 'substitutions' in self.base_cfg:
-                content, status = apply_substitutions('datasets', subs=self.base_cfg['substitutions'], content=content)
-                if status:
-                    self.logger.warning(status)
-            self.allfiles.set(content) 
+        if isinstance(pattern, list):
+            # New feature to handle the moles-format data.
+            fileset = pattern
+        elif pattern.endswith('.txt'):
+            fileset = extract_file(pattern)
         else:
-            # Pattern is a wildcard set of files
-            if 'latest' in pattern:
-                pattern = pattern.replace('latest', os.readlink(pattern))
-            
 
             fileset = sorted(glob.glob(pattern, recursive=True))
+
+            # Pattern is a wildcard set of files
+            if 'latest' in pattern:
+                fileset = [
+                    os.path.abspath(
+                        os.path.join(
+                            fp.split('latest')[0], 'latest',os.readlink(fp)
+                        ) 
+                    )for fp in fileset
+                ]
+            
             if len(fileset) == 0:
                 raise ValueError(f'pattern {pattern} returned no files.')
-
-            self.allfiles.set(sorted(glob.glob(pattern, recursive=True)))
+        
+        if 'substitutions' in self.base_cfg:
+            fileset, status = apply_substitutions('datasets', subs=self.base_cfg['substitutions'], content=fileset)
+            if status:
+                self.logger.warning(status)
+        self.allfiles.set(fileset) 
 
     def _setup_config(
             self, 
-            pattern : Union[str,None] = None, 
+            pattern : Union[str,list,None] = None, 
             updates : Union[str,None] = None, 
             removals : Union[str,None] = None,
             substitutions: Union[dict,None] = None,
@@ -516,3 +560,22 @@ class ProjectOperation(
         else:
             if first_time:
                 self.logger.warning(f'"{logdir}" already exists.')
+
+    def export_report(
+            self,
+            new_location: str
+        ):
+        """
+        Export report to a new location from within the pipeline.
+        """
+
+        for rep in ['data_report','metadata_report']:
+
+            report = f'{self.dir}/{rep}.json'
+
+            # Try exporting the report file
+            if os.path.isfile(report):
+                new_report = f'{new_location}/{self.proj_code}_{rep}.json'
+                os.system(f'cp {report} {new_report}')
+            else:
+                self.logger.warning(f'Unable to export report for {self.proj_code} - "{rep}" file not found')

@@ -5,14 +5,129 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 ## PADOCC CLI for entrypoint scripts
 
 import argparse
+import yaml
 
 from padocc import GroupOperation, phase_map
-from padocc.core.utils import BypassSwitch, get_attribute
+from padocc.core.utils import BypassSwitch, get_attribute, list_groups, group_exists
 
+# Ensure all directories are created with 775 permissions
+import os
+os.umask(0o002)
+
+SHORTCUTS = [
+    'list',
+    'add',
+    'delete',
+    'get_log',
+    'status',
+    'summarise',
+    'check_attr',
+    'set_attr',
+    'complete',
+    'pfunc',
+    'report',
+]
+
+def check_shortcuts(args: dict) -> bool:
+    """
+    Check and perform any special features requested
+    """
+
+    if args.phase == 'list':
+        list_groups(args.workdir)
+        return True
+    
+    if not group_exists(args.groupID, args.workdir):
+        raise ValueError(
+            'Shortcuts can only be performed on existing groups - ' \
+            'use `padocc new -G group` to create a new group.'
+        )
+    
+    group = GroupOperation(
+        args.groupID,
+        args.workdir,
+        verbose=args.verbose,
+        dryrun=args.dryrun,
+        forceful=args.forceful
+    )
+
+    if args.phase == 'delete':
+        if args.proj_code is not None:
+            group.remove_project(args.proj_code, ask=True)
+            return True
+        group.delete_group()
+    
+    elif args.phase == 'get_log':
+        if args.proj_code is not None:
+            proj = group[args.proj_code]
+            proj.show_log_contents(
+                args.shortcut,
+                halt=False)
+            return True
+        
+        for project in group:
+            project.show_log_contents(
+                args.shortcut,
+                halt=True)
+    
+    elif args.phase == 'add':
+        moles_tags = (args.shortcut == 'moles')
+        group.add_project(args.input, moles_tags=moles_tags)
+    
+    elif args.phase == 'status':
+        group.summarise_status(repeat_id=args.repeat_id)
+    
+    elif args.phase == 'summarise':
+        group.summarise_data(repeat_id=args.repeat_id)
+    
+    elif args.phase == 'check_attr':
+        group.check_attribute(args.shortcut)
+    
+    elif args.phase == 'set_attr':
+        attr, value = args.shortcut.split(':')
+        group.set_all_values(
+            attr,
+            value,
+            repeat_id=args.repeat_id
+        )
+
+    elif args.phase == 'complete':
+        group.complete_group(
+            args.shortcut,
+            repeat_id=args.repeat_id,
+            thorough=args.thorough)
+
+    elif args.phase == 'pfunc':
+        try:
+            module = __import__(args.shortcut)
+        except ImportError as err:
+            print(f'ERROR: Custom module {args.shortcut} could not be imported')
+
+        group.apply_pfunc(
+            module, 
+            repeat_id=args.repeat_id)
+
+    elif args.phase == 'report':
+        if args.proj_code is None:
+            # Combine reports for multiple projects.
+            report = group.combine_reports(repeat_id=args.repeat_id)
+            print(yaml.dump(report))
+            return True
+        
+        proj = group[args.proj_code]
+        report = proj.get_report()
+        print(report)
+        print(yaml.dump(report))
+    else:
+        pass
+
+    return True
 
 def get_args():
     parser = argparse.ArgumentParser(description='Run a pipeline step for a group of datasets')
-    parser.add_argument('phase', type=str, help='Phase of the pipeline to initiate')
+    parser.add_argument('phase', type=str, help='Phase of the pipeline to initiate', metavar="See 'All Operations' section of documentation")
+
+    parser.add_argument('--shortcut', dest='shortcut', help='See documentation for use cases.')
 
     # Action-based - standard flags
     parser.add_argument('-f','--forceful',dest='forceful',action='store_true', help='Force overwrite of steps if previously done')
@@ -26,15 +141,18 @@ def get_args():
 
     # Single-job within group
     parser.add_argument('-G','--groupID',   dest='groupID', default=None, help='Group identifier label')
-    parser.add_argument('-s','--subset',    dest='subset',    default=None,   type=int, help='Size of subset within group')
+    parser.add_argument('-s','--subset',    dest='subset',    default=None, help='Size of subset within group')
     parser.add_argument('-r','--repeat_id', dest='repeat_id', default='main', help='Repeat id (main if first time running, <phase>_<repeat> otherwise)')
     parser.add_argument('-p','--proj_code',dest='proj_code',help='Run for a specific project code, within a group or otherwise')
 
     # Specialised
-    parser.add_argument('-C','--cloud-format', dest='mode', default='kerchunk', help='Output format required.')
-    parser.add_argument('-i', '--input', dest='input', help='input file (for init phase)')
+    parser.add_argument('-C','--cloud-format', dest='mode', default=None, help='Output format required.')
+    parser.add_argument('-i','--input', dest='input', help='input file (for init phase)')
+    parser.add_argument('-o','--output', dest='output', help='output file for specific shortcut operations.')
 
-    # Unused v1.3
+    # Parallel deployment
+    parser.add_argument('--parallel', dest='parallel',action='store_true',help='Add for parallel deployment with SLURM')
+    parser.add_argument('--parallel_project', dest='parallel_project',default=None, help='Add for parallel deployment with SLURM for internal project conversion.')
     parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
     parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job')
     parser.add_argument('--mem-allowed', dest='mem_allowed', default='100MB', help='Memory allowed for Zarr rechunking')
@@ -63,6 +181,11 @@ def main():
     
     bypass=BypassSwitch(args.bypass)
 
+    # Generic special features
+    if args.phase in SHORTCUTS:
+        if check_shortcuts(args):
+            return
+
     if args.groupID is not None:
         group = GroupOperation(
             args.groupID,
@@ -82,6 +205,29 @@ def main():
         if args.phase == 'init':
             group.init_from_file(args.input)
             return
+        
+        if args.parallel:
+            group.deploy_parallel(
+                args.phase,
+                source=args.venvpath,
+                band_increase=args.band_increase,
+                binpack=args.binpack,
+                time_allowed=args.time_allowed,
+                memory=args.memory,
+                subset=args.subset,
+                repeat_id=args.repeat_id,
+                bypass=args.bypass,
+                mode=args.mode,
+                new_version=args.new_version
+            )
+            return
+        
+        run_kwargs = {}
+        if args.parallel_project is not None:
+            run_kwargs = {
+                'compute_subset':args.parallel_project.split('/')[0],
+                'compute_total':args.parallel_project.split('/')[1]
+            }
 
         group.run(
             args.phase,
@@ -89,7 +235,8 @@ def main():
             repeat_id=args.repeat_id,
             proj_code=args.proj_code,
             subset=args.subset,
-            mem_allowed=args.mem_allowed
+            mem_allowed=args.mem_allowed,
+            run_kwargs=run_kwargs
         )
 
     else:

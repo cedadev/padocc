@@ -67,6 +67,54 @@ def error_handler(
     else:
         raise err
 
+def worst_error(report: dict) -> str:
+    """
+    Determine the worst error level and return as a string.
+    """
+    
+    if 'report' in report:
+        report = report['report']
+
+    priority = ['size_errors', 'dim_size_errors', 'data_errors', 'dim_errors','bypassed']
+
+    # Check all data issues that would be fatal.
+    if 'data' in report:
+        section = report['data']
+        
+        # Improvements are possible.
+        vars = section.get('variables',{})
+        for err in priority:
+            if err in vars:
+                return f'Fatal-{err}'
+        dims = section.get('dimensions', {})
+        for err in priority:
+            if err in dims:
+                return f'Fatal-{err}'
+
+    if 'metadata' not in report:
+        return None
+    
+    vars = report['metadata'].get('variables',None)
+    if vars is not None:
+        for etype in ['missing','order']:
+            for k, v in vars.items():
+                if v['type'] == etype:
+                    return f'Warn-{k}_{etype}'
+    
+    dims = report['metadata'].get('dims', None)
+    if dims is not None:
+        for etype in ['order']:
+            for k, v in dims.items():
+                if v['type'] == etype:
+                    return f'Warn-{k}_{etype}'
+    
+    attrs = report['metadata'].get('attributes',None)
+    if attrs is not None:
+        for etype in ['not_equal','missing']:
+            for k, v in dims:
+                if v['type'] == etype:
+                    return f'Warn-{k}_{etype}'
+        
 class KerchunkException(Exception):
     """
     General Exception type.
@@ -93,7 +141,6 @@ class PartialDriverError(KerchunkException): # Keep
             self.__class__.__module__ = 'builtins'
     def get_str(self):
         return 'PartialDriverError'
-
 
 class KerchunkDriverFatalError(KerchunkException): # Keep
     """All drivers failed (NetCDF3/Hdf5/Tiff) - run without driver bypass to assess the issue with each driver type."""
@@ -226,17 +273,21 @@ class ValidationError(KerchunkException):
     """One or more checks within validation have failed - most likely elementwise comparison of data."""
     def __init__(
             self,
-            report: Union[dict,None] = None,
+            report_err: Union[str,None] = None,
             verbose: int = 0, 
             proj_code: Union[str,None] = None, 
             groupdir: Union[str,None] = None
         ) -> None:
-        self.message = f"Data Report: {report}"
+
+        self.err_msg = report_err
+
+        self.message = self.err_msg
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
+
     def get_str(self):
-        return 'ValidationError'
+        return self.err_msg
     
 class ComputeError(KerchunkException): # Keep
     """Compute stage failed - likely due to invalid config/use of the classes"""

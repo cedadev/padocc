@@ -19,4 +19,4 @@ class TestZarrCompute:
 
 if __name__ == '__main__':
     #workdir = '/home/users/dwest77/cedadev/padocc/padocc/tests/auto_testdata_dir'
-    TestCompute().test_compute_basic()#workdir=workdir)
+    TestZarrCompute().test_compute_basic()#workdir=workdir)

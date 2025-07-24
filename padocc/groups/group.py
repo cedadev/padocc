@@ -12,6 +12,7 @@ from padocc.core import BypassSwitch, FalseLogger, ProjectOperation
 from padocc.core.filehandlers import CSVFileHandler, ListFileHandler
 from padocc.core.mixins import DirectoryMixin
 from padocc.core.utils import format_str, print_fmt_str
+from padocc.core.errors import MissingVariableError
 from padocc.phases import (KNOWN_PHASES, ComputeOperation, KerchunkDS,
                            ScanOperation, ValidateOperation, ZarrDS)
 
@@ -84,6 +85,15 @@ class GroupOperation(
         if label is None:
             label = 'group-operation'
 
+        if workdir is None:
+            try:
+                workdir = os.environ.get('WORKDIR')
+            except:
+                pass
+
+        if workdir is None:
+            raise MissingVariableError('$WORKDIR')
+
         super().__init__(
             workdir,
             groupID=groupID, 
@@ -130,25 +140,39 @@ class GroupOperation(
         """
         return len(self.proj_codes['main'])
     
+    def __iter__(self, repeat_id: str = 'main'):
+        """
+        Iterable group for each project
+        """
+        for proj_code in self.proj_codes['main']:
+            yield self[proj_code]
+    
     def __getitem__(self, index: Union[int,str]) -> ProjectOperation:
         """
         Indexable group allows access to individual projects
         """
         if isinstance(index, int):
             proj_code = self.proj_codes['main'][index]
+        elif index.isnumeric():
+            proj_code = self.proj_codes['main'][int(index)]
         else:
             proj_code = index
-            
+
         return self.get_project(proj_code)
     
     def complete_group(
             self, 
             move_to: str,
-            repeat_id: str = 'main'
+            thorough: bool = False,
+            repeat_id: str = 'main',
+            report_location: Union[str,None] = None
         ):
         """
         Complete all projects for a group.
         """
+
+        if report_location is None:
+            report_location = os.path.join(move_to, 'reports')
 
         self.logger.info("Verifying completion directory exists")
         if not os.path.isdir(move_to):
@@ -158,6 +182,20 @@ class GroupOperation(
             raise OSError(
                 f'Directory {move_to} is not writable'
             )
+
+        if not os.path.isdir(report_location):
+            os.makedirs(report_location)
+
+        if not os.access(report_location, os.W_OK):
+            raise OSError(
+                f'Directory {report_location} is not writable'
+            )
+        
+        if repeat_id not in self.proj_codes:
+            raise ValueError(
+                f'"{repeat_id}" Unrecognised - must '
+                f'be one of {self.proj_codes.keys()}'
+            )
         
         proj_list = self.proj_codes[repeat_id].get()
         self.logger.info(
@@ -166,10 +204,21 @@ class GroupOperation(
         )
 
         for proj in proj_list:
-            proj_op = self[proj]
-            proj_op.complete_project(move_to)
+            try:
+                proj_op = self[proj]
 
-    
+                if thorough and not proj_op.remote:
+                    self.logger.info('Adding download link')
+                    proj_op.add_download_link()
+
+                # Export report
+                proj_op.export_report(report_location)
+
+                # Export products
+                proj_op.complete_project(move_to)
+            except Exception as err:
+                self.logger.warning(f'Skipped {proj} - {err}')
+
     def get_stac_representation(
             self, 
             stac_mapping: dict, 
@@ -225,7 +274,7 @@ class GroupOperation(
     def run(
             self,
             phase: str,
-            mode: str = 'kerchunk',
+            mode: Union[str,None] = None,
             repeat_id: str = 'main',
             proj_code: Optional[str] = None,
             subset: Optional[str] = None,
@@ -247,10 +296,11 @@ class GroupOperation(
             'compute': self._compute_config,
             'validate': self._validate_config,
         }
-
+        is_parallel = False
         jobid = None
         if os.getenv('SLURM_ARRAY_JOB_ID'):
             jobid = f"{os.getenv('SLURM_ARRAY_JOB_ID')}-{os.getenv('SLURM_ARRAY_TASK_ID')}"
+            is_parallel = True
 
         # Select set of datasets from repeat_id
 
@@ -295,6 +345,7 @@ class GroupOperation(
                 fh=fh, 
                 bypass=bypass,
                 run_kwargs=run_kwargs,
+                parallel=is_parallel,
                 **kwargs)
             
             if status in results:
@@ -333,13 +384,13 @@ class GroupOperation(
 
         :returns:   None
         """
-        so = ScanOperation(
+        scan = ScanOperation(
             proj_code, self.workdir, groupID=self.groupID,
             verbose=self._verbose, bypass=bypass, 
             dryrun=self._dryrun, **kwargs)
+        status = scan.run(mode=mode, **self.fh_kwargs, **run_kwargs)
+        scan.save_files()
 
-        status = so.run(mode=mode, **self.fh_kwargs, **run_kwargs)
-        so.save_files()
         return status
 
     def _compute_config(
@@ -388,20 +439,14 @@ class GroupOperation(
 
         ds = COMPUTE[mode]
 
-        proj_op = ds(
-            proj_code,
-            self.workdir,
-            groupID=self.groupID,
-            logger=self.logger,
-            bypass=bypass,
-            **kwargs
+        compute = ds(
+            proj_code, self.workdir, groupID=self.groupID,
+            verbose=self._verbose, bypass=bypass,
+            dryrun=self._dryrun, **kwargs
         )
-        status = proj_op.run(
-            mode=mode, 
-            **self.fh_kwargs,
-            **run_kwargs
-        )
-        proj_op.save_files()
+
+        status = compute.run(mode=mode, **self.fh_kwargs, **run_kwargs)
+        compute.save_files()
         return status
     
     def _validate_config(
@@ -413,25 +458,26 @@ class GroupOperation(
             **kwargs
         ) -> None:
 
+        bypass = bypass or BypassSwitch()
+
         self.logger.debug(f"Starting validation for {proj_code}")
 
         try:
-            vop = ValidateOperation(
-                proj_code,
-                workdir=self.workdir,
-                groupID=self.groupID,
-                bypass=bypass,
-                **kwargs)
+            valid = ValidateOperation(
+                proj_code, self.workdir, groupID=self.groupID,
+                verbose=self._verbose, bypass=bypass,
+                dryrun=self._dryrun, **kwargs)
         except TypeError:
             raise ValueError(
                 f'{proj_code}, {self.groupID}, {self.workdir}'
             )
         
-        status = vop.run(
+        status = valid.run(
             mode=mode,
             **self.fh_kwargs,
             **run_kwargs
         )
+        valid.save_files()
         return status
 
     def _save_proj_codes(self):
@@ -462,10 +508,11 @@ class GroupOperation(
         """
 
         if name == 'main':
-            raise ValueError(
-                'Operation not permitted - removing the main codeset'
-                'cannot be achieved using this function.'
+            self.logger.debug(
+                'Removing the main codeset '
+                'cannot be achieved using this function - skipped.'
             )
+            return
         
         if name not in self.proj_codes:
             self.logger.warning(
@@ -492,7 +539,10 @@ class GroupOperation(
         import glob
 
         # Check filesystem for objects
-        proj_codes = [g.split('/')[-1].strip('.txt') for g in glob.glob(f'{self.proj_codes_dir}/*.txt')]
+        proj_codes = []
+        for g in glob.glob(f'{self.proj_codes_dir}/*.txt'):
+            proj_codes.append(g.split('/')[-1].replace('.txt','') )
+            # Found Interesting python string-strip bug wi
 
         if not proj_codes:
             # Running for the first time
@@ -502,6 +552,7 @@ class GroupOperation(
             )
             
         for p in proj_codes:
+            self.logger.debug(f'proj_code file: {p}')
             self.proj_codes[p] = ListFileHandler(
                 self.proj_codes_dir, 
                 p, 

@@ -11,9 +11,9 @@ import numpy as np
 import xarray as xr
 
 from padocc.core import BypassSwitch, LoggedOperation, ProjectOperation
-from padocc.core.errors import ValidationError
+from padocc.core.errors import worst_error
 from padocc.core.filehandlers import JSONFileHandler
-from padocc.core.utils import format_tuple
+from padocc.core.utils import format_tuple, timestamp
 
 SUFFIXES = []
 SUFFIX_LIST = []
@@ -60,6 +60,12 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
                 return False
             else:
                 raise err
+            
+    def get_origin(arr):
+        if len(arr.shape) > 1:
+            return get_origin(arr[0])
+        else:
+            return arr[0]
 
     if arr.size == 1:
         try:
@@ -68,32 +74,37 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
             isnan = handle_boxissue(err)
     else:
         try:
-            isnan = np.all(arr!=arr)
+            #print(get_origin(arr))
+            isnan = np.all(arr == np.nan)
         except Exception as err:
             isnan = handle_boxissue(err)
-        
-        if not isnan and arr.size >= 1:
-            try:
-                isnan = np.all(arr == np.mean(arr))
-            except Exception as err:
-                isnan = handle_boxissue(err)
 
     return isnan
 
-def slice_all_dims(data_arr: xr.DataArray, intval: int):
+def slice_all_dims(data_arr: xr.DataArray, intval: int, dim_mid: Union[dict[int,None],None] = None):
     """
     Slice all dimensions for the DataArray according 
     to the integer value."""
     shape = tuple(data_arr.shape)
+    dims  = tuple(data_arr.dims)
+
+    dim_mid = dim_mid or {}
 
     slice_applied = []
-    for d in shape:
+    for dim, d in zip(dims, shape):
         if d < 8:
+            slice_applied.append(slice(0,d))
             continue
 
         mid = int(d/2)
+        if dim_mid.get(dim,None) is not None:
+            mid = dim_mid[dim]
+
         step = int(d/(intval*2))
-        slice_applied.append(slice(mid-step,mid+step))
+        # Rounding issue solve - bug 20/05/25
+        if step < 0.5:
+            step = 0.51
+        slice_applied.append(slice(int(mid-step),int(mid+step)))
     return tuple(slice_applied)
 
 def format_slice(slice: list[slice]) -> str:
@@ -121,6 +132,9 @@ def _recursive_set(source: dict, keyset: list, value):
     return source
 
 class PresliceSet:
+    """
+    Preslice Object for handling slices applied to datasets.
+    """
 
     def __init__(self):
         self._preslice_set = {}
@@ -132,10 +146,18 @@ class PresliceSet:
         """
         Apply a preslice operation to a data array"""
 
+        squeeze_dims=[]
         if var not in self._preslice_set:
             return self._default_preslice(data_arr)
         else:
-            return data_arr.sel(**self._preslice_set[var])
+            for dim, dslice in self._preslice_set[var].items():
+                if isinstance(dslice,tuple):
+                    squeeze_dims.append(dslice[1])
+                    self._preslice_set[var][dim] = dslice[0]
+            da = data_arr.isel(**self._preslice_set[var])
+            if len(squeeze_dims) > 0:
+                da = da.squeeze(dim=squeeze_dims,drop=True)
+            return da
 
     def _default_preslice(self, data_arr: xr.DataArray) -> xr.DataArray:
         """
@@ -154,7 +176,7 @@ class Report:
         self._value = fh or {}
 
     def __setitem__(self, index, value):
-        nest = index.split('.')
+        nest = index.split(',')
         current = {}
         if nest[0] in self._value:
             current = self._value[nest[0]]
@@ -198,6 +220,7 @@ class ValidateDatasets(LoggedOperation):
             fh: str = None,
             logid: str = None,
             verbose: int = 0,
+            bypass_vars: list = None
         ):
         """
         Initiator for the ValidateDataset Class.
@@ -207,6 +230,8 @@ class ValidateDatasets(LoggedOperation):
         
         These dataset objects should be identical, just from different sources.
         """
+
+        self.bypass_vars = bypass_vars or []
 
         self._id = id
         self._datasets   = datasets
@@ -435,7 +460,7 @@ class ValidateDatasets(LoggedOperation):
 
             # Check for ignored selectors
             if s in ignore_sels:
-                self._metadata_report[f'{selector}.{s}'] = {
+                self._metadata_report[f'{selector},{s}'] = {
                     'type': 'ignored'
                 }
                 continue
@@ -450,7 +475,7 @@ class ValidateDatasets(LoggedOperation):
                 test_s = test_set[test_set.index(s)]
             except ValueError:
                 # Selector missing from test set
-                self._metadata_report[f'{selector}.{s}'] = {
+                self._metadata_report[f'{selector},{s}'] = {
                     'type':'missing',
                     'info':f'missing from {self._labels[0]}'
                 }
@@ -468,7 +493,7 @@ class ValidateDatasets(LoggedOperation):
         # Find selectors missing from the control set
         missing_from_control = set(test_set).difference(control_set)
         for mc in missing_from_control:
-            self._metadata_report[f'{selector}.{mc}'] = {
+            self._metadata_report[f'{selector},{mc}'] = {
                 'type':'missing',
                 'info':f'missing from {self._labels[1]}'
             }
@@ -478,7 +503,7 @@ class ValidateDatasets(LoggedOperation):
         # Set the selector here for further operations.
 
         if misordered:
-            self._metadata_report[f'{selector}.all_{selector}'] = {
+            self._metadata_report[f'{selector},all_{selector}'] = {
                 'type': 'order'
             }
 
@@ -515,7 +540,7 @@ class ValidateDatasets(LoggedOperation):
             self.logger.debug(f'  > {attr}')
             # Check for ignored attributes
             if attr in ignore:
-                self._metadata_report[f'attributes.{source}.{attr}'] = {
+                self._metadata_report[f'attributes,{source},{attr}'] = {
                     'type': 'ignore'
                 }
                 continue
@@ -526,7 +551,7 @@ class ValidateDatasets(LoggedOperation):
                 for index, aset in enumerate(attrset):
                     set_of_values.append(aset[attr])
             except KeyError:
-                self._metadata_report[f'attributes.{source}.{attr}'] = {
+                self._metadata_report[f'attributes,{source},{attr}'] = {
                     'type': 'missing',
                     'info': f'missing from {self._labels[index]}'
                 }
@@ -535,11 +560,11 @@ class ValidateDatasets(LoggedOperation):
             # Check for non-equal attributes
             s = set_of_values[0]
             if not np.all(s == np.array(set_of_values[1:])):
-                self._metadata_report[f'attributes.{source}.{attr}'] = {
+                self._metadata_report[f'attributes,{source},{attr}'] = {
                     'type': 'not_equal'
                 }
 
-    def validate_data(self):
+    def validate_data(self, dim_mid: Union[dict,None] = None):
         """
         Perform data validations using the growbox method for all variable DataArrays.
         """
@@ -590,6 +615,13 @@ class ValidateDatasets(LoggedOperation):
             )
 
         for var in self.variables:
+
+            if var in self.bypass_vars:
+                self._data_report[f'variables,skipped,{var}'] = {
+                    'type':'singled-out'
+                }
+                continue
+
             self.logger.debug(f'Validating shapes for {var}')
             try:
                 testvar = self.test_dataset_var(var)
@@ -608,11 +640,12 @@ class ValidateDatasets(LoggedOperation):
             # Check access to the source data somehow here
             # Initiate growbox method - recursive increasing box size.
             self.logger.debug(f'Validating data for {var}')
-            self._validate_selection(var, testvar, controlvar)
+            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid)
 
-    def _validate_shapes(self,var: str, test, control, ignore=None):
+    def _validate_shapes(self, var: str, test, control, ignore=None):
         """
         Ensure all variable shapes are consistent across all datasets.
+
         Allowances dict contains configurations for skipping some shape tests
         in the case for example of a virtual dimension.
         """
@@ -622,9 +655,17 @@ class ValidateDatasets(LoggedOperation):
         if 'size' not in ignore:
             if test.size != control.size:
                 # Size error
-                self._data_report[f'variables.size_errors.{var}'] = {
+                self._data_report[f'variables,size_errors,{var}'] = {
                     self._labels[0]: test.size,
                     self._labels[1]: control.size
+                }
+
+        if 'dtype' not in ignore:
+            if test.dtype != control.dtype:
+                # Dtype issue - possibly due to conversion
+                self._data_report[f'variables,dtype/precision,{var}'] = {
+                    self._labels[0]: test.dtype,
+                    self._labels[1]: control.dtype
                 }
 
         # Check dimensions individually
@@ -638,7 +679,7 @@ class ValidateDatasets(LoggedOperation):
 
         # Check for consistency of number of dimensions
         if len(test.dims) != len(control.dims):
-            self._data_report[f'variables.dim_errors.{var}'] = {
+            self._data_report[f'variables,dim_errors,{var}'] = {
                     self._labels[0]: test.dims,
                     self._labels[1]: control.dims
                 }
@@ -659,12 +700,12 @@ class ValidateDatasets(LoggedOperation):
                 control_dr.append(str(control.shape[i]))
                 dim_error = True
             else:
-                test_dr.append('X')
-                control_dr.append('X')
+                test_dr.append(':')
+                control_dr.append(':')
         
         # Record error if present
         if dim_error:
-            self._data_report[f'variables.dim_size_errors.{var}'] = {
+            self._data_report[f'variables,dim_size_errors,{var}'] = {
                     self._labels[0]: ','.join(test_dr),
                     self._labels[1]: ','.join(control_dr)
                 }
@@ -672,6 +713,14 @@ class ValidateDatasets(LoggedOperation):
     def _validate_dimvalues(self, dim: str, test_range, control_range, ignore=None):
         """
         Validate that the first and last values of the dimension arrays are equal.
+
+        :param dim:         (str) The name of the current dimension.
+
+        :param test_range:        (obj) The cloud-format first and last values.
+
+        :param control_range:     (obj) The native-format first and last values.
+
+        :param ignore:      (bool) Option to ignore specific dimension.
         """
         if ignore:
             self.logger.debug(f'Skipped {dim}')
@@ -683,7 +732,7 @@ class ValidateDatasets(LoggedOperation):
                 
             if control_range[0] == control_range[1]:
                 control_range = [control_range[0]]
-            self._data_report[f'dimensions.data_errors.{dim}'] = {
+            self._data_report[f'dimensions,data_errors,{dim}'] = {
                     self._labels[0]: format_tuple(
                         tuple(np.array(test_range, dtype=test_range[0].dtype).tolist())),
                     self._labels[1]: format_tuple(
@@ -693,13 +742,21 @@ class ValidateDatasets(LoggedOperation):
     def _validate_dimlens(self, dim: str, test, control, ignore=None):
         """
         Validate dimension lengths are consistent
+
+        :param dim:     (str) The name of the current dimension.
+
+        :param test:        (obj) The cloud-format (Kerchunk) dataset selection
+
+        :param control:     (obj) The native dataset selection
+
+        :param ignore:      (bool) Option to ignore specific dimension.
         """
         if ignore:
             self.logger.debug(f'Skipped {dim}')
             return
         
         if test != control:
-            self._data_report[f'dimensions.size_errors.{dim}'] = {
+            self._data_report[f'dimensions,size_errors,{dim}'] = {
                     self._labels[0]: test,
                     self._labels[1]: control
                 }
@@ -709,13 +766,20 @@ class ValidateDatasets(LoggedOperation):
             var: str,
             test: xr.DataArray,
             control: xr.DataArray,
-            current : int = 1,
-            recursion_limit : int = 10, 
+            current : int = 100,
+            recursion_limit : int = 1, 
+            dim_mid: Union[dict,None] = None,
         ) -> bool:
         """
         General purpose validation for a specific variable from multiple sources.
         Both inputs are expected to be xarray DataArray objects but the control could
         instead by a NetCDF4 Dataset object. We expect both objects to be of the same size.
+
+        :param var:           (str) The name of the variable described by this box selection
+
+        :param test:            (obj) The cloud-format (Kerchunk) dataset selection
+
+        :param control:         (obj) The native dataset selection
         """
         if test.size != control.size:
             self.logger.error(
@@ -724,21 +788,22 @@ class ValidateDatasets(LoggedOperation):
             )
             return
 
-        if current >= recursion_limit:
+        if current <= recursion_limit:
             self.logger.debug('Maximum recursion depth reached')
             self.logger.info(f'Validation for {var} not performed')
 
-            self._data_report[f'data_errors.{var}'] = {
+            self._data_report[f'variables,data_errors,{var}'] = {
                 'type':'grow_box_exceeded'
             }
             return None
         
-        slice_applied = slice_all_dims(test, current)
+        slice_applied = slice_all_dims(test, current, dim_mid=dim_mid)
+        self.logger.debug(f'Applying slice {slice_applied} to {var}')
         tbox = test[slice_applied]
         cbox = control[slice_applied]
 
-        if check_for_nan(cbox, BypassSwitch(), self.logger):
-            return self._validate_selection(test, control, current+1, var, recursion_limit=recursion_limit)
+        if check_for_nan(cbox, BypassSwitch(), self.logger, label=var):
+            return self._validate_selection(var, test, control, current-1, recursion_limit=recursion_limit, dim_mid=dim_mid)
         else:
             return self._compare_data(var, slice_applied, tbox, cbox)
 
@@ -768,17 +833,26 @@ class ValidateDatasets(LoggedOperation):
 
         :returns:   None but will raise error if data comparison fails.
         """
-        self.logger.debug(f'Starting data comparison for {vname}')
+        self.logger.info(f'Starting data comparison for {vname}')
 
         self.logger.debug('1. Flattening Arrays')
         t1 = datetime.now()
 
-        control   = np.array(control).flatten()
-        test      = np.array(test).flatten()
+        data_errors, bypassed = [], []
+
+        ### --- Array Flattening --- ##
+        try:
+            control   = np.array(control).flatten()
+            test      = np.array(test).flatten()
+        except Exception as err:
+            self.logger.error('Failed to flatten numpy arrays')
+            raise err
 
         if len(slice_applied) == 0:
             slice_applied = [slice(0, len(control))]
         start, stop = format_slice(slice_applied)
+
+        ### --- Tolerance Calculation --- ###
 
         self.logger.debug(f'2. Calculating Tolerance - {(datetime.now()-t1).total_seconds():.2f}s')
         try: # Tolerance 0.1% of mean value for xarray set
@@ -786,27 +860,46 @@ class ValidateDatasets(LoggedOperation):
         except TypeError: # Type cannot be summed so skip all summations
             tolerance = None
 
-        self.logger.debug(f'3. Comparing with array_equal - {(datetime.now()-t1).total_seconds():.2f}s')
-        testpass = True
-        try:
-            equality = np.array_equal(control, test, equal_nan=True)
-        except TypeError as err:
-            equality = np.array_equal(control, test)
+        ### --- Equality Comparison: with tolerance --- ###
 
-        errors, bypassed = [], []
+        self.logger.debug(f'3a. Comparing with all_close - {(datetime.now()-t1).total_seconds():.2f}s')
+        try:
+            is_close = np.allclose(control, test, atol=tolerance, equal_nan=True)
+        except TypeError as err:
+            try:
+                is_close = np.allclose(control, test, atol=tolerance)
+            except TypeError:
+                self._data_report[f'variables,bypassed,{vname}'] = 'non-comparable'
+                self.logger.info(f'Data validation skipped for {vname} - non-comparable')
+                return
+            
+        ### --- Equality Comparison: without tolerance --- ###
+
+        self.logger.debug(f'3b. Comparing with array_equal - {(datetime.now()-t1).total_seconds():.2f}s')
+        try:
+            equality = np.allclose(control, test, atol=tolerance, equal_nan=True)
+        except TypeError as err:
+            try:
+                equality = np.allclose(control, test, atol=tolerance)
+            except TypeError:
+                self._data_report[f'variables,bypassed,{vname}'] = 'non-comparable'
+                self.logger.info(f'Data validation skipped for {vname} - non-comparable')
+                return
 
         if not equality:
-            self.logger.debug(f'3a. Comparing directly - {(datetime.now()-t1).total_seconds():.2f}s')
-            equality = False
-            errors.append('not_equal')
-                
+            if not is_close:
+                data_errors.append('not_equal')
+            else:
+                data_errors.append('precision_error')
+
+        ### --- Max/Min/Mean Comparisons --- ###
+        
         self.logger.debug(f'4. Comparing Max values - {(datetime.now()-t1).total_seconds():.2f}s')
         try:
             if np.abs(np.nanmax(test) - np.nanmax(control)) > tolerance:
                 self.logger.warning(f'Failed maximum comparison for {vname}')
                 self.logger.debug('K ' + str(np.nanmax(test)) + ' N ' + str(np.nanmax(control)))
-                testpass = False
-                errors.append('max_not_equal')
+                data_errors.append('max_not_equal')
         except TypeError as err:
             self.logger.warning(f'Max comparison skipped for non-summable values in {vname}')
             bypassed.append('max')
@@ -816,8 +909,7 @@ class ValidateDatasets(LoggedOperation):
             if np.abs(np.nanmin(test) - np.nanmin(control)) > tolerance:
                 self.logger.warning(f'Failed minimum comparison for {vname}')
                 self.logger.debug('K ' + str(np.nanmin(test)) + ' N ' + str(np.nanmin(control)))
-                testpass = False
-                errors.append('min_not_equal')
+                data_errors.append('min_not_equal')
         except TypeError as err:
             self.logger.warning(f'Min comparison skipped for non-summable values in {vname}')
             bypassed.append('min')
@@ -827,20 +919,24 @@ class ValidateDatasets(LoggedOperation):
             if np.abs(np.nanmean(test) - np.nanmean(control)) > tolerance:
                 self.logger.warning(f'Failed mean comparison for {vname}')
                 self.logger.debug('K ' + str(np.nanmean(test)) + ' N ' + str(np.nanmean(control)))
-                testpass = False
-                errors.append('mean_not_equal')
+                data_errors.append('mean_not_equal')
         except TypeError as err:
             self.logger.warning(f'Mean comparison skipped for non-summable values in {vname}')
             bypassed.append('mean')
 
-        if errors:
-            self._data_report[f'data_errors.{vname}'] = {
-                'type':','.join(errors),
-                'topleft':start,
-                'bottomright':stop,
-            }
+        if data_errors:
+            # 1.3.5 Error bypass
+            if test.size == 1:
+                self.logger.warning(f'1.3.5 Warning: 1-dimensional value difference for {vname} - skipped')
+                self._data_report[f'variables,bypassed,{vname}'] = '1D-nan'
+            else:
+                self._data_report[f'variables,data_errors,{vname}'] = {
+                    'type':','.join(data_errors),
+                    'topleft':start,
+                    'bottomright':stop,
+                }
         if bypassed:
-            self._data_report[f'bypassed.{vname}'] = ','.join(bypassed)
+            self._data_report[f'variables,bypassed,{vname}'] = ','.join(bypassed)
 
         self.logger.info(f'Data validation complete for {vname}')
 
@@ -854,72 +950,90 @@ class ValidateOperation(ProjectOperation):
     Class logger attribute so this doesn't need to be passed between functions.
     Bypass switch contained here with all switches.
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self, 
+            proj_code,
+            workdir,
+            parallel: bool = False,
+            **kwargs):
         """
         No current validate-specific parameters
         """
 
         self.phase = 'validate'
-        super().__init__(*args, **kwargs)
-
+        super().__init__(proj_code, workdir, **kwargs)
+        if parallel:
+            self.update_status(self.phase, 'Pending',jobid=self._logid)
 
     def _run(
             self,
             mode: str = 'kerchunk',
+            dim_mid: Union[dict,None] = None,
             **kwargs
         ) -> None:
         """
         Run hook for project operation run method
+
+        :param mode:    (str) Cloud format to use, overriding the known cloud format from 
+            previous steps.
         """
+        self.set_last_run(self.phase, timestamp())
+        self.logger.info("Starting validation")
 
         if mode != self.cloud_format and mode is not None:
             self.cloud_format = mode
 
         test   = self.dataset.open_dataset()
-        sample = self._open_sample()
+        sample, rf = self._open_sample()
+
+        self.logger.info(f'Using sample {rf} along aggregated dimension')
 
         meta_fh = JSONFileHandler(self.dir, 'metadata_report',logger=self.logger, **self.fh_kwargs)
         data_fh = JSONFileHandler(self.dir, 'data_report',logger=self.logger, **self.fh_kwargs)
+
+        bypass_vars = self.base_cfg.get('validation',{}).get('bypass',[])
 
         vd = ValidateDatasets(
             [test,sample],
             f'validator-padocc-{self.proj_code}',
             dataset_labels=[self.cloud_format, self.source_format], 
             filehandlers=[meta_fh, data_fh],
-            logger=self.logger)
+            logger=self.logger,
+            bypass_vars=bypass_vars)
 
         # Run metadata testing
         vd.validate_metadata()
 
-        if self.detail_cfg.get(index='CFA'):
+        if self.cfa_enabled:
             self.logger.info('CFA-enabled validation')
             control = self._open_cfa()
             vd.replace_dataset(control, label=self.source_format)
         else:
             self.logger.info('Source-slice validation')
-            preslice = self._get_preslice(test, sample, test.variables)
+            preslice = self._get_preslice(test, sample, test.variables, rf=rf)
+            self.logger.debug('Slicing using preslice selections:')
+            self.logger.debug(f' - {"\n -".join(preslice._preslice_set)}')
 
             vd.replace_preslice(preslice, label=self.cloud_format)
 
-        vd.validate_data()
+        vd.validate_data(dim_mid=dim_mid)
 
         # Save report
         vd.save_report()
 
-        self.update_status('validate',vd.pass_fail,jobid=self._logid)
-
-        if vd.pass_fail == 'Fatal':
-            raise ValidationError(vd.data_report)
+        err = worst_error(vd.report) or 'Success'
+        self.update_status('validate',err, jobid=self._logid)
         
         return vd.pass_fail
 
-    def _open_sample(self):
+    def _open_sample(self) -> tuple:
         """
         Open a random sample dataset for validation checking.
         """
+
         randomfile = random.randint(0,len(self.allfiles)-1)
         file = self.allfiles[randomfile]
-        return xr.open_dataset(file)
+        return xr.open_dataset(file), randomfile
 
     def _open_cfa(self):
         """
@@ -927,7 +1041,7 @@ class ValidateOperation(ProjectOperation):
         """
         return self.cfa_dataset.open_dataset()
 
-    def _get_preslice(self, test, sample, variables):
+    def _get_preslice(self, test, sample, variables, rf:int = 0):
         """Match timestamp of xarray object to kerchunk object.
         
         :param test:     (obj) An xarray dataset representing the cloud product.
@@ -938,24 +1052,53 @@ class ValidateOperation(ProjectOperation):
             to the sample dataset.
         """
 
+        virtual = self.detail_cfg.get('virtual_concat',False)
+        # Use rf to squeeze non-present dimensions
+
         preslice = PresliceSet()
         for var in variables:
             preslice_var = {}
+
+            if virtual:
+                if var == 'file_number':
+                    # Skip the virtual dimension
+                    continue
+
+            dim_diffs = set(test[var].dims) - set(sample[var].dims)
+
             for dim in sample[var].dims:
 
                 if len(sample[dim]) < 2:
-                    slice_dim = slice(None,None)
+
+                    dim_array = np.array(test[dim])
+                    index = np.where(dim_array == np.array(sample[dim][0]))[0][0]
+                    stop = index + 1
+                    pos0 = index #np.array(test[dim][index], dtype=test[dim].dtype)
+                    end = stop # np.array(test[dim][stop], dtype=test[dim].dtype)
+
                 else:
-                    pos0 = np.array(sample[dim][0], dtype=sample[dim].dtype)
-                    pos1 = np.array(sample[dim][1], dtype=sample[dim].dtype)
+                    # Switch to selection not iselection if needed later?
+                    #pos0 = np.array(sample[dim][0], dtype=sample[dim].dtype)
+                    #pos1 = np.array(sample[dim][1], dtype=sample[dim].dtype)
 
-                    end = np.array(sample[dim][-1], dtype=sample[dim].dtype) + (pos1-pos0)
+                    #end = np.array(sample[dim][-1], dtype=sample[dim].dtype) + (pos1-pos0)
+                    pos0 = 0
+                    end  = len(sample[dim])
 
-                    slice_dim = slice(
-                        pos0,
-                        end
-                    )
+                slice_dim = slice(
+                    pos0,
+                    end
+                )
                 preslice_var[dim] = slice_dim
+
+            # Covers virtual dimensions
+            if virtual and 'file_number' in test[var].dims:
+                preslice_var['file_number'] = slice(rf,rf+1)
+
+            # Covers missing dimensions (inc. virtual)
+            for dim in dim_diffs:
+                preslice_var[dim] = (slice(rf,rf+1), dim)
+            
             preslice.add_preslice(preslice_var, var)
 
         return preslice

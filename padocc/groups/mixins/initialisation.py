@@ -5,11 +5,12 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 import json
 import logging
 import os
-from typing import Callable
+from typing import Callable, Union
 
 from padocc import ProjectOperation
 from padocc.core import FalseLogger
-from padocc.core.utils import apply_substitutions, extract_file, file_configs
+from padocc.core.utils import apply_substitutions, extract_file, \
+    file_configs, valid_project_code
 
 
 def _get_input(
@@ -166,7 +167,12 @@ class InitialisationMixin:
     def init_from_stac(self):
         pass
 
-    def init_from_file(self, input_file: str, substitutions: dict = None):
+    def init_from_file(
+            self, 
+            input_file: str, 
+            substitutions: dict = None,
+            remote_s3: Union[dict, str, None] = None,
+        ) -> None:
         """
         Run initialisation by loading configurations from input sources, determine
         input file type and use appropriate functions to instantiate group and project
@@ -214,7 +220,7 @@ class InitialisationMixin:
                 self.logger.debug('Ingesting csv file')
 
                 group_config = extract_file(input_file)
-            self._init_group(group_config, substitutions=substitutions)
+            self._init_group(group_config, substitutions=substitutions, remote_s3=remote_s3)
 
         else:
             # Only base-cfg style files are accepted here.
@@ -227,14 +233,27 @@ class InitialisationMixin:
 
             with open(input_file) as f:
                 provided_config = json.load(f)
-            self._init_project(provided_config)
+            self._init_project(provided_config, remote_s3=remote_s3)
 
-    def _init_project(self, config: dict):
+    def _init_project(
+            self, 
+            config: dict, 
+            remote_s3: Union[dict, str, None] = None
+        ) -> None:
         """
         Create a first-time ProjectOperation and save created files. 
         """
+
+        status = valid_project_code(config['proj_code'])
+        if not status:
+            raise ValueError(
+                'One or more failed project code checks'
+            )
+
         default_cfg = file_configs['base_cfg']
         default_cfg.update(config)
+
+        self.logger.debug(f'Initialising project {config["proj_code"]}')
 
         proj_op = ProjectOperation(
             config['proj_code'],
@@ -245,11 +264,17 @@ class InitialisationMixin:
             logger=self.logger,
             dryrun=self._dryrun,
             forceful=self._forceful,
+            remote_s3=remote_s3
         )
-
+        proj_op.update_status('init','Success')
         proj_op.save_files()
 
-    def _init_group(self, datasets : list, substitutions: dict = None):
+    def _init_group(
+            self, 
+            datasets : list, 
+            substitutions: dict = None,
+            remote_s3: Union[dict, str, None] = None,
+        ) -> None:
         """
         Create a new group within the working directory, and all 
         associated projects.
@@ -274,10 +299,30 @@ class InitialisationMixin:
         proj_codes = []
         for index in range(len(datasets)):
             cfg_values = {}
+            components     = (datasets[index].split('"')[0] + datasets[index].split('"')[2]).split(',')
+
             ds_values  = datasets[index].split(',')
 
             proj_code = ds_values[0].replace(' ','')
             pattern   = ds_values[1].replace(' ','')
+
+            updates, removals = None, None
+
+            if len(components) > 2:
+                updates  = components[2]
+            if len(components) > 3:
+                removals = components[3]
+
+            if '"' in pattern:
+                try:
+                    # Bypass weirdly formatted section
+                    proj_code = datasets[index].split(',')[0].replace(' ','')
+                    pattern = datasets[index].split('"')[1]
+
+                except Exception as err: 
+                    raise ValueError(
+                        f"BYPASS FAILED - {err}"
+                    )
 
             if pattern.endswith('.txt') and substitutions:
                 pattern, status = apply_substitutions('dataset_file', subs=substitutions, content=[pattern])
@@ -297,16 +342,16 @@ class InitialisationMixin:
             proj_codes.append(proj_code)
 
             if len(ds_values) > 2:
-                if os.path.isfile(ds_values[2]):
-                    cfg_values['update'] = _open_json(ds_values[2])
+                if os.path.isfile(updates):
+                    cfg_values['update'] = _open_json(updates)
                 else:
-                    cfg_values['update'] = ds_values[2]
+                    cfg_values['update'] = updates
 
             if len(ds_values) > 3:
-                if os.path.isfile(ds_values[3]):
-                    cfg_values['remove'] = _open_json(ds_values[3])
+                if os.path.isfile(removals):
+                    cfg_values['remove'] = _open_json(removals)
                 else:
-                    cfg_values['remove'] = ds_values[3]
+                    cfg_values['remove'] = removals
 
             self.logger.info(f'Creating directories/filelists for {index+1}/{len(datasets)}')
 
@@ -319,6 +364,7 @@ class InitialisationMixin:
                 ft_kwargs=cfg_values,
                 dryrun=self._dryrun,
                 forceful=self._forceful,
+                remote_s3=remote_s3
             )
 
             proj_op.update_status('init','Success')

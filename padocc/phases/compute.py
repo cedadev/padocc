@@ -18,8 +18,8 @@ from padocc.core import FalseLogger, LoggedOperation, ProjectOperation
 from padocc.core.errors import (ComputeError, ConcatFatalError,
                                 KerchunkDriverFatalError, PartialDriverError,
                                 SourceNotFoundError)
-from padocc.core.filehandlers import JSONFileHandler, ZarrStore
-from padocc.core.utils import find_closest, make_tuple
+from padocc.core.filehandlers import JSONFileHandler, ZarrStore, KerchunkFile
+from padocc.core.utils import find_closest, make_tuple, timestamp
 from padocc.phases.validate import ValidateDatasets
 
 CONCAT_MSG = 'See individual files for more details'    
@@ -121,6 +121,7 @@ class KerchunkConverter(LoggedOperation):
                 return None
         except Exception as err:
             if self._bypass_driver:
+                self.logger.info(f'Bypassing driver error: {err}')
                 return None
             else:
                 raise err
@@ -163,6 +164,7 @@ class ComputeOperation(ProjectOperation):
             skip_concat : bool = False, 
             label : str = 'compute',
             is_trial: bool = False,
+            parallel: bool = False,
             **kwargs
         ) -> None:
         """
@@ -203,6 +205,9 @@ class ComputeOperation(ProjectOperation):
             thorough=thorough,
             label=label,
             **kwargs)
+        
+        if parallel:
+            self.update_status(self.phase, 'Pending',jobid=self._logid)
         
         self._is_trial = is_trial
 
@@ -248,9 +253,11 @@ class ComputeOperation(ProjectOperation):
 
         if thorough:
             self.temp_zattrs.set({})
+        
+        kwargs = self.detail_cfg.get('kwargs',{})
 
-        self.combine_kwargs = {} # Now using agg_dims and identical dims finders.
-        self.create_kwargs  = {'inline_threshold':0}
+        self.combine_kwargs = kwargs.get('combine_kwargs',None) or {}
+        self.create_kwargs  = kwargs.get('create_kwargs',None) or {'inline_threshold':0}
         self.pre_kwargs     = {}
 
         self.special_attrs = {}
@@ -296,6 +303,10 @@ class ComputeOperation(ProjectOperation):
                 f'have specified to use {mode} which requires the use '
                 'of a different `DS` operator (Kerchunk/Zarr supported).'
             )
+        
+        if not self.cfa_enabled:
+            # Bypass CFA if deactivated.
+            return 'CFASkipped'
         
         if file_limit == len(self.allfiles):
             file_limit = None
@@ -352,7 +363,7 @@ class ComputeOperation(ProjectOperation):
 
             cfa.create()
             if file_limit is None:
-                cfa.write(instance.cfa_path)
+                cfa.write(instance.cfa_path + '.nca')
 
             return {
                 'aggregated_dims': make_tuple(cfa.agg_dims),
@@ -372,8 +383,10 @@ class ComputeOperation(ProjectOperation):
     def _run_with_timings(self, func, **kwargs) -> str:
         """
         Configure all required steps for Kerchunk processing.
-        - Check if output files already exist.
-        - Configure timings post-run.
+
+
+        Check if output files already exist and configure 
+        timings post-run.
         """
 
         # Timed func call
@@ -383,6 +396,9 @@ class ComputeOperation(ProjectOperation):
 
         timings      = self._get_timings()
         detail       = self.detail_cfg.get()
+
+        if not detail.get('timings',None):
+            detail['timings'] = {}
 
         if timings:
             self.logger.info('Export timings for this process - all refs created from scratch.')
@@ -451,7 +467,9 @@ class ComputeOperation(ProjectOperation):
         Common class method for all conversion types.
         """
         detail = self.detail_cfg.get()
-        detail['combine_kwargs'] = self.combine_kwargs
+        kwargs = detail.get('kwargs',{})
+        kwargs['combine_kwargs'] = self.combine_kwargs
+        detail['kwargs'] = kwargs
         if self.special_attrs:
             detail['special_attrs'] = list(self.special_attrs.keys())
 
@@ -540,10 +558,10 @@ class ComputeOperation(ProjectOperation):
             else:
                 # Unrecognised time variable
                 # Check to see if all the same value
-                if len(set(times[k])) == len(self.allfiles):
-                    combined[k] = 'See individual files for details'
-                elif len(set(times[k])) == 1:
+                if len(set(times[k])) == 1:
                     combined[k] = times[k][0]
+                elif len(set(times[k])) == len(self.allfiles):
+                    combined[k] = 'See individual files for details'
                 else:
                     combined[k] = list(set(times[k]))
 
@@ -610,6 +628,7 @@ class ComputeOperation(ProjectOperation):
         test_files = [self.allfiles[0], self.allfiles[-1]]
         datasets   = [xr.open_dataset(t) for t in test_files]
         dimensions = datasets[0].dims
+        variables  = datasets[0].variables
 
         vd = ValidateDatasets(
             datasets,
@@ -629,24 +648,34 @@ class ComputeOperation(ProjectOperation):
             )
         )
 
-        dims = vd.report['report']['data'].get('dimensions',{})
+        dim_errs = vd.report['report']['data'].get('dimensions',{})
+        var_errs = vd.report['report']['data'].get('variables',{})
 
         # Non identical variables identifiable by either data errors (the data changes between files)
         # Or size errors (the array size is different - data must be different in this case.)
-        derrs    = set(vd.report['report']['data'].get('data_errors',{}))
-        var_errs = vd.report['report']['data'].get('variables',{})
+        derrs    = set(var_errs.get('data_errors',{}))
         sizerrs  = set(var_errs.get('size_errors',{}))
 
         vars = derrs | sizerrs
 
         concat_dims = []
-        if 'data_errors' in dims:
-            concat_dims = [dim for dim in dims['data_errors'].keys()]
+        if 'data_errors' in dim_errs:
+            concat_dims = [dim for dim in dim_errs['data_errors'].keys()]
 
         # Concat dims will vary across files, identicals will not.
 
-        identical_dims = [dim for dim in dimensions if dim not in vars]
-        
+        # Identical variables cannot have a concat dimension as one of their dimensions.
+        non_identical = []
+        for v in variables:
+            dsr = datasets[0][v]
+            for c in concat_dims:
+                if c in dsr.dims:
+                    non_identical.append(v)
+
+        identical_dims = [dim for dim in dimensions if (dim not in vars and dim not in concat_dims)]
+        identical_vars = [var for var in variables if (var not in vars and var not in non_identical)]
+
+        identical_dims = list(set(identical_dims + identical_vars))
         
         return concat_dims, identical_dims
 
@@ -659,7 +688,7 @@ class ComputeOperation(ProjectOperation):
         t1 = datetime.now()
         self.logger.info("Starting dimension specs determination")
 
-        if 'CFA' in self.detail_cfg:
+        if self.detail_cfg.get('CFA',False):
             self.logger.info('Extracting dim info from CFA report')
             concat_dims, identical_dims, report = self._dims_via_cfa()
             self._data_properties = report
@@ -678,6 +707,7 @@ class ComputeOperation(ProjectOperation):
 
         if self.combine_kwargs['concat_dims'] == []:
             self.logger.info("No concatenation dimensions available - virtual dimension will be constructed.")
+            self.detail_cfg['virtual_concat'] = True
         else:
             self.logger.info(f"Found {self.combine_kwargs['concat_dims']} concatenation dimensions.")
 
@@ -702,6 +732,8 @@ class KerchunkDS(ComputeOperation):
             self,
             check_dimensions: bool = False,
             ctype: Union[str,None] = None,
+            compute_subset: Union[str,None] = None,
+            compute_total: Union[str,None] = None,
             **kwargs
         ) -> str:
         """
@@ -717,7 +749,9 @@ class KerchunkDS(ComputeOperation):
         status = self._run_with_timings(
             self.create_refs, 
             check_refs=check_dimensions,
-            ctype=ctype
+            ctype=ctype,
+            compute_subset=compute_subset,
+            compute_total=compute_total,
         )
         
         if ctype is None:
@@ -730,7 +764,9 @@ class KerchunkDS(ComputeOperation):
     def create_refs(
             self, 
             check_refs : bool = False,
-            ctype: Union[str,None] = None
+            ctype: Union[str,None] = None,
+            compute_subset: Union[str,None] = None,
+            compute_total: Union[str,None] = None,
         ) -> None:
         """Organise creation and loading of refs
         - Load existing cached refs
@@ -754,7 +790,33 @@ class KerchunkDS(ComputeOperation):
         t1 = datetime.now()
         create_mode = False
 
-        for x, nfile in enumerate(listfiles[:self.limiter]):
+        lim0 = 0
+        lim1 = self.limiter
+
+        if compute_subset is not None:
+            try:
+                self.skip_concat = compute_subset[0] != 'c'
+
+                cs = int(compute_subset[1:])
+                ct = int(compute_total)
+            except ValueError:
+                raise ValueError(
+                    'Invalid options given for compute_subset/total - '
+                    f'expected numeric, got {compute_subset}, {compute_total}'
+                )
+            
+            group_size = int(len(listfiles)/ct)
+            lim0 = group_size*cs
+            lim1 = group_size*(cs+1)
+            if cs == ct-1:
+                lim1 = -1 # To the end
+
+        for x, nfile in enumerate(listfiles[lim0:lim1]):
+
+            x = lim0 + x
+            total = lim1-lim0
+
+            self.logger.info(f'Processing file: {x+1}/{total}')
 
             ref = None
             ## Default Converter Type if not set.
@@ -762,25 +824,33 @@ class KerchunkDS(ComputeOperation):
                 ctype = list(converter.drivers.keys())[0]
 
             ## Connect to Cache File
-            CacheFile = JSONFileHandler(self.cache, f'{x}', 
+            CacheFile = KerchunkFile(self.cache, f'{x}', 
                                             dryrun=self._dryrun, forceful=self._forceful,
                                             logger=self.logger)
             
             ## Attempt to load the cache file
             if not self._thorough:
-                self.logger.info(f'Attempting cache file load: {x+1}/{self.limiter}')
-                ref = CacheFile.get()
-                if ref:
-                    self.logger.info(f' > Loaded ref')
-                    create_mode = False
+                self.logger.debug(f'Attempting cache file load: {x+1}/{total}')
+
+                try:
+                    # Remapper if required - removes download links from cached files.
+                    #if x > 6000:
+                    #    self.logger.warning('Removing download links')
+                    #    CacheFile.add_download_link(sub='https://dap.ceda.ac.uk',replace='')
+                    ref = CacheFile.get()
+                    if ref:
+                        self.logger.debug(' > Loaded ref')
+                        create_mode = False
+                except:
+                    ref = None
 
             ## Create cache file from scratch if needed
             if not ref:
                 if not create_mode:
-                    self.logger.info(' > Cache file not found: Switching to create mode')
+                    self.logger.debug(' > Cache file not found: Switching to create mode')
                     create_mode = True
 
-                self.logger.info(f'Creating refs: {x+1}/{self.limiter}')
+                self.logger.debug(f'Creating refs: {x+1}/{total}')
                 try:
                     ref, ctype = converter.run(nfile, extension=ctype, **self.create_kwargs)
                 except KerchunkDriverFatalError as err:
@@ -788,6 +858,12 @@ class KerchunkDS(ComputeOperation):
                         raise err
                     else:
                         partials.append(x)
+
+
+                if ref is not None:
+                    CacheFile.set(ref)
+                    # Get again in case of future changes.
+                    ref = CacheFile.get()
 
             if not ref:
                 continue
@@ -822,6 +898,8 @@ class KerchunkDS(ComputeOperation):
         try:
             if self.success and not self.skip_concat:
                 self._combine_and_save(refs)
+            else:
+                self.logger.info('Concatenation skipped')
         except Exception as err:
             # Any additional parts here.
             raise err
@@ -835,7 +913,12 @@ class KerchunkDS(ComputeOperation):
 
         self.logger.info('Starting concatenation of refs')
         if len(refs) > 1:
-            self._determine_dim_specs()
+
+            kwargs = self.detail_cfg.get('kwargs', {})
+            self.combine_kwargs = kwargs.get('combine_kwargs',{})
+
+            if not self.combine_kwargs.get('concat_dims',False):
+                self._determine_dim_specs()
 
         t1 = datetime.now()  
         if self.file_type == 'parq':
@@ -899,12 +982,11 @@ class KerchunkDS(ComputeOperation):
 
         self.logger.debug('Starting parquet-write process')
 
-        out = LazyReferenceMapper.create(self.record_size, str(self.kstore), fs = filesystem("file"), **self.pre_kwargs)
+        out = LazyReferenceMapper.create(str(self.kstore.store_path), fs = filesystem("file"), **self.pre_kwargs)
 
-        out_dict = MultiZarrToZarr(
+        _ = MultiZarrToZarr(
             refs,
             out=out,
-            remote_protocol='file',
             **self.combine_kwargs
         ).translate()
         
@@ -929,6 +1011,9 @@ class KerchunkDS(ComputeOperation):
             if self.detail_cfg['virtual_concat']:
                 refs, vdim = self._construct_virtual_dim(refs)
                 self.combine_kwargs['concat_dims'] = [vdim]
+
+            self.logger.debug(f'Concat Dim(s): {self.combine_kwargs["concat_dims"]}')
+            self.logger.debug(f'Identical Dim(s): {self.combine_kwargs["identical_dims"]}')
 
             try:
                 mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
@@ -1009,6 +1094,7 @@ class ZarrDS(ComputeOperation):
         """
         Recommended way of running an operation - includes timers etc.
         """
+        self.set_last_run(self.phase, timestamp())
         # Run CFA in super class.
         _ = super()._run(file_limit=self.limiter)
 
@@ -1023,7 +1109,8 @@ class ZarrDS(ComputeOperation):
         Create the Zarr Store
         """
 
-        self.combine_kwargs = self.detail_cfg['kwargs'].get('combine_kwargs',{})
+        kwargs = self.detail_cfg.get('kwargs', {})
+        self.combine_kwargs = kwargs.get('combine_kwargs',{})
 
         # Open all files for this process (depending on limiter)
         self.logger.debug('Starting timed section for estimation of whole process')
@@ -1034,12 +1121,9 @@ class ZarrDS(ComputeOperation):
         if len(self.allfiles) > 1:
             
             # Determine concatenation dimensions
-            if self.base_cfg['data_properties']['aggregated_vars'] == 'Unknown':
+            if not self.combine_kwargs.get('concat_dims',False):
                 # Determine dimension specs for concatenation.
-                self._determine_dim_specs([
-                    xr.open_dataset(self.allfiles[0]),
-                    xr.open_dataset(self.allfiles[1])
-                ])
+                self._determine_dim_specs()
             if not self.combine_kwargs['concat_dims']:
                 self.logger.error('No concatenation dimensions - unsupported for zarr conversion')
                 raise NotImplementedError
@@ -1087,23 +1171,36 @@ class ZarrDS(ComputeOperation):
                         '-f or -Q on the commandline to clear or overwrite'
                         'existing store'
                     )
+        if self.base_cfg.get('rechunk',False):
     
-        # Perform Rechunking
-        self.logger.info(f'Starting Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
-        if not self._dryrun:
-            t1 = datetime.now()
+            # Perform Rechunking
+            self.logger.info(f'Starting Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
+            if not self._dryrun:
+                t1 = datetime.now()
 
-            rechunker.rechunk(
-                combined_ds, 
-                concat_dim_rechunk, 
-                self.mem_allowed, 
-                self.zstore.store_path,
-                temp_store=self.tempstore.store_path).execute()
-            
-            self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
-            self.logger.info(f'Concluded Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
+                rechunker.rechunk(
+                    combined_ds, 
+                    concat_dim_rechunk, 
+                    self.mem_allowed, 
+                    self.zstore.store,
+                    temp_store=self.tempstore.store_path).execute()
+                
+                self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
+                self.logger.info(f'Concluded Rechunking - {(datetime.now()-t1).total_seconds():.2f}s')
+            else:
+                self.logger.info('Skipped rechunking step.')
         else:
-            self.logger.info('Skipped rechunking step.')
+            self.logger.info(f'Starting Zarr Conversion')
+            if not self._dryrun:
+                t1 = datetime.now()
+
+                combined_ds.to_zarr(self.zstore.store)
+                
+                self.convert_time = (datetime.now()-t1).total_seconds()/self.limiter
+                self.logger.info(f'Concluded Conversion - {(datetime.now()-t1).total_seconds():.2f}s')
+            else:
+                self.logger.info('Skipped conversion writing')
+
 
     def _get_rechunk_scheme(self, ds):
         """
@@ -1148,5 +1245,5 @@ class ZarrDS(ComputeOperation):
         return concat_dim_rechunk, dim_sizes, cpf/self.limiter, volume/self.limiter
 
 if __name__ == '__main__':
-    print('Serial Processor for Kerchunk Pipeline - run with single_run.py')
+    print('Serial Processor for Kerchunk Pipeline')
     
