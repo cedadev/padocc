@@ -177,6 +177,7 @@ class AllocationsMixin:
             mode            : str = 'kerchunk',
             new_version     : str = None,
             func            : Callable = print,
+            xarray_kwargs   : dict = None,
         ) -> None:
         """
         Organise parallel deployment via SLURM.
@@ -203,8 +204,11 @@ class AllocationsMixin:
             'subset'  : subset,
             'bypass' : bypass,
             'mode' : mode,
-            'new_version' : new_version,
+            'new_version' : new_version
         }
+
+        if xarray_kwargs is not None:
+            sbatch_kwargs['xarray_kwargs'] = xarray_kwargs
 
         # Ensure directories are created for logs
         self._setup_slurm_directories()
@@ -277,7 +281,7 @@ class AllocationsMixin:
             group_length: int,
             sbatch_kwargs: dict,
             time: Union[str,None] = None,
-            memory: Union[str,None] = None
+            memory: Union[str,None] = None,
         ):
         """
         Create the sbatch content job array.
@@ -335,6 +339,7 @@ class AllocationsMixin:
             subset      : Union[int,None] = None, 
             new_version : bool = None, 
             mode        : Union[str,None] = None, 
+            xarray_kwargs: dict = None,
             **bool_kwargs
         ) -> str:
         """
@@ -356,6 +361,9 @@ class AllocationsMixin:
             'mode'   : ('-C',mode),
             'new_version': ('-n',new_version),
         }
+
+        if xarray_kwargs is not None:
+            value_options['xarray_kwargs'] = ('--xarray_kwargs',xarray_kwargs)
 
         optional = []
 

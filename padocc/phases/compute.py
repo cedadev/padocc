@@ -628,7 +628,7 @@ class ComputeOperation(ProjectOperation):
         self.logger.info('Starting dimension determination - using Validator')
 
         test_files = [self.allfiles[0], self.allfiles[-1]]
-        datasets   = [xr.open_dataset(t) for t in test_files]
+        datasets   = [xr.open_dataset(t, **self._xarray_kwargs) for t in test_files]
         dimensions = datasets[0].dims
         variables  = datasets[0].variables
 
@@ -636,7 +636,7 @@ class ComputeOperation(ProjectOperation):
             datasets,
             'scan-dim-check',
             dataset_labels=('first','last'),
-            logger=self.logger
+            logger=self.logger,
         )
 
         vd.validate_metadata()

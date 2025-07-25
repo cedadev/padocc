@@ -67,15 +67,19 @@ def error_handler(
     else:
         raise err
 
-def worst_error(report: dict) -> str:
+def worst_error(report: dict, bypass: dict = None) -> str:
     """
     Determine the worst error level and return as a string.
     """
+
+    error = None
+
+    bypass = bypass or {}
     
     if 'report' in report:
         report = report['report']
 
-    priority = ['size_errors', 'dim_size_errors', 'data_errors', 'dim_errors','bypassed']
+    priority = ['size_errors', 'dim_size_errors', 'data_errors', 'dim_errors','bypassed','dtype/precision']
 
     # Check all data issues that would be fatal.
     if 'data' in report:
@@ -83,37 +87,77 @@ def worst_error(report: dict) -> str:
         
         # Improvements are possible.
         vars = section.get('variables',{})
-        for err in priority:
-            if err in vars:
-                return f'Fatal-{err}'
         dims = section.get('dimensions', {})
         for err in priority:
-            if err in dims:
-                return f'Fatal-{err}'
+            for v in vars.get(err,{}).keys():
+                try:
+                    _ = bypass['data']['variables'][err][v]
+                    report['data']['variables'][err][v]['SKIP'] = True
+                except KeyError:
+                    error = error or f'Fatal-{err}'
+                except TypeError:
+                    report['data']['variables'][err][v] = report['data']['variables'][err][v] + '_SKIP'
+
+            for d in dims.get(err,{}).keys():
+                try:
+                    _ = bypass['data']['dimensions'][err][d]
+                    report['data']['dimensions'][err][d]['SKIP'] = True
+                except KeyError:
+                    error = error or f'Fatal-{err}'
+                except TypeError:
+                    report['data']['dimensions'][err][d] = report['data']['dimensions'][err][d] + '_SKIP'
 
     if 'metadata' not in report:
-        return None
+        return err, report
     
     vars = report['metadata'].get('variables',None)
     if vars is not None:
         for etype in ['missing','order']:
             for k, v in vars.items():
                 if v['type'] == etype:
-                    return f'Warn-{k}_{etype}'
+
+                    try:
+                        # error type not equal to bypass - error cannot be bypassed.
+                        assert etype != bypass['metadata']['variables'][k]['type']
+                        err = err or f'Warn-{k}_{etype}'
+                    except AssertionError:
+                        # Etype is equal to bypass - can bypass this error
+                        report['metadata']['variables'][k]['SKIP'] = True
+                    except KeyError:
+                        # Error not in bypass - error cannot be bypassed
+                        error = error or f'Warn-{k}_{etype}'
     
     dims = report['metadata'].get('dims', None)
     if dims is not None:
         for etype in ['order']:
             for k, v in dims.items():
                 if v['type'] == etype:
-                    return f'Warn-{k}_{etype}'
+                    try:
+                        # error type not equal to bypass - error cannot be bypassed.
+                        assert etype != bypass['metadata']['dims'][k]['type']
+                        error = error or f'Warn-{k}_{etype}'
+                    except AssertionError:
+                        # Etype is equal to bypass - can bypass this error
+                        report['metadata']['dims'][k]['SKIP'] = True
+                    except KeyError:
+                        # Error not in bypass - error cannot be bypassed
+                        error = error or f'Warn-{k}_{etype}'
     
-    attrs = report['metadata'].get('attributes',None)
-    if attrs is not None:
-        for etype in ['not_equal','missing']:
-            for k, v in dims:
-                if v['type'] == etype:
-                    return f'Warn-{k}_{etype}'
+    attrs = report['metadata'].get('attributes',{})
+    for attr_parent, attrset in attrs.items():
+        for title, issue in attrset.items():
+            etype = issue['type']
+            try:
+                # error type not equal to bypass - error cannot be bypassed.
+                assert (etype != bypass['metadata']['attributes'][attr_parent].get(title,{}).get('type','') and not bypass['metadata']['attributes'][attr_parent].get('skip_all',False))
+                error = error or f'Warn-{attr_parent}_{title}_{etype}'
+            except AssertionError:
+                # Etype is equal to bypass - can bypass this error
+                report['metadata']['attributes'][attr_parent][title]['SKIP'] = True
+            except KeyError:
+                # Error not in bypass - error cannot be bypassed
+                error = error or f'Warn-{attr_parent}_{title}_{etype}'
+    return error, report
         
 class KerchunkException(Exception):
     """
