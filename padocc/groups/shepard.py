@@ -14,7 +14,7 @@ import time
 from datetime import datetime
 import os
 from typing import Union
-
+import random
 import yaml
 
 from padocc.core.logs import LoggedOperation, clear_loggers
@@ -67,6 +67,8 @@ class ShepardOperator(LoggedOperation):
             )
         
         self.flock_dir = self.conf.get('flock_dir',None)
+        self.batch_limit = self.conf.get('batch_limit',None) or 100
+        self.source_venv = self.conf.get('source_venv', self.default_source)
         if self.flock_dir is None:
             raise ValueError(
                 'Missing "flock_dir" from config.'
@@ -75,6 +77,10 @@ class ShepardOperator(LoggedOperation):
         # Shepard Files
         # - workdir for operations.
         # - path to a group file.
+
+    @property
+    def default_source(self):
+        return os.getenv('VIRTUAL_ENV')
 
     @property
     def bypass(self):
@@ -111,27 +117,29 @@ class ShepardOperator(LoggedOperation):
             self.logger.info('Running in continuous cycle mode')
             for cycle in range(1, self.cycle_limit+1):
                 self.logger.info(f'Cycle {cycle}/{self.cycle_limit}')
+
+                # Continuous processing runs all flocks through all processes
+                # with each cycle.
                 self.run_batch(cycle=cycle)
                 time.sleep(self.cycle_delay)
-
-        self.logger.info('Operation complete')
+            self.logger.info(f'Cycle limit reached - exiting on {cycle}')
 
     def run_batch(
             self, 
-            batch_limit: int = 100, 
             cycle: int = 1) -> None:
         """
         Run a batch of processes.
         """
 
-        batch_limit = self.conf.get('batch_limit',None) or batch_limit
-
-        # Initialise all groups if needed (outside of batch limit)
-
         flocks = self._init_all_flocks()
+
+        if len(flocks) == 0:
+            self.logger.info("Exiting - no flocks identified")
+            return
+        
         self.logger.info("All flocks initialised")
 
-        task_list, total_processes = self._assemble_task_list(flocks, batch_limit)
+        task_list, total_processes = self._assemble_task_list(flocks, self.batch_limit)
 
         current = datetime.strftime(datetime.now(), "%y/%m/%d %H:%M:%S")
 
@@ -157,16 +165,50 @@ class ShepardOperator(LoggedOperation):
 
         self.logger.info('Finished processing jobs')
 
+        # Follow through with completion/deletion workflows
+        self._complete_flocks(flocks)
+
         del flocks
         del task_list
         #clear_loggers(ignore=[self.log_label])
+
+    def _complete_flocks(self, flocks):
+        """
+        Identify completed flocks.
+        
+        Will only complete a whole group at a time, so that the group can be deleted.
+        """
+
+        for flock in flocks:
+
+            # Complete candidate check.
+            # All datasets in the group must have passed the validate section.
+            #  - To have passed, the status of validation must either be:
+            #     > Passed with Warnings - Warn
+            #     > Success
+            #  - If any datasets have not passed these criteria the group is skipped (for now)
+            # Note that this is already skipping quarantined flocks with the .shpignore file.
+
+            is_complete = True
+            status_dict = flock.get_codes_by_status()
+            complete_candid = status_dict.get('validate',{})
+            ccount = 0
+            for candidate in complete_candid.keys():
+                if 'Warn' not in candidate and 'Success' not in candidate:
+                    is_complete = False
+                else:
+                    ccount += 1
+            if ccount < len(flock) or not is_complete:
+                continue
+
+            self.logger.info('Flock now acceptable for Completion workflow')
 
     def _process_task(
             self, 
             task: ShepardTask, 
             flock: GroupOperation):
         """
-        Process Individual Tasks
+        Process Individual Tasks.
         """
 
         # Create Repeat ID for the given task
@@ -180,10 +222,19 @@ class ShepardOperator(LoggedOperation):
             task.old_phase
         )
 
+        # Non-parallel deployment.
         flock.run(
             task.new_phase,
             repeat_id=new_repeat_id,
             bypass=self.bypass
+        )
+
+        # Parallel deployment
+        flock.deploy_parallel(
+            task.new_phase,
+            self.source_venv,
+            verbose=self._verbose,
+            repeat_id=new_repeat_id,
         )
 
     def _assemble_task_list(
@@ -195,10 +246,22 @@ class ShepardOperator(LoggedOperation):
         """
 
         task_list = []
+        processed_flocks = {}
         proj_count = 0
-        for fid, flock in enumerate(flocks):
+        while proj_count < batch_limit and len(processed_flocks.keys()) < len(flocks):
+
+            fid = random.randint(0, len(flocks)-1)
+            while fid in processed_flocks:
+                fid = random.randint(0, len(flocks)-1)
+
+            # Extract a random flock at a time.
+            flock = flocks[fid]
+
+            # Randomise the set of flocks so we're not missing out any particular flock.
             status_dict = flock.get_codes_by_status()
 
+            self.logger.debug(f'Obtained status for flock {fid}')
+            num_datasets = 0
             for phase in ['init','scan','compute']:
                 if 'Success' not in status_dict[phase]:
                     continue
@@ -212,10 +275,12 @@ class ShepardOperator(LoggedOperation):
                         ShepardTask(fid, flock.groupID, phase, num_codes)
                     )
 
-                proj_count += num_codes
+                num_datasets += num_codes
 
-                if proj_count > batch_limit:
-                    break
+            self.logger.debug(f'Obtained task list for flock {fid}')
+
+            processed_flocks[fid] = num_datasets
+            proj_count += num_datasets
 
         return task_list, proj_count
 
@@ -223,45 +288,41 @@ class ShepardOperator(LoggedOperation):
         """
         Initialise and find all flocks
         """
-        shepard_files = self.find_flocks()
+        group_proj_codes = self.find_flocks()
         missed_flocks = []
         shp_flock = []
-        self.logger.info(f'Discovering {len(shepard_files)} flocks')
-        for idx, flock_path in enumerate(shepard_files):
-            flock_file = flock_path.split('/')[-1]
-            try:
-                fconf = self.open_flock(flock_path)
-                self.logger.info(f' > Accessed flock {idx+1}')
-            except ValueError as err:
-                missed_flocks.append((flock_path, err))
-                continue
+        self.logger.info(f'Discovering {len(group_proj_codes)} flocks')
+        for idx, flock_path in enumerate(group_proj_codes):
+            # Flock path is the path to the main.txt proj_code 
+            # document for each group.
+
+            groupdir = flock_path.replace('/proj_codes/main.txt','')
+            group = groupdir.split('/')[-1]
 
             flock = GroupOperation(
-                fconf['groupID'],
-                fconf['workdir'],
-                label=f'shepard->{fconf["groupID"]}',
+                group,
+                self.flock_dir,
+                label=f'shepard->{group}',
+                logid='shepard',
                 verbose=self._verbose,
             )
 
-            if not flock.datasets.get():
-                self.logger.info(f' > Creating flock {idx+1}: {flock_file}')
-                flock.init_from_file(fconf['group_file'], substitutions=fconf['substitutions'])
-            else:
-                self.logger.debug(f' > Skipped creating existing flock: {fconf["groupID"]}')
+            if self._flock_quarantined(groupdir):
+                # Skip quarantined flocks.
+                continue
+
+            # Skip Creating flocks as they must be created using the normal creation mechanism.
+            #if not flock.datasets.get():
+            #    self.logger.info(f' > Creating flock {idx+1}: {flock_file}')
+            #    flock.init_from_file(fconf['group_file'], substitutions=fconf['substitutions'])
+            #else:
+            #    self.logger.debug(f' > Skipped creating existing flock: {fconf["groupID"]}')
 
             shp_flock.append(flock)
 
         # Handle missed flocks here.
 
         return shp_flock
-
-    def open_flock(self, file: str):
-
-        if not os.path.isfile(file):
-            raise ValueError(f'Unable to open {file}')
-        
-        with open(file) as f:
-            return json.load(f)
 
     def find_flocks(self):
         
@@ -270,7 +331,14 @@ class ShepardOperator(LoggedOperation):
                 f'Flock Directory: {self.flock_dir} - inaccessible.'
             )
         
-        return glob.glob(f'{self.flock_dir}/*.shp', recursive=True)
+        return glob.glob(f'{self.flock_dir}/**/proj_codes/main.txt', recursive=True)
+
+    def _flock_quarantined(self, groupdir):
+        """
+        Determine if a given flock has a .shpignore file in its 
+        group directory."""
+
+        return os.path.isfile(os.path.join(groupdir,'.shpignore'))
 
     def _load_config(self, conf: str) -> Union[dict,None]:
         """
