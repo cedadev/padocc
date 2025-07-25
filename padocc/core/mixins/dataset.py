@@ -77,6 +77,7 @@ class DatasetHandlerMixin:
                 self.dir,
                 self.outproduct,
                 logger=self.logger,
+                xarray_kwargs=self._xarray_kwargs,
                 **self.fh_kwargs,
             )
 
@@ -323,7 +324,7 @@ class DatasetHandlerMixin:
                     # Trash old kfile that's no longer pointing at the correct object.
                     self._kstore = None
         else:
-            self.kfile.add_download_link(sub=sub, replace=replace, in_place=in_place, remote=remote)
+            refs = self.kfile.add_download_link(sub=sub, replace=replace, in_place=in_place, remote=remote)
             # Save the content now.
             self.kfile.close()
 
@@ -336,6 +337,12 @@ class DatasetHandlerMixin:
 
                     # Trash old kfile that's no longer pointing at the correct object.
                     self._kfile = None
+            else:
+                # Save refs to new file.
+                self._remote = True
+                # Make new remote copy kfile.
+                self.kfile.set(value=refs)
+                self.kfile.close()
     
     def catalog_ceda(
             self, 

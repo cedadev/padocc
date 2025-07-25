@@ -46,6 +46,7 @@ class GroupOperation(
             fh       : str = None,
             logid    : str = None,
             verbose  : int = 0,
+            xarray_kwargs: dict = None,
         ) -> None:
         """
         Initialisation for a GroupOperation object to handle all interactions
@@ -125,6 +126,8 @@ class GroupOperation(
             dryrun=self._dryrun,
             forceful=self._forceful,
         )
+
+        self._xarray_kwargs = xarray_kwargs or None
 
         self._load_proj_codes()
     
@@ -207,15 +210,11 @@ class GroupOperation(
             try:
                 proj_op = self[proj]
 
-                if thorough and not proj_op.remote:
-                    self.logger.info('Adding download link')
-                    proj_op.add_download_link()
-
                 # Export report
                 proj_op.export_report(report_location)
 
                 # Export products
-                proj_op.complete_project(move_to)
+                proj_op.complete_project(move_to, thorough=thorough)
             except Exception as err:
                 self.logger.warning(f'Skipped {proj} - {err}')
 

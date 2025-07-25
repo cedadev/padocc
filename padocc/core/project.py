@@ -49,6 +49,7 @@ class ProjectOperation(
             thorough   : bool = None,
             mem_allowed: Union[str,None] = None,
             remote_s3  : Union[dict, str, None] = None,
+            xarray_kwargs: dict = None,
         ) -> None:
         """
         Initialisation for a ProjectOperation object to handle all interactions
@@ -164,6 +165,9 @@ class ProjectOperation(
         self._is_trial = False
 
         self.stage = None
+
+        # Used for all phases, apply at runtime.
+        self._xarray_kwargs = xarray_kwargs or {}
 
         # Remote s3 direct connection
         if isinstance(remote_s3,str):
@@ -330,7 +334,7 @@ class ProjectOperation(
         os.system(f'rm -rf {self.dir}')
         self.logger.info(f'All internal files for {self.proj_code} deleted.')
 
-    def complete_project(self, move_to: str) -> None:
+    def complete_project(self, move_to: str, thorough: bool = False) -> None:
         """
         Move project to a completeness directory
 
@@ -358,6 +362,13 @@ class ProjectOperation(
 
         # Spawn copy of dataset
         complete_dataset = f'{move_to}/{self.complete_product}'
+
+        if thorough and not self.remote:
+            # Make pipeline-remote version first, then copy out.
+            self.add_download_link(
+                in_place=False, remote=True
+            )
+
         self.dataset.spawn_copy(complete_dataset)
 
         # Spawn copy of cfa dataset
