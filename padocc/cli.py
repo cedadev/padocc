@@ -128,6 +128,7 @@ def get_args():
     parser.add_argument('phase', type=str, help='Phase of the pipeline to initiate', metavar="See 'All Operations' section of documentation")
 
     parser.add_argument('--shortcut', dest='shortcut', help='See documentation for use cases.')
+    parser.add_argument('--xarray_kwargs', dest='xarray_kwargs', help='Supply kwargs for xarray, comma separated')
 
     # Action-based - standard flags
     parser.add_argument('-f','--forceful',dest='forceful',action='store_true', help='Force overwrite of steps if previously done')
@@ -149,6 +150,7 @@ def get_args():
     parser.add_argument('-C','--cloud-format', dest='mode', default=None, help='Output format required.')
     parser.add_argument('-i','--input', dest='input', help='input file (for init phase)')
     parser.add_argument('-o','--output', dest='output', help='output file for specific shortcut operations.')
+    parser.add_argument('--valid', dest='error_bypass',default=None,help='Location of validation error bypass file.')
 
     # Parallel deployment
     parser.add_argument('--parallel', dest='parallel',action='store_true',help='Add for parallel deployment with SLURM')
@@ -175,6 +177,19 @@ def main():
     be re-added in the full version."""
     args = get_args()
 
+    xarray_kwargs = None
+    if args.xarray_kwargs is not None:
+        xarray_kwargs = {}
+        for i in args.xarray_kwargs.split(','):
+            attr, val = i.split(':')
+            if val == 'pyTrue':
+                val = True
+            elif val == 'pyFalse':
+                val = False
+
+            xarray_kwargs[attr] = val
+
+
     if args.phase == 'init' and args.groupID is None:
         print('Error: GroupID must be provided on initialisation')
         return
@@ -195,7 +210,8 @@ def main():
             thorough=args.thorough,
             label=f'PADOCC-CLI-{args.phase}',
             verbose=args.verbose,
-            bypass=bypass
+            bypass=bypass,
+            xarray_kwargs=xarray_kwargs
         )
 
         if args.phase == 'new':
@@ -218,7 +234,8 @@ def main():
                 repeat_id=args.repeat_id,
                 bypass=args.bypass,
                 mode=args.mode,
-                new_version=args.new_version
+                new_version=args.new_version,
+                xarray_kwargs=args.xarray_kwargs # Unprocessed
             )
             return
         
@@ -229,6 +246,8 @@ def main():
                 'compute_total':args.parallel_project.split('/')[1]
             }
 
+        run_kwargs['error_bypass'] = args.error_bypass
+
         group.run(
             args.phase,
             mode=args.mode,
@@ -236,7 +255,7 @@ def main():
             proj_code=args.proj_code,
             subset=args.subset,
             mem_allowed=args.mem_allowed,
-            run_kwargs=run_kwargs
+            run_kwargs=run_kwargs,
         )
 
     else:
@@ -262,7 +281,8 @@ def main():
             verbose=args.verbose,
             forceful=args.forceful,
             dryrun=args.dryrun,
-            thorough=args.thorough
+            thorough=args.thorough,
+            xarray_kwargs=xarray_kwargs
         )
 
         proj.run(mode=args.mode)

@@ -597,6 +597,12 @@ class KerchunkFile(JSONFileHandler):
     for local/remote links, and updating content.
     """
 
+    def __init__(self, *args, xarray_kwargs: dict = None, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+        self._xarray_kwargs = xarray_kwargs or {}
+
     def add_download_link(
             self,
             sub: str = '/',
@@ -707,6 +713,7 @@ class KerchunkFile(JSONFileHandler):
 
         default_zarr = {'consolidated':False, 'decode_times':True}
         default_zarr.update(kwargs)
+        default_zarr.update(self._xarray_kwargs)
 
         self.logger.info('Attempting to open Kerchunk JSON file')
         try:

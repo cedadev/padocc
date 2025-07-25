@@ -13,7 +13,7 @@ import xarray as xr
 from padocc.core import BypassSwitch, LoggedOperation, ProjectOperation
 from padocc.core.errors import worst_error
 from padocc.core.filehandlers import JSONFileHandler
-from padocc.core.utils import format_tuple, timestamp
+from padocc.core.utils import format_tuple, timestamp, extract_json
 
 SUFFIXES = []
 SUFFIX_LIST = []
@@ -128,6 +128,11 @@ def _recursive_set(source: dict, keyset: list, value):
 
         source[keyset[0]] = _recursive_set(current,keyset[1:], value)
     else:
+        try:
+            _ = json.dumps(value)
+            current = value
+        except TypeError:
+            current = 'N/A'
         source[keyset[0]] = value
     return source
 
@@ -172,8 +177,10 @@ class Report:
     dictionary value-setting."""
     description = 'Special report class for recursive dictionary value-setting'
 
-    def __init__(self, fh=None):
+    def __init__(self, fh: Union[dict,object,None] = None, bypass: dict = None):
+        
         self._value = fh or {}
+        self._bypass = bypass or None
 
     def __setitem__(self, index, value):
         nest = index.split(',')
@@ -182,20 +189,45 @@ class Report:
             current = self._value[nest[0]]
         self._value[nest[0]] = _recursive_set(current, nest[1:], value)
 
+    @property
+    def value(self):
+        return self._clean_report()
+
+    def _clean_report(self):
+        """
+        Recursive report cleaning function.
+        
+        Removes non-serialisable elements."""
+        def __clean_report(rep):
+            
+            for k, v in rep.items():
+                if isinstance(v, dict):
+                    v = __clean_report(v)
+                else:
+                    try:
+                        _ = json.dumps(v)
+                    except TypeError:
+                        v = 'N/A'
+                rep[k] = v
+            return rep
+
+        return __clean_report(self._value)
+
     def export(self):
-        return self._value
+        # Taking into account bypass control
+        return self.value
 
     def __bool__(self):
-        return bool(self._value)
+        return bool(self.value)
 
     def __dict__(self):
-        return self._value.get()
+        return self.value.get()
     
     def __repr__(self):
-        return json.dumps(self._value)
+        return json.dumps(self.value)
     
     def __str__(self):
-        return json.dumps(self._value, indent=2)
+        return json.dumps(self.value, indent=2)
 
 class ValidateDatasets(LoggedOperation):
     """
@@ -213,14 +245,15 @@ class ValidateDatasets(LoggedOperation):
             datasets: list,
             id: str,
             filehandlers: Optional[Union[list[JSONFileHandler], list[dict]]] = None,
-            dataset_labels: list = None,
-            preslice_fns: list = None, # Preslice each dataset's DataArrays to make equivalent.
+            dataset_labels: Union[list,None] = None,
+            preslice_fns: Union[list,None] = None, # Preslice each dataset's DataArrays to make equivalent.
+            error_bypass: Union[dict, str, None] = None,
             logger = None,
-            label: str = None,
-            fh: str = None,
-            logid: str = None,
+            label: Union[str,None] = None,
+            fh: Union[str,None] = None,
+            logid: Union[str,None] = None,
             verbose: int = 0,
-            bypass_vars: list = None
+            bypass_vars: Union[list,None] = None,
         ):
         """
         Initiator for the ValidateDataset Class.
@@ -231,14 +264,20 @@ class ValidateDatasets(LoggedOperation):
         These dataset objects should be identical, just from different sources.
         """
 
+        # Bypass checking specific variables if requested
         self.bypass_vars = bypass_vars or []
+
+        # Bypass considering fatal/warnings from entire report
+        self.error_bypass = error_bypass or {}
+        if isinstance(self.error_bypass, str):
+            self.error_bypass = extract_json(self.error_bypass)
 
         self._id = id
         self._datasets   = datasets
 
-        self._labels = dataset_labels or [str(i) for i in range(len(datasets))]
+        self._labels    = dataset_labels or [str(i) for i in range(len(datasets))]
 
-        self.variables = None
+        self.variables  = None
         self.dimensions = None
 
         self.fhs = filehandlers or [{},{}]
@@ -264,15 +303,13 @@ class ValidateDatasets(LoggedOperation):
     def __str__(self):
         return f'<PADOCC Validator: {self._id}>'
     
-    @property
-    def pass_fail(self):
-        if self._metadata_report is None or self._data_report is None:
-            return None
-        if self._data_report:
-            return 'Fatal'
-        if self._metadata_report:
+    def pass_fail(self, err: str):
+        if 'Warn' in err:
             return 'Warning'
+        elif 'Fatal' in err:
+            return 'Fatal'
         return 'Success'
+
     
     @property
     def data_report(self):
@@ -302,19 +339,27 @@ class ValidateDatasets(LoggedOperation):
         }
 
     def save_report(self, filehandler=None):
+        """
+        Formulate report such that it notes bypasses, and determine
+        the worst error.
+        
+        This is in addition to saving the report content.
+        """
+
+        err, report = worst_error(self.report, bypass = self.error_bypass)
 
         if filehandler is not None:
-            filehandler.set(self.report)
+            filehandler.set(report)
             filehandler.close()
-            return
+            return err
         
         if isinstance(self.fhs[0], JSONFileHandler):
-            self.fhs[0].set(self._metadata_report.export())
+            self.fhs[0].set(report.get('metadata',{}))
             self.fhs[0].close()
 
-            self.fhs[1].set(self._data_report.export())
+            self.fhs[1].set(report.get('data',{}))
             self.fhs[1].close()
-            return
+            return err
         
         raise ValueError(
             'Filehandler not provided to save report'
@@ -969,6 +1014,7 @@ class ValidateOperation(ProjectOperation):
             self,
             mode: str = 'kerchunk',
             dim_mid: Union[dict,None] = None,
+            error_bypass: Union[dict,str,None] = None,
             **kwargs
         ) -> None:
         """
@@ -999,7 +1045,8 @@ class ValidateOperation(ProjectOperation):
             dataset_labels=[self.cloud_format, self.source_format], 
             filehandlers=[meta_fh, data_fh],
             logger=self.logger,
-            bypass_vars=bypass_vars)
+            bypass_vars=bypass_vars,
+            error_bypass=error_bypass)
 
         # Run metadata testing
         vd.validate_metadata()
@@ -1012,19 +1059,18 @@ class ValidateOperation(ProjectOperation):
             self.logger.info('Source-slice validation')
             preslice = self._get_preslice(test, sample, test.variables, rf=rf)
             self.logger.debug('Slicing using preslice selections:')
-            self.logger.debug(f' - {"\n -".join(preslice._preslice_set)}')
+            sets = "\n - ".join(preslice._preslice_set)
+            self.logger.debug(f' - {sets}')
 
             vd.replace_preslice(preslice, label=self.cloud_format)
 
         vd.validate_data(dim_mid=dim_mid)
 
-        # Save report
-        vd.save_report()
+        err = vd.save_report() or 'Success'
 
-        err = worst_error(vd.report) or 'Success'
-        self.update_status('validate',err, jobid=self._logid)
+        self.update_status('validate', err, jobid=self._logid)
         
-        return vd.pass_fail
+        return vd.pass_fail(err)
 
     def _open_sample(self) -> tuple:
         """
@@ -1033,7 +1079,7 @@ class ValidateOperation(ProjectOperation):
 
         randomfile = random.randint(0,len(self.allfiles)-1)
         file = self.allfiles[randomfile]
-        return xr.open_dataset(file), randomfile
+        return xr.open_dataset(file, **self._xarray_kwargs), randomfile
 
     def _open_cfa(self):
         """

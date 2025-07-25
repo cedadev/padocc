@@ -52,6 +52,7 @@ class EvaluationsMixin:
             self.workdir,
             groupID=self.groupID,
             logger=self.logger,
+            xarray_kwargs=self._xarray_kwargs,
             **self.fh_kwargs
         )
     

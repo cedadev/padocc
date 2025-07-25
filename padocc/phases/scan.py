@@ -215,7 +215,8 @@ class ScanOperation(ProjectOperation):
             forceful=self._forceful, # Always run from scratch forcefully to get best time estimates.
             logger=self.logger,
             limiter=limiter,
-            is_trial=True)
+            is_trial=True,
+            xarray_kwargs=self._xarray_kwargs)
 
         mini_ds.create_refs(ctype=ctype)
 
