@@ -291,7 +291,7 @@ class ScanOperation(ProjectOperation):
         )
 
         status = comp._run(file_limit=limiter)
-        
+
         if status == 'Success':
             self.logger.info('Determined data properties:')
             self.logger.info(yaml.dump(self.base_cfg['data_properties']))

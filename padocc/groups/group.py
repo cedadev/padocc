@@ -341,7 +341,7 @@ class GroupOperation(
                 proj_code, 
                 mode=mode, 
                 logid=logid, 
-                label=f'{self._label}_{phase}', 
+                label=f'{self.groupID}_{phase}', 
                 fh=fh, 
                 bypass=bypass,
                 run_kwargs=run_kwargs,
