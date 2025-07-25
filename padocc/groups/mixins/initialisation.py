@@ -299,29 +299,30 @@ class InitialisationMixin:
         proj_codes = []
         for index in range(len(datasets)):
             cfg_values = {}
-            components     = (datasets[index].split('"')[0] + datasets[index].split('"')[2]).split(',')
-
             ds_values  = datasets[index].split(',')
+            
+            if '"' in datasets[index]:
+                components     = (datasets[index].split('"')[0] + datasets[index].split('"')[2]).split(',')
+            else:
+                components     = [ds_values[0]] + ds_values[2:]
 
             proj_code = ds_values[0].replace(' ','')
             pattern   = ds_values[1].replace(' ','')
 
             updates, removals = None, None
 
+            if len(components) > 1:
+                updates  = components[1]
             if len(components) > 2:
-                updates  = components[2]
-            if len(components) > 3:
-                removals = components[3]
+                removals = components[2]
 
             if '"' in pattern:
                 try:
                     # Bypass weirdly formatted section
-                    proj_code = datasets[index].split(',')[0].replace(' ','')
                     pattern = datasets[index].split('"')[1]
-
                 except Exception as err: 
                     raise ValueError(
-                        f"BYPASS FAILED - {err}"
+                        f'Improperly formatted input file with "" quotes - {err}'
                     )
 
             if pattern.endswith('.txt') and substitutions:
