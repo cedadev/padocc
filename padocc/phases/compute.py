@@ -21,6 +21,7 @@ from padocc.core.errors import (ComputeError, ConcatFatalError,
 from padocc.core.filehandlers import JSONFileHandler, ZarrStore, KerchunkFile
 from padocc.core.utils import find_closest, make_tuple, timestamp
 from padocc.phases.validate import ValidateDatasets
+from padocc.core.logs import levels
 
 CONCAT_MSG = 'See individual files for more details'    
 
@@ -333,37 +334,38 @@ class ComputeOperation(ProjectOperation):
         return 'Fatal'
 
     def _run_cfa(
-            instance: type[ProjectOperation], 
+            self, 
             file_limit: Union[int,None] = None,
         ) -> Union[dict,None]:
 
         """
         Handle the creation of a CFA-netCDF file using the CFAPyX package
 
-        :param instance:    (obj) The reference instance of ProjectOperation 
-            from which to pull project-specific info.
-
         :param file_limit:  (obj) The file limit to apply to a set of files.
         """
+        
         try:
             from cfapyx import CFANetCDF
+
+            lg = logging.getLogger('cfapyx.creator')
+            lg.setLevel(levels[self._verbose])
 
         except ImportError:
             return False
 
         try:
 
-            instance.logger.info("Starting CFA Computation")
+            self.logger.info("Starting CFA Computation")
 
-            files = instance.allfiles.get()
+            files = self.allfiles.get()
             if file_limit is not None:
                 files = files[:file_limit]
 
-            cfa = CFANetCDF(files) # Add instance logger here.
+            cfa = CFANetCDF(files, ) # Add instance logger here.
 
             cfa.create()
             if file_limit is None:
-                cfa.write(instance.cfa_path + '.nca')
+                cfa.write(self.cfa_path + '.nca')
 
             return {
                 'aggregated_dims': make_tuple(cfa.agg_dims),
@@ -375,7 +377,7 @@ class ComputeOperation(ProjectOperation):
             }
 
         except Exception as err:
-            instance.logger.error(
+            self.logger.error(
                 f'Aggregation via CFA failed - {err} - report at https://github.com/cedadev/CFAPyX/issues'
             )
             return None
