@@ -221,13 +221,12 @@ def init_logger(
         name = f'{name}_{logid}'
 
     logger = logging.getLogger(name)
+    logger.propagate = False
 
     if fh is not None:
         return reset_file_handler(logger, verbose, fh)
 
-    logger = logging.getLogger(name)
     logger.setLevel(levels[verbose])
-    logger.propagate = False
 
     ch = logging.StreamHandler()
     ch.setLevel(levels[verbose])
