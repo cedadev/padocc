@@ -1059,8 +1059,9 @@ class ValidateOperation(ProjectOperation):
             self.logger.info('Source-slice validation')
             preslice = self._get_preslice(test, sample, test.variables, rf=rf)
             self.logger.debug('Slicing using preslice selections:')
-            sets = "\n - ".join(preslice._preslice_set)
-            self.logger.debug(f' - {sets}')
+            slice_set = "\n -".join(preslice._preslice_set)
+            self.logger.debug(f' - {slice_set}')
+
 
             vd.replace_preslice(preslice, label=self.cloud_format)
 

@@ -127,7 +127,7 @@ class ProjectOperation(
         # Need a first-time initialisation implementation for some elements.
 
         if fh is not None:
-            self.logger.info('Logging to filesystem file is enabled')
+            self.logger.info('Filesystem Logging: Enabled')
     
         self._create_dirs(first_time=first_time)
 
