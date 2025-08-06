@@ -107,6 +107,8 @@ class GroupOperation(
             fh=fh,
             logid=logid,
             verbose=verbose)
+        
+        self.__ongoing_projects = {}
 
         self._setup_directories()
 
@@ -162,6 +164,30 @@ class GroupOperation(
             proj_code = index
 
         return self.get_project(proj_code)
+    
+    def get_project(self, proj_code: str):
+        """
+        Get a project operation from this group
+
+        Works on string codes only.
+        """
+
+        if not isinstance(proj_code, str):
+            raise ValueError(
+                f'GetProject function takes string as input, not {type(proj_code)}'
+            )
+
+        if proj_code not in self.__ongoing_projects:
+            self.__ongoing_projects[proj_code] = ProjectOperation(
+                proj_code,
+                self.workdir,
+                groupID=self.groupID,
+                logger=self.logger,
+                xarray_kwargs=self._xarray_kwargs,
+                **self.fh_kwargs
+            )
+
+        return self.__ongoing_projects[proj_code]
     
     def complete_group(
             self, 
@@ -500,6 +526,7 @@ class GroupOperation(
             dryrun=self._dryrun,
             forceful=self._forceful
         )
+        self.proj_codes[name].close()
     
     def _delete_proj_codeset(self, name: str):
         """
@@ -520,6 +547,24 @@ class GroupOperation(
 
         self.proj_codes[name].remove_file()
         self.proj_codes.pop(name)
+
+    def delete_all_repeat_ids(self):
+        """
+        Delete all project repeat IDs for this group
+        """
+        old_repeats = list(self.proj_codes.keys())
+        for repeat_id in old_repeats:
+            if repeat_id != 'main':
+                self._delete_proj_codeset(repeat_id)
+
+    def add_repeat_by_id(self, repeat_id: str, idset: list[int]):
+        """
+        Add a new repeat ID by the IDs of the projects.
+        """
+        codeset = []
+        for id in idset:
+            codeset.append(self.proj_codes['main'][id])
+        self._add_proj_codeset(repeat_id, codeset)
 
     def check_writable(self):
         if not os.access(self.workdir, os.W_OK):
