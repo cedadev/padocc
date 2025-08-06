@@ -208,7 +208,7 @@ class ComputeOperation(ProjectOperation):
             **kwargs)
         
         if parallel:
-            self.update_status(self.phase, 'Pending',jobid=self._logid)
+            self.update_status(self.phase, 'Pending', jobid=self._logid)
         
         self._is_trial = is_trial
 
@@ -317,8 +317,9 @@ class ComputeOperation(ProjectOperation):
         if results is None:
             return 'Fatal'
         
-        self.base_cfg['data_properties'] = results
-        self.base_cfg.close()
+        if results != {}:
+            self.base_cfg['data_properties'] = results
+            self.base_cfg.close()
 
         # Check results values
         success = len(results.keys()) > 0
@@ -355,17 +356,21 @@ class ComputeOperation(ProjectOperation):
 
         try:
 
+            if not self._thorough and self.cfa_complete:
+                self.logger.info("CFA file already created - skipping computation")
+                return {}
+
             self.logger.info("Starting CFA Computation")
 
             files = self.allfiles.get()
             if file_limit is not None:
                 files = files[:file_limit]
 
-            cfa = CFANetCDF(files, ) # Add instance logger here.
-
+            cfa = CFANetCDF(files) # Add instance logger here.
             cfa.create()
             if file_limit is None:
                 cfa.write(self.cfa_path + '.nca')
+                self.base_cfg.set('CFA_complete',True)
 
             return {
                 'aggregated_dims': make_tuple(cfa.agg_dims),
