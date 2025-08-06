@@ -777,6 +777,10 @@ class ValidateDatasets(LoggedOperation):
                 
             if control_range[0] == control_range[1]:
                 control_range = [control_range[0]]
+
+            print(test_range)
+            print(control_range)
+            
             self._data_report[f'dimensions,data_errors,{dim}'] = {
                     self._labels[0]: format_tuple(
                         tuple(np.array(test_range, dtype=test_range[0].dtype).tolist())),
@@ -1053,6 +1057,7 @@ class ValidateOperation(ProjectOperation):
 
         if self.cfa_enabled:
             self.logger.info('CFA-enabled validation')
+            # CFA now opens with decoded times (2025.8.4)
             control = self._open_cfa()
             vd.replace_dataset(control, label=self.source_format)
         else:
@@ -1082,11 +1087,11 @@ class ValidateOperation(ProjectOperation):
         file = self.allfiles[randomfile]
         return xr.open_dataset(file, **self._xarray_kwargs), randomfile
 
-    def _open_cfa(self):
+    def _open_cfa(self, **kwargs):
         """
         Open the CFA dataset for this project
         """
-        return self.cfa_dataset.open_dataset()
+        return self.cfa_dataset.open_dataset(**kwargs)
 
     def _get_preslice(self, test, sample, variables, rf:int = 0):
         """Match timestamp of xarray object to kerchunk object.
@@ -1116,6 +1121,7 @@ class ValidateOperation(ProjectOperation):
             for dim in sample[var].dims:
 
                 if len(sample[dim]) < 2:
+                    # Non-coordinate dimensions with no axis.
 
                     dim_array = np.array(test[dim])
                     index = np.where(dim_array == np.array(sample[dim][0]))[0][0]
@@ -1124,13 +1130,13 @@ class ValidateOperation(ProjectOperation):
                     end = stop # np.array(test[dim][stop], dtype=test[dim].dtype)
 
                 else:
-                    # Switch to selection not iselection if needed later?
-                    #pos0 = np.array(sample[dim][0], dtype=sample[dim].dtype)
-                    #pos1 = np.array(sample[dim][1], dtype=sample[dim].dtype)
+                    # Source Slice validation for coodinate dimensions
 
-                    #end = np.array(sample[dim][-1], dtype=sample[dim].dtype) + (pos1-pos0)
-                    pos0 = 0
-                    end  = len(sample[dim])
+                    # Index of the 0th sample dim value in the test dim array
+                    index0 = np.where(test[dim] == sample[dim][0])[0][0]
+
+                    pos0 = index0
+                    end  = index0 + len(sample[dim])
 
                 slice_dim = slice(
                     pos0,
