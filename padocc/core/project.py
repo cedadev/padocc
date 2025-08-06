@@ -11,7 +11,7 @@ import yaml
 
 from .errors import error_handler
 from .filehandlers import (CSVFileHandler, JSONFileHandler, ListFileHandler,
-                           LogFileHandler)
+                           LogFileHandler, KerchunkFile)
 from .mixins import (DatasetHandlerMixin, DirectoryMixin, PropertiesMixin,
                      StatusMixin)
 from .utils import (FILE_DEFAULT, BypassSwitch, apply_substitutions,
@@ -334,6 +334,60 @@ class ProjectOperation(
         os.system(f'rm -rf {self.dir}')
         self.logger.info(f'All internal files for {self.proj_code} deleted.')
 
+    def switch_local(self):
+        """
+        Switch back to local version of kerchunk file if it exists.
+        """
+
+        if not self.remote:
+            self.logger.warning("Project is already/still local - nothing to do")
+            return
+        
+        self._kfile = None
+        self.remote = False
+        self.save_files()
+
+    def switch_remote(self):
+        """
+        Function to create remote copy of a dataset if relevant.
+
+        Kerchunk - create new remote version.
+
+        Zarr - Ignore
+        """
+
+        if self.remote:
+            self.logger.warning("Project has already been switched to remote")
+            return
+
+        ds = self.dataset
+        if not isinstance(ds, KerchunkFile):
+            return
+        
+        self.logger.info('Switching to remote file version')
+
+        new_rev  = ''.join((self.cloud_format[0],'r',self.version_no))
+        new_path = os.path.splitext(ds.filepath)[0].replace(self.revision, new_rev) # No extension
+
+        self.remote = True
+        if not glob.glob(f'{new_path}*'):
+            self.logger.info('Creating new remote kerchunk file.')
+            self.dataset.spawn_copy(new_path)
+
+            # Need to refresh the kfile filehandler
+            self._kfile = None
+            
+            self.logger.info('Applying remote criteria to kerchunk file.')
+            # Reinstantiate new filehandler + add download_link in place
+            self.dataset.add_download_link()
+        
+        else:
+            # Refresh kfile handler (different order to above.)
+            self._kfile = None
+            _ = self.dataset
+
+        self.save_files()
+
     def complete_project(self, move_to: str, thorough: bool = False) -> None:
         """
         Move project to a completeness directory
@@ -360,21 +414,32 @@ class ProjectOperation(
 
         self.save_files()
 
-        # Spawn copy of dataset
-        complete_dataset = f'{move_to}/{self.complete_product}'
+        if thorough:
+            # Switch to remote version before completion
+            self.switch_remote()
 
-        if thorough and not self.remote:
-            # Make pipeline-remote version first, then copy out.
-            self.add_download_link(
-                in_place=False, remote=True
-            )
+        data_move = f'{move_to}/data'
+        if not os.path.isdir(data_move):
+            os.makedirs(data_move)
+        report_move = f'{move_to}/reports'
+        if not os.path.isdir(report_move):
+            os.makedirs(report_move)
+
+        # Spawn copy of dataset
+        complete_dataset = f'{data_move}/{self.complete_product}'
 
         self.dataset.spawn_copy(complete_dataset)
 
         # Spawn copy of cfa dataset
         if self.detail_cfg.get('CFA',False):
-            complete_cfa = self.cfa_path.replace(self.dir, move_to) + '_' + self.version_no
+            complete_cfa = self.cfa_path.replace(self.dir, data_move) + '_' + self.version_no
             self.cfa_dataset.spawn_copy(complete_cfa)
+
+
+        for report in ['data_report.json','metadata_report.json']:
+            if os.path.isfile(f'{self.dir}/{report}'):
+                os.makedirs(report_move)
+                os.system(f'cp {self.dir}/{report} {report_move}/{self.proj_code}_{report}')
 
         if not self._dryrun:
             self.update_status('complete','Success')
