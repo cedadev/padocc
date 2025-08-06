@@ -2,7 +2,7 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-import datetime
+from datetime import datetime
 from collections.abc import Callable
 from typing import Optional, Union
 
@@ -34,27 +34,6 @@ class EvaluationsMixin:
         func(' > group.merge_subsets() - Merge created subsets')
         func(' > group.summarise_data() - Get a printout summary of data representations in this group')
         func(' > group.summarise_status() - Summarise the status of all group member projects.')
-
-    def get_project(self, proj_code: str):
-        """
-        Get a project operation from this group
-
-        Works on string codes only.
-        """
-
-        if not isinstance(proj_code, str):
-            raise ValueError(
-                f'GetProject function takes string as input, not {type(proj_code)}'
-            )
-
-        return ProjectOperation(
-            proj_code,
-            self.workdir,
-            groupID=self.groupID,
-            logger=self.logger,
-            xarray_kwargs=self._xarray_kwargs,
-            **self.fh_kwargs
-        )
     
     def combine_reports(
             self,
@@ -111,28 +90,7 @@ class EvaluationsMixin:
         if phase == 'complete':
             new_code_ids = status_dict['complete']
         else:
-            new_code_ids = []
-            if phase is not None:
-
-                # Pull any statuses
-                if status == 'Any':
-                    for status in status_dict[phase].keys():
-                        new_code_ids = new_code_ids + status_dict[phase][status]
-                else:
-                    # Specific status from the dict for this phase
-                    if status in status_dict[phase]:
-                        new_code_ids = status_dict[phase][status]
-            else:
-                # Run for all phases
-                for phase in status_dict.keys():
-                    # Pull any statuses
-                    if status == 'Any':
-                        for status in status_dict[phase].keys():
-                            new_code_ids = new_code_ids + status_dict[phase][status]
-                    else:
-                        # Specific status for the current phase
-                        if status in status_dict[phase]:
-                            new_code_ids = new_code_ids + status_dict[phase][status]
+            new_code_ids = self.determine_status_sets(status_dict, status, phase)
 
         new_codes = []
         for id in new_code_ids:
@@ -143,6 +101,44 @@ class EvaluationsMixin:
                 new_codes
             )
         self._save_proj_codes()
+
+    def determine_status_sets(self, status_dict: dict, status: str, phase: str):
+        """
+        Analyse status dict for given status request.
+        """
+
+        if phase is None:
+            phase_set = list(status_dict.keys())
+        else:
+            phase_set = phase.split('&')
+
+        new_code_ids = []
+        for phase in phase_set:
+
+            status_opts = {stat.split('-')[0]: stat for stat in status_dict[phase].keys()}
+
+            status_set = status.split('&')
+            for status in status_set:
+
+                # Pull any statuses
+                if status == 'Any':
+                    # Get all statuses
+                    for all_status in status_dict[phase].keys():
+                        new_code_ids = new_code_ids + status_dict[phase][all_status]
+                elif status.startswith('!'):
+                    # Get all except the status
+                    status = status[1:]
+                    for all_status in status_dict[phase].keys():
+                        # Get all statuses except where they are in the opts dict above.
+                        if status_opts.get(status,None) == all_status:
+                            continue
+                        new_code_ids = new_code_ids + status_dict[phase][all_status]
+                else:
+                    # Specific status from the dict for this phase
+                    if status in status_opts.keys():
+                        new_code_ids = status_dict[phase][status_opts[status]]
+
+        return new_code_ids
 
     def remove_by_status(
             self, 
@@ -219,7 +215,7 @@ class EvaluationsMixin:
         
         fh.remove_file()
 
-    def summarise_data(self, repeat_id: str = 'main', func: Callable = print):
+    def summarise_data(self, repeat_id: str = 'main', func: Callable = print) -> Union[str,None]:
         """
         Summarise data stored across all projects, mostly
         concatenating results from the detail-cfg files from
@@ -324,7 +320,10 @@ class EvaluationsMixin:
             ot.append(
                 f'Total Chunks: {sum(total_chunks):.2f} [Avg. {np.mean(total_chunks):.2f} per project]')
         
-        func('\n'.join(ot))
+        if func is not None:
+            func('\n'.join(ot))
+        else:
+            return '\n'.join(ot)
 
     def match_data_reports(
             self,
@@ -353,13 +352,14 @@ class EvaluationsMixin:
     def get_codes_by_status(
             self,
             repeat_id: str = 'main',
+            write: bool = False,
         ) -> dict:
             """
             Public Method for just getting the status dict
             for a group.
             """
 
-            status_dict, _ = self._get_status_dict(repeat_id)
+            status_dict, _ = self._get_status_dict(repeat_id, write=write)
             return status_dict
 
     def summarise_status(
@@ -460,7 +460,10 @@ class EvaluationsMixin:
         if 'ignore' not in faultdict:
             faultdict['ignore'] = []
         
-        proj_codes = self.proj_codes[repeat_id]
+        try:
+            proj_codes = self.proj_codes[repeat_id]
+        except KeyError:
+            raise ValueError(f'Repeat ID {repeat_id} not known to group {self.groupID}')
 
         if write:
             self.logger.info(
@@ -517,8 +520,8 @@ class EvaluationsMixin:
         if len(status) > longest_err:
             longest_err = len(status)
 
-        if status == 'pending' and write:
-            timediff = (datetime.now() - datetime(time)).total_seconds()
+        if status == 'Pending' and write:
+            timediff = (datetime.now() - datetime.strptime(time, '%H:%M %d/%m/%y')).total_seconds()
             if timediff > 86400: # 1 Day - fixed for now
                 status = 'JobCancelled'
                 proj_op.update_status(phase, 'JobCancelled')
