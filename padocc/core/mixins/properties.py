@@ -3,6 +3,7 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 from typing import Callable, Union
+import glob
 
 
 class PropertiesMixin:
@@ -61,10 +62,14 @@ class PropertiesMixin:
             return self.base_cfg['override'][key]
         
         return None
+    
+    @property
+    def cfa_complete(self):
+        return self.base_cfg.get('CFA_complete',False) or glob.glob(f'{self.dir}/*.nca')
 
     @property
     def cfa_enabled(self):
-        return self.detail_cfg.get(index='CFA',default=True) and not self.base_cfg.get(index='disable_CFA',default=False)
+        return self.base_cfg.get(index='disable_CFA',default=True)
     
     @cfa_enabled.setter
     def cfa_enabled(self, value: bool):
