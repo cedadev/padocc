@@ -26,6 +26,7 @@ SHORTCUTS = [
     'complete',
     'pfunc',
     'report',
+    'repeat'
 ]
 
 def check_shortcuts(args: dict) -> bool:
@@ -76,6 +77,18 @@ def check_shortcuts(args: dict) -> bool:
     
     elif args.phase == 'status':
         group.summarise_status(repeat_id=args.repeat_id)
+
+    elif args.phase == 'repeat':
+
+        # validate,success,main,new
+        encoding = args.shortcut.split(',')
+
+        group.repeat_by_status(
+            status=encoding[1],
+            new_repeat_id=encoding[3],
+            phase=encoding[0],
+            old_repeat_id=encoding[2],
+        )
     
     elif args.phase == 'summarise':
         group.summarise_data(repeat_id=args.repeat_id)
