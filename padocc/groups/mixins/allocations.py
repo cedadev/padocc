@@ -178,10 +178,15 @@ class AllocationsMixin:
             new_version     : str = None,
             func            : Callable = print,
             xarray_kwargs   : dict = None,
+            valid           : Union[dict,None] = None,
+            joblabel        : str = 'PADOCC'
         ) -> None:
         """
         Organise parallel deployment via SLURM.
         """
+
+        time_allowed = time_allowed or times[phase]
+        memory       = memory or '2G'
 
         source = source or os.environ.get('VIRTUAL_ENV')
 
@@ -194,7 +199,7 @@ class AllocationsMixin:
             raise ValueError(
                 f'"{phase}" not recognised, please select from {parallel_modes}'
             )
-
+        
         sbatch_kwargs = {
             'forceful': forceful or self._forceful,
             'dryrun'  : dryrun or self._dryrun,
@@ -233,7 +238,7 @@ class AllocationsMixin:
                     dryrun=self._dryrun, 
                     forceful=self._forceful)
                 
-                jobname = f'PADOCC_{self.groupID}-{repeat_id}_{aid}_{phase}'
+                jobname = f'{joblabel}_{self.groupID}-{repeat_id}_{aid}_{phase}'
 
                 self._create_slurm_script(
                     phase, 
@@ -254,7 +259,7 @@ class AllocationsMixin:
                 dryrun=self._dryrun, 
                 forceful=self._forceful)
             
-            jobname = f'PADOCC_{self.groupID}-{repeat_id}_{phase}'
+            jobname = f'{joblabel}_{self.groupID}-{repeat_id}_{phase}'
 
             num_datasets = len(self.proj_codes[repeat_id].get())
             self.logger.info(f'All Datasets: {time_allowed} ({num_datasets})')
@@ -268,7 +273,8 @@ class AllocationsMixin:
                     group_length=num_datasets,
                     sbatch_kwargs=sbatch_kwargs,
                     time=time_allowed,
-                    memory=memory
+                    memory=memory,
+                    valid=valid
                 )
             
     def _create_slurm_script(
@@ -282,6 +288,7 @@ class AllocationsMixin:
             sbatch_kwargs: dict,
             time: Union[str,None] = None,
             memory: Union[str,None] = None,
+            valid: Union[str,None] = None,
         ):
         """
         Create the sbatch content job array.
@@ -290,13 +297,13 @@ class AllocationsMixin:
         for submission to SLURM.
         """
 
-        time   = time or times[phase]
-        memory = memory or '2G'
-
         outfile = f'{self.groupdir}/outs/{jobname}'
         errfile = f'{self.groupdir}/errs/{jobname}'
 
         sbatch_flags = self._sbatch_kwargs(time, memory, repeat_id, **sbatch_kwargs)
+
+        if valid is not None:
+            sbatch_flags += f' --valid {valid}'
 
         lotus_requirements = get_lotus_reqs(self.logger)
   
@@ -329,6 +336,12 @@ class AllocationsMixin:
         else:
             os.system(f'sbatch --array=0-{group_length-1} {sbatch.filepath}')
 
+            for proj in self.proj_codes[repeat_id]:
+                project = self[proj]
+                project.base_cfg['last_allocation'] = f'{time},{memory}'
+                project.save_files()
+
+
     def _sbatch_kwargs(
             self, 
             time        : str, 
@@ -354,6 +367,9 @@ class AllocationsMixin:
             'dryrun'   : '-d',
             'binpack'  : '-A',
         }
+
+        if isinstance(bypass, BypassSwitch):
+            bypass = bypass.switch
 
         value_options = {
             'bypass' : ('-b',bypass),
