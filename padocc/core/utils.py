@@ -17,9 +17,9 @@ from datetime import datetime
 from .errors import MissingVariableError
 
 times = {
-    'scan'    :'10:00', # No prediction possible prior to scanning
+    'scan'    :'15:00',
     'compute' :'60:00',
-    'validate':'30:00' # From CMIP experiments - no reliable prediction mechanism possible
+    'validate':'10:00'
 }
 
 phases = [
@@ -62,6 +62,7 @@ BASE_CFG = {
     },
     'last_run': (None, None),
     'remote': False,
+    'disable_cfa':False
 }
 
 DETAIL_CFG = {
