@@ -701,49 +701,26 @@ class KerchunkFile(JSONFileHandler):
         """
         Open the kerchunk file as a dataset
         
-        :param fsspec_kwargs:   (dict) Kwargs applied to fsspec mapper.
+        :param fsspec_kwargs:   (dict) Kwargs applied to fsspec mapper - deprecated
 
-        :param retry:   (bool) Unused property for multiple tries when searching for kerchunk
-            dataset.
+        :param retry:   (bool) Unused property for multiple tries when searching for kerchunk 
+            dataset - deprecated.
         """
 
-        default_fsspec = {'target_options':{'compression':None}}
-        if fsspec_kwargs is not None:
-            default_fsspec.update(fsspec_kwargs)
-
-        default_zarr = {'consolidated':False, 'decode_times':True}
-        default_zarr.update(kwargs)
-        default_zarr.update(self._xarray_kwargs)
+        if fsspec_kwargs is not None and retry:
+            self.logger.warning("'fsspec kwargs' and 'retry' are deprecated and will be removed shortly.")
 
         self.logger.info('Attempting to open Kerchunk JSON file')
+
+        if not os.path.isfile(self.filepath):
+            raise FileNotFoundError(self.filepath)
+
         try:
-            mapper  = fsspec.get_mapper('reference://',fo=self.filepath, **default_fsspec)
-        except json.JSONDecodeError as err:
-            self.logger.error(f"Kerchunk file {self.filepath} appears to be empty")
-            return None
+            ds = xr.open_dataset(self.filepath, engine='kerchunk', **kwargs)
+        except Exception as err:
+            self.logger.error('Unable to open kerchunk file')
+            raise err
         
-        # Need a safe repeat here
-        ds = None
-        attempts = 0
-        while attempts < 3 and not ds:
-            attempts += 1
-            try:
-                ds = xr.open_zarr(mapper, **default_zarr)
-            except OverflowError:
-                ds = None
-            except KeyError as err:
-                if re.match('.*https.*',str(err)) and not retry:
-                    # RemoteProtocol is not https - retry with correct protocol
-                    self.logger.warning('Found KeyError "https" on opening the Kerchunk file - retrying with local filepaths.')
-                    return self.open_dataset(fsspec_kwargs=default_fsspec, retry=True)
-                else:
-                    raise err
-            except Exception as err:
-                if 'decode' in str(err):
-                    raise KerchunkDecodeError
-                raise err #MissingKerchunkError(message=f'Failed to open kerchunk file {kfile}')
-        if not ds:
-            raise ChunkDataError
         self.logger.debug('Successfully opened Kerchunk with virtual xarray ds')
         return ds
 
