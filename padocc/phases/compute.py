@@ -370,7 +370,11 @@ class ComputeOperation(ProjectOperation):
             cfa.create()
             if file_limit is None:
                 cfa.write(self.cfa_path + '.nca')
-                self.base_cfg.set('CFA_complete',True)
+                self.base_cfg.set('cfa_complete',True)
+
+                if len(list(cfa.location)) == len(self.allfiles):
+                    # Reset with correct temporal ordering - for VirtualiZarr benefit.
+                    self.allfiles.set(list(cfa.location))
 
             return {
                 'aggregated_dims': make_tuple(cfa.agg_dims),
@@ -1022,24 +1026,28 @@ class KerchunkDS(ComputeOperation):
             self.logger.debug(f'Concat Dim(s): {self.combine_kwargs["concat_dims"]}')
             self.logger.debug(f'Identical Dim(s): {self.combine_kwargs["identical_dims"]}')
 
-            try:
-                mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
-            except ValueError as err:
-                if 'chunk size mismatch' in str(err):
-                    raise ConcatFatalError
-                else:
-                    raise err
+            # Attempting new concatenation method with VirtualiZarr
 
-            zattrs = self.temp_zattrs.get()
-            if zattrs is not None:
-                mzz['refs']['.zattrs'] = json.dumps(zattrs)
+            virtualise(f'{self.dir}/cache/', filepath=self.kfile.filepath)
 
-            self.kfile.set(mzz)
+            #try:
+            #    mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
+            #except ValueError as err:
+            #    if 'chunk size mismatch' in str(err):
+            #        raise ConcatFatalError
+            #    else:
+            #        raise err
+#
+            #zattrs = self.temp_zattrs.get()
+            #if zattrs is not None:
+            #    mzz['refs']['.zattrs'] = json.dumps(zattrs)
+
+            #self.kfile.set(mzz)
         else:
             self.logger.debug('Found single ref to save')
             self.kfile.set(refs[0])
 
-        self.kfile.close()
+            self.kfile.close()
 
     def _perform_shape_checks(self, ref: dict) -> dict:
         """
