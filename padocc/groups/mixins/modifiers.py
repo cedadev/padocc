@@ -188,6 +188,20 @@ class ModifiersMixin:
                 self.proj_codes['main'].append(code)
         self.save_files()
 
+    def remove_projects(self, proj_code: str, ask: bool = True) -> None:
+        """
+        Remove one or more projects from this group
+        """
+        proj_codes = proj_code.split(',')
+        code_labels = []
+        for i in proj_codes:
+            if i in self.proj_codes['main']:
+                code_labels.append(i)
+            elif i.isnumeric():
+                code_labels.append(self.proj_codes['main'][i])
+        for pc in code_labels:
+            self.remove_project(pc, ask=ask)
+
     def remove_project(self, proj_code: str, ask: bool = True) -> None:
         """
         Remove a project from this group
@@ -292,7 +306,7 @@ class ModifiersMixin:
                 group_B.groupID
             )
             group_A.logger.debug(f'Migrating project {proj_code}')
-            proj_op.move_to(new_proj_dir)
+            proj_op.migrate(group_A.groupID)
 
         # Datasets
         group_A.datasets.set(
@@ -389,9 +403,10 @@ class ModifiersMixin:
         Delete the entire set of files associated with this group.
         """
 
-        x=input(f'Delete all files relating to group: {self.groupID}? (Y/N) ')
-        if x != 'Y':
-            return
+        if ask:
+            x=input(f'Delete all files relating to group: {self.groupID}? (Y/N) ')
+            if x != 'Y':
+                return
         
         for project in self:
             project.delete_project(ask=False)
