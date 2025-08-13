@@ -261,6 +261,9 @@ class AllocationsMixin:
             
             jobname = f'{joblabel}_{self.groupID}-{repeat_id}_{phase}'
 
+            if repeat_id not in self.proj_codes:
+                raise ValueError(f'Repeat ID: {repeat_id} not known for {self.groupID}')
+
             num_datasets = len(self.proj_codes[repeat_id].get())
             self.logger.info(f'All Datasets: {time_allowed} ({num_datasets})')
 
@@ -337,10 +340,9 @@ class AllocationsMixin:
             os.system(f'sbatch --array=0-{group_length-1} {sbatch.filepath}')
 
             for proj in self.proj_codes[repeat_id]:
-                project = self[proj]
+                project = self.get_project(proj, verbose=0)
                 project.base_cfg['last_allocation'] = f'{time},{memory}'
                 project.save_files()
-
 
     def _sbatch_kwargs(
             self, 
