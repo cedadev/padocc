@@ -165,7 +165,7 @@ class GroupOperation(
 
         return self.get_project(proj_code)
     
-    def get_project(self, proj_code: str):
+    def get_project(self, proj_code: str, **kwargs):
         """
         Get a project operation from this group
 
@@ -176,6 +176,8 @@ class GroupOperation(
             raise ValueError(
                 f'GetProject function takes string as input, not {type(proj_code)}'
             )
+        
+        fh_kwargs = self.fh_kwargs | kwargs
 
         if proj_code not in self.__ongoing_projects:
             self.__ongoing_projects[proj_code] = ProjectOperation(
@@ -184,7 +186,7 @@ class GroupOperation(
                 groupID=self.groupID,
                 logger=self.logger,
                 xarray_kwargs=self._xarray_kwargs,
-                **self.fh_kwargs
+                **fh_kwargs
             )
 
         return self.__ongoing_projects[proj_code]
@@ -237,7 +239,7 @@ class GroupOperation(
                 proj_op = self[proj]
 
                 # Export report
-                proj_op.export_report(report_location)
+                proj_op.export_report(move_to)
 
                 # Export products
                 proj_op.complete_project(move_to, thorough=thorough)
@@ -349,6 +351,11 @@ class GroupOperation(
                     )
                 # Perform by index
                 codeset = [codeset[int(proj_code)]]
+            elif ',' in proj_code:
+                try:
+                    codeset = [codeset[int(p)] for p in proj_code.split(',')]
+                except:
+                    raise ValueError('Invalid codeset provided')
 
         func = phases[phase]
 
@@ -556,6 +563,14 @@ class GroupOperation(
         for repeat_id in old_repeats:
             if repeat_id != 'main':
                 self._delete_proj_codeset(repeat_id)
+
+    def delete_logs(self):
+        """
+        Delete all log files and sbatch sections."""
+
+        os.system(f'rm -rf {self.groupdir}/errs/*')
+        os.system(f'rm -rf {self.groupdir}/outs/*')
+        os.system(f'rm -rf {self.groupdir}/sbatch/*')
 
     def add_repeat_by_id(self, repeat_id: str, idset: list[int]):
         """
