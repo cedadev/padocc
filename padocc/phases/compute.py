@@ -9,7 +9,7 @@ import os
 from datetime import datetime
 from typing import Optional, Union
 
-import fsspec
+import glob
 import numpy as np
 import rechunker
 import xarray as xr
@@ -23,7 +23,88 @@ from padocc.core.utils import find_closest, make_tuple, timestamp
 from padocc.phases.validate import ValidateDatasets
 from padocc.core.logs import levels
 
+from obstore.store import from_url
+from virtualizarr import open_virtual_dataset
+from virtualizarr.parsers import KerchunkJSONParser, HDFParser, NetCDF3Parser
+from virtualizarr.registry import ObjectStoreRegistry
+from kerchunk.combine import MultiZarrToZarr
+
+import warnings
+
+warnings.filterwarnings(
+    "ignore",
+    message="Numcodecs codecs are not in the Zarr version 3 specification",
+    category=UserWarning,
+)
+
 CONCAT_MSG = 'See individual files for more details'    
+
+def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list, logger) -> None:
+
+    logger.info('VirtualiZarr: Starting Concatenation')
+
+    # Must be ordered in terms of mathematical position i.e 0,1,2 not 0,1,10,...
+    cachefiles = glob.glob(f'{cache_dir}/*.json')
+    cachekerchunk = [cf for cf in cachefiles if 'temp' not in cf]
+
+    file_path = cachekerchunk[0]
+    file_url = f"file://{file_path}"
+
+    store = from_url("file://")
+    registry = ObjectStoreRegistry({"file://": store})
+    registry.register(file_url, store)
+    parser = KerchunkJSONParser()
+
+    vds = []
+    for f in cachekerchunk:
+        logger.info(f'VirtualiZarr: Parsing virtual dataset - {f}')
+        try:
+            vds.append(open_virtual_dataset(
+                url=f,
+                parser=parser,
+                registry=registry
+            ))
+        except Exception as err:
+            raise ValueError('Kerchunk Parsing failed')
+
+    logger.info('VirtualiZarr: Combining Datasets')
+    logger.debug(f'Combining with agg_dims: {agg_dims}, data_vars: {data_vars}')
+    logger.debug('Coords: minimal, compat: override, combine_attrs: override')
+
+    try:
+        combined_vds = xr.combine_nested(vds, concat_dim=agg_dims, data_vars=data_vars, coords='minimal',compat='override', combine_attrs='override')
+    except:
+        raise ValueError('Kerchunk Concatenation failed.')
+
+    logger.debug('Virtualising combined dataset')
+    try:
+        combined_vds.virtualize.to_kerchunk(output_file, format='json')
+    except:
+        raise ValueError('Kerchunk serialisation failed.')
+
+def mzz_combine(refs: list, output_file: str, concat_dims: list, identical_dims: list, zattrs: dict, logger) -> None:
+    """
+    Combine kerchunk references using standard Kerchunk method.
+    """
+
+    try:
+        mzz = MultiZarrToZarr(list(refs), concat_dims=concat_dims, identical_dims=identical_dims).translate()
+    except ValueError as err:
+        if 'chunk size mismatch' in str(err):
+            raise ConcatFatalError
+        else:
+            raise err
+        
+    if zattrs is not None:
+        mzz['refs']['.zattrs'] = json.dumps(zattrs)
+
+    if isinstance(output_file, KerchunkFile):
+        output_file.set(mzz)
+        output_file.close()
+    else:
+        with open(output_file,'w') as f:
+            f.write(json.dumps(mzz))
+
 
 class KerchunkConverter(LoggedOperation):
     """Class for converting a single file to a Kerchunk reference object. Handles known
@@ -122,7 +203,6 @@ class KerchunkConverter(LoggedOperation):
                 return None
         except Exception as err:
             if self._bypass_driver:
-                self.logger.info(f'Bypassing driver error: {err}')
                 return None
             else:
                 raise err
@@ -283,6 +363,31 @@ class ComputeOperation(ProjectOperation):
             'create_kwargs': self.create_kwargs,
             'pre_kwargs': self.pre_kwargs,
         }
+    
+    def order_native_files(self):
+        """
+        Ensure ordering of native files based on aggregation dimensions.
+        """
+        self.logger.info('Determining native file order')
+        concat = self.detail_cfg.get('kwargs',{}).get('combine_kwargs',{}).get('concat_dims',None)
+        concat = concat or self.base_cfg.get('data_properties',{}).get('aggregated_dims',[])
+
+        if len(concat) != 1:
+            self.logger.debug('Ordering native files skipped for complex aggregations')
+            return
+        
+        concat = concat[0]
+        ordering = []
+        for allfile in self.allfiles.get():
+            ds = xr.open_dataset(allfile, decode_times=False)
+            ordering.append([ds[concat].min(),allfile])
+
+        new_fileorder = [f[1] for f in sorted(ordering)]
+
+        self.allfiles.set(new_fileorder)
+        self.allfiles.close()
+
+        self.virtualizarr = True
 
     def _run(
             self, 
@@ -307,7 +412,7 @@ class ComputeOperation(ProjectOperation):
         
         if not self.cfa_enabled:
             # Bypass CFA if deactivated.
-            return 'CFASkipped'
+            return 'Skipped'
         
         if file_limit == len(self.allfiles):
             file_limit = None
@@ -315,6 +420,8 @@ class ComputeOperation(ProjectOperation):
         results = self._run_cfa(file_limit=file_limit)
 
         if results is None:
+            self.base_cfg['disable_cfa'] = True
+            self.save_files()
             return 'Fatal'
         
         if results != {}:
@@ -331,6 +438,9 @@ class ComputeOperation(ProjectOperation):
             self.detail_cfg['CFA'] = True
             self.detail_cfg.close()
             return 'Success'
+        
+        self.base_cfg['disable_cfa'] = True
+        self.base_cfg.close()
         
         return 'Fatal'
 
@@ -370,11 +480,14 @@ class ComputeOperation(ProjectOperation):
             cfa.create()
             if file_limit is None:
                 cfa.write(self.cfa_path + '.nca')
-                self.base_cfg.set('cfa_complete',True)
+                self.base_cfg['cfa_complete'] = True
 
                 if len(list(cfa.location)) == len(self.allfiles):
                     # Reset with correct temporal ordering - for VirtualiZarr benefit.
                     self.allfiles.set(list(cfa.location))
+                    self.allfiles.close()
+
+                    self.virtualizarr = True
 
             return {
                 'aggregated_dims': make_tuple(cfa.agg_dims),
@@ -389,6 +502,8 @@ class ComputeOperation(ProjectOperation):
             self.logger.error(
                 f'Aggregation via CFA failed - {err} - report at https://github.com/cedadev/CFAPyX/issues'
             )
+            self.base_cfg['disable_cfa'] = True
+            self.base_cfg.close()
             return None
 
     def _run_with_timings(self, func, **kwargs) -> str:
@@ -641,6 +756,8 @@ class ComputeOperation(ProjectOperation):
         dimensions = datasets[0].dims
         variables  = datasets[0].variables
 
+        # Note: Checking concat dims are properly ordered is not 
+        # relevant for dimension checks at this stage
         vd = ValidateDatasets(
             datasets,
             'scan-dim-check',
@@ -687,8 +804,14 @@ class ComputeOperation(ProjectOperation):
         identical_vars = [var for var in variables if (var not in vars and var not in non_identical)]
 
         identical_dims = list(set(identical_dims + identical_vars))
+
+        # All variables to be aggregated.
+        aggregated_vars = []
+        for v in variables:
+            if v not in identical_dims and v not in concat_dims:
+                aggregated_vars.append(v)
         
-        return concat_dims, identical_dims
+        return concat_dims, identical_dims, aggregated_vars
 
     def _determine_dim_specs(self) -> None:
         """
@@ -704,17 +827,21 @@ class ComputeOperation(ProjectOperation):
             concat_dims, identical_dims, report = self._dims_via_cfa()
             self._data_properties = report
 
+            aggregated_vars = report['aggregated_vars']
+
         else:
             self.logger.info('CFA Determination failed - defaulting to Validator-based checks')
-            concat_dims, identical_dims = self._dims_via_validator()
+            concat_dims, identical_dims, aggregated_vars = self._dims_via_validator()
 
             self._data_properties = {
                 'aggregated_dims': tuple(concat_dims),
-                'coord_dims': tuple(set(concat_dims) | set(identical_dims))
+                'coord_dims': tuple(set(concat_dims) | set(identical_dims)),
+                'aggregated_vars': aggregated_vars,
             }
 
         self.combine_kwargs['concat_dims'] = concat_dims
         self.combine_kwargs['identical_dims'] = identical_dims
+        self.combine_kwargs['aggregated_vars'] = aggregated_vars
 
         if self.combine_kwargs['concat_dims'] == []:
             self.logger.info("No concatenation dimensions available - virtual dimension will be constructed.")
@@ -755,7 +882,15 @@ class KerchunkDS(ComputeOperation):
         """
 
         # Run CFA in super class.
-        _ = super()._run(file_limit=self.limiter)
+        cfa_status = super()._run(file_limit=self.limiter)
+        self.update_status('compute','CFA-'+cfa_status, jobid=self._logid)
+
+        # If CFA is not enabled and virtualisation has not previously been attempted.
+        if not self.cfa_enabled and self.base_cfg.get('virtualizarr',None) is None:
+            self.logger.info('Native file order unknown - attempting determination')
+            self.order_native_files()
+        else:
+            self.logger.info('Native file order confirmed')
 
         status = self._run_with_timings(
             self.create_refs, 
@@ -1011,38 +1146,46 @@ class KerchunkDS(ComputeOperation):
         """
         Concatenating to JSON-format Kerchunk file
         """
-        from kerchunk.combine import MultiZarrToZarr
-
         self.logger.debug('Starting JSON-write process')
 
         # Already have default options saved to class variables
         if len(refs) > 1:
-            self.logger.debug('Concatenating refs using MultiZarrToZarr')
             
             if self.detail_cfg['virtual_concat']:
                 refs, vdim = self._construct_virtual_dim(refs)
                 self.combine_kwargs['concat_dims'] = [vdim]
 
+            if self.combine_kwargs.get('aggregated_vars',None) is None:
+                self.combine_kwargs['aggregated_vars'] = self.base_cfg['data_properties'].get('aggregated_vars')
+
             self.logger.debug(f'Concat Dim(s): {self.combine_kwargs["concat_dims"]}')
             self.logger.debug(f'Identical Dim(s): {self.combine_kwargs["identical_dims"]}')
+            self.logger.debug(f'Aggregation Var(s): {self.combine_kwargs["aggregated_vars"]}')
 
-            # Attempting new concatenation method with VirtualiZarr
+            if self.virtualizarr:
+                try:
+                    self.logger.debug('Attempting Virtualization using VirtualiZarr - Native order confirmed')
+                    virtualise(
+                        f'{self.dir}/cache/', 
+                        output_file=self.kfile.filepath, 
+                        agg_dims=self.combine_kwargs['concat_dims'],
+                        data_vars=self.combine_kwargs['aggregated_vars'],
+                        logger=self.logger)
+                    return
+                except Exception as err:
+                    self.logger.warning(f'Standard Virtualization failed - {err}')
+                    self.virtualizarr = False
 
-            virtualise(f'{self.dir}/cache/', filepath=self.kfile.filepath)
+            self.logger.debug('Concatenating refs using MultiZarrToZarr')
+            mzz_combine(
+                refs, 
+                output_file=self.kfile, 
+                concat_dims=self.combine_kwargs.get('concat_dims',None),
+                identical_dims=self.combine_kwargs.get('identical_dims',None),
+                zattrs=self.temp_zattrs.get(),
+                logger=self.logger
+            )
 
-            #try:
-            #    mzz = MultiZarrToZarr(list(refs), **self.combine_kwargs).translate()
-            #except ValueError as err:
-            #    if 'chunk size mismatch' in str(err):
-            #        raise ConcatFatalError
-            #    else:
-            #        raise err
-#
-            #zattrs = self.temp_zattrs.get()
-            #if zattrs is not None:
-            #    mzz['refs']['.zattrs'] = json.dumps(zattrs)
-
-            #self.kfile.set(mzz)
         else:
             self.logger.debug('Found single ref to save')
             self.kfile.set(refs[0])
@@ -1111,7 +1254,14 @@ class ZarrDS(ComputeOperation):
         """
         self.set_last_run(self.phase, timestamp())
         # Run CFA in super class.
-        _ = super()._run(file_limit=self.limiter)
+        cfa_status = super()._run(file_limit=self.limiter)
+        self.update_status('compute','CFA-'+cfa_status, jobid=self._logid)
+
+        if not self.cfa_enabled and not self.virtualizarr:
+            self.logger.info('Native file order unknown - attempting determination')
+            self.order_native_files()
+        else:
+            self.logger.info('Native file order confirmed')
 
         status = self._run_with_timings(self.create_store)
         self.update_status('compute',status,jobid=self._logid)
