@@ -300,7 +300,7 @@ class ScanOperation(ProjectOperation):
             self.logger.info(' > Result generation failed.')
 
         if is_core:
-            self.update_status('scan',status,jobid=self._logid)
+            self.update_status('scan','CFA-'+status,jobid=self._logid)
         return status
 
     def _scan_zarr(
