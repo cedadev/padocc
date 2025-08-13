@@ -8,6 +8,7 @@ import os
 from typing import Callable, Union
 
 import yaml
+import json
 
 from .errors import error_handler
 from .filehandlers import (CSVFileHandler, JSONFileHandler, ListFileHandler,
@@ -421,6 +422,7 @@ class ProjectOperation(
         data_move = f'{move_to}/data'
         if not os.path.isdir(data_move):
             os.makedirs(data_move)
+
         report_move = f'{move_to}/reports'
         if not os.path.isdir(report_move):
             os.makedirs(report_move)
@@ -431,15 +433,9 @@ class ProjectOperation(
         self.dataset.spawn_copy(complete_dataset)
 
         # Spawn copy of cfa dataset
-        if self.detail_cfg.get('CFA',False):
+        if self.cfa_enabled:
             complete_cfa = self.cfa_path.replace(self.dir, data_move) + '_' + self.version_no
             self.cfa_dataset.spawn_copy(complete_cfa)
-
-
-        for report in ['data_report.json','metadata_report.json']:
-            if os.path.isfile(f'{self.dir}/{report}'):
-                os.makedirs(report_move)
-                os.system(f'cp {self.dir}/{report} {report_move}/{self.proj_code}_{report}')
 
         if not self._dryrun:
             self.update_status('complete','Success')
@@ -471,7 +467,7 @@ class ProjectOperation(
         if not os.path.isdir(new_dir):
             os.makedirs(new_dir)
 
-        os.system(f'mv {cls.dir} {new_dir}')
+        os.system(f'mv {cls.dir}/* {new_dir}')
 
         # 4. Create a new basic project instance
         new_cls = ProjectOperation(
@@ -645,13 +641,16 @@ class ProjectOperation(
         Export report to a new location from within the pipeline.
         """
 
-        for rep in ['data_report','metadata_report']:
+        final_report = {}
+        for report in ['data_report.json','metadata_report.json']:
+            if os.path.isfile(f'{self.dir}/{report}'):
 
-            report = f'{self.dir}/{rep}.json'
+                with open(f'{self.dir}/{report}') as r:
+                    rep = json.load(r)
 
-            # Try exporting the report file
-            if os.path.isfile(report):
-                new_report = f'{new_location}/{self.proj_code}_{rep}.json'
-                os.system(f'cp {report} {new_report}')
-            else:
-                self.logger.warning(f'Unable to export report for {self.proj_code} - "{rep}" file not found')
+                final_report[report.split('_')[0]] = rep
+
+        if final_report != {}:
+            os.system(f'touch {new_location}/reports/{self.proj_code}_{self.revision}_report.json')
+            with open(f'{new_location}/reports/{self.proj_code}_{self.revision}_report.json','w') as f:
+                f.write(json.dumps(final_report))
