@@ -39,11 +39,11 @@ def error_handler(
     """
 
     def get_status(tb: list) -> str:
-        status = 'Failed - NoLogGiven'
+        status = 'Failed-NoLogGiven'
         for j in range(1, len(tb)):
             index = (j*-1)
             if tb[index]:
-                status = 'Failed - ' + tb[index].split(':')[0]
+                status = 'Failed-' + tb[index].split(':')[0]
                 break
         return status
 
@@ -61,8 +61,8 @@ def error_handler(
         status_fh.update_status(phase, status, jobid=jobid)
         status_fh.close()
 
+    logger.error('\n'.join(tb))
     if subset_bypass:
-        logger.error('\n'.join(tb))
         return 'Fatal'
     else:
         raise err
@@ -185,6 +185,22 @@ class PartialDriverError(KerchunkException): # Keep
             self.__class__.__module__ = 'builtins'
     def get_str(self):
         return 'PartialDriverError'
+    
+class AggregationError(KerchunkException): # Keep
+    """Aggregation dimension(s) are not properly arranged"""
+    def __init__(
+            self,
+            agg_dims,
+            verbose: int = 0,
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+        self.message = f'Aggregation is incorrectly ordered for dimension(s): {agg_dims}'
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'AggregationError'
 
 class KerchunkDriverFatalError(KerchunkException): # Keep
     """All drivers failed (NetCDF3/Hdf5/Tiff) - run without driver bypass to assess the issue with each driver type."""
@@ -331,7 +347,7 @@ class ValidationError(KerchunkException):
             self.__class__.__module__ = 'builtins'
 
     def get_str(self):
-        return self.err_msg
+        return 'ValidationError'
     
 class ComputeError(KerchunkException): # Keep
     """Compute stage failed - likely due to invalid config/use of the classes"""
