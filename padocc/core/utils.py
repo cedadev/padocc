@@ -156,6 +156,9 @@ def deformat_float(item: str) -> str:
 
     :param item:    (str) Byte value to format into a float.
     """
+    if item is None:
+        return None
+
     units = ['','K','M','G','T','P','E','Y']
     value, suffix = item.split(' ')
 

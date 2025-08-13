@@ -79,22 +79,11 @@ class EvaluationsMixin:
         Group projects by their status, to then
         create a new repeat ID.
         """
-        faultdict = self._get_fault_dict()
-        status_dict, _ = self._get_status_dict(
-            old_repeat_id,
-            faultdict,
-            specific_phase=phase,
-            specific_error=status
-        )
-
-        if phase == 'complete':
-            new_code_ids = status_dict['complete']
-        else:
-            new_code_ids = self.determine_status_sets(status_dict, status, phase)
+        new_code_ids = self.determine_status_sets(status, phase=phase)
 
         new_codes = []
         for id in new_code_ids:
-            new_codes.append(self.proj_codes['main'][id])
+            new_codes.append(self.proj_codes[old_repeat_id][id])
 
         self._add_proj_codeset(
                 new_repeat_id,
@@ -102,43 +91,98 @@ class EvaluationsMixin:
             )
         self._save_proj_codes()
 
-    def determine_status_sets(self, status_dict: dict, status: str, phase: str):
+    def determine_status_sets(
+            self, 
+            status: str, 
+            phase: Union[str,None] = None,
+            repeat_id: str = 'main',
+            write: bool = False):
         """
         Analyse status dict for given status request.
         """
+
+        status_dict = self.get_codes_by_status(repeat_id, write=write)
 
         if phase is None:
             phase_set = list(status_dict.keys())
         else:
             phase_set = phase.split('&')
 
+        def add_sets(collator, new_sample):
+            """
+            Add sets by intersection.
+            """
+            if collator == []:
+                return new_sample
+            
+            return set(collator).intersection(new_sample)
+
         new_code_ids = []
         for phase in phase_set:
+            status_per_phase = []
+            if phase == 'complete':
+                continue
 
-            status_opts = {stat.split('-')[0]: stat for stat in status_dict[phase].keys()}
+            # Bug - multiple statuses can have same prefix. 
+            # Need to have options for multiple mappings here.
+            status_opts = {}
+            for stat in status_dict.get(phase,{}).keys():
+                stat_short = stat.split('-')[0].strip()
+                if stat_short in status_opts:
+                    if isinstance(status_opts[stat_short], str):
+                        status_opts[stat_short] = [status_opts[stat_short], stat]
+                    else:
+                        status_opts[stat_short].append(stat)
+                else:
+                    status_opts[stat_short] = stat
 
             status_set = status.split('&')
-            for status in status_set:
+            for status_part in status_set:
+                matching_status = []
 
+                self.logger.debug(f'Phase: {phase}, Status: {status_part}')
                 # Pull any statuses
-                if status == 'Any':
+                if status_part == 'Any':
                     # Get all statuses
                     for all_status in status_dict[phase].keys():
-                        new_code_ids = new_code_ids + status_dict[phase][all_status]
-                elif status.startswith('!'):
+                        matching_status += status_dict[phase][all_status]
+
+                    status_per_phase = add_sets(status_per_phase, matching_status)
+
+                elif status_part.startswith('!'):
                     # Get all except the status
-                    status = status[1:]
+                    status_part = status_part[1:]
                     for all_status in status_dict[phase].keys():
                         # Get all statuses except where they are in the opts dict above.
-                        if status_opts.get(status,None) == all_status:
+                        optionals = status_opts.get(status_part,None)
+                        if optionals == all_status:
                             continue
-                        new_code_ids = new_code_ids + status_dict[phase][all_status]
+                        elif isinstance(optionals, list) and all_status in optionals:
+                            continue
+                        matching_status += status_dict[phase][all_status]
+                    status_per_phase = add_sets(status_per_phase, matching_status)
+
                 else:
                     # Specific status from the dict for this phase
-                    if status in status_opts.keys():
-                        new_code_ids = status_dict[phase][status_opts[status]]
 
-        return new_code_ids
+                    # Is this status one of the known ones for this phase?
+
+                    if status_part in status_dict[phase].keys():
+                        status_per_phase = add_sets(status_per_phase, status_dict[phase][status_part])
+
+                    # Is this status representing one from a set of multiple statuses?
+                    elif status_part in status_opts.keys():
+                        if isinstance(status_opts[status_part], str):
+                            status_per_phase = add_sets(status_per_phase, status_dict[phase][status_opts[status_part]])
+                        else:
+                            spp = []
+                            for sp in status_opts[status_part]:
+                                spp += status_dict[phase][sp]
+                            status_per_phase = add_sets(status_per_phase, spp)
+
+            new_code_ids += status_per_phase
+
+        return list(set(new_code_ids))
 
     def remove_by_status(
             self, 
@@ -243,8 +287,19 @@ class EvaluationsMixin:
         chunks_per_file: list = []
         total_chunks: list = []
 
+        proj_count = 0
         for proj_code in self.proj_codes[repeat_id]:
             op = self.get_project(proj_code)
+
+            if not op.detail_cfg.file_exists():
+                continue
+
+            details = op.detail_cfg.get()
+            if details == {} or 'skipped' in details:
+                continue
+
+            if details['source_data'] is None:
+                continue
 
             if op.cloud_format in cloud_formats:
                 cloud_formats[op.cloud_format] += 1
@@ -260,13 +315,6 @@ class EvaluationsMixin:
                 file_types[op.file_type] += 1
             else:
                 file_types[op.file_type] = 1
-
-            if not op.detail_cfg.file_exists():
-                continue
-
-            details = op.detail_cfg.get()
-            if details == {} or 'skipped' in details:
-                continue
 
             if 'source_data' in details:
                 source_data.append(
@@ -286,12 +334,13 @@ class EvaluationsMixin:
             total_chunks.append(
                 int(chunk_data['total_chunks'].split('.')[0])
             )
+            proj_count += 1
 
         # Render Outputs
         ot = []
         
         ot.append(f'Summary Report: {self.groupID}')
-        ot.append(f'Project Codes: {len(self.proj_codes[repeat_id])}')
+        ot.append(f'Project Codes Assessed: {proj_count}')
         ot.append('')
         if len(file_count) > 0:
             ot.append(f'Source Files: {sum(file_count)} [Avg. {np.mean(file_count):.2f} per project]')
@@ -415,7 +464,7 @@ class EvaluationsMixin:
         ot.append('Pipeline Complete:')
         ot.append('')
 
-        complete = len(status_dict['complete'])
+        complete = len(status_dict.get('complete',[]))
 
         complete_percent = format_str(f'{complete*100/num_codes:.1f}',4)
         ot.append(f'   complete  : {format_str(complete,5)} [{complete_percent}%]')
@@ -463,7 +512,7 @@ class EvaluationsMixin:
         try:
             proj_codes = self.proj_codes[repeat_id]
         except KeyError:
-            raise ValueError(f'Repeat ID {repeat_id} not known to group {self.groupID}')
+            raise ValueError(f'Repeat ID {repeat_id} not known to group {self.groupID} - no status possible')
 
         if write:
             self.logger.info(
@@ -509,7 +558,7 @@ class EvaluationsMixin:
 
         current = proj_op.get_last_status()
         if current is None:
-            return {}, 0
+            return status_dict, longest_err
 
         entry   = current.split(',')
 
@@ -540,8 +589,14 @@ class EvaluationsMixin:
                 proj_op.show_log_contents(specific_phase, halt=halt)
 
         if phase == 'complete':
-            status_dict['complete'].append(pid)
+            try:
+                status_dict['complete'].append(pid)
+            except:
+                status_dict['complete'] = [pid]
         else:
+            if phase not in status_dict:
+                status_dict[phase] = {}
+
             if status in status_dict[phase]:
                 status_dict[phase][status].append(pid)
             else:
