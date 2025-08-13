@@ -371,7 +371,6 @@ class ListFileHandler(FileIOMixin):
         in the file.
         """
         if self._dryrun or self._value == []:
-            self.logger.debug(f"Skipped setting value in {self.file}")
             return
 
         if not self.file_exists():
@@ -1303,7 +1302,7 @@ class CSVFileHandler(ListFileHandler):
         """
 
         status = status.replace(',', '.').replace('\n','.')
-        addition = f'{phase},{status},{datetime.now().strftime("%H:%M %D")},{jobid}'
+        addition = f'{phase},{status},{datetime.now().strftime("%H:%M %d/%m/%y")},{jobid}'
         self.append(addition)
         self.logger.info(f'Updated new status: {phase} - {status}')
 
