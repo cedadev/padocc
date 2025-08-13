@@ -62,6 +62,15 @@ class PropertiesMixin:
             return self.base_cfg['override'][key]
         
         return None
+
+    @property
+    def virtualizarr(self):
+        return self.base_cfg.get('virtualizarr',False)
+    
+    @virtualizarr.setter
+    def virtualizarr(self, value: bool):
+        self.base_cfg['virtualizarr'] = value
+        self.base_cfg.close()
     
     @property
     def cfa_complete(self):
@@ -69,7 +78,7 @@ class PropertiesMixin:
 
     @property
     def cfa_enabled(self):
-        return self.base_cfg.get(index='disable_CFA',default=True)
+        return not self.base_cfg.get(index='disable_CFA',default=True) and self.detail_cfg.get(index='CFA',default=True)
     
     @cfa_enabled.setter
     def cfa_enabled(self, value: bool):
