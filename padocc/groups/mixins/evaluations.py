@@ -85,6 +85,10 @@ class EvaluationsMixin:
         for id in new_code_ids:
             new_codes.append(self.proj_codes[old_repeat_id][id])
 
+        if len(new_codes) < 1:
+            self.logger.warning('No project codes correspond to the request - no repeat ID created')
+            return
+
         self._add_proj_codeset(
                 new_repeat_id,
                 new_codes
@@ -411,13 +415,51 @@ class EvaluationsMixin:
             status_dict, _ = self._get_status_dict(repeat_id, write=write)
             return status_dict
 
+    def summarise_aggregations(
+            self, 
+            repeat_id: str = 'main',
+            fn: Callable = print,
+        ) -> None:
+
+        if repeat_id not in self.proj_codes:
+            raise ValueError(f'Unrecognised repeat ID: {repeat_id} for {self.groupID}')
+
+        aggregations = {
+            'Incomplete':[],
+            'PADOCC':[],
+            'VirtualiZarr':[],
+            'Kerchunk':[]
+        }
+
+        for proj_code in self.proj_codes[repeat_id]:
+            project = self[proj_code]
+
+            status_msg = project.get_last_status().split(',')
+
+            if status_msg[0] == 'validate' or (status_msg[0] == 'compute' and status_msg[1] == 'Success'):
+
+                if project.padocc_aggregation:
+                    aggregations['PADOCC'].append(proj_code)
+                elif project.virtualizarr:
+                    aggregations['VirtualiZarr'].append(proj_code)
+                else:
+                    aggregations['Kerchunk'].append(proj_code)
+
+            else:
+                aggregations['Incomplete'].append(proj_code)
+
+        fn(f'Aggregations for {self.groupID}')
+        for k, v in aggregations.items():
+            fn(f' > {k}: {len(v)}')
+
     def summarise_status(
             self, 
             repeat_id: str = 'main', 
             specific_phase: Union[str,None] = None,
             specific_error: Union[str,None] = None,
-            long_display: Union[bool,None] = None,
+            long_display: Union[bool,None] = False,
             display_upto: int = 5,
+            separate_errors: bool = False,
             halt: bool = False,
             write: bool = False,
             fn: Callable = print,
@@ -450,13 +492,14 @@ class EvaluationsMixin:
         ot.append('')
         ot.append('Pipeline Current:')
 
-        if longest_err > 30 and long_display is None:
+        if longest_err > 30 and not long_display:
             longest_err = 30
 
         for phase, records in status_dict.items():
 
             if isinstance(records, dict):
-                ot = ot + self._summarise_dict(phase, records, num_codes, status_len=longest_err, numbers=display_upto)
+                ot = ot + self._summarise_dict(phase, records, num_codes, 
+                                               status_len=longest_err, numbers=display_upto, separate_errors=separate_errors)
             else:
                 ot.append('')
 
@@ -470,7 +513,8 @@ class EvaluationsMixin:
         ot.append(f'   complete  : {format_str(complete,5)} [{complete_percent}%]')
 
         for option, records in faultdict['faultlist'].items():
-            ot = ot + self._summarise_dict(option, records, num_codes, status_len=longest_err, numbers=0)
+            ot = ot + self._summarise_dict(option, records, num_codes, 
+                                           status_len=longest_err, numbers=0, separate_errors=separate_errors)
 
         ot.append('')
         fn('\n'.join(ot))
@@ -528,15 +572,18 @@ class EvaluationsMixin:
             if p in faultdict['ignore']:
                 continue
 
-            status_dict, longest_err = self._assess_status_of_project(
-                p, idx,
-                status_dict,
-                write=write,
-                specific_phase=specific_phase,
-                specific_error=specific_error,
-                halt=halt,
-                longest_err=longest_err
-            )
+            try:
+                status_dict, longest_err = self._assess_status_of_project(
+                    p, idx,
+                    status_dict,
+                    write=write,
+                    specific_phase=specific_phase,
+                    specific_error=specific_error,
+                    halt=halt,
+                    longest_err=longest_err
+                )
+            except Exception as err:
+                self.logger.error(f'Project {p}: {err}')
         return status_dict, longest_err
 
     def _assess_status_of_project(
@@ -610,7 +657,8 @@ class EvaluationsMixin:
             records: dict, 
             num_codes: int, 
             status_len: int = 5, 
-            numbers: int = 0
+            numbers: int = 0,
+            separate_errors: bool = False,
         ) -> list:
         """
         Summarise information for a dictionary structure
@@ -629,12 +677,36 @@ class EvaluationsMixin:
 
             ot.append(f'   {fmentry}: {fmnum_types} [{fmcalc}%] (Variety: {int(pcount)})')
 
-            # Convert from key : len to key : [list]
-            errkeys = reversed(sorted(records, key=lambda x:len(records[x])))
-            for err in errkeys:
-                num_errs = len(records[err])
-                if num_errs < numbers:
-                    ot.append(f'    - {format_str(err, status_len+1, concat=True)}: {num_errs} (IDs = {list(records[err])})')
-                else:
-                    ot.append(f'    - {format_str(err, status_len+1, concat=True)}: {num_errs}')
+            # Break records into groups if in validate
+            if phase != 'validate' or not separate_errors:
+                record_groups = {'All':records}
+            else:
+                record_groups  = {'Success':{},'Error':{}}
+                success, error = 0, 0
+                for r, v in records.items():
+                    if 'Warn' in r or 'Success' in r:
+                        record_groups['Success'][r] = v
+                        success += len(v)
+                    else:
+                        record_groups['Error'][r] = v   
+                        error += len(v)
+
+                percentages = {
+                    'Success': f'{success*100/(success+error):.1f}',
+                    'Error': f'{error*100/(success+error):.1f}'
+                }
+
+            for g, r in record_groups.items():
+
+                if g != 'All':
+                    ot.append('')
+                    ot.append(f'  > {g} ({percentages[g]} %)')
+                # Convert from key : len to key : [list]
+                errkeys = reversed(sorted(r, key=lambda x:len(r[x])))
+                for err in errkeys:
+                    num_errs = len(r[err])
+                    if num_errs < numbers:
+                        ot.append(f'    - {format_str(err, status_len+1, concat=True)}: {num_errs} (IDs = {",".join([str(i) for i in list(r[err])])})')
+                    else:
+                        ot.append(f'    - {format_str(err, status_len+1, concat=True)}: {num_errs}')
         return ot
