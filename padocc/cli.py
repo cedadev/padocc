@@ -65,6 +65,10 @@ def get_logs(group, proj_code: Union[str,None] = None, log_phase: Union[str,None
         project.show_log_contents(
             log_phase,
             halt=True)
+        
+def get_aggregations(group, repeat_id: str = 'main', **kwargs):
+    """Get status of a group, with display parameters"""
+    group.summarise_aggregations(repeat_id=repeat_id)
 
 def get_status(group, repeat_id: str = 'main', 
                long_display: bool = False, display_upto: str = '5', 
@@ -224,7 +228,8 @@ OPERATIONS = {
     'init': init_group,
     'scan': scan_group,
     'compute': compute_group,
-    'validate': validate_group
+    'validate': validate_group,
+    'aggregations': get_aggregations,
 }
 
 # Only actions allowed for groups that don't yet exist.
@@ -439,13 +444,16 @@ def get_args():
                                 parents=[universal_parser, group_parser, phased_parser])
     ## Init
     init = subparsers.add_parser('init',help='Initialise a new/existing empty group from an input file.', 
-                                parents=[universal_parser, group_parser,phased_parser, input_parser])
+                                parents=[universal_parser, group_parser, phased_parser, input_parser])
     ## Scan
     scan = subparsers.add_parser('scan',help='Scan a project, group or subset of projects. (Pipeline phase 1)', 
                                 parents=[universal_parser, group_parser, phased_parser])
     # Validate
     validate = subparsers.add_parser('validate',help='Validate data aggregations for a project, group or subset of projects. (Pipeline phase 3)', 
                                 parents=[universal_parser, group_parser, phased_parser, input_parser])
+    
+    agg = subparsers.add_parser('aggregations',help='Get summary of aggregations used',
+                                parents=[universal_parser, group_parser])
 
     args = parser.parse_args()
 
