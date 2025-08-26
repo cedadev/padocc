@@ -551,7 +551,11 @@ class JSONFileHandler(FileIOMixin):
             return
 
         with open(self.filepath) as f:
-            self._value = json.load(f)
+            try:
+                self._value = json.load(f)
+            except:
+                self.logger.warning(f'Invalid file contents at {self.filepath}')
+                self._value = {}
 
     def _set_value_in_file(self) -> None:
         """
