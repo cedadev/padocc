@@ -274,7 +274,6 @@ class ListFileHandler(FileIOMixin):
             to the new value.
         """
         if len(value) == 0:
-            self.logger.warning(f'No value given to ListFileHandler {self.filepath}')
             return
 
         if isinstance(value[0],list):
