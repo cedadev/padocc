@@ -15,175 +15,275 @@ The command-line tool ``padocc`` allows quick deployments of serial and parallel
 
     2. Set the working directory ``WORKDIR`` environment variable. All pipeline directories and files will be created under this directory, which includes all the groups you define. It is suggested to have only one working directory where possible, although if a distinction is needed for different groups of datasets, using multiple working directories can be done with user discretion.
 
-Using the CLI Tool
-==================
+Basics of the CLI
+=================
 
 General Command Form
 --------------------
-The general form of a command for padocc should be to call the command line tool ``padocc`` with a minimum of the ``phase`` argument specified afterwards. E.g:
+The general form of a command for padocc should be to call the command line tool ``padocc`` with a minimum of the ``operation`` argument specified afterwards. To see all possible operations, use the ``-h`` or ``--help`` option for padocc:
 
 .. code-block:: console
 
-    $ padocc init
+    $ padocc -h
 
+    usage: padocc [-h] {add,logs,status,compute,complete,repeat,transfer,update_status,list,summarise,check_attr,set_attr,delete,pfunc,report,new,init,scan,validate} ...
 
-In almost all cases, other arguments will be necessary for any particular operation you would like to perform.
+    Run PADOCC commands or pipeline phases
 
-.. code-block:: console
+    positional arguments:
+    {add,logs,status,compute,complete,repeat,transfer,update_status,list,summarise,check_attr,set_attr,delete,pfunc,report,new,init,scan,validate}
+        add                 Add projects to an existing group.
+        logs                Obtain logs from a given project or group.
+        status              Get a general status display for a given group.
+        compute             Compute data aggregations for a project, group or subset of projects. (Pipeline phase 2)
+        complete            Complete projects from a group or the entire group - transfer reports and data files.
+        repeat              Subset projects from a group for reanalysis or repeating a phase of the pipeline.
+        transfer            Transfer projects between groups.
+        update_status       Manually update the status of one or more projects matching conditions.
+        list                List groups in the current working directory. (WORKDIR)
+        summarise           Obtain a data summary for a given group.
+        check_attr          Check the value of an attribute across all group projects.
+        set_attr            Set the value of an attribute across all group projects.
+        delete              Delete projects from a group or the entire group.
+        pfunc               Perform a custom function across a group
+        report              Obtain the validation report for a given project, or a combined report for a group.
+        new                 Create a new empty group (to be filled with projects).
+        init                Initialise a new/existing empty group from an input file.
+        scan                Scan a project, group or subset of projects. (Pipeline phase 1)
+        validate            Validate data aggregations for a project, group or subset of projects. (Pipeline phase 3)
 
-    usage: padocc phase [-h] [-f] [-v] [-d] [-T] [-b BYPASS] [-w WORKDIR] [-G GROUPID] [-s SUBSET] [-r REPEAT_ID] [-p PROJ_CODE] [-C MODE] [-i INPUT] [-n NEW_VERSION] [-t TIME_ALLOWED] [--mem-allowed MEM_ALLOWED] [-M MEMORY] [-B] [-e VENVPATH] [-A] [--allow-band-increase]
+    options:
+    -h, --help            show this help message and exit
 
-Padocc CLI Flags
-----------------
-The flags above show all the different possible options for operating the pipeline. Listed here are some of the more common flags that can be applied to most or all of the different ``phased`` operations for padocc.
-
-.. code-block:: console
-
-  -h, --help            show this help message and exit
-  -f, --forceful        Force overwrite of steps if previously done
-  -v, --verbose         Print helpful statements while running (add more v's for greater verbosity)
-  -d, --dryrun          Perform dry-run (i.e no new files/dirs created)
-  -T, --thorough        Thorough processing - start from scratch
-
-  -b BYPASS, --bypass-errs (See the Deep Dive section for info on this feature)
-  -w WORKDIR, --workdir WORKDIR
-                        Working directory for pipeline (if not specified as an environment variable.)
-  -G GROUPID, --groupID GROUPID
-                        Group identifier label
-
-Other flags listed in the command above are described in the Complex Operation section of this documentation.
-
-Create a group from scratch (optional)
---------------------------------------
-This optional first step allows you to create empty groups in the workspace that can be properly initialised later.
-
-.. code-block:: console
-
-    $ padocc new -G my-new-group
-
-There is no particular advantage to creating empty groups but this may be beneficial for organisation of multiple new groups where the data is still being collected.
-
-Special Functions
-=================
-
-The following accepted options to the ``phase`` argument act as shortcuts to specific functions in padocc available via an interactive session. These functions are now available via the CLI in a limited capacity, and use the ``--special`` kwarg as a catch-all for providing configuration info to these functions.
- - ``list``: Lists all groups in the current workspace and their contents.
- - ``status``: Shows status of all projects in a group (requires ``-G`` flag)
- - ``add``: Enables adding projects to a group, including via the moles tags option (requires ``-G``, moles enabled via ``--special moles``)
- - ``check``: Check an attribute in all projects across the group (requires ``-G``, supply attribute via ``--special <attribute>``)
- - ``complete``: Enables the completion workflow for complete projects (requires ``-G``, supply completion directory via ``--special <dir>``)
-
-Pipeline Functions
-==================
-
-The following descriptions are for main pipeline functions, most of which are parallelisable with the ``--parallel`` flag.
-
-Initialise a group
-------------------
-
-The pipeline takes a CSV (or similar) input file from which to instantiate a ``GroupOperation``, which includes:
- - creating subdirectories for all associated datasets (projects)
- - creating multiple group files with information regarding this group.
+Help pages are also available for each operation, describing all parameters applicable to each operation as well.
 
 .. code-block:: console
 
-    $ padocc init -G my-new-group -i path/to/input_file.csv
+    $ padocc list -h
 
-An example of the output for this command, when the ``-v`` flag is added can be found below. The test data is composed of two ``rain`` datasets each with 5 NetCDF files filles with arbitrary data. You can access this test data through the `github repo<https://github.com/cedadev/padocc>_`. Under ``padocc/tests/data``:
+    usage: padocc list [-h] [-w WORKDIR]
+
+    options:
+    -h, --help            show this help message and exit
+    -w WORKDIR, --workdir WORKDIR
+                            Working directory for pipeline
+
+.. note::
+
+    The working directory (WORKDIR) argument is universal, meaning that it is required for all PADOCC operations. It is not however a required parameter for the CLI argument parser, as the working directory can instead be picked up from the ``WORKDIR`` environment variable, as is convenient when performing multiple operations.
+
+Four classifications are applied to the operations, which affect the different arguments accepted by each.
+- Universal operations (cross-group), ``list`` is the only example.
+- Group operations (in-group), all other operations.
+- Phased operations (part of the pipeline), ``scan``, ``compute`` and ``validate``.
+- Input-based operations (input file can be supplied), ``add``, ``init`` and ``validate``.
+
+Group operation flags
+---------------------
+These are the flags associated with all group-based operations (everything except ``list``).
 
 .. code-block:: console
 
-    INFO [PADOCC-CLI-init]: Starting initialisation
-    INFO [PADOCC-CLI-init]: Copying input file from relative path - resolved to <your-directory-structure>/file.csv
-    INFO [PADOCC-CLI-init]: Creating project directories
-    INFO [PADOCC-CLI-init]: Creating directories/filelists for 1/2
-    INFO [PADOCC-CLI-init]: Updated new status: init - Success
-    INFO [PADOCC-CLI-init]: Creating directories/filelists for 2/2
-    INFO [PADOCC-CLI-init]: Updated new status: init - Success
-    INFO [PADOCC-CLI-init]: Created 12 files, 4 directories in group rain-example
-    INFO [PADOCC-CLI-init]: Written as group ID: rain-example
+    options:
+    -h, --help            show this help message and exit
+    -G GROUPID, --groupID GROUPID
+                            Group identifier label
+    -s SUBSET, --subset SUBSET
+                            Size of subset within group
+    -r REPEAT_ID, --repeat_id REPEAT_ID
+                            Repeat id (main if first time running, <phase>_<repeat> otherwise)
+    -p PROJ_CODE, --proj_code PROJ_CODE
+                            Run for a specific project code, within a group or otherwise
 
-Scan
+Phased operation flags
+----------------------
+
+For ``scan``, ``compute`` and ``validate``, multiple flags exist to enable more complex configurations, including parallel deployment.
+
+.. code-block:: console
+
+    -f, --forceful        Force overwrite of steps if previously done
+    -v, --verbose         Print helpful statements while running
+    -d, --dryrun          Perform dry-run (i.e no new files/dirs created)
+    -T, --thorough        Thorough processing - start from scratch
+    -b BYPASS, --bypass-errs BYPASS
+                            Bypass switch options: "D" - * Skip driver failures - Pipeline tries different options for NetCDF (default). - Only need to turn this skip off if all drivers fail
+                            (KerchunkDriverFatalError). "F" - Skip scanning (fasttrack) and go straight to compute. Required if running compute before scan is attempted. "L" - Skip adding links in compute
+                            (download links) - this will be required on ingest. "S" - Skip errors when running a subset within a group. Record the error then move onto the next dataset.
+    -C MODE, --cloud-format MODE
+                            Output format to be used.
+    -t TIME_ALLOWED, --time-allowed TIME_ALLOWED
+                            Time limit for this job (parallel only)
+    -M MEMORY, --memory MEMORY
+                            Memory allocation for this job (parallel only) (i.e "2G" for 2GB)
+    -e VENVPATH, --environ VENVPATH
+                            Path to virtual (e)nvironment (excludes /bin/activate)
+    -A, --alloc-bins      input file (for init phase)
+    --xarray_kwargs XARRAY_KWARGS
+                            Supply kwargs for xarray, comma separated
+    --parallel            Add for parallel deployment with SLURM
+    --parallel_project PARALLEL_PROJECT
+                            Add for parallel deployment with SLURM for internal project conversion.
+    --allow-band-increase
+                            Allow automatic banding increase relative to previous runs.
+
+.. note::
+
+    An optional first step involves creating an empty group in the workspace that can be properly initialised later.
+
+    .. code-block:: console
+
+        $ padocc new -G my-new-group
+
+    There is no particular advantage to creating empty groups but this may be beneficial for organisation of multiple new groups where the data is still being collected, or indeed transferring existing projects to a new group.
+
+All Non-Phased Operations
+=========================
+
+The following are accepted options to the ``operation`` argument, which may also include custom flags specific to that operation only. Phased operation is detailed in the main user guide section of this documentation.
+
+List
 ----
 
-The first main phase of the pipeline involves scanning a subset of the native source files to determine certain parameters:
+.. code-block:: console
 
-* Ensure source files are compatible with one of the available converters for Kerchunk/Zarr etc.:
-* Calculate expected memory (for job allocation later.)
-* Calculate estimated chunk sizes and other values.
-* Determine suggested file type, including whether to use JSON or Parquet for Kerchunk references.
-* Identify Identical/Concat dims for use in **Compute** phase.
-* Determine any other specific parameters for the dataset on creation and concatenation.
+    $ padocc list
+    Groups in <WORKDIR>
+    > group0: 10
+    > group1: 25
 
-A scan operation is performed across a group of datasets/projects to determine specific
-properties of each project and some estimates of time/memory allocations that will be
-required in later phases.
+The list function shows all groups in the current working directory and the total number of projects in each group.
 
-The scan phase can be activated with the following:
+Add
+---
 
 .. code-block:: console
+
+    $ padocc add -G <group> -i new_projects.csv
+    # Alternative
+    $ padocc add -G <group> -i new_projects.json --moles
+
+The CLI-based add function takes either a new input CSV file from which to add projects, or a moles-based json file that comes from the CEDA CCI tagger module - CEDA staff use only. Note that the ``moles`` flag is specific to the ``add`` function, but the ``-i`` input file flag is shared by ``init`` and ``validate``.
+
+Delete
+------
+
+.. code-block:: console
+
+    $ padocc delete -G <group> -p 0,1,2
+
+Used to remove one or more projects from a specific group, or delete the group entirely if the project flag is omitted. 
+
+.. note::
     
-    $ padocc scan -G my-group -C kerchunk
+    The user will always be prompted before deletion to confirm when using the command line interface. Interactively there is an argument to be provided to suppress confirmation - usually ``ask=False``
 
-Alternatively, you can run any of the phases interactively in a python shell/notebook environment:
-
-.. code:: python
-
-    mygroup = GroupOperation(
-        'my-group',
-        workdir='path/to/pipeline/directory'
-    )
-    # Assuming this group has already been initialised from a file.
-
-    mygroup.run('scan',mode='kerchunk')
-
-The above demonstrates why the command line tool is easier to use for phased operations, as most of the configurations are known and handled using the various flags. Interactive operations (like checking specific project properties etc.) are not covered by the CLI tool, so need to be completed using an interactive environment.
-
-Compute
+Get Log
 -------
 
-Building the Cloud/reference product for a dataset requires a multi-step process:
+.. code-block:: console
 
-Example for Kerchunk:
+    $ padocc logs -G <group> -p 0 --log_phase scan
 
-* Create Kerchunk references for each archive-type file.
-* Save cache of references for each file prior to concatenation.
-* Perform concatenation (abort if concatenation fails, can load cache on second attempt).
-* Perform metadata corrections (based on updates and removals specified at the start)
-* Add Kerchunk history global attributes (creation time, pipeline version etc.)
-* Reconfigure each chunk for remote access (replace local path with https:// download path)
+Show the contents of a log from a given phase, specified using the ``log_phase`` flag which is unique to this operation. This can be used to extract a log for a specific project or all the projects in a given group, where the ``-p`` flag is omitted.
 
-Computation will either refer to outright data conversion to a new format, 
-or referencing using one of the Kerchunk drivers to create a reference file. 
-In either case the computation may be extensive and require processing in the background
-or deployment and parallelisation across the group of projects.
-
-Computation can be executed in serial for a group with the following:
+Status
+------
 
 .. code-block:: console
 
-    padocc compute -G my-group
+    $ padocc status -G <group> --long_display --display_upto 30
 
-Validate
+Obtain a human-readable status display for a given group, complete with error messages and which project IDs are in which state. The ``long_display`` flag shows the entire error message without truncation, and ``display_upto`` specifies how many project IDs should be displayed with each error message. For errors with more than this number of projects, no project IDs will be displayed. The default display only shows up to 5 codes for a given error, but the above command will show up to 30. An example output is below:
+
+.. code-block:: console
+
+    Group: cmip_1
+    Total Codes: 49
+
+    Pipeline Current:
+
+    scan      : 5     [10.2%] (Variety: 1)
+        - Fatal                                      : 5 (IDs = [16, 18, 20, 21, 22])
+
+    compute   : 4     [8.2 %] (Variety: 1)
+        - Pending                                    : 4 (IDs = [33, 34, 35, 36])
+
+    validate  : 40    [81.6%] (Variety: 8)
+        - Fatal-bypassed                             : 11 (IDs = [4, 5, 7, 8, 9, 11, 12, 13, 15, 19, 24])
+        - Success                                    : 11 (IDs = [0, 1, 2, 38, 39, 41, 43, 44, 46, 47, 48])
+        - Redo                                       : 6 (IDs = [25, 27, 28, 29, 30, 31])
+        - JobCancelled                               : 5 (IDs = [6, 10, 14, 17, 23])
+        - Fatal-data_errors                          : 3 (IDs = [40, 42, 45])
+        - Warn-global_branch_time_in_child_not_equal : 2 (IDs = [26, 32])
+        - Warn-rsds_history_not_equal                : 1 (IDs = [37])
+        - Warn-uas_history_not_equal                 : 1 (IDs = [3])
+
+    Pipeline Complete:
+
+        complete  : 0     [0.0 %]
+
+Summarise
+---------
+
+.. code-block:: console
+
+    $ padocc summarise -G <group>
+
+Generates a summary of the data analysed in any given project, including the number of datasets compatible with analysis (have passed the scan phase and were not skipped.)
+
+The summary includes the total number of native files as well as an estimate of the total dataset size and the cloud products. A reminder that each ``project`` usually produces a single cloud product.
+
+.. code-block:: console
+
+    Summary Report: cmip_1
+    Project Codes Assessed: 23
+
+    Source Files: 348 [Avg. 15.13 per project]
+    Source Data: 447.10 GB [Avg. 19.44 GB per project]
+    Cloud Data: 3.32 GB [Avg. 144.38 MB per project]
+
+    Cloud Formats: ['kerchunk']
+    Source Formats: ['ncf3', 'hdf5']
+    File Types: ['json']
+
+    Chunks per File: 2538771.00 [Avg. 110381.35 per project]
+    Total Chunks: 19884293.00 [Avg. 864534.48 per project]
+
+Check/Set Attributes
+--------------------
+
+Check an attribute across multiple projects in a group using:
+
+.. code-block:: console
+
+    $ padocc check_attr -G <group> --shortcut <attribute>
+
+This will produce a listing of all project codes and the value of the attribute from the detail_cfg or base_cfg files. Note this currently does not take into account any mappings to project properties, and looks at the underlying PADOCC config files to obtain attribute values. The ``shortcut`` flag is used to supply the name of the attribute.
+
+.. code-block:: console
+
+    $ padocc set_attr -G <group> --shortcut <attribute>:<value>
+
+Similarly the ``set_attr`` method uses the shortcut flag to supply the name and value of the attribute, that is then applied to all projects in the group. 
+
+Complete
 --------
 
-Cloud products must be validated against equivalent Xarray objects from CF Aggregations (CFA) where possible, or otherwise using the original NetCDF as separate Xarray Datasets.
+Report
+------
 
-* Ensure all variables present in original files are present in the cloud products (barring exceptions where metadata has been altered/corrected)
-* Ensure array shapes are consistent across the products.
-* Ensure data representations are consistent (values in array subsets)
+Repeat
+------
 
-The validation step produced a two-sectioned report that outlines validation warnings and errors with the data or metadata
-around the project. See the documentation on the validation report for more details.
+Transfer
+--------
 
-It is advised to run the validator for all projects in a group to determine any issues
-with the conversion process. Some file types or specific arrangements may produce unwanted effects
-that result in differences between the original and new representations. This can be identified with the
-validator which checks the Xarray representations and identifies differences in both data and metadata.
+Update Status
+-------------
 
-.. code-block:: console
-
-    $ padocc validate -G my-group
+Apply Custom Function
+---------------------
 
 Next Steps
 ----------

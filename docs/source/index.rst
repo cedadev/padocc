@@ -12,7 +12,7 @@ The ``padocc`` tool makes it easy to generate data-aggregated access patterns in
 
 Vast amounts of archival data in a variety of formats can be processed using the package's group mechanics and automatic deployment to a job submission system.
 
-**Latest Release: v1.3.6 20/06/25**: This release is mostly related to bug fixes and some minor changes to the validator module (See the `release notes <https://github.com/cedadev/padocc/releases/tag/v1.3.5>`_ for details). There are still some alpha-stage features that have not been fully tested, please report any issues to the `github repo <https://github.com/cedadev/padocc>`_, especially when using the new **shortcut** CLI options.
+**Latest Release: v1.4.0 <date>**: Version 1.4 has several updates to dependencies for PADOCC, as well as new features for virtualization using VirtualiZarr, added Validation checks and the first release of the __SHEPARD__ module. (See the `release notes <https://github.com/cedadev/padocc/releases/tag/v1.4.0>`_ for details). 
 
 Formats that can be generated
 -----------------------------
@@ -35,25 +35,23 @@ The ingestion/cataloging phase is not currently implemented for public use but m
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
+   :caption: Getting Started:
 
    Inspiration <core/inspiration>
-   Installation <core/installation>
+   PADOCC Terms and Operators <core/terminology>
+   Installing PADOCC <core/installation>
+   Basic User Guide <core/user_guide>
    Command Line Tool Examples<core/cli>
-   Interactive Notebook/Shell Examples <core/interactive>
-   All Operations <core/operations>
-   Extra Features <core/extras>
    Extras for CEDA Staff <core/ceda_staff>
-   Complex (Parallel) Operation <core/complex_operation>
 
 .. toctree::
    :maxdepth: 1
-   :caption: Operations:
+   :caption: Detailed View:
 
-   The Project Operator <operations/projects>
-   The Group Operator <operations/groups>
-   Core Mixins <operations/mixins>
-   SHEPARD <operations/shepard>
+   All Operations <detailed/all_operations>
+   Bespoke Features <detailed/features>
+   Parallel Deployment <detailed/parallel>
+   SHEPARD Deployment <detailed/shepard>
 
 .. toctree::
    :maxdepth: 1
@@ -61,6 +59,7 @@ The ingestion/cataloging phase is not currently implemented for public use but m
    
    Projects <source_code/project_source>
    Groups <source_code/group_source>
+   SHEPARD <source_code/shepard_source>
    Phases <source_code/phase_source>
    Filehandlers, Logs, and Utilities <source_code/misc_source>
    

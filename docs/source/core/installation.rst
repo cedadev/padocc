@@ -4,7 +4,7 @@ Getting Started
 
 .. note::
 
-    Ensure you have local modules enabled such that you have python 3.x installed in your local environment. A version of the pipeline source code exists at ``/gws/nopw/j04/cedaproc/padocc`` so for CEDA staff please see if this can be used before cloning the repository elsewhere.
+    Ensure you have local modules enabled such that you have python 3.11 or higher installed in your local environment.
 
 pip installation
 ================
@@ -45,9 +45,9 @@ Create a config file to set necessary environment variables. (Suggested to place
 
 .. code-block:: console
 
-    export WORKDIR = /path/to/kerchunk-pipeline
+    export WORKDIR=/path/to/kerchunk-pipeline
 
-Now you should be set up to run the pipeline properly.
+For parallel deployment with Lotus (Lotus 2 on JASMIN), an additional ``LOTUS_CFG`` environment variable is needed. See the section on parallel deployment for details.
 
 Assembling Pipeline Inputs
 ==========================
@@ -60,41 +60,3 @@ In order to successfully run the pipeline you need the following input files:
 
 It is also helpful to create a setup/config bash script to set all your environment variables which include:
  - WORKDIR: The working directory for the pipeline (where to store all the cache files)
-
-Running the pipeline CLI
-========================
-
-See the section around using the CLI tool for more details. This is a brief introduction to how to run the CLI tool.
-
-Some useful option/flags to add:
-
-.. code-block:: python
-
-    -v # Verbose 
-       #  - add multiple v's for debug messages
-    -f # Forceful 
-       #  - perform step even if output file already exists
-    -b # Bypass 
-       # See bypass section in pipeline flags explained.
-    -r # repeat_id
-       #  - default uses main, if you have created repeat_ids manually or with assess.py, specify here.
-    -d # dryrun
-       #  - Skip creating any new files in this phase
-
-The pipeline is now run using the entrypoint script ``padocc`` as a command-line interface (CLI) tool.
-
-.. code-block:: python
-
-    # 4.1 Initialise from your CSV file:
-    padocc init -G <group_name> -i path/to/file.csv
-
-    # 4.2 Perform scanning of netcdf files:
-    padocc scan -G <group_name>
-
-.. note::
-
-    For Jasmin users with SLURM access, you should check after every ``scan``, ``compute`` and ``validate`` that your SLURM jobs are running properly:
-    
-    ``squeue -u <jasmin_username>``
-
-    And once the SLURM jobs are complete you should check error logs to see which jobs were successful and which failed for different reasons. See the Interactive section for how to check status and logs of projects in the pipeline.
