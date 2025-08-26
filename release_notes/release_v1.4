@@ -1,0 +1,79 @@
+# Release Notes for version 1.4
+
+# Noteworthy Changes
+- Aggregation: Three methods now available, with additional info in status to display method used more rapidly.
+- Shortcut method overhaul: Additional `operations` now fully implemented with bespoke flags in CLI.
+- SHEPARD: v1.0 release of automatic padocc job submission (still needs scheduled submission - CRON suggested).
+- Validation: Changes to operating methods for comparisons, addition of the AggregationError and ValidationError for fatal dimension issues.
+
+## Bugs
+- Fixed a CFA bug with the FillValue attribute (2025.7.18)
+- Fixed a CFA bug with dimension attributes affecting the time decoding for Xarray datasets (2025.8.4)
+- Fixed duplicated logs bug for projects.
+
+## Changes to preslice method
+- Squeezing
+- midslice rounding
+- get preslice indexing
+
+## Internal mechanisms
+- Kerchunk filehandler now uses Xarray-Kerchunk engine instead of fsspec mapper to open the datasets.
+- Preslicing in validation now supports squeezing dimensions.
+- Switched delimiter for nested reports to ',' (internal-only)
+- Switched to using numpy `allclose` from `array_equal` which allows a tolerance in case of datatype changes.
+- Support for virtual dimensions added to validation preslicer.
+
+## Documentation Overhaul
+- SHEPARD fully documented
+- Validation changes (error bypass with valid flag, ValidationError)
+- CFA fixes and properties
+- Parallelisation better Documentation + parallel project
+- Proper documentation of shortcuts
+- Validation report fully documented
+- Add Complex patterns for init file.
+- Add padocc shell
+- Xarray kwargs flag
+- Remote/local switch functions
+
+## Documentation pages
+
+### Installation
+ - Upgrade to new version
+ - Update environment settings
+ - Update pipeline CI section
+
+### Command line tools
+ - All shortcuts documented (special functions)
+
+### To Be Organised
+
+group in detail
+ - help
+ - access
+ - view properties
+ - summarise
+ - subset/repeat
+ - merge/unmerge
+ - get/add/remove/transfer projects
+ - complete
+
+group all functions - API reference
+ - get_stac_representation
+ - run
+ - save_files
+ - delete_all_repeat_ids
+ - add_repeat_by_id
+ - delete_logs
+ - check_writable
+ - deploy_parallel
+ - create_allocation
+ - combine_reports
+ - check_attribute
+ - repeat_by_status # Ensure merged below for actual use.
+ - determine_status_sets
+ - remove_by_status
+ - remove_subset
+ - merge_subset
+ - summarise_data
+
+project in detail
