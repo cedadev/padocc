@@ -206,6 +206,9 @@ class ScanOperation(ProjectOperation):
         """
         self.logger.info('Starting scan process for Kerchunk cloud format')
 
+        if self._thorough:
+            self.padocc_aggregation = True
+
         # Redo this processor call.
         mini_ds = KerchunkDS(
             self.proj_code,
@@ -217,8 +220,15 @@ class ScanOperation(ProjectOperation):
             limiter=limiter,
             is_trial=True,
             xarray_kwargs=self._xarray_kwargs)
-
+        
+        # Scan mode always uses MultiZarrToZarr
+        # Having to do this in order to test aggregation option.
+        mini_ds.order_native_files()
+        
         mini_ds.create_refs(ctype=ctype)
+
+        self.padocc_aggregation = mini_ds.padocc_aggregation
+        self.virtualizarr       = mini_ds.virtualizarr
 
         if mini_ds.extra_properties is not None:
             self.base_cfg['data_properties'].update(mini_ds.extra_properties)
@@ -297,10 +307,11 @@ class ScanOperation(ProjectOperation):
             self.logger.info('Determined data properties:')
             self.logger.info(yaml.dump(self.base_cfg['data_properties']))
         else:
-            self.logger.info(' > Result generation failed.')
+            self.logger.info(f' > Result generation failed - {status}')
 
-        if is_core:
-            self.update_status('scan','CFA-'+status,jobid=self._logid)
+        # No longer update status message
+        #if is_core:
+        #    self.update_status('scan','CFA-'+status,jobid=self._logid)
         return status
 
     def _scan_zarr(
