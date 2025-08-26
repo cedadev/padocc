@@ -48,6 +48,7 @@ class ProjectOperation(
             forceful   : bool = None,
             dryrun     : bool = None,
             thorough   : bool = None,
+            diagnostic : bool = False,
             mem_allowed: Union[str,None] = None,
             remote_s3  : Union[dict, str, None] = None,
             xarray_kwargs: dict = None,
@@ -144,6 +145,9 @@ class ProjectOperation(
                 self._setup_config(**ft_kwargs)
             self._configure_filelist()
 
+        if len(self.allfiles) < 1:
+            raise ValueError(f'Project {self.proj_code} contains no files')
+
         # ProjectOperation attributes
         self.status_log = CSVFileHandler(self.dir, 'status_log', logger=self.logger, **self.fh_kwargs)
 
@@ -162,6 +166,8 @@ class ProjectOperation(
         self._zstore = None
         self._cfa_dataset = None
         self._remote = False
+
+        self._diagnostic = diagnostic
 
         self._is_trial = False
 
@@ -289,11 +295,17 @@ class ProjectOperation(
             self.save_files()
             return status
         except Exception as err:
+
+            agg_shorthand = ''
+            if self.phase == 'validate':
+                agg_shorthand = self.get_agg_shorthand()
+
             return error_handler(
                 err, self.logger, self.phase,
                 jobid=self._logid,
                 subset_bypass=self._bypass.skip_subsets,
-                status_fh=self.status_log)
+                status_fh=self.status_log,
+                agg_shorthand=agg_shorthand)
 
     def _run(self, **kwargs) -> None:
         # Default project operation run.
@@ -306,6 +318,35 @@ class ProjectOperation(
             return f'{self.workdir}/in_progress/{self.groupID}/{self.proj_code}'
         else:
             return f'{self.workdir}/in_progress/general/{self.proj_code}'
+        
+    def get_agg_shorthand(self) -> None:
+        """
+        Get Aggregation shorthand"""
+
+        status_msg = self.get_last_status().split(',')
+        if status_msg[0] == 'validate' or (status_msg[0] == 'compute' and status_msg[1] == 'Success'):
+            if self.padocc_aggregation:
+                return '(P>VK)'
+            elif self.virtualizarr:
+                return '(V>K)'
+            else:
+                return '(K)'
+        else:
+            return '(PVK)'
+
+    def diagnostic(self, message: str):
+        """
+        Diagnostic mode, enable skipping specific features.
+        """
+
+        if not self._diagnostic:
+            return False
+        
+        ask = input(f'Skip feature: {message}? (Y/N): ')
+        if ask == 'Y':
+            return True
+        else:
+            return False
 
     def file_exists(self, file : str):
         """
@@ -360,25 +401,25 @@ class ProjectOperation(
         if self.remote:
             self.logger.warning("Project has already been switched to remote")
             return
-
+        
         ds = self.dataset
         if not isinstance(ds, KerchunkFile):
             return
         
-        self.logger.info('Switching to remote file version')
+        self.logger.debug('Switching to remote file version')
 
         new_rev  = ''.join((self.cloud_format[0],'r',self.version_no))
         new_path = os.path.splitext(ds.filepath)[0].replace(self.revision, new_rev) # No extension
 
         self.remote = True
         if not glob.glob(f'{new_path}*'):
-            self.logger.info('Creating new remote kerchunk file.')
+            self.logger.debug('Creating new remote kerchunk file.')
             self.dataset.spawn_copy(new_path)
 
             # Need to refresh the kfile filehandler
             self._kfile = None
             
-            self.logger.info('Applying remote criteria to kerchunk file.')
+            self.logger.debug('Applying remote criteria to kerchunk file.')
             # Reinstantiate new filehandler + add download_link in place
             self.dataset.add_download_link()
         

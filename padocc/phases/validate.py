@@ -132,6 +132,11 @@ def _recursive_set(source: dict, keyset: list, value):
             _ = json.dumps(value)
             current = value
         except TypeError:
+            try:
+                print(value)
+            except:
+                print('Unable to print value')
+                x=input()
             current = 'N/A'
         source[keyset[0]] = value
     return source
@@ -466,6 +471,24 @@ class ValidateDatasets(LoggedOperation):
         self._metadata_report = Report()
         self.logger.info('Initialised metadata report')
 
+        self.concat_dims=['time']
+
+        aggregation_errors = []
+        for dim in self.concat_dims:
+            testdim = self.test_dataset_var(dim)
+
+            # Increasing across aggregation dim
+            fwd  = np.all(np.array(testdim[1:]) > np.array(testdim[:-1]))
+
+            # Decreasing across aggregation dim
+            back = np.all(np.array(testdim[1:]) < np.array(testdim[:-1]))
+
+            if not fwd and not back:
+                aggregation_errors.append(dim)
+            
+        if len(aggregation_errors) > 0:
+            raise AggregationError(aggregation_errors)
+
         allowances = allowances or {}
         ignore_vars, ignore_dims, ignore_globals = None, None, None
 
@@ -657,22 +680,6 @@ class ValidateDatasets(LoggedOperation):
         if not self.decoded_times:
             self.logger.warning('Validating without decoding times.')
             self._data_report['time_encoding_mismatch'] = True
-
-        aggregation_errors = []
-        for dim in self.concat_dims:
-            testdim = self.test_dataset_var(dim)
-
-            # Increasing across aggregation dim
-            fwd  = np.all(np.array(testdim[1:]) > np.array(testdim[:-1]))
-
-            # Decreasing across aggregation dim
-            back = np.all(np.array(testdim[1:]) < np.array(testdim[:-1]))
-
-            if not fwd and not back:
-                aggregation_errors.append(dim)
-            
-        if len(aggregation_errors) > 0:
-            raise AggregationError(aggregation_errors)
 
         for dim in self.dims:
             self.logger.debug(f'Validating size of {dim}')
@@ -1086,10 +1093,12 @@ class ValidateOperation(ProjectOperation):
         self.set_last_run(self.phase, timestamp())
         self.logger.info("Starting validation")
 
+        self.logger.debug(f"Error bypass: {bool(error_bypass)}")
+
         if mode != self.cloud_format and mode is not None:
             self.cloud_format = mode
 
-        test   = self.dataset.open_dataset()
+        test       = self.dataset.open_dataset()
         sample, rf = self._open_sample()
 
         self.logger.info(f'Using sample {rf} along aggregated dimension')
@@ -1114,6 +1123,50 @@ class ValidateOperation(ProjectOperation):
         # Run metadata testing
         vd.validate_metadata()
 
+        # Data Validation Selection
+
+        if self.cfa_enabled:
+            self.logger.info('CFA-enabled validation')
+            # CFA now opens with decoded times (2025.8.4)
+            try:
+                control = self._open_cfa()
+                vd.replace_dataset(control, label=self.source_format)
+            except:
+                # CFA has failed for some reason - file must be deleted.
+                self.cfa_enabled = False
+
+        if self.cfa_enabled:
+            # Run single validation attempt
+            vd.validate_data(dim_mid=dim_mid)
+        else:
+
+            filetests = [0]
+            nfiles = len(self.allfiles.get())
+            if self.allfiles[0] != self.allfiles[-1]:
+                filetests.append(nfiles-1)
+            if nfiles > 2:
+                # Get random file
+                filetests.append(None)
+
+            checks = len(filetests)
+            for check, rf in enumerate(filetests):
+                vd = self._run_data_validation(test, rf, check, checks, vd, dim_mid)
+
+        err = self.get_agg_shorthand() + (vd.save_report() or 'Success')
+
+        self.update_status('validate', err, jobid=self._logid)
+        
+        return vd.pass_fail(err)
+    
+    def _run_data_validation(self, test: xr.Dataset, rf: int, check: int, checks: int, vd: ValidateDatasets, dim_mid):
+        """
+        Prepare and run for a single validation attempt.
+        """
+
+         # Open a random file or as specified above.
+        sample, rfnum = self._open_sample(rf=rf)
+        vd.replace_dataset(sample, label=self.source_format)
+
         decode_times = vd.decode_times_ok()
 
         # Time encoding mismatch
@@ -1123,43 +1176,28 @@ class ValidateOperation(ProjectOperation):
             sample, rf = self._open_sample(decode_times=decode_times)
             vd.replace_dataset(sample, label=self.source_format)
 
-        source_slice = True
-        if self.cfa_enabled:
-            self.logger.info('CFA-enabled validation')
-            # CFA now opens with decoded times (2025.8.4)
-            try:
-                control = self._open_cfa()
-                source_slice = False
-                vd.replace_dataset(control, label=self.source_format)
-            except:
-                # CFA has failed for some reason - file must be deleted.
-                self.cfa_enabled = False
+        self.logger.info(f'Source-slice validation: {check+1}/{checks} using file {rfnum}')
+        preslice = self._get_preslice(test, sample, test.variables, rf=rf)
+        vd.replace_preslice(preslice, label=self.cloud_format)
 
-        if source_slice:
-            self.logger.info('Source-slice validation')
-            preslice = self._get_preslice(test, sample, test.variables, rf=rf)
-            self.logger.debug('Slicing using preslice selections:')
-            slice_set = "\n -".join(preslice._preslice_set)
-            self.logger.debug(f' - {slice_set}')
-
-
-            vd.replace_preslice(preslice, label=self.cloud_format)
+        self.logger.debug('Slicing using preslice selections:')
+        slice_set = "\n -".join(preslice._preslice_set)
+        self.logger.debug(f' - {slice_set}')
 
         vd.validate_data(dim_mid=dim_mid)
 
-        err = vd.save_report() or 'Success'
+        return vd
 
-        self.update_status('validate', err, jobid=self._logid)
-        
-        return vd.pass_fail(err)
-
-    def _open_sample(self, **kwargs) -> tuple:
+    def _open_sample(self, rf: Union[int,None] = None, **kwargs) -> tuple:
         """
         Open a random sample dataset for validation checking.
         """
-
-        randomfile = random.randint(0,len(self.allfiles)-1)
-        file = self.allfiles[randomfile]
+        if rf is not None:
+            file = self.allfiles[rf]
+            randomfile = rf
+        else:
+            randomfile = random.randint(0,len(self.allfiles)-1)
+            file = self.allfiles[randomfile]
 
         xarray_kwargs = self._xarray_kwargs | kwargs
         return xr.open_dataset(file, **xarray_kwargs), randomfile
