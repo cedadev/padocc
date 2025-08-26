@@ -235,6 +235,19 @@ class ModifiersMixin:
 
         proj_op.delete_project(ask=False)
 
+    def transfer_projects(self, proj_codes: Union[list,str], receiver_group, repeat_id: str = 'main') -> None:
+        """
+        Transfer multiple projects between groups
+        """
+
+        if isinstance(proj_codes,str):
+            proj_codes = [self.proj_codes[repeat_id][int(p)] for p in proj_codes.split(',')]
+        elif repeat_id != 'main':
+            proj_codes = self.proj_codes[repeat_id]
+        
+        for proj_code in list(proj_codes):
+            self.transfer_project(proj_code, receiver_group)
+
     def transfer_project(self, proj_code: str, receiver_group) -> None:
         """
         Transfer an existing project to a new group
@@ -280,7 +293,6 @@ class ModifiersMixin:
         )
 
         proj_op = proj_op.migrate(receiver_group.groupID)
-        proj_op.save_files()
 
     def merge(group_A,group_B):
         """
@@ -403,6 +415,11 @@ class ModifiersMixin:
         Delete the entire set of files associated with this group.
         """
 
+        complete = self.get_codes_by_status()['complete']
+        if len(complete) != len(self):
+            self.logger.warning(f'Not all projects appear fully complete ({len(complete)}/{len(self)})')
+            ask = True
+
         if ask:
             x=input(f'Delete all files relating to group: {self.groupID}? (Y/N) ')
             if x != 'Y':
@@ -411,7 +428,7 @@ class ModifiersMixin:
         for project in self:
             project.delete_project(ask=False)
 
-        os.system(f'rmdir {self.workdir}/in_progress/{self.groupID}')
+        os.system(f'rm -rf {self.workdir}/in_progress/{self.groupID}')
         os.system(f'rm -rf {self.groupdir}')
 
         self.logger.info(f'Deleted group - {self.groupID}')
