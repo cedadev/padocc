@@ -3,7 +3,7 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 """
-SHEPARD:
+SHEPARD: (v1.0)
 Serialised Handler for Enabling Padocc Aggregations via Recurrent Deployment
 """
 
@@ -413,10 +413,13 @@ class ShepardOperator(LoggedOperation):
 
         for flock in flocks:
 
-            # Candidates for completeness have been validated (not Pending) and succeeded (not Fatal).
-            complete_candidates = flock.determine_status_sets('!Fatal&!Pending&!Failed', 'validate')
+            completes = flock.get_codes_by_status()['complete']
 
-            if len(complete_candidates) != len(flock):
+            # Candidates for completeness have been validated (not Pending) and succeeded (not Fatal).
+            complete_candidates = flock.determine_status_sets(
+                '!Fatal&!Pending&!Failed&!ValidationError&!AggregationError', 'validate')
+
+            if len(complete_candidates) + len(completes) != len(flock):
                 self.logger.info(f'Flock {flock.groupID}: Not all flock components are in a ready state.')
                 continue
             else:
@@ -426,15 +429,25 @@ class ShepardOperator(LoggedOperation):
                 summary = flock.summarise_data(func=None)
                 self._write_summary(flock.groupID, summary)
 
-                # Complete with thoroughness
-                flock.complete_group(
-                    self.complete_dir,
-                    repeat_id='main', # Only allowed to complete whole flocks using SHEPARD.
-                    thorough=True
+                # Complete with thoroughness - complete as job.
+                flock.deploy_parallel(
+                    'complete',
+                    time_allowed='5:00',
+                    memory='1G',
+                    thorough=True,
                 )
 
-                # Delete group
-                flock.delete_group(ask=False)
+        # Separate check for deletion
+        for flock in flocks:
+                
+            complete = flock.get_codes_by_status()['complete']
+            if len(complete) != len(flock):
+                self.logger.info(f'Flock {flock.groupID}: Not all projects ready for deletion.')
+                continue
+
+            # Delete group
+            self.logger.info(f'Flock {flock.groupID}: Accepted for deletion.')
+            flock.delete_group(ask=False)
             
     def _write_summary(
             self,
@@ -607,9 +620,16 @@ class ShepardOperator(LoggedOperation):
         for idx, flock_path in enumerate(group_proj_codes):
             # Flock path is the path to the main.txt proj_code 
             # document for each group.
-            self.logger.debug(f'Instantiating flock {idx}')
+            self.logger.debug(f'Locating flock {idx}')
 
             groupdir = flock_path.replace('/proj_codes/main.txt','')
+
+            if self._flock_quarantined(groupdir):
+                # Skip quarantined flocks.
+                self.logger.info(f' > Skipping flock {idx}')
+                continue
+
+            self.logger.debug(f'Instantiating flock {idx}')
             group = groupdir.split('/')[-1]
 
             flock = GroupOperation(
@@ -619,10 +639,6 @@ class ShepardOperator(LoggedOperation):
                 logid='shepard',
                 verbose=self._verbose,
             )
-
-            if self._flock_quarantined(groupdir):
-                # Skip quarantined flocks.
-                continue
 
             # Delete all previous flock repeat_ids
             flock.delete_all_repeat_ids()
