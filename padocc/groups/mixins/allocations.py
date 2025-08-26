@@ -306,7 +306,7 @@ class AllocationsMixin:
         sbatch_flags = self._sbatch_kwargs(time, memory, repeat_id, **sbatch_kwargs)
 
         if valid is not None:
-            sbatch_flags += f' --valid {valid}'
+            sbatch_flags += f' -i {valid}'
 
         lotus_requirements = get_lotus_reqs(self.logger)
   
@@ -340,7 +340,14 @@ class AllocationsMixin:
             os.system(f'sbatch --array=0-{group_length-1} {sbatch.filepath}')
 
             for proj in self.proj_codes[repeat_id]:
-                project = self.get_project(proj, verbose=0)
+                # Create from scratch so logger is not passed.
+                project = ProjectOperation(
+                    proj,
+                    self.workdir,
+                    groupID=self.groupID,
+                    xarray_kwargs=self._xarray_kwargs,
+                    verbose=0
+                )
                 project.base_cfg['last_allocation'] = f'{time},{memory}'
                 project.save_files()
 
