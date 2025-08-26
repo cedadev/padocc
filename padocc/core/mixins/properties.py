@@ -71,6 +71,15 @@ class PropertiesMixin:
     def virtualizarr(self, value: bool):
         self.base_cfg['virtualizarr'] = value
         self.base_cfg.close()
+
+    @property
+    def padocc_aggregation(self):
+        return self.base_cfg.get('padocc_aggregation',False)
+    
+    @padocc_aggregation.setter
+    def padocc_aggregation(self, value: bool):
+        self.base_cfg['padocc_aggregation'] = value
+        self.base_cfg.close()
     
     @property
     def cfa_complete(self):
