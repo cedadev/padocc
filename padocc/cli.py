@@ -377,33 +377,33 @@ def get_args():
     add = subparsers.add_parser('add', help='Add projects to an existing group.',
                                 parents=[universal_parser, group_parser, input_parser])
     add.add_argument('--moles', dest='moles', help='Flag for input files being processed from moles')
+    ## Complete
+    complete = subparsers.add_parser('complete', help='Complete projects from a group or the entire group - transfer reports and data files.', 
+                                parents=[universal_parser, group_parser])
+    complete.add_argument('--completion_dir',help='Directory for completion - data and reports will be transferred.', required=True)
+    ## Compute
+    compute = subparsers.add_parser('compute',help='Compute data aggregations for a project, group or subset of projects. (Pipeline phase 2)', 
+                                parents=[universal_parser, group_parser, phased_parser])
+    compute.add_argument('--mem-allowed', dest='mem_allowed', default='100MB', help='Memory allowed for Zarr rechunking') # Compute only
+    compute.add_argument('--aggregator', dest='aggregator',default=None, help='Specific aggregation method to use for Kerchunk references') # Compute only
     ## Logs
     logs = subparsers.add_parser('logs',help='Obtain logs from a given project or group.', 
                                 parents=[universal_parser, group_parser])
     logs.add_argument('--log_phase', help='Phase from which to retrieve the logs', required=True)
     # Filter flag
 
-    ## Status
-    status = subparsers.add_parser('status', help='Get a general status display for a given group.', 
-                                parents=[universal_parser, group_parser])
-    status.add_argument('-D','--display_upto', default=10,help="Display a number of project IDs for each status type")
-    status.add_argument('-L','--long_display', default=False, action='store_true', help='Display full status messages without truncation')
-    status.add_argument('-S','--separate_errors', default=False, action='store_true', help='Display full status messages without truncation')
-    ## Compute
-    compute = subparsers.add_parser('compute',help='Compute data aggregations for a project, group or subset of projects. (Pipeline phase 2)', 
-                                parents=[universal_parser, group_parser, phased_parser])
-    compute.add_argument('--mem-allowed', dest='mem_allowed', default='100MB', help='Memory allowed for Zarr rechunking') # Compute only
-    compute.add_argument('--aggregator', dest='aggregator',default=None, help='Specific aggregation method to use for Kerchunk references') # Compute only
-    ## Complete
-    complete = subparsers.add_parser('complete', help='Complete projects from a group or the entire group - transfer reports and data files.', 
-                                parents=[universal_parser, group_parser])
-    complete.add_argument('--completion_dir',help='Directory for completion - data and reports will be transferred.', required=True)
     ## Repeat
     repeat = subparsers.add_parser('repeat', help='Subset projects from a group for reanalysis or repeating a phase of the pipeline.', 
                                 parents=[universal_parser, group_parser])
     repeat.add_argument('--status', dest='old_status',help='Current status of projects to be repeated.')
     repeat.add_argument('--phase', dest='old_phase',help='Current phase for projects being repeated')
     repeat.add_argument('--new_repeat', dest='new_repeat_id',help='Label to apply to newly created group subset.', required=True)
+    ## Status
+    status = subparsers.add_parser('status', help='Get a general status display for a given group.', 
+                                parents=[universal_parser, group_parser])
+    status.add_argument('-D','--display_upto', default=10,help="Display a number of project IDs for each status type")
+    status.add_argument('-L','--long_display', default=False, action='store_true', help='Display full status messages without truncation')
+    status.add_argument('-S','--separate_errors', default=False, action='store_true', help='Display full status messages without truncation')
     ## Transfer
     transfer = subparsers.add_parser('transfer', help='Transfer projects between groups.', 
                                 parents=[universal_parser, group_parser])
@@ -417,43 +417,46 @@ def get_args():
     update_status.add_argument('--new_status', dest='new_status',help='New status message for projects.', required=True)
 
     # Subparsers without Bespoke Flags
-    ## List
-    list_groups = subparsers.add_parser('list', help='List groups in the current working directory. (WORKDIR)',
-                                parents=[universal_parser])
-    list_groups.set_defaults(func=listgroups)
-    ## Summarise
-    summarise = subparsers.add_parser('summarise', help='Obtain a data summary for a given group.', 
+    ## Aggregations
+    agg = subparsers.add_parser('aggregations',help='Get summary of aggregations used',
                                 parents=[universal_parser, group_parser])
     ## Check Attr
     check_attr = subparsers.add_parser('check_attr', help='Check the value of an attribute across all group projects.', 
                                 parents=[universal_parser, group_parser])
-    ## Set Attr
-    set_attr = subparsers.add_parser('set_attr', help='Set the value of an attribute across all group projects.',
-                                parents=[universal_parser, group_parser])
     ## Delete
     delete = subparsers.add_parser('delete', help='Delete projects from a group or the entire group.',
                                 parents=[universal_parser, group_parser])
+    ## Init
+    init = subparsers.add_parser('init',help='Initialise a new/existing empty group from an input file.', 
+                                parents=[universal_parser, group_parser, phased_parser, input_parser])
+    
+
+    ## List
+    list_groups = subparsers.add_parser('list', help='List groups in the current working directory. (WORKDIR)',
+                                parents=[universal_parser])
+    list_groups.set_defaults(func=listgroups)
+    ## New
+    new = subparsers.add_parser('new',help='Create a new empty group (to be filled with projects).', 
+                                parents=[universal_parser, group_parser, phased_parser])
+    
     ## Pfunc
     pfunc = subparsers.add_parser('pfunc', help='Perform a custom function across a group', 
                                 parents=[universal_parser, group_parser])
     ## Report
     report = subparsers.add_parser('report', help='Obtain the validation report for a given project, or a combined report for a group.', 
                                 parents=[universal_parser, group_parser])
-    ## New
-    new = subparsers.add_parser('new',help='Create a new empty group (to be filled with projects).', 
-                                parents=[universal_parser, group_parser, phased_parser])
-    ## Init
-    init = subparsers.add_parser('init',help='Initialise a new/existing empty group from an input file.', 
-                                parents=[universal_parser, group_parser, phased_parser, input_parser])
     ## Scan
     scan = subparsers.add_parser('scan',help='Scan a project, group or subset of projects. (Pipeline phase 1)', 
                                 parents=[universal_parser, group_parser, phased_parser])
-    # Validate
+    ## Set Attr
+    set_attr = subparsers.add_parser('set_attr', help='Set the value of an attribute across all group projects.',
+                                parents=[universal_parser, group_parser])
+    ## Summarise
+    summarise = subparsers.add_parser('summarise', help='Obtain a data summary for a given group.', 
+                                parents=[universal_parser, group_parser])
+    ## Validate
     validate = subparsers.add_parser('validate',help='Validate data aggregations for a project, group or subset of projects. (Pipeline phase 3)', 
                                 parents=[universal_parser, group_parser, phased_parser, input_parser])
-    
-    agg = subparsers.add_parser('aggregations',help='Get summary of aggregations used',
-                                parents=[universal_parser, group_parser])
 
     args = parser.parse_args()
 
