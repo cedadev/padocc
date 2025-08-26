@@ -15,7 +15,8 @@ def error_handler(
         phase: str,
         subset_bypass: bool = False,
         jobid: Optional[str] = None,
-        status_fh: Optional[object] = None
+        status_fh: Optional[object] = None,
+        agg_shorthand: str = '',
     ) -> str:
 
     """
@@ -57,6 +58,9 @@ def error_handler(
         else:
             status = get_status(tb)
 
+    # Quick aggregation shorthand
+    status = agg_shorthand + status
+
     if status_fh is not None:
         status_fh.update_status(phase, status, jobid=jobid)
         status_fh.close()
@@ -79,7 +83,14 @@ def worst_error(report: dict, bypass: dict = None) -> str:
     if 'report' in report:
         report = report['report']
 
-    priority = ['size_errors', 'dim_size_errors', 'data_errors', 'dim_errors','bypassed','dtype/precision']
+    priority = {
+        'size_errors':'Fatal',
+        'dim_size_errors':"Fatal", 
+        'data_errors':"Fatal", 
+        'dim_errors':"Fatal",
+        'bypassed':"Warn",
+        'dtype/precision':"Warn"
+    }
 
     # Check all data issues that would be fatal.
     if 'data' in report:
@@ -88,13 +99,13 @@ def worst_error(report: dict, bypass: dict = None) -> str:
         # Improvements are possible.
         vars = section.get('variables',{})
         dims = section.get('dimensions', {})
-        for err in priority:
+        for err, result in priority.items():
             for v in vars.get(err,{}).keys():
                 try:
                     _ = bypass['data']['variables'][err][v]
                     report['data']['variables'][err][v]['SKIP'] = True
                 except KeyError:
-                    error = error or f'Fatal-{err}'
+                    error = error or f'{result}-{err}'
                 except TypeError:
                     report['data']['variables'][err][v] = report['data']['variables'][err][v] + '_SKIP'
 
@@ -103,7 +114,7 @@ def worst_error(report: dict, bypass: dict = None) -> str:
                     _ = bypass['data']['dimensions'][err][d]
                     report['data']['dimensions'][err][d]['SKIP'] = True
                 except KeyError:
-                    error = error or f'Fatal-{err}'
+                    error = error or f'{result}-{err}'
                 except TypeError:
                     report['data']['dimensions'][err][d] = report['data']['dimensions'][err][d] + '_SKIP'
 
@@ -186,6 +197,22 @@ class PartialDriverError(KerchunkException): # Keep
     def get_str(self):
         return 'PartialDriverError'
     
+class MissingDataError(KerchunkException): # Keep
+    """Data missing from kerchunk product"""
+    def __init__(
+            self,
+            reason,
+            verbose: int = 0,
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+        self.message = f'Data missing: {reason} - Kerchunk product incomplete'
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'MissingDataError'
+
 class AggregationError(KerchunkException): # Keep
     """Aggregation dimension(s) are not properly arranged"""
     def __init__(
