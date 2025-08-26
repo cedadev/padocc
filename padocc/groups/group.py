@@ -165,7 +165,7 @@ class GroupOperation(
 
         return self.get_project(proj_code)
     
-    def get_project(self, proj_code: str, **kwargs):
+    def get_project(self, proj_code: str,**kwargs):
         """
         Get a project operation from this group
 
@@ -235,16 +235,28 @@ class GroupOperation(
         )
 
         for proj in proj_list:
+
             try:
                 proj_op = self[proj]
+
+                status = proj_op.get_last_status()
+                if status is None:
+                    self.logger.warning(f'{proj}: Skipped - Undetermined status')
+                    continue
+
+                # Skip already complete ones
+                if 'complete' in status:
+                    self.logger.info(f'{proj}: Skipped')
+                    continue
 
                 # Export report
                 proj_op.export_report(move_to)
 
                 # Export products
                 proj_op.complete_project(move_to, thorough=thorough)
+                self.logger.info(f'{proj}: OK')
             except Exception as err:
-                self.logger.warning(f'Skipped {proj} - {err}')
+                self.logger.warning(f'{proj}: Skipped - {err}')
 
     def get_stac_representation(
             self, 
@@ -368,7 +380,7 @@ class GroupOperation(
             logid = id
             if jobid is not None:
                 logid = jobid
-
+                
             status = func(
                 proj_code, 
                 mode=mode, 
@@ -525,14 +537,20 @@ class GroupOperation(
         self._save_proj_codes()
 
     def _add_proj_codeset(self, name : str, newcodes : list):
-        self.proj_codes[name] = ListFileHandler(
-            self.proj_codes_dir,
-            name,
-            init_value=newcodes,
-            logger=self.logger,
-            dryrun=self._dryrun,
-            forceful=self._forceful
-        )
+
+        if name in self.proj_codes:
+            self.logger.warning(f'Appending to existing codeset: {name}')
+            self.proj_codes[name].set(self.proj_codes[name].get() + newcodes)
+        else:
+            self.proj_codes[name] = ListFileHandler(
+                self.proj_codes_dir,
+                name,
+                init_value=newcodes,
+                logger=self.logger,
+                dryrun=self._dryrun,
+                forceful=self._forceful
+            )
+
         self.proj_codes[name].close()
     
     def _delete_proj_codeset(self, name: str):
