@@ -292,7 +292,7 @@ class ComputeOperation(ProjectOperation):
             'pre_kwargs': self.pre_kwargs,
         }
     
-    def order_native_files(self):
+    def order_native_files(self) -> Union[list,None]:
         """
         Ensure ordering of native files based on aggregation dimensions.
         """
@@ -309,18 +309,26 @@ class ComputeOperation(ProjectOperation):
             self.logger.debug(f'Ordering native files skipped for complex aggregations - {concat}')
             return
         
+        sample_run = (self.limiter != len(self.allfiles.get()))
+        
         concat = concat[0]
         ordering = []
-        for allfile in self.allfiles.get():
+        for allfile in self.allfiles.get()[:self.limiter]:
             ds = xr.open_dataset(allfile, decode_times=False)
             ordering.append([ds[concat].min(),allfile])
 
         new_fileorder = [f[1] for f in sorted(ordering)]
 
-        self.allfiles.set(new_fileorder)
-        self.allfiles.close()
-
         self.virtualizarr = True
+
+        # Ahh don-t run this unless you want things to break
+        if not sample_run:
+            self.logger.info('Native file order confirmed for whole project')
+            self.allfiles.set(new_fileorder)
+            self.allfiles.close()
+        else:
+            self.logger.info('Native file subset ordered')
+            return new_fileorder
 
     def _run(
             self, 
@@ -818,6 +826,8 @@ class KerchunkDS(ComputeOperation):
         because we already know we're running for ``Kerchunk``.
         """
 
+        self.logger.debug(f'Aggregator: {aggregator}')
+
         # Run CFA in super class.
         cfa_status, ordering = super()._run(file_limit=self.limiter)
 
@@ -853,6 +863,7 @@ class KerchunkDS(ComputeOperation):
             compute_subset: Union[str,None] = None,
             compute_total: Union[str,None] = None,
             aggregator: Union[str,None] = None,
+            filesubset: Union[list,None] = None,
         ) -> None:
         """Organise creation and loading of refs
         - Load existing cached refs
@@ -871,7 +882,7 @@ class KerchunkDS(ComputeOperation):
         converter = KerchunkConverter(logger=self.logger, 
                                       bypass_driver=self._bypass.skip_driver)
         
-        listfiles = self.allfiles.get()
+        listfiles = filesubset or self.allfiles.get()
 
         t1 = datetime.now()
         create_mode = False
@@ -1108,7 +1119,7 @@ class KerchunkDS(ComputeOperation):
                 raise ValueError('VirtualiZarr aggregation unavailable for selected dataset.')
 
             attempt = 0
-            if self.virtualizarr or (aggregator != 'K' and aggregator is not None):
+            if self.virtualizarr and (aggregator != 'K' or aggregator is not None):
 
                 if aggregator != 'V' or aggregator is None:
                     try:
@@ -1146,7 +1157,6 @@ class KerchunkDS(ComputeOperation):
                             logger=self.logger)
                         return
                     except Exception as err:
-                        attempt += 1
                         self.logger.info(f' > Virtualizarr Failed - {err}')
                         self.virtualizarr = False
 

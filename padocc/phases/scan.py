@@ -223,9 +223,11 @@ class ScanOperation(ProjectOperation):
         
         # Scan mode always uses MultiZarrToZarr
         # Having to do this in order to test aggregation option.
-        mini_ds.order_native_files()
+
+        # Order subset
+        filesubset = mini_ds.order_native_files()
         
-        mini_ds.create_refs(ctype=ctype)
+        mini_ds.create_refs(ctype=ctype, filesubset=filesubset)
 
         self.padocc_aggregation = mini_ds.padocc_aggregation
         self.virtualizarr       = mini_ds.virtualizarr
