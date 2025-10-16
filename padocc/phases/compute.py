@@ -100,7 +100,7 @@ class KerchunkConverter(LoggedOperation):
         
         if filehandler:
             filehandler.set(tdict)
-            filehandler.close()
+            filehandler.save()
 
         return tdict, ctype
 
@@ -174,6 +174,8 @@ class ComputeOperation(ProjectOperation):
             label : str = 'compute',
             is_trial: bool = False,
             parallel: bool = False,
+            identical_dims: Union[list,None] = None,
+            concat_dims: Union[list,None] = None,
             **kwargs
         ) -> None:
         """
@@ -185,6 +187,8 @@ class ComputeOperation(ProjectOperation):
         :param workdir:         (str) Path to the current working directory.
 
         :param groupID:         (str) GroupID of the parent group.
+
+        :param stage:           (str)
 
         :param thorough:        (bool) From args.quality - if True will create all files 
             from scratch, otherwise saved refs from previous runs will be loaded.
@@ -200,7 +204,15 @@ class ComputeOperation(ProjectOperation):
         :param skip_concat:     (bool) Internal parameter for skipping concat - used for parallel 
             construction which requires a more complex job allocation.
 
-        :param new_version:
+        :param label:           (str)
+
+        :param is_trial:        (bool)
+
+        :param parallel:        (str)
+
+        :param identical_dims:  (list) A set of manually supplied dimension names applied for aggregation.
+
+        :param concat_dims:     (list) A set of manually supplied dimension names applied for aggregation.
 
         :returns: None
 
@@ -217,6 +229,11 @@ class ComputeOperation(ProjectOperation):
         
         if parallel:
             self.update_status(self.phase, 'Pending', jobid=self._logid)
+
+        self._manual_combine_kwargs = {
+            'identical_dims': identical_dims,
+            'concat_dims': concat_dims
+        }
         
         self._is_trial = is_trial
 
@@ -325,7 +342,7 @@ class ComputeOperation(ProjectOperation):
         if not sample_run:
             self.logger.info('Native file order confirmed for whole project')
             self.allfiles.set(new_fileorder)
-            self.allfiles.close()
+            self.allfiles.save()
         else:
             self.logger.info('Native file subset ordered')
             return new_fileorder
@@ -373,14 +390,14 @@ class ComputeOperation(ProjectOperation):
         
         if success:
             self.base_cfg['data_properties'] = results
-            self.base_cfg.close()
+            self.base_cfg.save()
 
             self.detail_cfg['CFA'] = True
-            self.detail_cfg.close()
+            self.detail_cfg.save()
             return 'Success', ordering
         
         self.base_cfg['CFA'] = False
-        self.base_cfg.close()
+        self.base_cfg.save()
         
         return 'Fatal', False
 
@@ -427,7 +444,7 @@ class ComputeOperation(ProjectOperation):
                     # Reset with correct temporal ordering - for VirtualiZarr benefit.
                     self.logger.info("Resetting Allfiles with new Native File Order")
                     self.allfiles.set(list(cfa.location))
-                    self.allfiles.close()
+                    self.allfiles.save()
 
                     self.virtualizarr = True
                     is_ordered = True
@@ -446,7 +463,7 @@ class ComputeOperation(ProjectOperation):
                 f'Aggregation via CFA failed - {err} - report at https://github.com/cedadev/CFAPyX/issues'
             )
             self.base_cfg['disable_cfa'] = True
-            self.base_cfg.close()
+            self.base_cfg.save()
             return None, False
 
     def _run_with_timings(self, func, **kwargs) -> str:
@@ -478,12 +495,12 @@ class ComputeOperation(ProjectOperation):
             detail['timings']['compute_actual'] = compute_time
 
         self.detail_cfg.set(detail)
-        self.detail_cfg.close()
+        self.detail_cfg.save()
         return 'Success'
 
     def save_files(self):
         super().save_files()
-        self.temp_zattrs.close()
+        self.temp_zattrs.save()
 
     @property
     def filelist(self):
@@ -973,7 +990,7 @@ class KerchunkDS(ComputeOperation):
                 refs = self._perform_shape_checks(ref)
 
             CacheFile.set(ref)
-            CacheFile.close()
+            CacheFile.save()
             ctypes.append(ctype)
 
         self.success = converter.success
@@ -1024,7 +1041,10 @@ class KerchunkDS(ComputeOperation):
         else:
             self.logger.info('Concatenating to JSON format Kerchunk file')
             self._data_to_json(refs, aggregator=aggregator)
+
         self.concat_time = (datetime.now()-t1).total_seconds()/self.limiter
+        self.detail_cfg['kwargs']['combine_kwargs'] = self.combine_kwargs
+        self.detail_cfg.save()
 
         if not self._dryrun:
             self._collect_details() # Zarr might want this too.
@@ -1109,6 +1129,21 @@ class KerchunkDS(ComputeOperation):
             if self.combine_kwargs.get('aggregated_vars',None) is None:
                 self.combine_kwargs['aggregated_vars'] = self.base_cfg['data_properties'].get('aggregated_vars')
 
+            # Apply user defined arguments if present
+            if self._manual_combine_kwargs['identical_dims'] is not None:
+                self.logger.info(
+                    'Using supplied identical dims: '
+                    f'{self._manual_combine_kwargs["identical_dims"]}.')
+                self.logger.info('If aggregation is successful, these parameters will be saved.')
+                self.combine_kwargs["identical_dims"] = self._manual_combine_kwargs["identical_dims"]
+
+            if self._manual_combine_kwargs['concat_dims'] is not None:
+                self.logger.info(
+                    'Using supplied concat dims: '
+                    f'{self._manual_combine_kwargs["concat_dims"]}.')
+                self.logger.info('If aggregation is successful, these parameters will be saved.')
+                self.combine_kwargs["concat_dims"] = self._manual_combine_kwargs["concat_dims"]
+
             self.logger.debug(f'Concat Dim(s): {self.combine_kwargs["concat_dims"]}')
             self.logger.debug(f'Identical Dim(s): {self.combine_kwargs["identical_dims"]}')
             self.logger.debug(f'Aggregation Var(s): {self.combine_kwargs["aggregated_vars"]}')
@@ -1140,6 +1175,7 @@ class KerchunkDS(ComputeOperation):
                             logger=self.logger
                         )
                         self.padocc_aggregation = True
+                        self.
                         return
                     except Exception as err:
                         self.logger.info(f' > PADOCC Aggregator Failed - {err}')
@@ -1179,7 +1215,7 @@ class KerchunkDS(ComputeOperation):
             self.logger.debug('Found single ref to save')
             self.kfile.set(refs[0])
 
-            self.kfile.close()
+            self.kfile.save()
 
     def _perform_shape_checks(self, ref: dict) -> dict:
         """

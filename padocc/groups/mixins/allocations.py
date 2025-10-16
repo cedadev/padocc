@@ -179,7 +179,8 @@ class AllocationsMixin:
             func            : Callable = print,
             xarray_kwargs   : dict = None,
             valid           : Union[dict,None] = None,
-            joblabel        : str = 'PADOCC'
+            joblabel        : str = 'PADOCC',
+            wait            : bool = False,
         ) -> None:
         """
         Organise parallel deployment via SLURM.
@@ -277,7 +278,8 @@ class AllocationsMixin:
                     sbatch_kwargs=sbatch_kwargs,
                     time=time_allowed,
                     memory=memory,
-                    valid=valid
+                    valid=valid,
+                    wait=wait
                 )
             
     def _create_slurm_script(
@@ -292,6 +294,7 @@ class AllocationsMixin:
             time: Union[str,None] = None,
             memory: Union[str,None] = None,
             valid: Union[str,None] = None,
+            wait: bool = False,
         ):
         """
         Create the sbatch content job array.
@@ -329,15 +332,27 @@ class AllocationsMixin:
         ]
 
         sbatch.set(sbatch_contents)
-        sbatch.close()
+        sbatch.save()
 
         self.logger.info(f'{jobname}: {time} ({group_length})')
 
+        sbatch_cmd = [
+            'sbatch',
+            f'--array=0-{group_length-1}'
+        ]
+
+        # Allow sbatch waiting
+        if wait:
+            sbatch_cmd.append('-w')
+
+        sbatch_cmd.append(sbatch.filepath)
+        sbatch_command = ' '.join(sbatch_cmd)
+
         if self._dryrun:
             self.logger.info('DRYRUN: sbatch command: ')
-            print(f'sbatch --array=0-{group_length-1} {sbatch.filepath}')
+            print(sbatch_command)
         else:
-            os.system(f'sbatch --array=0-{group_length-1} {sbatch.filepath}')
+            os.system(sbatch_command)
 
             for proj in self.proj_codes[repeat_id]:
                 # Create from scratch so logger is not passed.

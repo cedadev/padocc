@@ -526,14 +526,14 @@ class GroupOperation(
 
     def _save_proj_codes(self):
         for pc in self.proj_codes.keys():
-            self.proj_codes[pc].close()
+            self.proj_codes[pc].save()
 
     def save_files(self):
         """
         Save all files associated with this group.
         """
-        self.faultlist.close()
-        self.datasets.close()
+        self.faultlist.save()
+        self.datasets.save()
         self._save_proj_codes()
 
     def _add_proj_codeset(self, name : str, newcodes : list):
@@ -551,7 +551,7 @@ class GroupOperation(
                 forceful=self._forceful
             )
 
-        self.proj_codes[name].close()
+        self.proj_codes[name].save()
     
     def _delete_proj_codeset(self, name: str):
         """

@@ -127,7 +127,7 @@ def mzz_combine(refs: list, output_file: str, concat_dims: list, identical_dims:
 
     if isinstance(output_file, KerchunkFile):
         output_file.set(mzz)
-        output_file.close()
+        output_file.save()
     else:
         with open(output_file,'w') as f:
             f.write(json.dumps(mzz))

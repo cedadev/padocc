@@ -365,15 +365,15 @@ class ValidateDatasets(LoggedOperation):
 
         if filehandler is not None:
             filehandler.set(report)
-            filehandler.close()
+            filehandler.save()
             return err
         
         if isinstance(self.fhs[0], JSONFileHandler):
             self.fhs[0].set(report.get('metadata',{}))
-            self.fhs[0].close()
+            self.fhs[0].save()
 
             self.fhs[1].set(report.get('data',{}))
-            self.fhs[1].close()
+            self.fhs[1].save()
             return err
         
         raise ValueError(
