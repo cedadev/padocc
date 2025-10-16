@@ -37,7 +37,7 @@ class FileIOMixin(LoggedOperation):
     no attributes passed to either of these.
 
         fh.create_file()
-        fh.close()
+        fh.save()
 
     3. Get/set:
 
@@ -378,7 +378,7 @@ class ListFileHandler(FileIOMixin):
         with open(self.filepath,'w') as f:
             f.write('\n'.join(self._value))
 
-    def close(self) -> None:
+    def save(self) -> None:
         """
         Save the content of the filehandler
         """
@@ -587,7 +587,7 @@ class JSONFileHandler(FileIOMixin):
         nv.update(self._value)
         self._value = dict(nv)
 
-    def close(self) -> None:
+    def save(self) -> None:
         """
         Save the content of the filehandler
         """
@@ -884,12 +884,12 @@ class GenericStore(LoggedOperation):
         else:
             os.system(f'cp -R {self.store_path} {copy}.{self._extension}/')
 
-    def close(self) -> None:
+    def save(self) -> None:
         """
         Close the meta filehandler for this store
         """
         if not self.is_empty:
-            self._meta.close()
+            self._meta.save()
 
     @property
     def store_path(self) -> str:
@@ -1461,9 +1461,9 @@ class CFADataset(LoggedOperation):
         ds = netCDF4.Dataset(self.filepath)
         for nca in ds.ncattrs():
             self._meta[nca] = ds.getncattr(nca)
-        ds.close()
+        ds.save()
 
-    def close(self) -> None:
+    def save(self) -> None:
         """
         Set the meta attribute for this dataset.
         """
@@ -1473,7 +1473,7 @@ class CFADataset(LoggedOperation):
         ds = netCDF4.Dataset(self.filepath, mode='w')
         for k, v in self._meta.items():
             ds.setncattr(k, v)
-        ds.close()
+        ds.save()
 
     def get_meta(self) -> dict:
         """

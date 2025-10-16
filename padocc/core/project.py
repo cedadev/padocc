@@ -182,7 +182,7 @@ class ProjectOperation(
 
         if remote_s3 is not None:
             self.base_cfg['remote_s3'] = remote_s3
-            self.base_cfg.close()
+            self.base_cfg.save()
 
     def __str__(self):
         """String representation of project"""
@@ -527,10 +527,10 @@ class ProjectOperation(
         """
         Save all filehandlers associated with this group.
         """
-        self.base_cfg.close()
-        self.detail_cfg.close()
-        self.allfiles.close()
-        self.status_log.close()
+        self.base_cfg.save()
+        self.detail_cfg.save()
+        self.allfiles.save()
+        self.status_log.save()
 
         # Save dataset filehandlers
         self.save_ds_filehandlers()

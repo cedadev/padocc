@@ -58,7 +58,7 @@ class PropertiesMixin:
         
         if self.detail_cfg[mapper] is not None:
             self.base_cfg['override'][key] = self.detail_cfg[mapper]
-            self.base_cfg.close()
+            self.base_cfg.save()
             return self.base_cfg['override'][key]
         
         return None
@@ -70,7 +70,7 @@ class PropertiesMixin:
     @virtualizarr.setter
     def virtualizarr(self, value: bool):
         self.base_cfg['virtualizarr'] = value
-        self.base_cfg.close()
+        self.base_cfg.save()
 
     @property
     def padocc_aggregation(self):
@@ -79,7 +79,7 @@ class PropertiesMixin:
     @padocc_aggregation.setter
     def padocc_aggregation(self, value: bool):
         self.base_cfg['padocc_aggregation'] = value
-        self.base_cfg.close()
+        self.base_cfg.save()
     
     @property
     def cfa_complete(self):
@@ -385,7 +385,7 @@ class PropertiesMixin:
         combine = self.detail_cfg['kwargs'].get('combine_kwargs',{})
         combine['concat_dims'] = dims
         self.detail_cfg['kwargs']['combine_kwargs'] = combine
-        self.detail_cfg.close()
+        self.detail_cfg.save()
 
     def set_identical_dims(self, dims: list):
         """
@@ -395,5 +395,5 @@ class PropertiesMixin:
         combine = self.detail_cfg['kwargs'].get('combine_kwargs',{})
         combine['identical_dims'] = dims
         self.detail_cfg['kwargs']['combine_kwargs'] = combine
-        self.detail_cfg.close()
+        self.detail_cfg.save()
         

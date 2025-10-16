@@ -63,7 +63,7 @@ def error_handler(
 
     if status_fh is not None:
         status_fh.update_status(phase, status, jobid=jobid)
-        status_fh.close()
+        status_fh.save()
 
     logger.error('\n'.join(tb))
     if subset_bypass:

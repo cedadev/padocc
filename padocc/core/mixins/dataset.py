@@ -56,15 +56,15 @@ class DatasetHandlerMixin:
         """
 
         if self._kfile is not None:
-            self.kfile.close()
+            self.kfile.save()
 
         if self._kstore is not None:
-            self.kstore.close()
+            self.kstore.save()
 
         if self._zstore is not None:
-            self.zstore.close()
+            self.zstore.save()
 
-        self.cfa_dataset.close()
+        self.cfa_dataset.save()
 
     @property
     def kfile(self) -> Union[KerchunkFile,None]:
@@ -312,7 +312,7 @@ class DatasetHandlerMixin:
         
         if self.file_type == 'parq':
             self.kstore.add_download_link(sub=sub, replace=replace, in_place=in_place, remote=remote)
-            self.kstore.close()
+            self.kstore.save()
 
             if in_place:
                 old_store = str(self.kfile.store_path)
@@ -326,7 +326,7 @@ class DatasetHandlerMixin:
         else:
             refs = self.kfile.add_download_link(sub=sub, replace=replace, in_place=in_place, remote=remote)
             # Save the content now.
-            self.kfile.close()
+            self.kfile.save()
 
             if in_place:
                 old_file = str(self.kfile.filepath)
@@ -342,7 +342,7 @@ class DatasetHandlerMixin:
                 self._remote = True
                 # Make new remote copy kfile.
                 self.kfile.set(value=refs)
-                self.kfile.close()
+                self.kfile.save()
     
     def catalog_ceda(
             self, 
