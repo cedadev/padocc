@@ -261,6 +261,9 @@ def parse_group(
         input_file: Union[str,None] = None,
         xarray_kwargs_raw: Union[str,None] = None,
         parallel_project: Union[str,None] = None,
+        identical_dims: Union[str,None] = None,
+        concat_dims: Union[str,None] = None,
+        wait_sbatch: bool = False,
         func: callable = print,
         **kwargs
 ):
@@ -285,6 +288,12 @@ def parse_group(
     if not group_exists(groupID, workdir):
         if operation not in NEW_GROUP_ACTIONS:
             raise ValueError(f'Unsupported action for new group {groupID}')
+        
+    if identical_dims is not None:
+        identical_dims = identical_dims.split(',')
+
+    if concat_dims is not None:
+        concat_dims = concat_dims.split(',')
 
     # Create group
     op_group = GroupOperation(
@@ -321,7 +330,8 @@ def parse_group(
             subset=subset,
             repeat_id=repeat_id,
             xarray_kwargs=xarray_kwargs_raw, # Unprocessed raw CLI value
-            valid=input_file
+            valid=input_file,
+            wait=wait_sbatch,
         )
         return
     
@@ -367,6 +377,7 @@ def get_args():
     phased_parser.add_argument('--allow-band-increase', dest='band_increase',action='store_true', help='Allow automatic banding increase relative to previous runs.')
     #phased_parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
     phased_parser.add_argument('--diagnostic', dest='diagnostic',action='store_true',help='Enter diagnostic mode.')
+    phased_parser.add_argument('--wait_sbatch', dest='wait_sbatch', action='store_true', help='Halt on sbatch (SLURM) submissions')
 
     parser = argparse.ArgumentParser(description='Run PADOCC commands or pipeline phases')
 
@@ -386,6 +397,8 @@ def get_args():
                                 parents=[universal_parser, group_parser, phased_parser])
     compute.add_argument('--mem-allowed', dest='mem_allowed', default='100MB', help='Memory allowed for Zarr rechunking') # Compute only
     compute.add_argument('--aggregator', dest='aggregator',default=None, help='Specific aggregation method to use for Kerchunk references') # Compute only
+    compute.add_argument('--identical_dims', dest='identical_dims', default=None, help='Manually supply new aggregation parameters: Identical dims')
+    compute.add_argument('--concat_dims', dest='concat_dims', default=None, help='Manually supply new aggregation parameters: Concat dims')
     ## Logs
     logs = subparsers.add_parser('logs',help='Obtain logs from a given project or group.', 
                                 parents=[universal_parser, group_parser])
