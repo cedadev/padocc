@@ -9,7 +9,9 @@ import yaml
 from typing import Union
 
 from padocc import GroupOperation
-from padocc.core.utils import BypassSwitch, get_attribute, list_groups, group_exists
+from padocc.core.utils import (
+    BypassSwitch, get_attribute, list_groups, 
+    group_exists, BASE_CFG, DETAIL_CFG)
 
 # Ensure all directories are created with 775 permissions
 import os
@@ -77,15 +79,66 @@ def get_summary(group, repeat_id: str = 'main', **kwargs):
     """Get data summary for group"""
     group.summarise_data(repeat_id=repeat_id)
 
-def check_attribute(group, **kwargs):
+def check_attribute(group, attr: str, **kwargs):
     """Check attribute across whole group"""
 
-    raise NotImplementedError
-    group.check_attribute()
-
-def set_attribute(group, **kwargs):
-    raise NotImplementedError
+    file_data_source = None
+    attr_parts = attr.split('.')
+    if attr_parts[0] in BASE_CFG:
+        file_data_source = 'base_cfg'
+    elif attr_parts[0] in DETAIL_CFG:
+        file_data_source = 'detail_cfg'
+    elif getattr(group[0], attr):
+        pass
+    else:
+        raise ValueError(
+            f'Unable to set attribute "{attr}", not found in project'
+        )
     
+    for proj in group:
+        if file_data_source is None:
+            value = getattr(proj, attr)
+        else:
+            value = getattr(proj, file_data_source)
+            for ap in attr_parts:
+                value = value[ap]
+            
+        print(f'{proj.proj_code} - {attr}: {value}')
+
+def set_attribute(group, attr: str, value: str, **kwargs):
+    """
+    Check attribute name against known attributes and set value"""
+    file_data_source = None
+    attr_parts = attr.split('.')
+    if attr_parts[0] in BASE_CFG:
+        file_data_source = 'base_cfg'
+    elif attr_parts[0] in DETAIL_CFG:
+        file_data_source = 'detail_cfg'
+    elif getattr(group[0], attr):
+        pass
+    else:
+        raise ValueError(
+            f'Unable to set attribute "{attr}", not found in project'
+        )
+    
+    def recursive_reset(src, attrset, value):
+        if len(attrset) > 1:
+            src[attrset[0]] = recursive_reset(src[attrset[0]], attrset[1:], value)
+        else:
+            src[attrset[0]] = value
+        return src
+    
+    for proj in group:
+        if file_data_source is None:
+            setattr(proj, attr, value)
+        else:
+            fh = getattr(proj, file_data_source)
+            fh.set(recursive_reset(fh.get(), attr_parts))
+
+            # Ensure filehandler is preserved above so it doesn't get reset as a non-dict here
+            setattr(proj, file_data_source, fh)
+            proj.save_files()
+
 def complete_group(group, completion_dir: str, proj_code: Union[str,None] = None, repeat_id: str = 'main', thorough: bool = True, **kwargs):
     """Complete projects in a group"""
 
@@ -103,17 +156,6 @@ def complete_group(group, completion_dir: str, proj_code: Union[str,None] = None
 
 def apply_pfunc(group, **kwargs):
     raise NotImplementedError
-
-    try:
-        module = __import__(args.shortcut)
-    except ImportError as err:
-        print(f'ERROR: Custom module {args.shortcut} could not be imported')
-
-    group.apply_pfunc(
-        module, 
-        repeat_id=args.repeat_id)
-    
-    group.save_files()
 
 def report_group(group, proj_code: Union[str,None] = None, repeat_id: str = 'main', **kwargs):
     """Obtain report for a project or whole group"""
@@ -463,6 +505,8 @@ def get_args():
     ## Set Attr
     set_attr = subparsers.add_parser('set_attr', help='Set the value of an attribute across all group projects.',
                                 parents=[universal_parser, group_parser])
+    set_attr.add_argument('--attr', dest='attr', help='Attribute name to set')
+    set_attr.add_argument('--value', dest='value', help='New value for attribute')
     ## Summarise
     summarise = subparsers.add_parser('summarise', help='Obtain a data summary for a given group.', 
                                 parents=[universal_parser, group_parser])
