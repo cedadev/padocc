@@ -15,7 +15,7 @@ from .filehandlers import (CSVFileHandler, JSONFileHandler, ListFileHandler,
                            LogFileHandler, KerchunkFile)
 from .mixins import (DatasetHandlerMixin, DirectoryMixin, PropertiesMixin,
                      StatusMixin)
-from .utils import (FILE_DEFAULT, BypassSwitch, apply_substitutions,
+from .utils import (source_opts, BypassSwitch, apply_substitutions,
                     extract_file, file_configs, phases, print_fmt_str,
                     extract_json)
 
@@ -265,13 +265,18 @@ class ProjectOperation(
             from scratch, otherwise saved refs from previous runs will be loaded.
         
         """
+        if not hasattr(self,'phase'):
+            raise ValueError(
+                '"Run" Operation cannot be performed on the base ProjectOperation class. ',
+                'Please use one of the phased operators or the `Group.run` method instead.'
+            )
 
         self._bypass = bypass or self._bypass
 
         if parallel:
-            self.logger.info(f'Parallel Operation: Enabled')
+            self.logger.info('Parallel Operation: Enabled')
         else:
-            self.logger.info(f'Parallel Operation: Disabled')
+            self.logger.info('Parallel Operation: Disabled')
 
         # Reset flags given specific runs
         if forceful is not None:
@@ -294,14 +299,12 @@ class ProjectOperation(
             
         try:
             status = self._run(mode=mode, **kwargs)
+            # Reset cloud format and save files
+            self.cloud_format = mode
             self.save_files()
             return status
         except Exception as err:
-
-            agg_shorthand = ''
-            if self.phase == 'validate':
-                agg_shorthand = self.get_agg_shorthand()
-
+            agg_shorthand = self.get_agg_shorthand()
             return error_handler(
                 err, self.logger, self.phase,
                 jobid=self._logid,
@@ -594,6 +597,18 @@ class ProjectOperation(
             fileset, status = apply_substitutions('datasets', subs=self.base_cfg['substitutions'], content=fileset)
             if status:
                 self.logger.warning(status)
+
+        # Data sanitisation
+        for x, file in enumerate(fileset):
+            if not os.path.isfile(file):
+                raise ValueError(
+                    f'File {file} ({x}) for project {self.proj_code}'
+                    'not found on file system.')
+            if file.split('.')[-1] not in source_opts:
+                raise ValueError(
+                    f'File {file} ({x}) for project {self.proj_code}, extension'
+                    f' {file.split(".")[-1]} not allowed - must be one of {source_opts}')
+        
         self.allfiles.set(fileset) 
 
     def _setup_config(
