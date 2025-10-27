@@ -8,19 +8,12 @@ import argparse
 import yaml
 from typing import Union
 
-from padocc import GroupOperation, phase_map
+from padocc import GroupOperation
 from padocc.core.utils import BypassSwitch, get_attribute, list_groups, group_exists
 
 # Ensure all directories are created with 775 permissions
 import os
 os.umask(0o002)
-
-def check_groupexists(groupID, workdir):
-    if not group_exists(groupID, workdir):
-        raise ValueError(
-            'Shortcuts can only be performed on existing groups - ' \
-            'use `padocc new -G group` to create a new group.'
-        )
 
 def listgroups(workdir: str, **kwargs):
     """
@@ -264,6 +257,7 @@ def parse_group(
         identical_dims: Union[str,None] = None,
         concat_dims: Union[str,None] = None,
         wait_sbatch: bool = False,
+        new_version: bool = False,
         func: callable = print,
         **kwargs
 ):
@@ -302,6 +296,7 @@ def parse_group(
         forceful=forceful,
         dryrun=dryrun,
         thorough=thorough,
+        new_version=new_version,
         label=f'PADOCC-CLI-{operation}',
         verbose=verbose,
         bypass=bypass,
@@ -375,7 +370,7 @@ def get_args():
     phased_parser.add_argument('--parallel', dest='parallel',action='store_true',help='Add for parallel deployment with SLURM') # All
     phased_parser.add_argument('--parallel_project', dest='parallel_project',default=None, help='Add for parallel deployment with SLURM for internal project conversion.') # All
     phased_parser.add_argument('--allow-band-increase', dest='band_increase',action='store_true', help='Allow automatic banding increase relative to previous runs.')
-    #phased_parser.add_argument('-n','--new_version', dest='new_version',   help='If present, create a new version')
+    phased_parser.add_argument('-n','--new_version', dest='new_version', action='store_true', help='If present, allow a new version to be created')
     phased_parser.add_argument('--diagnostic', dest='diagnostic',action='store_true',help='Enter diagnostic mode.')
     phased_parser.add_argument('--wait_sbatch', dest='wait_sbatch', action='store_true', help='Halt on sbatch (SLURM) submissions')
 

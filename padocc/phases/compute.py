@@ -261,7 +261,7 @@ class ComputeOperation(ProjectOperation):
         self.partial = (limiter and num_files != limiter)
 
         # Perform this later
-        #self._determine_version()
+        self._determine_version()
         
         self.limiter = limiter
         if not self.limiter:
@@ -514,6 +514,16 @@ class ComputeOperation(ProjectOperation):
         return self.allfiles[:self.limiter]
 
     def _determine_version(self):
+        """
+        Determine if a minor version increment is currently needed
+        
+        If an output file matching this current version exists:
+        - If forceful we will simply overwrite
+        - If we are allowed a version increment, do that.
+        - Otherwise will raise an error
+        
+        If no matching version exists, we can continue.
+        """
         if self._forceful:
             return
         
@@ -521,7 +531,7 @@ class ComputeOperation(ProjectOperation):
         while not found_space:
 
             if os.path.isfile(self.outpath) or os.path.isdir(self.outpath):
-                if False:
+                if self._allow_new_version:
                     self.minor_version_increment()
                 else:
                     raise ValueError(
@@ -1175,7 +1185,6 @@ class KerchunkDS(ComputeOperation):
                             logger=self.logger
                         )
                         self.padocc_aggregation = True
-                        self.
                         return
                     except Exception as err:
                         self.logger.info(f' > PADOCC Aggregator Failed - {err}')
