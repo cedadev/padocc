@@ -24,7 +24,7 @@ General usage
 -------------
 The pipeline consists of three central phases, plus many different operations that can be applied to different datasets depending on use cases. These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system. The recommended way of running the core phases is to use the `command line tool<core/cli>`. For a list of operations that go beyond the core phases, see the section entitled All Operations.
 
-To check the status of various elements of the pipeline, including the progress of any group/project in your working directory, it is recommended that you make use of padocc through an `interactive<core/interactive>` interface like a Jupyter Notebook or Shell. Simply import the necessary components and start assessing your projects and groups.
+To check the status of various elements of the pipeline, including the progress of any group/project in your working directory, it is recommended that you make use of padocc through an interactive interface like a Jupyter Notebook or Shell. Simply import the necessary components and start assessing your projects and groups.
 
 For further information around configuring PADOCC for parallel deployment please contact `daniel.westwood@stfc.ac.uk <daniel.westwood@stfc.ac.uk>`_.
 

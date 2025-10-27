@@ -22,6 +22,7 @@ The pipeline takes a CSV (or similar) input file from which to instantiate a ``G
 .. code-block:: console
 
     $ padocc init -G my-new-group -i path/to/input_file.csv
+    # See padocc init -h for more info on possible flags
 
 **Initialisation using Python**
 
@@ -77,6 +78,7 @@ The scan phase can be activated with the following:
 .. code-block:: console
     
     $ padocc scan -G my-group -C kerchunk
+    # See padocc scan -h for more info on possible flags
 
 Or in a python/padocc shell:
 
@@ -110,6 +112,7 @@ Computation can be executed in serial for a group with the following:
 .. code-block:: console
 
     padocc compute -G my-group -v
+    # See padocc compute -h for more info on possible flags
 
 .. code:: python
 
@@ -136,6 +139,7 @@ validator which checks the Xarray representations and identifies differences in 
 .. code-block:: console
 
     $ padocc validate -G my-group --valid bypass.json
+    # See padocc validate -h for more info on possible flags
 
 .. code:: python
 
