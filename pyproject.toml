@@ -1,6 +1,6 @@
 [project]
 name = "padocc"
-version = "1.4.0b"
+version = "1.4.0"
 description = "Pipeline to Aggregate Data for Optimised Cloud Capabilities"
 authors = [
     {name = "Daniel Westwood",email = "daniel.westwood@stfc.ac.uk"}
