@@ -52,6 +52,7 @@ class ProjectOperation(
             mem_allowed: Union[str,None] = None,
             remote_s3  : Union[dict, str, None] = None,
             xarray_kwargs: dict = None,
+            new_version: bool = False,
         ) -> None:
         """
         Initialisation for a ProjectOperation object to handle all interactions
@@ -104,6 +105,7 @@ class ProjectOperation(
         self.proj_code = proj_code
 
         self.mem_allowed = mem_allowed
+        self._allow_new_version = new_version
 
         if label is None:
             label = 'project-operation'
