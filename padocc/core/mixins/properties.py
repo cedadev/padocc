@@ -3,6 +3,7 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 from typing import Callable, Union
+import glob
 
 
 class PropertiesMixin:
@@ -57,14 +58,36 @@ class PropertiesMixin:
         
         if self.detail_cfg[mapper] is not None:
             self.base_cfg['override'][key] = self.detail_cfg[mapper]
-            self.base_cfg.close()
+            self.base_cfg.save()
             return self.base_cfg['override'][key]
         
         return None
 
     @property
+    def virtualizarr(self):
+        return self.base_cfg.get('virtualizarr',False)
+    
+    @virtualizarr.setter
+    def virtualizarr(self, value: bool):
+        self.base_cfg['virtualizarr'] = value
+        self.base_cfg.save()
+
+    @property
+    def padocc_aggregation(self):
+        return self.base_cfg.get('padocc_aggregation',False)
+    
+    @padocc_aggregation.setter
+    def padocc_aggregation(self, value: bool):
+        self.base_cfg['padocc_aggregation'] = value
+        self.base_cfg.save()
+    
+    @property
+    def cfa_complete(self):
+        return self.base_cfg.get('CFA_complete',False) or glob.glob(f'{self.dir}/*.nca')
+
+    @property
     def cfa_enabled(self):
-        return self.detail_cfg.get(index='CFA',default=False) and not self.base_cfg.get(index='disable_CFA',default=False)
+        return not self.base_cfg.get(index='disable_CFA',default=True) and self.detail_cfg.get(index='CFA',default=True)
     
     @cfa_enabled.setter
     def cfa_enabled(self, value: bool):
@@ -253,7 +276,7 @@ class PropertiesMixin:
         major, minor = self.version_no.split('.')
         minor = str(int(minor)+1)
 
-        self.version_no = f'{major}.{minor}'
+        self.base_cfg['version_no'] = f'{major}.{minor}'
 
         self.dataset.update_history(
             addition = f'Minor: {addition}',
@@ -362,7 +385,7 @@ class PropertiesMixin:
         combine = self.detail_cfg['kwargs'].get('combine_kwargs',{})
         combine['concat_dims'] = dims
         self.detail_cfg['kwargs']['combine_kwargs'] = combine
-        self.detail_cfg.close()
+        self.detail_cfg.save()
 
     def set_identical_dims(self, dims: list):
         """
@@ -372,5 +395,5 @@ class PropertiesMixin:
         combine = self.detail_cfg['kwargs'].get('combine_kwargs',{})
         combine['identical_dims'] = dims
         self.detail_cfg['kwargs']['combine_kwargs'] = combine
-        self.detail_cfg.close()
+        self.detail_cfg.save()
         

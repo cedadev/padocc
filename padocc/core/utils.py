@@ -17,9 +17,9 @@ from datetime import datetime
 from .errors import MissingVariableError
 
 times = {
-    'scan'    :'10:00', # No prediction possible prior to scanning
+    'scan'    :'15:00',
     'compute' :'60:00',
-    'validate':'30:00' # From CMIP experiments - no reliable prediction mechanism possible
+    'validate':'10:00'
 }
 
 phases = [
@@ -27,12 +27,12 @@ phases = [
     'scan',
     'compute',
     'validate',
-    'catalog'
 ]
 
 # Which files acceptable to pull from Moles Tags file.
 source_opts = [
-    '.nc'
+    '.nc',
+    '.tif'
 ]
 
 # Which operations are parallelisable.
@@ -63,6 +63,7 @@ BASE_CFG = {
     },
     'last_run': (None, None),
     'remote': False,
+    'disable_cfa':False
 }
 
 DETAIL_CFG = {
@@ -156,6 +157,9 @@ def deformat_float(item: str) -> str:
 
     :param item:    (str) Byte value to format into a float.
     """
+    if item is None:
+        return None
+
     units = ['','K','M','G','T','P','E','Y']
     value, suffix = item.split(' ')
 

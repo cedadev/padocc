@@ -15,7 +15,8 @@ def error_handler(
         phase: str,
         subset_bypass: bool = False,
         jobid: Optional[str] = None,
-        status_fh: Optional[object] = None
+        status_fh: Optional[object] = None,
+        agg_shorthand: str = '',
     ) -> str:
 
     """
@@ -39,11 +40,11 @@ def error_handler(
     """
 
     def get_status(tb: list) -> str:
-        status = 'Failed - NoLogGiven'
+        status = 'Failed-NoLogGiven'
         for j in range(1, len(tb)):
             index = (j*-1)
             if tb[index]:
-                status = 'Failed - ' + tb[index].split(':')[0]
+                status = 'Failed-' + tb[index].split(':')[0]
                 break
         return status
 
@@ -57,25 +58,39 @@ def error_handler(
         else:
             status = get_status(tb)
 
+    # Quick aggregation shorthand
+    status = agg_shorthand + status
+
     if status_fh is not None:
         status_fh.update_status(phase, status, jobid=jobid)
-        status_fh.close()
+        status_fh.save()
 
+    logger.error('\n'.join(tb))
     if subset_bypass:
-        logger.error('\n'.join(tb))
         return 'Fatal'
     else:
         raise err
 
-def worst_error(report: dict) -> str:
+def worst_error(report: dict, bypass: dict = None) -> str:
     """
     Determine the worst error level and return as a string.
     """
+
+    error = None
+
+    bypass = bypass or {}
     
     if 'report' in report:
         report = report['report']
 
-    priority = ['size_errors', 'dim_size_errors', 'data_errors', 'dim_errors','bypassed']
+    priority = {
+        'size_errors':'Fatal',
+        'dim_size_errors':"Fatal", 
+        'data_errors':"Fatal", 
+        'dim_errors':"Fatal",
+        'bypassed':"Warn",
+        'dtype/precision':"Warn"
+    }
 
     # Check all data issues that would be fatal.
     if 'data' in report:
@@ -83,37 +98,77 @@ def worst_error(report: dict) -> str:
         
         # Improvements are possible.
         vars = section.get('variables',{})
-        for err in priority:
-            if err in vars:
-                return f'Fatal-{err}'
         dims = section.get('dimensions', {})
-        for err in priority:
-            if err in dims:
-                return f'Fatal-{err}'
+        for err, result in priority.items():
+            for v in vars.get(err,{}).keys():
+                try:
+                    _ = bypass['data']['variables'][err][v]
+                    report['data']['variables'][err][v]['SKIP'] = True
+                except KeyError:
+                    error = error or f'{result}-{err}'
+                except TypeError:
+                    report['data']['variables'][err][v] = report['data']['variables'][err][v] + '_SKIP'
+
+            for d in dims.get(err,{}).keys():
+                try:
+                    _ = bypass['data']['dimensions'][err][d]
+                    report['data']['dimensions'][err][d]['SKIP'] = True
+                except KeyError:
+                    error = error or f'{result}-{err}'
+                except TypeError:
+                    report['data']['dimensions'][err][d] = report['data']['dimensions'][err][d] + '_SKIP'
 
     if 'metadata' not in report:
-        return None
+        return err, report
     
     vars = report['metadata'].get('variables',None)
     if vars is not None:
         for etype in ['missing','order']:
             for k, v in vars.items():
                 if v['type'] == etype:
-                    return f'Warn-{k}_{etype}'
+
+                    try:
+                        # error type not equal to bypass - error cannot be bypassed.
+                        assert etype != bypass['metadata']['variables'][k]['type']
+                        err = err or f'Warn-{k}_{etype}'
+                    except AssertionError:
+                        # Etype is equal to bypass - can bypass this error
+                        report['metadata']['variables'][k]['SKIP'] = True
+                    except KeyError:
+                        # Error not in bypass - error cannot be bypassed
+                        error = error or f'Warn-{k}_{etype}'
     
     dims = report['metadata'].get('dims', None)
     if dims is not None:
         for etype in ['order']:
             for k, v in dims.items():
                 if v['type'] == etype:
-                    return f'Warn-{k}_{etype}'
+                    try:
+                        # error type not equal to bypass - error cannot be bypassed.
+                        assert etype != bypass['metadata']['dims'][k]['type']
+                        error = error or f'Warn-{k}_{etype}'
+                    except AssertionError:
+                        # Etype is equal to bypass - can bypass this error
+                        report['metadata']['dims'][k]['SKIP'] = True
+                    except KeyError:
+                        # Error not in bypass - error cannot be bypassed
+                        error = error or f'Warn-{k}_{etype}'
     
-    attrs = report['metadata'].get('attributes',None)
-    if attrs is not None:
-        for etype in ['not_equal','missing']:
-            for k, v in dims:
-                if v['type'] == etype:
-                    return f'Warn-{k}_{etype}'
+    attrs = report['metadata'].get('attributes',{})
+    for attr_parent, attrset in attrs.items():
+        for title, issue in attrset.items():
+            etype = issue['type']
+            try:
+                # error type not equal to bypass - error cannot be bypassed.
+                assert (etype != bypass['metadata']['attributes'][attr_parent].get(title,{}).get('type','') and not bypass['metadata']['attributes'][attr_parent].get('skip_all',False))
+                error = error or f'Warn-{attr_parent}_{title}_{etype}'
+            except AssertionError:
+                # Etype is equal to bypass - can bypass this error
+                report['metadata']['attributes'][attr_parent][title]['SKIP'] = True
+            except KeyError:
+                # Error not in bypass - error cannot be bypassed
+                error = error or f'Warn-{attr_parent}_{title}_{etype}'
+    return error, report
         
 class KerchunkException(Exception):
     """
@@ -141,6 +196,38 @@ class PartialDriverError(KerchunkException): # Keep
             self.__class__.__module__ = 'builtins'
     def get_str(self):
         return 'PartialDriverError'
+    
+class MissingDataError(KerchunkException): # Keep
+    """Data missing from kerchunk product"""
+    def __init__(
+            self,
+            reason,
+            verbose: int = 0,
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+        self.message = f'Data missing: {reason} - Kerchunk product incomplete'
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'MissingDataError'
+
+class AggregationError(KerchunkException): # Keep
+    """Aggregation dimension(s) are not properly arranged"""
+    def __init__(
+            self,
+            agg_dims,
+            verbose: int = 0,
+            proj_code: Union[str,None] = None, 
+            groupdir: Union[str,None] = None
+        ) -> None:
+        self.message = f'Aggregation is incorrectly ordered for dimension(s): {agg_dims}'
+        super().__init__(proj_code, groupdir)
+        if verbose < 1:
+            self.__class__.__module__ = 'builtins'
+    def get_str(self):
+        return 'AggregationError'
 
 class KerchunkDriverFatalError(KerchunkException): # Keep
     """All drivers failed (NetCDF3/Hdf5/Tiff) - run without driver bypass to assess the issue with each driver type."""
@@ -287,7 +374,7 @@ class ValidationError(KerchunkException):
             self.__class__.__module__ = 'builtins'
 
     def get_str(self):
-        return self.err_msg
+        return 'ValidationError'
     
 class ComputeError(KerchunkException): # Keep
     """Compute stage failed - likely due to invalid config/use of the classes"""

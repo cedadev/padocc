@@ -82,66 +82,66 @@ def _get_input(
 
     return config
 
-def _create_csv_from_text(text, logger):
-    """
-    Padocc accepts a text file where the individual entries can be 
-    broken down into DOIs for the different projects.
-    """
-    raise NotImplementedError
-    return
+# def _create_csv_from_text(text, logger):
+#     """
+#     Padocc accepts a text file where the individual entries can be 
+#     broken down into DOIs for the different projects.
+#     """
+#     raise NotImplementedError
+#     return
 
-    logger.debug('Converting text file to csv')
+#     logger.debug('Converting text file to csv')
 
-    if new_inputfile != input_file:
-        if self._dryrun:
-            self.logger.debug(f'DRYRUN: Skip copying input file {input_file} to {new_inputfile}')
-        else:
-            os.system(f'cp {input_file} {new_inputfile}')
+#     if new_inputfile != input_file:
+#         if self._dryrun:
+#             self.logger.debug(f'DRYRUN: Skip copying input file {input_file} to {new_inputfile}')
+#         else:
+#             os.system(f'cp {input_file} {new_inputfile}')
 
-    with open(new_inputfile) as f:
-        datasets = [r.strip() for r in f.readlines()]
+#     with open(new_inputfile) as f:
+#         datasets = [r.strip() for r in f.readlines()]
 
-    if not os.path.isfile(f'{self.groupdir}/datasets.csv') or self._forceful:
-        records = ''
-        self.logger.info('Creating filesets for each dataset')
-        for index, ds in enumerate(datasets):
+#     if not os.path.isfile(f'{self.groupdir}/datasets.csv') or self._forceful:
+#         records = ''
+#         self.logger.info('Creating filesets for each dataset')
+#         for index, ds in enumerate(datasets):
 
-            skip = False
+#             skip = False
 
-            pattern = str(ds)
-            if not (pattern.endswith('.nc') or pattern.endswith('.tif')):
-                self.logger.debug('Identifying extension')
-                fileset = [r.split('.')[-1] for r in glob.glob(f'{pattern}/*')]
-                if len(set(fileset)) > 1:
-                    self.logger.error(f'File type not specified for {pattern} - found multiple ')
-                    skip = True
-                elif len(set(fileset)) == 0:
-                    skip = True
-                else:
-                    extension = list(set(fileset))[0]
-                    pattern = f'{pattern}/*.{extension}'
-                self.logger.debug(f'Found .{extension} common type')
+#             pattern = str(ds)
+#             if not (pattern.endswith('.nc') or pattern.endswith('.tif')):
+#                 self.logger.debug('Identifying extension')
+#                 fileset = [r.split('.')[-1] for r in glob.glob(f'{pattern}/*')]
+#                 if len(set(fileset)) > 1:
+#                     self.logger.error(f'File type not specified for {pattern} - found multiple ')
+#                     skip = True
+#                 elif len(set(fileset)) == 0:
+#                     skip = True
+#                 else:
+#                     extension = list(set(fileset))[0]
+#                     pattern = f'{pattern}/*.{extension}'
+#                 self.logger.debug(f'Found .{extension} common type')
 
-            if not skip:
-                proj_op = ProjectOperation(
-                    self.workdir, 
-                    _get_proj_code(ds, prefix=prefix),
-                    groupID = self.groupID)
+#             if not skip:
+#                 proj_op = ProjectOperation(
+#                     self.workdir, 
+#                     _get_proj_code(ds, prefix=prefix),
+#                     groupID = self.groupID)
                 
-                self.logger.debug(f'Assembled project code: {proj_op}')
+#                 self.logger.debug(f'Assembled project code: {proj_op}')
 
-                if 'latest' in pattern:
-                    pattern = pattern.replace('latest', os.readlink(pattern))
+#                 if 'latest' in pattern:
+#                     pattern = pattern.replace('latest', os.readlink(pattern))
 
-                records  += f'{proj_op},{pattern},,\n'
-                self.logger.debug(f'Added entry and created fileset for {index+1}/{len(datasets)}')
-        if self._dryrun:
-            self.logger.debug(f'DRYRUN: Skip creating csv file {self.groupdir}/datasets.csv')    
-        else:        
-            with open(f'{self.groupdir}/datasets.csv','w') as f:
-                f.write(records)
-    else:
-        self.logger.warn(f'Using existing csv file at {self.groupdir}/datasets.csv')
+#                 records  += f'{proj_op},{pattern},,\n'
+#                 self.logger.debug(f'Added entry and created fileset for {index+1}/{len(datasets)}')
+#         if self._dryrun:
+#             self.logger.debug(f'DRYRUN: Skip creating csv file {self.groupdir}/datasets.csv')    
+#         else:        
+#             with open(f'{self.groupdir}/datasets.csv','w') as f:
+#                 f.write(records)
+#     else:
+#         self.logger.warn(f'Using existing csv file at {self.groupdir}/datasets.csv')
 
 class InitialisationMixin:
     """
@@ -212,9 +212,12 @@ class InitialisationMixin:
         if self.groupID:
             self.logger.debug('Starting group initialisation')
             if '.txt' in input_file:
-                self.logger.debug('Converting text file to csv')
-                textcontent  = extract_file(input_file)
-                group_config = _create_csv_from_text(textcontent)
+                raise NotImplementedError(
+                    'Text-file inputs are no longer supported. ',
+                    'Please use either CSV or JSON inputs')
+                #self.logger.debug('Converting text file to csv')
+                #textcontent  = extract_file(input_file)
+                #group_config = _create_csv_from_text(textcontent)
 
             elif '.csv' in input_file:
                 self.logger.debug('Ingesting csv file')
@@ -300,9 +303,30 @@ class InitialisationMixin:
         for index in range(len(datasets)):
             cfg_values = {}
             ds_values  = datasets[index].split(',')
+            
+            if '"' in datasets[index]:
+                components     = (datasets[index].split('"')[0] + datasets[index].split('"')[2]).split(',')
+            else:
+                components     = [ds_values[0]] + ds_values[2:]
 
             proj_code = ds_values[0].replace(' ','')
             pattern   = ds_values[1].replace(' ','')
+
+            updates, removals = None, None
+
+            if len(components) > 1:
+                updates  = components[1]
+            if len(components) > 2:
+                removals = components[2]
+
+            if '"' in pattern:
+                try:
+                    # Bypass weirdly formatted section
+                    pattern = datasets[index].split('"')[1]
+                except Exception as err: 
+                    raise ValueError(
+                        f'Improperly formatted input file with "" quotes - {err}'
+                    )
 
             if pattern.endswith('.txt') and substitutions:
                 pattern, status = apply_substitutions('dataset_file', subs=substitutions, content=[pattern])
@@ -322,16 +346,16 @@ class InitialisationMixin:
             proj_codes.append(proj_code)
 
             if len(ds_values) > 2:
-                if os.path.isfile(ds_values[2]):
-                    cfg_values['update'] = _open_json(ds_values[2])
+                if os.path.isfile(updates):
+                    cfg_values['update'] = _open_json(updates)
                 else:
-                    cfg_values['update'] = ds_values[2]
+                    cfg_values['update'] = updates
 
             if len(ds_values) > 3:
-                if os.path.isfile(ds_values[3]):
-                    cfg_values['remove'] = _open_json(ds_values[3])
+                if os.path.isfile(removals):
+                    cfg_values['remove'] = _open_json(removals)
                 else:
-                    cfg_values['remove'] = ds_values[3]
+                    cfg_values['remove'] = removals
 
             self.logger.info(f'Creating directories/filelists for {index+1}/{len(datasets)}')
 

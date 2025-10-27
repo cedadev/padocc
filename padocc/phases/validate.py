@@ -11,9 +11,9 @@ import numpy as np
 import xarray as xr
 
 from padocc.core import BypassSwitch, LoggedOperation, ProjectOperation
-from padocc.core.errors import ValidationError, worst_error
+from padocc.core.errors import worst_error, ValidationError, AggregationError
 from padocc.core.filehandlers import JSONFileHandler
-from padocc.core.utils import format_tuple, timestamp
+from padocc.core.utils import format_tuple, timestamp, extract_json
 
 SUFFIXES = []
 SUFFIX_LIST = []
@@ -101,7 +101,10 @@ def slice_all_dims(data_arr: xr.DataArray, intval: int, dim_mid: Union[dict[int,
             mid = dim_mid[dim]
 
         step = int(d/(intval*2))
-        slice_applied.append(slice(mid-step,mid+step))
+        # Rounding issue solve - bug 20/05/25
+        if step < 0.5:
+            step = 0.51
+        slice_applied.append(slice(int(mid-step),int(mid+step)))
     return tuple(slice_applied)
 
 def format_slice(slice: list[slice]) -> str:
@@ -125,6 +128,16 @@ def _recursive_set(source: dict, keyset: list, value):
 
         source[keyset[0]] = _recursive_set(current,keyset[1:], value)
     else:
+        try:
+            _ = json.dumps(value)
+            current = value
+        except TypeError:
+            try:
+                print(value)
+            except:
+                print('Unable to print value')
+                x=input()
+            current = 'N/A'
         source[keyset[0]] = value
     return source
 
@@ -143,10 +156,18 @@ class PresliceSet:
         """
         Apply a preslice operation to a data array"""
 
+        squeeze_dims=[]
         if var not in self._preslice_set:
             return self._default_preslice(data_arr)
         else:
-            return data_arr.isel(**self._preslice_set[var])
+            for dim, dslice in self._preslice_set[var].items():
+                if isinstance(dslice,tuple):
+                    squeeze_dims.append(dslice[1])
+                    self._preslice_set[var][dim] = dslice[0]
+            da = data_arr.isel(**self._preslice_set[var])
+            if len(squeeze_dims) > 0:
+                da = da.squeeze(dim=squeeze_dims,drop=True)
+            return da
 
     def _default_preslice(self, data_arr: xr.DataArray) -> xr.DataArray:
         """
@@ -161,30 +182,62 @@ class Report:
     dictionary value-setting."""
     description = 'Special report class for recursive dictionary value-setting'
 
-    def __init__(self, fh=None):
+    def __init__(self, fh: Union[dict,object,None] = None, bypass: dict = None):
+        
         self._value = fh or {}
+        self._bypass = bypass or None
 
     def __setitem__(self, index, value):
-        nest = index.split('.')
+        nest = index.split(',')
+
+        if len(nest) == 1:
+            self._value[nest[0]] = value
+            return
+
         current = {}
         if nest[0] in self._value:
             current = self._value[nest[0]]
         self._value[nest[0]] = _recursive_set(current, nest[1:], value)
 
+    @property
+    def value(self):
+        return self._clean_report()
+
+    def _clean_report(self):
+        """
+        Recursive report cleaning function.
+        
+        Removes non-serialisable elements."""
+        def __clean_report(rep):
+            
+            for k, v in rep.items():
+                if isinstance(v, dict):
+                    v = __clean_report(v)
+                else:
+                    try:
+                        _ = json.dumps(v)
+                    except TypeError:
+                        v = 'N/A'
+                rep[k] = v
+            return rep
+
+        return __clean_report(self._value)
+
     def export(self):
-        return self._value
+        # Taking into account bypass control
+        return self.value
 
     def __bool__(self):
-        return bool(self._value)
+        return bool(self.value)
 
     def __dict__(self):
-        return self._value.get()
+        return self.value.get()
     
     def __repr__(self):
-        return json.dumps(self._value)
+        return json.dumps(self.value)
     
     def __str__(self):
-        return json.dumps(self._value, indent=2)
+        return json.dumps(self.value, indent=2)
 
 class ValidateDatasets(LoggedOperation):
     """
@@ -202,13 +255,16 @@ class ValidateDatasets(LoggedOperation):
             datasets: list,
             id: str,
             filehandlers: Optional[Union[list[JSONFileHandler], list[dict]]] = None,
-            dataset_labels: list = None,
-            preslice_fns: list = None, # Preslice each dataset's DataArrays to make equivalent.
+            dataset_labels: Union[list,None] = None,
+            preslice_fns: Union[list,None] = None, # Preslice each dataset's DataArrays to make equivalent.
+            error_bypass: Union[dict, str, None] = None,
             logger = None,
-            label: str = None,
-            fh: str = None,
-            logid: str = None,
+            label: Union[str,None] = None,
+            fh: Union[str,None] = None,
+            logid: Union[str,None] = None,
             verbose: int = 0,
+            bypass_vars: Union[list,None] = None,
+            concat_dims: Union[list,None] = None
         ):
         """
         Initiator for the ValidateDataset Class.
@@ -219,13 +275,25 @@ class ValidateDatasets(LoggedOperation):
         These dataset objects should be identical, just from different sources.
         """
 
+        # Bypass checking specific variables if requested
+        self.bypass_vars = bypass_vars or []
+
+        self.concat_dims = concat_dims or []
+
+        # Bypass considering fatal/warnings from entire report
+        self.error_bypass = error_bypass or {}
+        if isinstance(self.error_bypass, str):
+            self.error_bypass = extract_json(self.error_bypass)
+
         self._id = id
         self._datasets   = datasets
 
-        self._labels = dataset_labels or [str(i) for i in range(len(datasets))]
+        self._labels    = dataset_labels or [str(i) for i in range(len(datasets))]
 
-        self.variables = None
+        self.variables  = None
         self.dimensions = None
+
+        self.decoded_times = True
 
         self.fhs = filehandlers or [{},{}]
 
@@ -250,15 +318,13 @@ class ValidateDatasets(LoggedOperation):
     def __str__(self):
         return f'<PADOCC Validator: {self._id}>'
     
-    @property
-    def pass_fail(self):
-        if self._metadata_report is None or self._data_report is None:
-            return None
-        if self._data_report:
-            return 'Fatal'
-        if self._metadata_report:
+    def pass_fail(self, err: str):
+        if 'Warn' in err:
             return 'Warning'
+        elif 'Fatal' in err:
+            return 'Fatal'
         return 'Success'
+
     
     @property
     def data_report(self):
@@ -288,19 +354,27 @@ class ValidateDatasets(LoggedOperation):
         }
 
     def save_report(self, filehandler=None):
+        """
+        Formulate report such that it notes bypasses, and determine
+        the worst error.
+        
+        This is in addition to saving the report content.
+        """
+
+        err, report = worst_error(self.report, bypass = self.error_bypass)
 
         if filehandler is not None:
-            filehandler.set(self.report)
-            filehandler.close()
-            return
+            filehandler.set(report)
+            filehandler.save()
+            return err
         
         if isinstance(self.fhs[0], JSONFileHandler):
-            self.fhs[0].set(self._metadata_report.export())
-            self.fhs[0].close()
+            self.fhs[0].set(report.get('metadata',{}))
+            self.fhs[0].save()
 
-            self.fhs[1].set(self._data_report.export())
-            self.fhs[1].close()
-            return
+            self.fhs[1].set(report.get('data',{}))
+            self.fhs[1].save()
+            return err
         
         raise ValueError(
             'Filehandler not provided to save report'
@@ -368,6 +442,26 @@ class ValidateDatasets(LoggedOperation):
         """
         return self._preslice_fns[id].apply(self._datasets[id][var], var)
 
+    def decode_times_ok(self):
+        """
+        Determine if test and sample datasets have matching encodings.
+        """
+
+        self.logger.info('Checking matching time encoding/dtype')
+        
+        if not hasattr(self._datasets[0],'time'):
+            return False
+
+        dtypes = {}
+        for ds in self._datasets:
+            dtypes[ds.time.dtype] = 1
+
+        if len(dtypes.keys()) > 1:
+            self.logger.warning('Time encoding mismatch - recorded')
+            self.decoded_times = False
+            return False
+        return True
+
     def validate_metadata(self, allowances: dict = None) -> dict:
         """
         Run all validation steps on this set of datasets.
@@ -376,6 +470,24 @@ class ValidateDatasets(LoggedOperation):
         # Reset for new report run
         self._metadata_report = Report()
         self.logger.info('Initialised metadata report')
+
+        self.concat_dims=['time']
+
+        aggregation_errors = []
+        for dim in self.concat_dims:
+            testdim = self.test_dataset_var(dim)
+
+            # Increasing across aggregation dim
+            fwd  = np.all(np.array(testdim[1:]) > np.array(testdim[:-1]))
+
+            # Decreasing across aggregation dim
+            back = np.all(np.array(testdim[1:]) < np.array(testdim[:-1]))
+
+            if not fwd and not back:
+                aggregation_errors.append(dim)
+            
+        if len(aggregation_errors) > 0:
+            raise AggregationError(aggregation_errors)
 
         allowances = allowances or {}
         ignore_vars, ignore_dims, ignore_globals = None, None, None
@@ -446,7 +558,7 @@ class ValidateDatasets(LoggedOperation):
 
             # Check for ignored selectors
             if s in ignore_sels:
-                self._metadata_report[f'{selector}.{s}'] = {
+                self._metadata_report[f'{selector},{s}'] = {
                     'type': 'ignored'
                 }
                 continue
@@ -461,7 +573,7 @@ class ValidateDatasets(LoggedOperation):
                 test_s = test_set[test_set.index(s)]
             except ValueError:
                 # Selector missing from test set
-                self._metadata_report[f'{selector}.{s}'] = {
+                self._metadata_report[f'{selector},{s}'] = {
                     'type':'missing',
                     'info':f'missing from {self._labels[0]}'
                 }
@@ -479,7 +591,7 @@ class ValidateDatasets(LoggedOperation):
         # Find selectors missing from the control set
         missing_from_control = set(test_set).difference(control_set)
         for mc in missing_from_control:
-            self._metadata_report[f'{selector}.{mc}'] = {
+            self._metadata_report[f'{selector},{mc}'] = {
                 'type':'missing',
                 'info':f'missing from {self._labels[1]}'
             }
@@ -489,7 +601,7 @@ class ValidateDatasets(LoggedOperation):
         # Set the selector here for further operations.
 
         if misordered:
-            self._metadata_report[f'{selector}.all_{selector}'] = {
+            self._metadata_report[f'{selector},all_{selector}'] = {
                 'type': 'order'
             }
 
@@ -526,7 +638,7 @@ class ValidateDatasets(LoggedOperation):
             self.logger.debug(f'  > {attr}')
             # Check for ignored attributes
             if attr in ignore:
-                self._metadata_report[f'attributes.{source}.{attr}'] = {
+                self._metadata_report[f'attributes,{source},{attr}'] = {
                     'type': 'ignore'
                 }
                 continue
@@ -537,7 +649,7 @@ class ValidateDatasets(LoggedOperation):
                 for index, aset in enumerate(attrset):
                     set_of_values.append(aset[attr])
             except KeyError:
-                self._metadata_report[f'attributes.{source}.{attr}'] = {
+                self._metadata_report[f'attributes,{source},{attr}'] = {
                     'type': 'missing',
                     'info': f'missing from {self._labels[index]}'
                 }
@@ -546,7 +658,7 @@ class ValidateDatasets(LoggedOperation):
             # Check for non-equal attributes
             s = set_of_values[0]
             if not np.all(s == np.array(set_of_values[1:])):
-                self._metadata_report[f'attributes.{source}.{attr}'] = {
+                self._metadata_report[f'attributes,{source},{attr}'] = {
                     'type': 'not_equal'
                 }
 
@@ -564,6 +676,10 @@ class ValidateDatasets(LoggedOperation):
         # Reset for new report run
         self._data_report = Report()
         self.logger.info('Initialised data report')
+
+        if not self.decoded_times:
+            self.logger.warning('Validating without decoding times.')
+            self._data_report['time_encoding_mismatch'] = True
 
         for dim in self.dims:
             self.logger.debug(f'Validating size of {dim}')
@@ -601,6 +717,13 @@ class ValidateDatasets(LoggedOperation):
             )
 
         for var in self.variables:
+
+            if var in self.bypass_vars:
+                self._data_report[f'variables,skipped,{var}'] = {
+                    'type':'singled-out'
+                }
+                continue
+
             self.logger.debug(f'Validating shapes for {var}')
             try:
                 testvar = self.test_dataset_var(var)
@@ -634,9 +757,17 @@ class ValidateDatasets(LoggedOperation):
         if 'size' not in ignore:
             if test.size != control.size:
                 # Size error
-                self._data_report[f'variables.size_errors.{var}'] = {
+                self._data_report[f'variables,size_errors,{var}'] = {
                     self._labels[0]: test.size,
                     self._labels[1]: control.size
+                }
+
+        if 'dtype' not in ignore:
+            if test.dtype != control.dtype:
+                # Dtype issue - possibly due to conversion
+                self._data_report[f'variables,dtype/precision,{var}'] = {
+                    self._labels[0]: test.dtype,
+                    self._labels[1]: control.dtype
                 }
 
         # Check dimensions individually
@@ -650,7 +781,7 @@ class ValidateDatasets(LoggedOperation):
 
         # Check for consistency of number of dimensions
         if len(test.dims) != len(control.dims):
-            self._data_report[f'variables.dim_errors.{var}'] = {
+            self._data_report[f'variables,dim_errors,{var}'] = {
                     self._labels[0]: test.dims,
                     self._labels[1]: control.dims
                 }
@@ -671,12 +802,12 @@ class ValidateDatasets(LoggedOperation):
                 control_dr.append(str(control.shape[i]))
                 dim_error = True
             else:
-                test_dr.append('X')
-                control_dr.append('X')
+                test_dr.append(':')
+                control_dr.append(':')
         
         # Record error if present
         if dim_error:
-            self._data_report[f'variables.dim_size_errors.{var}'] = {
+            self._data_report[f'variables,dim_size_errors,{var}'] = {
                     self._labels[0]: ','.join(test_dr),
                     self._labels[1]: ','.join(control_dr)
                 }
@@ -697,17 +828,27 @@ class ValidateDatasets(LoggedOperation):
             self.logger.debug(f'Skipped {dim}')
             return
 
-        if test_range != control_range:
-            if test_range[0] == test_range[1]:
-                test_range = [test_range[0]]
-                
-            if control_range[0] == control_range[1]:
-                control_range = [control_range[0]]
-            self._data_report[f'dimensions.data_errors.{dim}'] = {
-                    self._labels[0]: format_tuple(
-                        tuple(np.array(test_range, dtype=test_range[0].dtype).tolist())),
-                    self._labels[1]: format_tuple(
-                        tuple(np.array(control_range, dtype=control_range[0].dtype).tolist())),
+        test_range = np.array(test_range)
+        control_range = np.array(control_range)
+        
+        self.logger.debug('test range')
+        self.logger.debug(np.array(test_range).size)
+        self.logger.debug('control range')
+        self.logger.debug(np.array(control_range).size)
+
+        # Compare array values.
+        if not np.array_equal(test_range, control_range):
+
+            try:
+                test_value = format_tuple(tuple(np.array(test_range, dtype=test_range[0].dtype).tolist()))
+                control_value = format_tuple(tuple(np.array(control_range, dtype=control_range[0].dtype).tolist()))
+            except:
+                self.logger.warning('Unable to specify error values')
+                test_value, control_value = None, None
+
+            self._data_report[f'dimensions,data_errors,{dim}'] = {
+                    self._labels[0]: test_value,
+                    self._labels[1]: control_value
                 }            
 
     def _validate_dimlens(self, dim: str, test, control, ignore=None):
@@ -727,7 +868,7 @@ class ValidateDatasets(LoggedOperation):
             return
         
         if test != control:
-            self._data_report[f'dimensions.size_errors.{dim}'] = {
+            self._data_report[f'dimensions,size_errors,{dim}'] = {
                     self._labels[0]: test,
                     self._labels[1]: control
                 }
@@ -763,7 +904,7 @@ class ValidateDatasets(LoggedOperation):
             self.logger.debug('Maximum recursion depth reached')
             self.logger.info(f'Validation for {var} not performed')
 
-            self._data_report[f'variables.data_errors.{var}'] = {
+            self._data_report[f'variables,data_errors,{var}'] = {
                 'type':'grow_box_exceeded'
             }
             return None
@@ -804,17 +945,26 @@ class ValidateDatasets(LoggedOperation):
 
         :returns:   None but will raise error if data comparison fails.
         """
-        self.logger.debug(f'Starting data comparison for {vname}')
+        self.logger.info(f'Starting data comparison for {vname}')
 
         self.logger.debug('1. Flattening Arrays')
         t1 = datetime.now()
 
-        control   = np.array(control).flatten()
-        test      = np.array(test).flatten()
+        data_errors, bypassed = [], []
+
+        ### --- Array Flattening --- ##
+        try:
+            control   = np.array(control).flatten()
+            test      = np.array(test).flatten()
+        except Exception as err:
+            self.logger.error('Failed to flatten numpy arrays')
+            raise err
 
         if len(slice_applied) == 0:
             slice_applied = [slice(0, len(control))]
         start, stop = format_slice(slice_applied)
+
+        ### --- Tolerance Calculation --- ###
 
         self.logger.debug(f'2. Calculating Tolerance - {(datetime.now()-t1).total_seconds():.2f}s')
         try: # Tolerance 0.1% of mean value for xarray set
@@ -822,27 +972,46 @@ class ValidateDatasets(LoggedOperation):
         except TypeError: # Type cannot be summed so skip all summations
             tolerance = None
 
-        self.logger.debug(f'3. Comparing with array_equal - {(datetime.now()-t1).total_seconds():.2f}s')
-        testpass = True
-        try:
-            equality = np.array_equal(control, test, equal_nan=True)
-        except TypeError as err:
-            equality = np.array_equal(control, test)
+        ### --- Equality Comparison: with tolerance --- ###
 
-        errors, bypassed = [], []
+        self.logger.debug(f'3a. Comparing with all_close - {(datetime.now()-t1).total_seconds():.2f}s')
+        try:
+            is_close = np.allclose(control, test, atol=tolerance, equal_nan=True)
+        except TypeError as err:
+            try:
+                is_close = np.allclose(control, test, atol=tolerance)
+            except TypeError:
+                self._data_report[f'variables,bypassed,{vname}'] = 'non-comparable'
+                self.logger.info(f'Data validation skipped for {vname} - non-comparable')
+                return
+            
+        ### --- Equality Comparison: without tolerance --- ###
+
+        self.logger.debug(f'3b. Comparing with array_equal - {(datetime.now()-t1).total_seconds():.2f}s')
+        try:
+            equality = np.allclose(control, test, atol=tolerance, equal_nan=True)
+        except TypeError as err:
+            try:
+                equality = np.allclose(control, test, atol=tolerance)
+            except TypeError:
+                self._data_report[f'variables,bypassed,{vname}'] = 'non-comparable'
+                self.logger.info(f'Data validation skipped for {vname} - non-comparable')
+                return
 
         if not equality:
-            self.logger.debug(f'3a. Comparing directly - {(datetime.now()-t1).total_seconds():.2f}s')
-            equality = False
-            errors.append('not_equal')
-                
+            if not is_close:
+                data_errors.append('not_equal')
+            else:
+                data_errors.append('precision_error')
+
+        ### --- Max/Min/Mean Comparisons --- ###
+        
         self.logger.debug(f'4. Comparing Max values - {(datetime.now()-t1).total_seconds():.2f}s')
         try:
             if np.abs(np.nanmax(test) - np.nanmax(control)) > tolerance:
                 self.logger.warning(f'Failed maximum comparison for {vname}')
                 self.logger.debug('K ' + str(np.nanmax(test)) + ' N ' + str(np.nanmax(control)))
-                testpass = False
-                errors.append('max_not_equal')
+                data_errors.append('max_not_equal')
         except TypeError as err:
             self.logger.warning(f'Max comparison skipped for non-summable values in {vname}')
             bypassed.append('max')
@@ -852,8 +1021,7 @@ class ValidateDatasets(LoggedOperation):
             if np.abs(np.nanmin(test) - np.nanmin(control)) > tolerance:
                 self.logger.warning(f'Failed minimum comparison for {vname}')
                 self.logger.debug('K ' + str(np.nanmin(test)) + ' N ' + str(np.nanmin(control)))
-                testpass = False
-                errors.append('min_not_equal')
+                data_errors.append('min_not_equal')
         except TypeError as err:
             self.logger.warning(f'Min comparison skipped for non-summable values in {vname}')
             bypassed.append('min')
@@ -863,26 +1031,24 @@ class ValidateDatasets(LoggedOperation):
             if np.abs(np.nanmean(test) - np.nanmean(control)) > tolerance:
                 self.logger.warning(f'Failed mean comparison for {vname}')
                 self.logger.debug('K ' + str(np.nanmean(test)) + ' N ' + str(np.nanmean(control)))
-                testpass = False
-                errors.append('mean_not_equal')
+                data_errors.append('mean_not_equal')
         except TypeError as err:
             self.logger.warning(f'Mean comparison skipped for non-summable values in {vname}')
             bypassed.append('mean')
 
-        if errors:
-
+        if data_errors:
             # 1.3.5 Error bypass
             if test.size == 1:
                 self.logger.warning(f'1.3.5 Warning: 1-dimensional value difference for {vname} - skipped')
-                self._data_report[f'variables.bypassed.{vname}'] = '1D-nan'
+                self._data_report[f'variables,bypassed,{vname}'] = '1D-nan'
             else:
-                self._data_report[f'variables.data_errors.{vname}'] = {
-                    'type':','.join(errors),
+                self._data_report[f'variables,data_errors,{vname}'] = {
+                    'type':','.join(data_errors),
                     'topleft':start,
                     'bottomright':stop,
                 }
         if bypassed:
-            self._data_report[f'variables.bypassed.{vname}'] = ','.join(bypassed)
+            self._data_report[f'variables,bypassed,{vname}'] = ','.join(bypassed)
 
         self.logger.info(f'Data validation complete for {vname}')
 
@@ -915,6 +1081,7 @@ class ValidateOperation(ProjectOperation):
             self,
             mode: str = 'kerchunk',
             dim_mid: Union[dict,None] = None,
+            error_bypass: Union[dict,str,None] = None,
             **kwargs
         ) -> None:
         """
@@ -926,60 +1093,122 @@ class ValidateOperation(ProjectOperation):
         self.set_last_run(self.phase, timestamp())
         self.logger.info("Starting validation")
 
+        self.logger.debug(f"Error bypass: {bool(error_bypass)}")
+
         if mode != self.cloud_format and mode is not None:
             self.cloud_format = mode
 
-        test   = self.dataset.open_dataset()
-        sample = self._open_sample()
+        test       = self.dataset.open_dataset()
+        sample, rf = self._open_sample()
+
+        self.logger.info(f'Using sample {rf} along aggregated dimension')
 
         meta_fh = JSONFileHandler(self.dir, 'metadata_report',logger=self.logger, **self.fh_kwargs)
         data_fh = JSONFileHandler(self.dir, 'data_report',logger=self.logger, **self.fh_kwargs)
+
+        bypass_vars = self.base_cfg.get('validation',{}).get('bypass',[])
+
+        concat_dims = self.detail_cfg.get('kwargs',{}).get('combine_kwargs',{}).get('concat_dims',None)
 
         vd = ValidateDatasets(
             [test,sample],
             f'validator-padocc-{self.proj_code}',
             dataset_labels=[self.cloud_format, self.source_format], 
             filehandlers=[meta_fh, data_fh],
-            logger=self.logger)
+            logger=self.logger,
+            bypass_vars=bypass_vars,
+            error_bypass=error_bypass,
+            concat_dims=concat_dims)
 
         # Run metadata testing
         vd.validate_metadata()
 
+        # Data Validation Selection
+
         if self.cfa_enabled:
             self.logger.info('CFA-enabled validation')
-            control = self._open_cfa()
-            vd.replace_dataset(control, label=self.source_format)
-        else:
-            self.logger.info('Source-slice validation')
-            preslice = self._get_preslice(test, sample, test.variables)
+            # CFA now opens with decoded times (2025.8.4)
+            try:
+                control = self._open_cfa()
+                vd.replace_dataset(control, label=self.source_format)
+            except:
+                # CFA has failed for some reason - file must be deleted.
+                self.cfa_enabled = False
 
-            vd.replace_preslice(preslice, label=self.cloud_format)
+        if self.cfa_enabled:
+            # Run single validation attempt
+            vd.validate_data(dim_mid=dim_mid)
+        else:
+
+            filetests = [0]
+            nfiles = len(self.allfiles.get())
+            if self.allfiles[0] != self.allfiles[-1]:
+                filetests.append(nfiles-1)
+            if nfiles > 2:
+                # Get random file
+                filetests.append(None)
+
+            checks = len(filetests)
+            for check, rf in enumerate(filetests):
+                vd = self._run_data_validation(test, rf, check, checks, vd, dim_mid)
+
+        err = self.get_agg_shorthand() + (vd.save_report() or 'Success')
+
+        self.update_status('validate', err, jobid=self._logid)
+        
+        return vd.pass_fail(err)
+    
+    def _run_data_validation(self, test: xr.Dataset, rf: int, check: int, checks: int, vd: ValidateDatasets, dim_mid):
+        """
+        Prepare and run for a single validation attempt.
+        """
+
+         # Open a random file or as specified above.
+        sample, rfnum = self._open_sample(rf=rf)
+        vd.replace_dataset(sample, label=self.source_format)
+
+        decode_times = vd.decode_times_ok()
+
+        # Time encoding mismatch
+        if not decode_times:
+            test   = self.dataset.open_dataset(decode_times=decode_times)
+            vd.replace_dataset(test, label=self.cloud_format)
+            sample, rf = self._open_sample(decode_times=decode_times)
+            vd.replace_dataset(sample, label=self.source_format)
+
+        self.logger.info(f'Source-slice validation: {check+1}/{checks} using file {rfnum}')
+        preslice = self._get_preslice(test, sample, test.variables, rf=rf)
+        vd.replace_preslice(preslice, label=self.cloud_format)
+
+        self.logger.debug('Slicing using preslice selections:')
+        slice_set = "\n -".join(preslice._preslice_set)
+        self.logger.debug(f' - {slice_set}')
 
         vd.validate_data(dim_mid=dim_mid)
 
-        # Save report
-        vd.save_report()
+        return vd
 
-        err = worst_error(vd.report) or 'Success'
-        self.update_status('validate',err, jobid=self._logid)
-        
-        return vd.pass_fail
-
-    def _open_sample(self):
+    def _open_sample(self, rf: Union[int,None] = None, **kwargs) -> tuple:
         """
         Open a random sample dataset for validation checking.
         """
-        randomfile = random.randint(0,len(self.allfiles)-1)
-        file = self.allfiles[randomfile]
-        return xr.open_dataset(file)
+        if rf is not None:
+            file = self.allfiles[rf]
+            randomfile = rf
+        else:
+            randomfile = random.randint(0,len(self.allfiles)-1)
+            file = self.allfiles[randomfile]
 
-    def _open_cfa(self):
+        xarray_kwargs = self._xarray_kwargs | kwargs
+        return xr.open_dataset(file, **xarray_kwargs), randomfile
+
+    def _open_cfa(self, **kwargs):
         """
         Open the CFA dataset for this project
         """
-        return self.cfa_dataset.open_dataset()
+        return self.cfa_dataset.open_dataset(**kwargs)
 
-    def _get_preslice(self, test, sample, variables):
+    def _get_preslice(self, test, sample, variables, rf:int = 0):
         """Match timestamp of xarray object to kerchunk object.
         
         :param test:     (obj) An xarray dataset representing the cloud product.
@@ -990,12 +1219,24 @@ class ValidateOperation(ProjectOperation):
             to the sample dataset.
         """
 
+        virtual = self.detail_cfg.get('virtual_concat',False)
+        # Use rf to squeeze non-present dimensions
+
         preslice = PresliceSet()
         for var in variables:
             preslice_var = {}
+
+            if virtual:
+                if var == 'file_number':
+                    # Skip the virtual dimension
+                    continue
+
+            dim_diffs = set(test[var].dims) - set(sample[var].dims)
+
             for dim in sample[var].dims:
 
                 if len(sample[dim]) < 2:
+                    # Non-coordinate dimensions with no axis.
 
                     dim_array = np.array(test[dim])
                     index = np.where(dim_array == np.array(sample[dim][0]))[0][0]
@@ -1004,19 +1245,33 @@ class ValidateOperation(ProjectOperation):
                     end = stop # np.array(test[dim][stop], dtype=test[dim].dtype)
 
                 else:
-                    # Switch to selection not iselection if needed later?
-                    #pos0 = np.array(sample[dim][0], dtype=sample[dim].dtype)
-                    #pos1 = np.array(sample[dim][1], dtype=sample[dim].dtype)
+                    # Source Slice validation for coodinate dimensions
 
-                    #end = np.array(sample[dim][-1], dtype=sample[dim].dtype) + (pos1-pos0)
-                    pos0 = 0
-                    end  = len(sample[dim])
+                    # Index of the 0th sample dim value in the test dim array
+                    matching_value = np.where(test[dim] == sample[dim][0])[0]
+                    if matching_value.size == 0:
+                        raise ValidationError(
+                            'Fatal dimension mismatch - '
+                            f'cannot align sample section with test dataset for {dim}')
+                    index0 = matching_value[0]
+
+                    pos0 = index0
+                    end  = index0 + len(sample[dim])
 
                 slice_dim = slice(
                     pos0,
                     end
                 )
                 preslice_var[dim] = slice_dim
+
+            # Covers virtual dimensions
+            if virtual and 'file_number' in test[var].dims:
+                preslice_var['file_number'] = slice(rf,rf+1)
+
+            # Covers missing dimensions (inc. virtual)
+            for dim in dim_diffs:
+                preslice_var[dim] = (slice(rf,rf+1), dim)
+            
             preslice.add_preslice(preslice_var, var)
 
         return preslice

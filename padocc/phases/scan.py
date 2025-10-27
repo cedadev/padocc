@@ -206,6 +206,9 @@ class ScanOperation(ProjectOperation):
         """
         self.logger.info('Starting scan process for Kerchunk cloud format')
 
+        if self._thorough:
+            self.padocc_aggregation = True
+
         # Redo this processor call.
         mini_ds = KerchunkDS(
             self.proj_code,
@@ -215,9 +218,19 @@ class ScanOperation(ProjectOperation):
             forceful=self._forceful, # Always run from scratch forcefully to get best time estimates.
             logger=self.logger,
             limiter=limiter,
-            is_trial=True)
+            is_trial=True,
+            xarray_kwargs=self._xarray_kwargs)
+        
+        # Scan mode always uses MultiZarrToZarr
+        # Having to do this in order to test aggregation option.
 
-        mini_ds.create_refs(ctype=ctype)
+        # Order subset
+        filesubset = mini_ds.order_native_files()
+        
+        mini_ds.create_refs(ctype=ctype, filesubset=filesubset)
+
+        self.padocc_aggregation = mini_ds.padocc_aggregation
+        self.virtualizarr       = mini_ds.virtualizarr
 
         if mini_ds.extra_properties is not None:
             self.base_cfg['data_properties'].update(mini_ds.extra_properties)
@@ -272,7 +285,6 @@ class ScanOperation(ProjectOperation):
     def _scan_cfa(
             self, 
             limiter: Union[int,None] = None,
-            is_core: bool = True
         ) -> None:
         """
         Function to perform scanning with output CFA format.
@@ -291,15 +303,13 @@ class ScanOperation(ProjectOperation):
         )
 
         status = comp._run(file_limit=limiter)
-        
+
         if status == 'Success':
             self.logger.info('Determined data properties:')
             self.logger.info(yaml.dump(self.base_cfg['data_properties']))
         else:
-            self.logger.info(' > Result generation failed.')
+            self.logger.info(f' > Result generation failed - {status}')
 
-        if is_core:
-            self.update_status('scan',status,jobid=self._logid)
         return status
 
     def _scan_zarr(
@@ -353,7 +363,7 @@ class ScanOperation(ProjectOperation):
                 'forceful':self._forceful,
             }
 
-            fh = JSONFileHandler(self.dir, f'cache/{identifier}', self.logger, **fh_kwargs)
+            fh = JSONFileHandler(self.dir, f'cache/{identifier}', logger=self.logger, **fh_kwargs)
             kdict = fh['refs']
 
             self.logger.debug(f'Starting Analysis of references for {identifier}')
@@ -432,15 +442,15 @@ class ScanOperation(ProjectOperation):
         details['driver'] = '/'.join(set(ctypes))
 
         if total_chunks > 1e8:
-            self.cloud_format = 'zarr'
+            type = 'parq'
 
         if override_type:
-            details['type'] = override_type
-        else:
-            details['type'] = type
+            type = override_type
 
         # Override existing details
         self.file_type = type
+        # File type set in two different places (historic)
+        details['type'] = type
 
         existing_details = self.detail_cfg.get()
         existing_details.update(details)

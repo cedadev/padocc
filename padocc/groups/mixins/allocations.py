@@ -124,7 +124,7 @@ class AllocationsMixin:
             bins = binpacking.to_constant_volume(time_estms, binsize) # Rounded to 10 mins
         else:
             # Unpack time_estms into established bands
-            print('Skipped Job Allocations - using Bands-only.')
+            self.logger.info('Skipped Job Allocations - using Bands-only.')
             bins = None
             for pc in time_estms.keys():
                 time_estm = time_estms[pc]/60
@@ -163,24 +163,32 @@ class AllocationsMixin:
             self,
             phase           : str,
             source          : str,
-            band_increase   : str = None,
-            forceful        : bool = None,
-            dryrun          : bool = None,
-            thorough        : bool = None,
             verbose         : int = 0,
-            binpack         : bool = None,
-            time_allowed    : str = None,
-            memory          : str = None,
-            subset          : int = None,
+            joblabel        : str = 'PADOCC',
             repeat_id       : str = 'main',
-            bypass          : BypassSwitch = BypassSwitch(),
             mode            : str = 'kerchunk',
-            new_version     : str = None,
+            wait            : bool = False,
             func            : Callable = print,
+            bypass          : BypassSwitch = BypassSwitch(),
+            band_increase   : Union[str,None] = None,
+            forceful        : Union[bool,None] = None,
+            dryrun          : Union[bool,None] = None,
+            thorough        : Union[bool,None] = None,
+            binpack         : Union[bool,None] = None,
+            time_allowed    : Union[str,None] = None,
+            memory          : Union[str,None] = None,
+            subset          : Union[int,None] = None,
+            new_version     : Union[str,None] = None,
+            xarray_kwargs   : Union[dict,None] = None,
+            run_kwargs      : Union[dict,None] = None,
+            valid           : Union[dict,None] = None,
         ) -> None:
         """
         Organise parallel deployment via SLURM.
         """
+
+        time_allowed = time_allowed or times[phase]
+        memory       = memory or '2G'
 
         source = source or os.environ.get('VIRTUAL_ENV')
 
@@ -193,7 +201,7 @@ class AllocationsMixin:
             raise ValueError(
                 f'"{phase}" not recognised, please select from {parallel_modes}'
             )
-
+        
         sbatch_kwargs = {
             'forceful': forceful or self._forceful,
             'dryrun'  : dryrun or self._dryrun,
@@ -203,8 +211,11 @@ class AllocationsMixin:
             'subset'  : subset,
             'bypass' : bypass,
             'mode' : mode,
-            'new_version' : new_version,
+            'new_version' : new_version
         }
+
+        if xarray_kwargs is not None:
+            sbatch_kwargs['xarray_kwargs'] = xarray_kwargs
 
         # Ensure directories are created for logs
         self._setup_slurm_directories()
@@ -229,7 +240,7 @@ class AllocationsMixin:
                     dryrun=self._dryrun, 
                     forceful=self._forceful)
                 
-                jobname = f'PADOCC_{self.groupID}-{repeat_id}_{aid}_{phase}'
+                jobname = f'{joblabel}_{self.groupID}-{repeat_id}_{aid}_{phase}'
 
                 self._create_slurm_script(
                     phase, 
@@ -239,7 +250,8 @@ class AllocationsMixin:
                     sbatch, 
                     group_length=alloc[2],
                     sbatch_kwargs=sbatch_kwargs,
-                    time=alloc[1]
+                    time=alloc[1],
+                    run_kwargs=run_kwargs,
                 )
         else:
 
@@ -250,7 +262,10 @@ class AllocationsMixin:
                 dryrun=self._dryrun, 
                 forceful=self._forceful)
             
-            jobname = f'PADOCC_{self.groupID}-{repeat_id}_{phase}'
+            jobname = f'{joblabel}_{self.groupID}-{repeat_id}_{phase}'
+
+            if repeat_id not in self.proj_codes:
+                raise ValueError(f'Repeat ID: {repeat_id} not known for {self.groupID}')
 
             num_datasets = len(self.proj_codes[repeat_id].get())
             self.logger.info(f'All Datasets: {time_allowed} ({num_datasets})')
@@ -263,8 +278,11 @@ class AllocationsMixin:
                     sbatch,
                     group_length=num_datasets,
                     sbatch_kwargs=sbatch_kwargs,
+                    run_kwargs=run_kwargs,
                     time=time_allowed,
-                    memory=memory
+                    memory=memory,
+                    valid=valid,
+                    wait=wait
                 )
             
     def _create_slurm_script(
@@ -276,8 +294,11 @@ class AllocationsMixin:
             sbatch: ListFileHandler,
             group_length: int,
             sbatch_kwargs: dict,
+            run_kwargs: Union[dict,None] = None,
             time: Union[str,None] = None,
-            memory: Union[str,None] = None
+            memory: Union[str,None] = None,
+            valid: Union[str,None] = None,
+            wait: bool = False,
         ):
         """
         Create the sbatch content job array.
@@ -286,13 +307,16 @@ class AllocationsMixin:
         for submission to SLURM.
         """
 
-        time   = time or times[phase]
-        memory = memory or '2G'
-
         outfile = f'{self.groupdir}/outs/{jobname}'
         errfile = f'{self.groupdir}/errs/{jobname}'
 
         sbatch_flags = self._sbatch_kwargs(time, memory, repeat_id, **sbatch_kwargs)
+
+        if valid is not None:
+            sbatch_flags += f' -i {valid}'
+
+        for k, v in run_kwargs:
+            sbatch_flags += f' --{k} {v}'
 
         lotus_requirements = get_lotus_reqs(self.logger)
   
@@ -315,15 +339,39 @@ class AllocationsMixin:
         ]
 
         sbatch.set(sbatch_contents)
-        sbatch.close()
+        sbatch.save()
 
         self.logger.info(f'{jobname}: {time} ({group_length})')
 
+        sbatch_cmd = [
+            'sbatch',
+            f'--array=0-{group_length-1}'
+        ]
+
+        # Allow sbatch waiting
+        if wait:
+            sbatch_cmd.append('-w')
+
+        sbatch_cmd.append(sbatch.filepath)
+        sbatch_command = ' '.join(sbatch_cmd)
+
         if self._dryrun:
             self.logger.info('DRYRUN: sbatch command: ')
-            print(f'sbatch --array=0-{group_length-1} {sbatch.filepath}')
+            print(sbatch_command)
         else:
-            os.system(f'sbatch --array=0-{group_length-1} {sbatch.filepath}')
+            os.system(sbatch_command)
+
+            for proj in self.proj_codes[repeat_id]:
+                # Create from scratch so logger is not passed.
+                project = ProjectOperation(
+                    proj,
+                    self.workdir,
+                    groupID=self.groupID,
+                    xarray_kwargs=self._xarray_kwargs,
+                    verbose=0
+                )
+                project.base_cfg['last_allocation'] = f'{time},{memory}'
+                project.save_files()
 
     def _sbatch_kwargs(
             self, 
@@ -335,6 +383,7 @@ class AllocationsMixin:
             subset      : Union[int,None] = None, 
             new_version : bool = None, 
             mode        : Union[str,None] = None, 
+            xarray_kwargs: dict = None,
             **bool_kwargs
         ) -> str:
         """
@@ -350,12 +399,18 @@ class AllocationsMixin:
             'binpack'  : '-A',
         }
 
+        if isinstance(bypass, BypassSwitch):
+            bypass = bypass.switch
+
         value_options = {
             'bypass' : ('-b',bypass),
             'subset' : ('-s',subset),
             'mode'   : ('-C',mode),
             'new_version': ('-n',new_version),
         }
+
+        if xarray_kwargs is not None:
+            value_options['xarray_kwargs'] = ('--xarray_kwargs',xarray_kwargs)
 
         optional = []
 
@@ -407,7 +462,7 @@ class AllocationsMixin:
             if not self._dryrun:
                 os.makedirs(allocation_path)
             else:
-                print(f'Making directories: {allocation_path}')
+                self.logger.info(f'Making directories: {allocation_path}')
 
         for idx, b in enumerate(bins):
             bset = b.keys()
@@ -417,7 +472,7 @@ class AllocationsMixin:
                 with open(f'{allocation_path}/{idx}.txt','w') as f:
                     f.write('\n'.join(bset))
             else:
-                print(f'Writing {len(bset)} to file {idx}.txt')
+                self.logger.info(f'Writing {len(bset)} to file {idx}.txt')
 
     def _create_array_bands(
             self, 
@@ -435,7 +490,7 @@ class AllocationsMixin:
             if not self._dryrun:
                 os.makedirs(bands_path)
             else:
-                print(f'Making directories: {bands_path}')
+                self.logger.info(f'Making directories: {bands_path}')
 
         for b in bands:
             if not self._dryrun:
@@ -444,4 +499,4 @@ class AllocationsMixin:
                 with open(f'{bands_path}/band_{b}.txt','w') as f:
                         f.write('\n'.join(bands[b]))
             else:
-                print(f'Writing {len(bands[b])} to file band_{b}.txt')
+                self.logger.info(f'Writing {len(bands[b])} to file band_{b}.txt')

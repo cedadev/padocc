@@ -1,11 +1,6 @@
-==================
-Complex Operations
-==================
-
-Enable/Disable CFA Operations
-=============================
-
-**PADOCC** uses the Climate Forecast Aggregations as a basis of comparison for any generated cloud formats, to use in the validation process. This base operation can now be disabled using the ``cfa_enabled`` property of each project. This can be set to False for any group taking too long to compute in CFA (watch out for this in the scan section as if a sample is taking a very long time it is likely the full dataset will take much longer).
+===================
+Parallel Deployment
+===================
 
 Parallelisation with SLURM
 ==========================
@@ -42,3 +37,11 @@ PADOCC is now configured for Lotus 2 deployments on JASMIN. Simply create a Lotu
 See the `JASMIN help docs <https://help.jasmin.ac.uk/docs/software-on-jasmin/rocky9-migration-2024/#new-lotus2-cluster-initial-submission-guide>`_ for guidance on how to configure for Lotus 2 deployments.
 
 This config file is discovered by padocc using the ``$LOTUS_CFG`` environment variable, which must be set to the location of this file. After this step, no further actions are required, the normal parallelisation methods listed above apply as standard.
+
+.. note::
+
+    For Jasmin users with SLURM access, you should check after every ``scan``, ``compute`` and ``validate`` that your SLURM jobs are running properly:
+    
+    ``squeue -u <jasmin_username>``
+
+    And once the SLURM jobs are complete you should check error logs to see which jobs were successful and which failed for different reasons. See the Interactive section for how to check status and logs of projects in the pipeline.

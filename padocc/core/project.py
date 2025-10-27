@@ -8,13 +8,14 @@ import os
 from typing import Callable, Union
 
 import yaml
+import json
 
 from .errors import error_handler
 from .filehandlers import (CSVFileHandler, JSONFileHandler, ListFileHandler,
-                           LogFileHandler)
+                           LogFileHandler, KerchunkFile)
 from .mixins import (DatasetHandlerMixin, DirectoryMixin, PropertiesMixin,
                      StatusMixin)
-from .utils import (FILE_DEFAULT, BypassSwitch, apply_substitutions,
+from .utils import (source_opts, BypassSwitch, apply_substitutions,
                     extract_file, file_configs, phases, print_fmt_str,
                     extract_json)
 
@@ -47,8 +48,11 @@ class ProjectOperation(
             forceful   : bool = None,
             dryrun     : bool = None,
             thorough   : bool = None,
+            diagnostic : bool = False,
             mem_allowed: Union[str,None] = None,
             remote_s3  : Union[dict, str, None] = None,
+            xarray_kwargs: dict = None,
+            new_version: bool = False,
         ) -> None:
         """
         Initialisation for a ProjectOperation object to handle all interactions
@@ -101,6 +105,7 @@ class ProjectOperation(
         self.proj_code = proj_code
 
         self.mem_allowed = mem_allowed
+        self._allow_new_version = new_version
 
         if label is None:
             label = 'project-operation'
@@ -126,14 +131,14 @@ class ProjectOperation(
         # Need a first-time initialisation implementation for some elements.
 
         if fh is not None:
-            self.logger.info('Logging to filesystem file is enabled')
+            self.logger.info('Filesystem Logging: Enabled')
     
         self._create_dirs(first_time=first_time)
 
         self.logger.debug(f'Creating operator for project {self.proj_code}')
         # Project FileHandlers
-        self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', logger=self.logger, conf=file_configs['base_cfg'], **self.fh_kwargs)
-        self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', logger=self.logger, conf=file_configs['detail_cfg'], **self.fh_kwargs)
+        self.base_cfg   = JSONFileHandler(self.dir, 'base-cfg', conf=file_configs['base_cfg'], logger=self.logger, **self.fh_kwargs)
+        self.detail_cfg = JSONFileHandler(self.dir, 'detail-cfg', conf=file_configs['detail_cfg'], logger=self.logger, **self.fh_kwargs)
         self.allfiles   = ListFileHandler(self.dir, 'allfiles', logger=self.logger, **self.fh_kwargs)
 
         # ft_kwargs <- stored in base_cfg after this point.
@@ -141,6 +146,9 @@ class ProjectOperation(
             if isinstance(ft_kwargs, dict):
                 self._setup_config(**ft_kwargs)
             self._configure_filelist()
+
+        if len(self.allfiles) < 1:
+            raise ValueError(f'Project {self.proj_code} contains no files')
 
         # ProjectOperation attributes
         self.status_log = CSVFileHandler(self.dir, 'status_log', logger=self.logger, **self.fh_kwargs)
@@ -161,9 +169,14 @@ class ProjectOperation(
         self._cfa_dataset = None
         self._remote = False
 
+        self._diagnostic = diagnostic
+
         self._is_trial = False
 
         self.stage = None
+
+        # Used for all phases, apply at runtime.
+        self._xarray_kwargs = xarray_kwargs or {}
 
         # Remote s3 direct connection
         if isinstance(remote_s3,str):
@@ -171,7 +184,7 @@ class ProjectOperation(
 
         if remote_s3 is not None:
             self.base_cfg['remote_s3'] = remote_s3
-            self.base_cfg.close()
+            self.base_cfg.save()
 
     def __str__(self):
         """String representation of project"""
@@ -213,7 +226,7 @@ class ProjectOperation(
         
     def run(
             self,
-            mode: str = 'kerchunk',
+            mode: str = None,
             bypass: Union[BypassSwitch,None] = None,
             forceful : bool = None,
             thorough : bool = None,
@@ -252,13 +265,18 @@ class ProjectOperation(
             from scratch, otherwise saved refs from previous runs will be loaded.
         
         """
+        if not hasattr(self,'phase'):
+            raise ValueError(
+                '"Run" Operation cannot be performed on the base ProjectOperation class. ',
+                'Please use one of the phased operators or the `Group.run` method instead.'
+            )
 
         self._bypass = bypass or self._bypass
 
         if parallel:
-            self.logger.info(f'Parallel Operation: Enabled')
+            self.logger.info('Parallel Operation: Enabled')
         else:
-            self.logger.info(f'Parallel Operation: Disabled')
+            self.logger.info('Parallel Operation: Disabled')
 
         # Reset flags given specific runs
         if forceful is not None:
@@ -270,23 +288,29 @@ class ProjectOperation(
         if verbose is not None:
             self._verbose = verbose
 
+        mode = mode or self.cloud_format
+
         if self.cloud_format != mode:
             self.logger.info(
                 f'Switching cloud format to {mode}'
             )
             self.cloud_format = mode
-            self.file_type = FILE_DEFAULT[mode]
+            self.save_files()
             
         try:
             status = self._run(mode=mode, **kwargs)
+            # Reset cloud format and save files
+            self.cloud_format = mode
             self.save_files()
             return status
         except Exception as err:
+            agg_shorthand = self.get_agg_shorthand()
             return error_handler(
                 err, self.logger, self.phase,
                 jobid=self._logid,
                 subset_bypass=self._bypass.skip_subsets,
-                status_fh=self.status_log)
+                status_fh=self.status_log,
+                agg_shorthand=agg_shorthand)
 
     def _run(self, **kwargs) -> None:
         # Default project operation run.
@@ -299,6 +323,35 @@ class ProjectOperation(
             return f'{self.workdir}/in_progress/{self.groupID}/{self.proj_code}'
         else:
             return f'{self.workdir}/in_progress/general/{self.proj_code}'
+        
+    def get_agg_shorthand(self) -> None:
+        """
+        Get Aggregation shorthand"""
+
+        status_msg = self.get_last_status().split(',')
+        if status_msg[0] == 'validate' or (status_msg[0] == 'compute' and status_msg[1] == 'Success'):
+            if self.padocc_aggregation:
+                return '(P>VK)'
+            elif self.virtualizarr:
+                return '(V>K)'
+            else:
+                return '(K)'
+        else:
+            return '(PVK)'
+
+    def diagnostic(self, message: str):
+        """
+        Diagnostic mode, enable skipping specific features.
+        """
+
+        if not self._diagnostic:
+            return False
+        
+        ask = input(f'Skip feature: {message}? (Y/N): ')
+        if ask == 'Y':
+            return True
+        else:
+            return False
 
     def file_exists(self, file : str):
         """
@@ -328,7 +381,61 @@ class ProjectOperation(
         os.system(f'rm -rf {self.dir}')
         self.logger.info(f'All internal files for {self.proj_code} deleted.')
 
-    def complete_project(self, move_to: str) -> None:
+    def switch_local(self):
+        """
+        Switch back to local version of kerchunk file if it exists.
+        """
+
+        if not self.remote:
+            self.logger.warning("Project is already/still local - nothing to do")
+            return
+        
+        self._kfile = None
+        self.remote = False
+        self.save_files()
+
+    def switch_remote(self):
+        """
+        Function to create remote copy of a dataset if relevant.
+
+        Kerchunk - create new remote version.
+
+        Zarr - Ignore
+        """
+
+        if self.remote:
+            self.logger.warning("Project has already been switched to remote")
+            return
+        
+        ds = self.dataset
+        if not isinstance(ds, KerchunkFile):
+            return
+        
+        self.logger.debug('Switching to remote file version')
+
+        new_rev  = ''.join((self.cloud_format[0],'r',self.version_no))
+        new_path = os.path.splitext(ds.filepath)[0].replace(self.revision, new_rev) # No extension
+
+        self.remote = True
+        if not glob.glob(f'{new_path}*'):
+            self.logger.debug('Creating new remote kerchunk file.')
+            self.dataset.spawn_copy(new_path)
+
+            # Need to refresh the kfile filehandler
+            self._kfile = None
+            
+            self.logger.debug('Applying remote criteria to kerchunk file.')
+            # Reinstantiate new filehandler + add download_link in place
+            self.dataset.add_download_link()
+        
+        else:
+            # Refresh kfile handler (different order to above.)
+            self._kfile = None
+            _ = self.dataset
+
+        self.save_files()
+
+    def complete_project(self, move_to: str, thorough: bool = False) -> None:
         """
         Move project to a completeness directory
 
@@ -354,13 +461,26 @@ class ProjectOperation(
 
         self.save_files()
 
+        if thorough:
+            # Switch to remote version before completion
+            self.switch_remote()
+
+        data_move = f'{move_to}/data'
+        if not os.path.isdir(data_move):
+            os.makedirs(data_move)
+
+        report_move = f'{move_to}/reports'
+        if not os.path.isdir(report_move):
+            os.makedirs(report_move)
+
         # Spawn copy of dataset
-        complete_dataset = f'{move_to}/{self.complete_product}'
+        complete_dataset = f'{data_move}/{self.complete_product}'
+
         self.dataset.spawn_copy(complete_dataset)
 
         # Spawn copy of cfa dataset
-        if self.detail_cfg.get('CFA',False):
-            complete_cfa = self.cfa_path.replace(self.dir, move_to) + '_' + self.version_no
+        if self.cfa_enabled:
+            complete_cfa = self.cfa_path.replace(self.dir, data_move) + '_' + self.version_no
             self.cfa_dataset.spawn_copy(complete_cfa)
 
         if not self._dryrun:
@@ -393,7 +513,7 @@ class ProjectOperation(
         if not os.path.isdir(new_dir):
             os.makedirs(new_dir)
 
-        os.system(f'mv {cls.dir} {new_dir}')
+        os.system(f'mv {cls.dir}/* {new_dir}')
 
         # 4. Create a new basic project instance
         new_cls = ProjectOperation(
@@ -412,10 +532,10 @@ class ProjectOperation(
         """
         Save all filehandlers associated with this group.
         """
-        self.base_cfg.close()
-        self.detail_cfg.close()
-        self.allfiles.close()
-        self.status_log.close()
+        self.base_cfg.save()
+        self.detail_cfg.save()
+        self.allfiles.save()
+        self.status_log.save()
 
         # Save dataset filehandlers
         self.save_ds_filehandlers()
@@ -457,12 +577,19 @@ class ProjectOperation(
         elif pattern.endswith('.txt'):
             fileset = extract_file(pattern)
         else:
-            # Pattern is a wildcard set of files
-            if 'latest' in pattern:
-                pattern = pattern.replace('latest', os.readlink(pattern))
-            
 
             fileset = sorted(glob.glob(pattern, recursive=True))
+
+            # Pattern is a wildcard set of files
+            if 'latest' in pattern:
+                fileset = [
+                    os.path.abspath(
+                        os.path.join(
+                            fp.split('latest')[0], 'latest',os.readlink(fp)
+                        ) 
+                    )for fp in fileset
+                ]
+            
             if len(fileset) == 0:
                 raise ValueError(f'pattern {pattern} returned no files.')
         
@@ -470,6 +597,18 @@ class ProjectOperation(
             fileset, status = apply_substitutions('datasets', subs=self.base_cfg['substitutions'], content=fileset)
             if status:
                 self.logger.warning(status)
+
+        # Data sanitisation
+        for x, file in enumerate(fileset):
+            if not os.path.isfile(file):
+                raise ValueError(
+                    f'File {file} ({x}) for project {self.proj_code}'
+                    'not found on file system.')
+            if file.split('.')[-1] not in source_opts:
+                raise ValueError(
+                    f'File {file} ({x}) for project {self.proj_code}, extension'
+                    f' {file.split(".")[-1]} not allowed - must be one of {source_opts}')
+        
         self.allfiles.set(fileset) 
 
     def _setup_config(
@@ -551,3 +690,25 @@ class ProjectOperation(
         else:
             if first_time:
                 self.logger.warning(f'"{logdir}" already exists.')
+
+    def export_report(
+            self,
+            new_location: str
+        ):
+        """
+        Export report to a new location from within the pipeline.
+        """
+
+        final_report = {}
+        for report in ['data_report.json','metadata_report.json']:
+            if os.path.isfile(f'{self.dir}/{report}'):
+
+                with open(f'{self.dir}/{report}') as r:
+                    rep = json.load(r)
+
+                final_report[report.split('_')[0]] = rep
+
+        if final_report != {}:
+            os.system(f'touch {new_location}/reports/{self.proj_code}_{self.revision}_report.json')
+            with open(f'{new_location}/reports/{self.proj_code}_{self.revision}_report.json','w') as f:
+                f.write(json.dumps(final_report))
