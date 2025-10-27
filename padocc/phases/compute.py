@@ -844,6 +844,7 @@ class KerchunkDS(ComputeOperation):
             compute_subset: Union[str,None] = None,
             compute_total: Union[str,None] = None,
             aggregator: Union[str,None] = None,
+            b64vars: Union[list,None] = None,
             **kwargs
         ) -> str:
         """
@@ -874,6 +875,7 @@ class KerchunkDS(ComputeOperation):
             compute_subset=compute_subset,
             compute_total=compute_total,
             aggregator=aggregator,
+            b64vars=b64vars
         )
         
         if ctype is None:
@@ -891,6 +893,7 @@ class KerchunkDS(ComputeOperation):
             compute_total: Union[str,None] = None,
             aggregator: Union[str,None] = None,
             filesubset: Union[list,None] = None,
+            b64vars: Union[list,None] = None,
         ) -> None:
         """Organise creation and loading of refs
         - Load existing cached refs
@@ -957,10 +960,6 @@ class KerchunkDS(ComputeOperation):
                 self.logger.debug(f'Attempting cache file load: {x+1}/{total}')
 
                 try:
-                    # Remapper if required - removes download links from cached files.
-                    #if x > 6000:
-                    #    self.logger.warning('Removing download links')
-                    #    CacheFile.add_download_link(sub='https://dap.ceda.ac.uk',replace='')
                     ref = CacheFile.get()
                     if ref:
                         self.logger.debug(' > Loaded ref')
@@ -1021,14 +1020,19 @@ class KerchunkDS(ComputeOperation):
 
         try:
             if self.success and not self.skip_concat:
-                self._combine_and_save(refs, aggregator=aggregator)
+                self._combine_and_save(refs, aggregator=aggregator, b64vars=b64vars)
             else:
                 self.logger.info('Concatenation skipped')
         except Exception as err:
             # Any additional parts here.
             raise err
 
-    def _combine_and_save(self, refs: dict, aggregator: Union[str,None] = None) -> None:
+    def _combine_and_save(
+            self, 
+            refs: dict, 
+            aggregator: Union[str,None] = None,
+            b64vars: Union[list,None] = None
+        ) -> None:
         """
         Concatenation of refs data for different kerchunk schemes.
 
@@ -1050,7 +1054,7 @@ class KerchunkDS(ComputeOperation):
             self._data_to_parq(refs)
         else:
             self.logger.info('Concatenating to JSON format Kerchunk file')
-            self._data_to_json(refs, aggregator=aggregator)
+            self._data_to_json(refs, aggregator=aggregator, b64vars=b64vars)
 
         self.concat_time = (datetime.now()-t1).total_seconds()/self.limiter
         self.detail_cfg['kwargs']['combine_kwargs'] = self.combine_kwargs
@@ -1123,7 +1127,12 @@ class KerchunkDS(ComputeOperation):
             out.flush()
             self.logger.info(f'Written to parquet store - {self.kstore}')
 
-    def _data_to_json(self, refs: dict, aggregator: Union[str,None] = None) -> None:
+    def _data_to_json(
+            self, 
+            refs: dict, 
+            aggregator: Union[str,None] = None,
+            b64vars: Union[list,None] = None,
+        ) -> None:
         """
         Concatenating to JSON-format Kerchunk file
         """
@@ -1162,7 +1171,7 @@ class KerchunkDS(ComputeOperation):
 
             if not self.virtualizarr and aggregator == 'V':
                 raise ValueError('VirtualiZarr aggregation unavailable for selected dataset.')
-
+        
             attempt = 0
             if self.virtualizarr and (aggregator != 'K' or aggregator is not None):
 
@@ -1172,6 +1181,7 @@ class KerchunkDS(ComputeOperation):
                         self.logger.info(f'Attempt {attempt}: PADOCC Aggregator [Prototype]')
 
                         # Pure dimensions now ignored in padocc aggregator.
+                        b64vars = b64vars or self.combine_kwargs['concat_dims']
 
                         padocc_combine(
                             refs,
@@ -1181,7 +1191,7 @@ class KerchunkDS(ComputeOperation):
                             output_file=self.kfile.filepath,
                             identical_vars=self.combine_kwargs["identical_dims"],
                             zattrs=self.temp_zattrs.get(),
-                            b64vars=self.combine_kwargs['concat_dims'],
+                            b64vars=b64vars,
                             logger=self.logger
                         )
                         self.padocc_aggregation = True

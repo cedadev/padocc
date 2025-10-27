@@ -258,6 +258,7 @@ def parse_group(
         concat_dims: Union[str,None] = None,
         wait_sbatch: bool = False,
         new_version: bool = False,
+        b64vars: Union[list,None] = None,
         func: callable = print,
         **kwargs
 ):
@@ -312,6 +313,7 @@ def parse_group(
 
     run_kwargs['error_bypass'] = input_file
     run_kwargs['aggregator'] = aggregator
+    run_kwargs['b64vars'] = b64vars
 
     if parallel:
         op_group.deploy_parallel(
@@ -325,6 +327,7 @@ def parse_group(
             subset=subset,
             repeat_id=repeat_id,
             xarray_kwargs=xarray_kwargs_raw, # Unprocessed raw CLI value
+            run_kwargs=run_kwargs,
             valid=input_file,
             wait=wait_sbatch,
         )
@@ -394,6 +397,7 @@ def get_args():
     compute.add_argument('--aggregator', dest='aggregator',default=None, help='Specific aggregation method to use for Kerchunk references') # Compute only
     compute.add_argument('--identical_dims', dest='identical_dims', default=None, help='Manually supply new aggregation parameters: Identical dims')
     compute.add_argument('--concat_dims', dest='concat_dims', default=None, help='Manually supply new aggregation parameters: Concat dims')
+    compute.add_argument('--b64vars', dest='b64vars', help='Manually supply variables for b64 encoding (Kerchunk)' )
     ## Logs
     logs = subparsers.add_parser('logs',help='Obtain logs from a given project or group.', 
                                 parents=[universal_parser, group_parser])
