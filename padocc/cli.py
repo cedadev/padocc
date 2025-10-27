@@ -79,7 +79,7 @@ def get_summary(group, repeat_id: str = 'main', **kwargs):
     """Get data summary for group"""
     group.summarise_data(repeat_id=repeat_id)
 
-def check_attribute(group, attr: str, **kwargs):
+def check_attribute(group, attr: str, repeat_id: str = 'main', **kwargs):
     """Check attribute across whole group"""
 
     file_data_source = None
@@ -95,7 +95,8 @@ def check_attribute(group, attr: str, **kwargs):
             f'Unable to set attribute "{attr}", not found in project'
         )
     
-    for proj in group:
+    for project in group.proj_codes[repeat_id]:
+        proj = group[project]
         if file_data_source is None:
             value = getattr(proj, attr)
         else:
@@ -105,7 +106,7 @@ def check_attribute(group, attr: str, **kwargs):
             
         print(f'{proj.proj_code} - {attr}: {value}')
 
-def set_attribute(group, attr: str, value: str, **kwargs):
+def set_attribute(group, attr: str, value: str, repeat_id: str = 'main',**kwargs):
     """
     Check attribute name against known attributes and set value"""
     file_data_source = None
@@ -128,7 +129,8 @@ def set_attribute(group, attr: str, value: str, **kwargs):
             src[attrset[0]] = value
         return src
     
-    for proj in group:
+    for project in group.proj_codes[repeat_id]:
+        proj = group[project]
         if file_data_source is None:
             setattr(proj, attr, value)
         else:
