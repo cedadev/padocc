@@ -17,13 +17,13 @@ The pipeline takes a CSV (or similar) input file from which to instantiate a ``G
  - creating multiple group files with information regarding this group.
 
 
-__Initialisation at the Command Line__
+**Initialisation at the Command Line**
 
 .. code-block:: console
 
     $ padocc init -G my-new-group -i path/to/input_file.csv
 
-__Initialisation using Python__
+**Initialisation using Python**
 
 .. code:: python
 
@@ -38,7 +38,7 @@ __Initialisation using Python__
 
 .. note::
 
-    PADOCC 1.3.6 added the __padocc_sh__ command which uses the ``Pdb`` debug tool to open a python terminal that already has core padocc modules imported. The ``WORKDIR`` attribute will also be picked up from your environment, so you do not need to pass this to padocc if you already have it set. See the section in bespoke features for details on the PADOCC shell.
+    PADOCC 1.3.6 added the ``padocc_sh`` command which uses the ``Pdb`` debug tool to open a python terminal that already has core padocc modules imported. The ``WORKDIR`` attribute will also be picked up from your environment, so you do not need to pass this to padocc if you already have it set. See the section in bespoke features for details on the PADOCC shell.
 
 An example of the output for this command, when the ``-v`` flag is added can be found below. The test data is composed of two ``rain`` datasets each with 5 NetCDF files filles with arbitrary data. You can access this test data through the `github repo<https://github.com/cedadev/padocc>_`. Under ``padocc/tests/data``:
 
@@ -54,8 +54,10 @@ An example of the output for this command, when the ``-v`` flag is added can be 
     INFO [PADOCC-CLI-init]: Created 12 files, 4 directories in group rain-example
     INFO [PADOCC-CLI-init]: Written as group ID: rain-example
 
-Scan
-----
+Scanning a Project
+------------------
+
+(See the PADOCC Terms and Operators section for what consitutes a ``Project``)
 
 The first main phase of the pipeline involves scanning a subset of the native source files to determine certain parameters:
 
@@ -84,8 +86,8 @@ Or in a python/padocc shell:
 
 The above demonstrates why the command line tool is easier to use for phased operations, as most of the configurations are known and handled using the various flags. Interactive operations (like checking specific project properties etc.) are not covered by the CLI tool, so need to be completed using an interactive environment.
 
-Compute
--------
+Running a Computation
+---------------------
 
 Building the Cloud/reference product for a dataset requires a multi-step process:
 
@@ -140,4 +142,4 @@ validator which checks the Xarray representations and identifies differences in 
     # Typical flags on the CLI can be passed here too.
     mygroup.run('compute', verbose=1, error_bypass='bypass.json')
 
-Here we are passing an __error bypass__ file to the validation, that will allow for certain known errors to be bypassed. For example, the validator will often report that all variables/dimensions present in a different order between the native file and the cloud product. This is not often an issue, so can be ignored. The error still registers in the final data report, but it will have a ``skip`` label attached. See the Validation Report section in __Bespoke Features__ for more details.
+Here we are passing an **error bypass** file to the validation, that will allow for certain known errors to be bypassed. For example, the validator will often report that all variables/dimensions present in a different order between the native file and the cloud product. This is not often an issue, so can be ignored. The error still registers in the final data report, but it will have a ``skip`` label attached. See the Validation Report section in **Bespoke Features** for more details.

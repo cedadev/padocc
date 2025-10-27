@@ -8,11 +8,11 @@ PADOCC - User Documentation
 
 **padocc** (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package for aggregating data to enable methods of access for cloud-based applications.
 
-The ``padocc`` tool makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across **many** datasets simultaneously with validation steps to ensure the outputs are correct.
+The ``padocc`` tool makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across many datasets simultaneously with validation steps to ensure the outputs are correct.
 
 Vast amounts of archival data in a variety of formats can be processed using the package's group mechanics and automatic deployment to a job submission system.
 
-**Latest Release: v1.4.0 <date>**: Version 1.4 has several updates to dependencies for PADOCC, as well as new features for virtualization using VirtualiZarr, added Validation checks and the first release of the __SHEPARD__ module. (See the `release notes <https://github.com/cedadev/padocc/releases/tag/v1.4.0>`_ for details). 
+**Latest Release: v1.4.0 27/10/2025**: Version 1.4 has several updates to dependencies for PADOCC, as well as new features for virtualization using VirtualiZarr, added Validation checks and the first release of the **SHEPARD** module. (See the `release notes <https://github.com/cedadev/padocc/releases/tag/v1.4.0>`_ for details). 
 
 Formats that can be generated
 -----------------------------

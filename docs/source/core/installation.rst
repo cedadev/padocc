@@ -49,6 +49,11 @@ Create a config file to set necessary environment variables. (Suggested to place
 
 For parallel deployment with Lotus (Lotus 2 on JASMIN), an additional ``LOTUS_CFG`` environment variable is needed. See the section on parallel deployment for details.
 
+.. note::
+
+    For frequent PADOCC users it may be useful to set the ``WORKDIR`` and ``LOTUS_CFG`` variables either in your ``.bashrc`` file so they are always set, or alternatively using a shell script to set these values.
+
+
 Assembling Pipeline Inputs
 ==========================
 

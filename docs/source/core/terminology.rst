@@ -7,12 +7,12 @@ Terminology Guide
 
 This section is designed as a quick reference for commonly used terms in PADOCC.
 
-* __Project__: The term for a set of native files to be aggregated into a single cloud product. PADOCC does not use ``dataset`` for this term as that can refer to the individual files in some instances.
-* __Group__: A group of projects to be acted upon in parallel. The grouping of projects is arbitrary and defined only by the user. Projects can be transferred between groups if needed.
-* __Product__: The final output of PADOCC for a given project, typically this will be a kerchunk file/store or a zarr store. This is typically referred to as a Cloud product, or just product for short.
-* __Revision__: The version number and cloud format identifier given by PADOCC to each output product (See below.)
-* __Aggregation__: The process of combining multiple source files into a larger dataset, either virtual or 'real'
-* __Virtualisation__: Aggregation of multiple source files into an explicitly virtual dataset, using either ``Kerchunk`` or ``VirtualiZarr``.
+* **Project**: The term for a set of native files to be aggregated into a single cloud product. PADOCC does not use ``dataset`` for this term as that can refer to the individual files in some instances.
+* **Group**: A group of projects to be acted upon in parallel. The grouping of projects is arbitrary and defined only by the user. Projects can be transferred between groups if needed.
+* **Product**: The final output of PADOCC for a given project, typically this will be a kerchunk file/store or a zarr store. This is typically referred to as a Cloud product, or just product for short.
+* **Revision**: The version number and cloud format identifier given by PADOCC to each output product (See below.)
+* **Aggregation**: The process of combining multiple source files into a larger dataset, either virtual or 'real'
+* **Virtualisation**: Aggregation of multiple source files into an explicitly virtual dataset, using either ``Kerchunk`` or ``VirtualiZarr``.
 
 Revision Numbers
 ----------------
@@ -27,11 +27,27 @@ The PADOCC revision numbers for each product are auto-generated using the follow
 Virtualisation in PADOCC (12.08.2025)
 =====================================
 
+The PADOCC aggregator
+---------------------
+
+Newly added for v1.4.0, the PADOCC Aggregator is a prototype aggregation method meant to provide faster aggregation for well-behaved datasets. This method is tried as default for all datasets, so it is easier to talk about the known cases for when this basic aggregator fails:
+- Unexpected/badly behaved chunking: Has been observed when combining individual chunk references that the chunk sizes and total array sizes for some variables are inconsistent.
+- Unit conversion: PADOCC Aggregation is only applicable when there are no unit conversions between files.
+
+This aggregator is a prototype and is only the first attempt at aggregation.
+
+VirtualiZarr
+------------
+
 PADOCC v1.4.0 will see the release of the first PADOCC version that now incorporates some elements of the Zarr-developer package ``VirtualiZarr``. Incorporation is currently limited so to not remove certain features that already exist in PADOCC.
 
 VirtualiZarr is only implemented in the aggregation phase, where kerchunk references are combined, and even then this only occurs where the CFA creation has been successful. This is due to the strict ordering requirements for files input to VirtualiZarr, where usually the correct ordering of input files is not guaranteed by PADOCC, and the standard kerchunk aggregator module does not require it.
 
 VirtualiZarr is not currently used for creating and caching individual kerchunk files as there is currently no way to disable the inline encoding when virtualising to kerchunk, and VirtualiZarr is not able to re-load cached kerchunk files with inline encoded variables.
+
+VirtualiZarr also occasionally causes unexplained chunk reference anomalies that may require manual intervention to bypass and use the normal Kerchunk aggregator instead:
+- Aggregated Dimension anomalies: These are recorded in PADOCC as AggregationErrors in the ``validate`` phase, where a dimension (e.g) time is not linearly/regularly increasing. There may be gaps or overlaps in the dimension itself.
+- Missing dimension segments: These are recorded as ValidationErrors in the ``validate`` phase, where a sample from one of the source files cannot be located in the combined product file.
 
 Groups in PADOCC
 ================
@@ -142,11 +158,11 @@ Now we have an initialised group, in the same group instance we can apply an ope
 
 The operation/phase being applied is a positional argument and must be one of ``scan``, ``compute`` or ``validate``. 
 (``ingest/catalog`` may be added with the full version 1.3). There are also several keyword arguments that can be applied here:
- - mode: The format to use for the operation (default is Kerchunk)
- - repeat_id: If subsets have been produced for this group, use the subset ID, otherwise this defaults to ``main``.
- - proj_code: For running a single project code within the group instead of all groups.
- - subset: Used in combination with project code, if both are set they must be integers where the group is divided into ``subset`` sections, and this operation is concerned with the nth one given by ``proj_code`` which is now an integer.
- - bypass: BypassSwitch object for bypassing certain errors (see the Deep Dive section for more details)
+- mode: The format to use for the operation (default is Kerchunk)
+- repeat_id: If subsets have been produced for this group, use the subset ID, otherwise this defaults to ``main``.
+- proj_code: For running a single project code within the group instead of all groups.
+- subset: Used in combination with project code, if both are set they must be integers where the group is divided into ``subset`` sections, and this operation is concerned with the nth one given by ``proj_code`` which is now an integer.
+- bypass: BypassSwitch object for bypassing certain errors (see the Deep Dive section for more details)
 
 Projects in PADOCC
 ==================
@@ -224,9 +240,9 @@ Previously, all evaluations were handled by an assessor module (pre 1.3), but th
 into a mixin class for the projects themselves, meaning any project instance has the capacity for self-evaluation. The routines
 grouped into this container class relate to the self analysis of details and parameters of the project and various 
 files:
- - get last run: Determine the parameters used in the most recent operation for a project.
- - get last status: Get the status of the most recent (completed) operation.
- - get log contents: Examine the log contents for a specific project.
+- get last run: Determine the parameters used in the most recent operation for a project.
+- get last status: Get the status of the most recent (completed) operation.
+- get log contents: Examine the log contents for a specific project.
 
 This list will be expanded in the full release version 1.3 to include many more useful evaluators including
 statistics that can be averaged across a group.
@@ -239,12 +255,12 @@ Properties Mixin
 A collection of dynamic properties about a specific project. The Properties Mixin class abstracts any
 complications or calculations with retrieving specific parameters; some may come from multiple files, are worked out on-the-fly
 or may be based on an external request. Properties currently included are:
- - Outpath: The output path to a 'product', which could be a zarr store, kerchunk file etc.
- - Outproduct: The name of the output product which includes the cloud format and version number.
- - Revision/Version: Abstracts the construction of revision and version numbers for the project.
- - Cloud Format: Kerchunk/Zarr etc. - value stored in the base config file and can be set manually for further processing.
- - File Type: Extension applied to the output product, can be one of 'json' or 'parquet' for Kerchunk products.
- - Source Format: Format(s) detected during scan - retrieved from the detail config file after scanning.
+- Outpath: The output path to a 'product', which could be a zarr store, kerchunk file etc.
+- Outproduct: The name of the output product which includes the cloud format and version number.
+- Revision/Version: Abstracts the construction of revision and version numbers for the project.
+- Cloud Format: Kerchunk/Zarr etc. - value stored in the base config file and can be set manually for further processing.
+- File Type: Extension applied to the output product, can be one of 'json' or 'parquet' for Kerchunk products.
+- Source Format: Format(s) detected during scan - retrieved from the detail config file after scanning.
 
 The properties mixin also enables a manual adjustment of some properties, like cloud format or file type, but also enables
 minor and major version increments. This will later be wrapped into an ``Updater`` module to enable easier updates to 
