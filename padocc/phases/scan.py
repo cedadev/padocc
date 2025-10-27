@@ -285,7 +285,6 @@ class ScanOperation(ProjectOperation):
     def _scan_cfa(
             self, 
             limiter: Union[int,None] = None,
-            is_core: bool = True
         ) -> None:
         """
         Function to perform scanning with output CFA format.
@@ -311,9 +310,6 @@ class ScanOperation(ProjectOperation):
         else:
             self.logger.info(f' > Result generation failed - {status}')
 
-        # No longer update status message
-        #if is_core:
-        #    self.update_status('scan','CFA-'+status,jobid=self._logid)
         return status
 
     def _scan_zarr(

@@ -402,7 +402,6 @@ def padocc_combine(
         agg_dims: list, 
         agg_vars: list, 
         output_file: Union[str,None] = None,
-        threshold: int = 0,
         identical_vars: Union[list,None] = None, 
         zattrs: Union[dict,None] = None,
         b64vars: Union[list,None] = None,
