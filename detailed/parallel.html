@@ -5,7 +5,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Complex Operations &mdash; PADOCC Package v1.1 documentation</title>
+  <title>Parallel Deployment &mdash; PADOCC Package v1.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
@@ -23,8 +23,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Projects in PADOCC" href="../operations/projects.html" />
-    <link rel="prev" title="Extra Details for CEDA Staff" href="ceda_staff.html" /> 
+    <link rel="next" title="The SHEPARD Module" href="shepard.html" />
+    <link rel="prev" title="PADOCC Bespoke Features" href="features.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,35 +47,32 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core/inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/terminology.html">PADOCC Terms and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installing PADOCC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/user_guide.html">Basic User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/ceda_staff.html">Extras for CEDA Staff</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Detailed View:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="operations.html">All Operations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="extras.html">Extra Features</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Complex (Parallel) Operation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#enable-disable-cfa-operations">Enable/Disable CFA Operations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Bespoke Features</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Parallel Deployment</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#parallelisation-with-slurm">Parallelisation with SLURM</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#lotus-2-configurations">Lotus 2 configurations</a></li>
 </ul>
 </li>
 </ul>
 </li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../operations/projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/groups.html">The Group Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/mixins.html">Core Mixins</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/shepard.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD Deployment</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/project_source.html">Projects</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/shepard_source.html">SHEPARD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/phase_source.html">Phases</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
@@ -94,9 +91,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Complex Operations</li>
+      <li class="breadcrumb-item active">Parallel Deployment</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/core/complex_operation.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/detailed/parallel.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -104,12 +101,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="complex-operations">
-<h1>Complex Operations<a class="headerlink" href="#complex-operations" title="Link to this heading"></a></h1>
-<section id="enable-disable-cfa-operations">
-<h2>Enable/Disable CFA Operations<a class="headerlink" href="#enable-disable-cfa-operations" title="Link to this heading"></a></h2>
-<p><strong>PADOCC</strong> uses the Climate Forecast Aggregations as a basis of comparison for any generated cloud formats, to use in the validation process. This base operation can now be disabled using the <code class="docutils literal notranslate"><span class="pre">cfa_enabled</span></code> property of each project. This can be set to False for any group taking too long to compute in CFA (watch out for this in the scan section as if a sample is taking a very long time it is likely the full dataset will take much longer).</p>
-</section>
+  <section id="parallel-deployment">
+<h1>Parallel Deployment<a class="headerlink" href="#parallel-deployment" title="Link to this heading"></a></h1>
 <section id="parallelisation-with-slurm">
 <h2>Parallelisation with SLURM<a class="headerlink" href="#parallelisation-with-slurm" title="Link to this heading"></a></h2>
 <p>Padocc now supports parallelisation via LOTUS on JASMIN, through the SLURM batch job manager. Use the CLI flag <code class="docutils literal notranslate"><span class="pre">--parallel</span></code> to deploy sets (arrays) of jobs to the cluster. Typically an array job will constitute processing multiple datasets at once, i.e all datasets in a given group. To deploy a subset of a group, see the documentation around <strong>repeat IDs</strong> and how to create subsets within the group based on past runs and other conditions.</p>
@@ -139,6 +132,12 @@
 </div>
 <p>See the <a class="reference external" href="https://help.jasmin.ac.uk/docs/software-on-jasmin/rocky9-migration-2024/#new-lotus2-cluster-initial-submission-guide">JASMIN help docs</a> for guidance on how to configure for Lotus 2 deployments.</p>
 <p>This config file is discovered by padocc using the <code class="docutils literal notranslate"><span class="pre">$LOTUS_CFG</span></code> environment variable, which must be set to the location of this file. After this step, no further actions are required, the normal parallelisation methods listed above apply as standard.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For Jasmin users with SLURM access, you should check after every <code class="docutils literal notranslate"><span class="pre">scan</span></code>, <code class="docutils literal notranslate"><span class="pre">compute</span></code> and <code class="docutils literal notranslate"><span class="pre">validate</span></code> that your SLURM jobs are running properly:</p>
+<p><code class="docutils literal notranslate"><span class="pre">squeue</span> <span class="pre">-u</span> <span class="pre">&lt;jasmin_username&gt;</span></code></p>
+<p>And once the SLURM jobs are complete you should check error logs to see which jobs were successful and which failed for different reasons. See the Interactive section for how to check status and logs of projects in the pipeline.</p>
+</div>
 </section>
 </section>
 </section>
@@ -147,8 +146,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="ceda_staff.html" class="btn btn-neutral float-left" title="Extra Details for CEDA Staff" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../operations/projects.html" class="btn btn-neutral float-right" title="Projects in PADOCC" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="features.html" class="btn btn-neutral float-left" title="PADOCC Bespoke Features" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="shepard.html" class="btn btn-neutral float-right" title="The SHEPARD Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

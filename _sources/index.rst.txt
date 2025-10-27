@@ -8,11 +8,11 @@ PADOCC - User Documentation
 
 **padocc** (Pipeline to Aggregate Data for Optimised Cloud Capabilites) is a Python package for aggregating data to enable methods of access for cloud-based applications.
 
-The ``padocc`` tool makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across **many** datasets simultaneously with validation steps to ensure the outputs are correct.
+The ``padocc`` tool makes it easy to generate data-aggregated access patterns in the form of Reference Files or Cloud Formats across many datasets simultaneously with validation steps to ensure the outputs are correct.
 
 Vast amounts of archival data in a variety of formats can be processed using the package's group mechanics and automatic deployment to a job submission system.
 
-**Latest Release: v1.3.5 17/04/2025**: This release now adds a huge number of additional features to both projects and groups (See the `release notes <https://github.com/cedadev/padocc/releases/tag/v1.3.5>`_ for details). There are still some alpha-stage features that have not been fully tested, please report any issues to the `github repo <https://github.com/cedadev/padocc>`_, especially when using the new **shortcut** CLI options.
+**Latest Release: v1.4.0 27/10/2025**: Version 1.4 has several updates to dependencies for PADOCC, as well as new features for virtualization using VirtualiZarr, added Validation checks and the first release of the **SHEPARD** module. (See the `release notes <https://github.com/cedadev/padocc/releases/tag/v1.4.0>`_ for details). 
 
 Formats that can be generated
 -----------------------------
@@ -24,7 +24,7 @@ General usage
 -------------
 The pipeline consists of three central phases, plus many different operations that can be applied to different datasets depending on use cases. These phases represent operations that can be applied across groups of datasets in parallel, depending on the architecture of your system. The recommended way of running the core phases is to use the `command line tool<core/cli>`. For a list of operations that go beyond the core phases, see the section entitled All Operations.
 
-To check the status of various elements of the pipeline, including the progress of any group/project in your working directory, it is recommended that you make use of padocc through an `interactive<core/interactive>` interface like a Jupyter Notebook or Shell. Simply import the necessary components and start assessing your projects and groups.
+To check the status of various elements of the pipeline, including the progress of any group/project in your working directory, it is recommended that you make use of padocc through an interactive interface like a Jupyter Notebook or Shell. Simply import the necessary components and start assessing your projects and groups.
 
 For further information around configuring PADOCC for parallel deployment please contact `daniel.westwood@stfc.ac.uk <daniel.westwood@stfc.ac.uk>`_.
 
@@ -35,25 +35,23 @@ The ingestion/cataloging phase is not currently implemented for public use but m
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
+   :caption: Getting Started:
 
    Inspiration <core/inspiration>
-   Installation <core/installation>
+   PADOCC Terms and Operators <core/terminology>
+   Installing PADOCC <core/installation>
+   Basic User Guide <core/user_guide>
    Command Line Tool Examples<core/cli>
-   Interactive Notebook/Shell Examples <core/interactive>
-   All Operations <core/operations>
-   Extra Features <core/extras>
    Extras for CEDA Staff <core/ceda_staff>
-   Complex (Parallel) Operation <core/complex_operation>
 
 .. toctree::
    :maxdepth: 1
-   :caption: Operations:
+   :caption: Detailed View:
 
-   The Project Operator <operations/projects>
-   The Group Operator <operations/groups>
-   Core Mixins <operations/mixins>
-   SHEPARD <operations/shepard>
+   All Operations <detailed/all_operations>
+   Bespoke Features <detailed/features>
+   Parallel Deployment <detailed/parallel>
+   SHEPARD Deployment <detailed/shepard>
 
 .. toctree::
    :maxdepth: 1
@@ -61,6 +59,7 @@ The ingestion/cataloging phase is not currently implemented for public use but m
    
    Projects <source_code/project_source>
    Groups <source_code/group_source>
+   SHEPARD <source_code/shepard_source>
    Phases <source_code/phase_source>
    Filehandlers, Logs, and Utilities <source_code/misc_source>
    

@@ -5,7 +5,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Beneficial Extra Features &mdash; PADOCC Package v1.1 documentation</title>
+  <title>PADOCC Bespoke Features &mdash; PADOCC Package v1.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
@@ -23,8 +23,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Extra Details for CEDA Staff" href="ceda_staff.html" />
-    <link rel="prev" title="All Non-core Operations" href="operations.html" /> 
+    <link rel="next" title="Parallel Deployment" href="parallel.html" />
+    <link rel="prev" title="Extra Details for CEDA Staff" href="../core/ceda_staff.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,62 +47,59 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core/inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/terminology.html">PADOCC Terms and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installing PADOCC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/user_guide.html">Basic User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/ceda_staff.html">Extras for CEDA Staff</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Detailed View:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="operations.html">All Operations</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Extra Features</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Bespoke Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#climate-forecast-aggregations">Climate Forecast Aggregations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#remote-connection-to-object-storage">Remote connection to object storage</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#remote-s3-configuration">Remote s3 configuration</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#padocc-mechanics">PADOCC Mechanics</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#revision-numbers">Revision Numbers</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#the-validation-report">The Validation Report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#bypassswitch-options">BypassSwitch Options</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#custom-pipeline-errors">Custom Pipeline Errors</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ArchiveConnectError"><code class="docutils literal notranslate"><span class="pre">ArchiveConnectError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ChunkDataError"><code class="docutils literal notranslate"><span class="pre">ChunkDataError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ComputeError"><code class="docutils literal notranslate"><span class="pre">ComputeError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ConcatFatalError"><code class="docutils literal notranslate"><span class="pre">ConcatFatalError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ConcatenationError"><code class="docutils literal notranslate"><span class="pre">ConcatenationError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ExpectMemoryError"><code class="docutils literal notranslate"><span class="pre">ExpectMemoryError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ExpectTimeoutError"><code class="docutils literal notranslate"><span class="pre">ExpectTimeoutError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.KerchunkDecodeError"><code class="docutils literal notranslate"><span class="pre">KerchunkDecodeError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.KerchunkDriverFatalError"><code class="docutils literal notranslate"><span class="pre">KerchunkDriverFatalError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.KerchunkException"><code class="docutils literal notranslate"><span class="pre">KerchunkException</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.MissingKerchunkError"><code class="docutils literal notranslate"><span class="pre">MissingKerchunkError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.MissingVariableError"><code class="docutils literal notranslate"><span class="pre">MissingVariableError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.NoOverwriteError"><code class="docutils literal notranslate"><span class="pre">NoOverwriteError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.NoValidTimeSlicesError"><code class="docutils literal notranslate"><span class="pre">NoValidTimeSlicesError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.PartialDriverError"><code class="docutils literal notranslate"><span class="pre">PartialDriverError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.SourceNotFoundError"><code class="docutils literal notranslate"><span class="pre">SourceNotFoundError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.ValidationError"><code class="docutils literal notranslate"><span class="pre">ValidationError</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.error_handler"><code class="docutils literal notranslate"><span class="pre">error_handler()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.core.errors.worst_error"><code class="docutils literal notranslate"><span class="pre">worst_error()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-validation-report">The Validation Report</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bypassswitch-options">BypassSwitch Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#custom-pipeline-errors">Custom Pipeline Errors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.AggregationError"><code class="docutils literal notranslate"><span class="pre">AggregationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ArchiveConnectError"><code class="docutils literal notranslate"><span class="pre">ArchiveConnectError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ChunkDataError"><code class="docutils literal notranslate"><span class="pre">ChunkDataError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ComputeError"><code class="docutils literal notranslate"><span class="pre">ComputeError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ConcatFatalError"><code class="docutils literal notranslate"><span class="pre">ConcatFatalError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ConcatenationError"><code class="docutils literal notranslate"><span class="pre">ConcatenationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ExpectMemoryError"><code class="docutils literal notranslate"><span class="pre">ExpectMemoryError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ExpectTimeoutError"><code class="docutils literal notranslate"><span class="pre">ExpectTimeoutError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.KerchunkDecodeError"><code class="docutils literal notranslate"><span class="pre">KerchunkDecodeError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.KerchunkDriverFatalError"><code class="docutils literal notranslate"><span class="pre">KerchunkDriverFatalError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.KerchunkException"><code class="docutils literal notranslate"><span class="pre">KerchunkException</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.MissingDataError"><code class="docutils literal notranslate"><span class="pre">MissingDataError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.MissingKerchunkError"><code class="docutils literal notranslate"><span class="pre">MissingKerchunkError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.MissingVariableError"><code class="docutils literal notranslate"><span class="pre">MissingVariableError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.NoOverwriteError"><code class="docutils literal notranslate"><span class="pre">NoOverwriteError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.NoValidTimeSlicesError"><code class="docutils literal notranslate"><span class="pre">NoValidTimeSlicesError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.PartialDriverError"><code class="docutils literal notranslate"><span class="pre">PartialDriverError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.SourceNotFoundError"><code class="docutils literal notranslate"><span class="pre">SourceNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.ValidationError"><code class="docutils literal notranslate"><span class="pre">ValidationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.error_handler"><code class="docutils literal notranslate"><span class="pre">error_handler()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.errors.worst_error"><code class="docutils literal notranslate"><span class="pre">worst_error()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
-<li class="toctree-l1"><a class="reference internal" href="complex_operation.html">Complex (Parallel) Operation</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../operations/projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/groups.html">The Group Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/mixins.html">Core Mixins</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/shepard.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shepard.html">SHEPARD Deployment</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/project_source.html">Projects</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/shepard_source.html">SHEPARD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/phase_source.html">Phases</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
@@ -121,9 +118,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Beneficial Extra Features</li>
+      <li class="breadcrumb-item active">PADOCC Bespoke Features</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/core/extras.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/detailed/features.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -131,11 +128,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="beneficial-extra-features">
-<h1>Beneficial Extra Features<a class="headerlink" href="#beneficial-extra-features" title="Link to this heading"></a></h1>
+  <section id="padocc-bespoke-features">
+<h1>PADOCC Bespoke Features<a class="headerlink" href="#padocc-bespoke-features" title="Link to this heading"></a></h1>
+<section id="climate-forecast-aggregations">
+<h2>Climate Forecast Aggregations<a class="headerlink" href="#climate-forecast-aggregations" title="Link to this heading"></a></h2>
+<p><strong>PADOCC</strong> uses the Climate Forecast Aggregations as a basis of comparison for any generated cloud formats, to use in the validation process. This base operation can now be disabled using the <code class="docutils literal notranslate"><span class="pre">cfa_enabled</span></code> property of each project. This can be set to False for any group taking too long to compute in CFA (watch out for this in the scan section as if a sample is taking a very long time it is likely the full dataset will take much longer).</p>
+</section>
 <section id="remote-connection-to-object-storage">
 <h2>Remote connection to object storage<a class="headerlink" href="#remote-connection-to-object-storage" title="Link to this heading"></a></h2>
-<p><strong>New for v1.3.3!</strong></p>
 <p><code class="docutils literal notranslate"><span class="pre">padocc</span></code> now has the capability to write to s3 storage endpoints for zarr stores, as well as using s3 object storage as the immediate storage medium for zarr datasets. This means that zarr stores generated via padocc can be written to object storage on creation, without filling up local disk space. Future updates will also include transfer mechanisms for Kerchunk datasets, where the kerchunk data must be edited then transferred.</p>
 <section id="remote-s3-configuration">
 <h3>Remote s3 configuration<a class="headerlink" href="#remote-s3-configuration" title="Link to this heading"></a></h3>
@@ -159,22 +159,8 @@
 <p>Once this config has been added to the project, any subsequent compute operation will generate zarr data in the given object store space. Note: The creation may induce errors if interrupted halfway through. Simply delete the content on the object store and start again - this is a bug and will be fixed in due course.</p>
 </section>
 </section>
-<section id="padocc-mechanics">
-<h2>PADOCC Mechanics<a class="headerlink" href="#padocc-mechanics" title="Link to this heading"></a></h2>
-<section id="revision-numbers">
-<h3>Revision Numbers<a class="headerlink" href="#revision-numbers" title="Link to this heading"></a></h3>
-<p>The PADOCC revision numbers for each product are auto-generated using the following rules.</p>
-<blockquote>
-<div><ul class="simple">
-<li><p>All projects begin with the revision number <code class="docutils literal notranslate"><span class="pre">1.0</span></code>.</p></li>
-<li><p>The first number denotes major updates to the product, for instance where a data source file has been replaced.</p></li>
-<li><p>The second number denotes minor changes like alterations to attributes and metadata.</p></li>
-<li><p>The cloud format <code class="docutils literal notranslate"><span class="pre">k</span></code> or <code class="docutils literal notranslate"><span class="pre">z</span></code> comes before the version number, as well as an <code class="docutils literal notranslate"><span class="pre">r</span></code> letter which indicates that the file is <code class="docutils literal notranslate"><span class="pre">remote-enabled</span></code>. This occurs automatically for kerchunk files that have had ‘download links’ applied - from the command line this can be done as part of the completion workflow.</p></li>
-</ul>
-</div></blockquote>
-</section>
 <section id="the-validation-report">
-<h3>The Validation Report<a class="headerlink" href="#the-validation-report" title="Link to this heading"></a></h3>
+<h2>The Validation Report<a class="headerlink" href="#the-validation-report" title="Link to this heading"></a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">ValidateDatasets</span></code> class produces a validation report for both data and metadata validations.
 This is designed to be fairly simple to interpret, while still being machine-readable.
 The following headings which may be found in the report have the following meanings:</p>
@@ -188,17 +174,18 @@ These are considered non-fatal errors that will need either a minor correction o
 <li><p><code class="docutils literal notranslate"><span class="pre">attributes</span> <span class="pre">{'type':'not_equal'...}</span></code> - Attributes that are not equal across products.</p></li>
 </ul>
 <p>2. Data Report
-These are considered <strong>fatal</strong> errors that need a major correction or possibly a fix to the pipeline itself.</p>
+These are typically considered <strong>fatal</strong> errors that require further examination, possibly new developments to the pipeline or changes to the native data structures.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">size_errors</span></code> - The size of the array is not consistent between products.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">dim_errors</span></code> - Arrays have inconsistent dimensions (where not ignored).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dtype/precision</span></code> - Variables/Dimensions have been cast to new dtypes/precisions, most often 32-bit to 64-bit precision.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">dim_size_errors</span></code> - The dimensions are consistent for a variable but their sizes are not.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">data_errors</span></code> - The data arrays do not match across products, this is the most fatal of all validation errors. The validator should give an idea of which array comparisons failed.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">data_errors:</span> <span class="pre">{'type':'growbox_exceeded'...}</span></code> - The variable in question could not be validated as no area could be identified that is not empty of values.</p></li>
 </ul>
 </section>
 <section id="bypassswitch-options">
-<h3>BypassSwitch Options<a class="headerlink" href="#bypassswitch-options" title="Link to this heading"></a></h3>
+<h2>BypassSwitch Options<a class="headerlink" href="#bypassswitch-options" title="Link to this heading"></a></h2>
 <p>Certain non-fatal errors may be bypassed using the Bypass flag:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Format</span><span class="p">:</span> <span class="o">-</span><span class="n">b</span> <span class="s2">&quot;D&quot;</span>
 
@@ -214,9 +201,16 @@ These are considered <strong>fatal</strong> errors that need a major correction 
 </div>
 </section>
 <section id="custom-pipeline-errors">
-<h3>Custom Pipeline Errors<a class="headerlink" href="#custom-pipeline-errors" title="Link to this heading"></a></h3>
+<h2>Custom Pipeline Errors<a class="headerlink" href="#custom-pipeline-errors" title="Link to this heading"></a></h2>
 <p><strong>A summary of the custom errors that are experienced through running the pipeline.</strong></p>
 <dl class="py exception" id="module-padocc.core.errors">
+<dt class="sig sig-object py" id="padocc.core.errors.AggregationError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.errors.</span></span><span class="sig-name descname"><span class="pre">AggregationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agg_dims</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.errors.AggregationError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#padocc.core.errors.KerchunkException" title="padocc.core.errors.KerchunkException"><code class="xref py py-class docutils literal notranslate"><span class="pre">KerchunkException</span></code></a></p>
+<p>Aggregation dimension(s) are not properly arranged</p>
+</dd></dl>
+
+<dl class="py exception">
 <dt class="sig sig-object py" id="padocc.core.errors.ArchiveConnectError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.errors.</span></span><span class="sig-name descname"><span class="pre">ArchiveConnectError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.errors.ArchiveConnectError" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#padocc.core.errors.KerchunkException" title="padocc.core.errors.KerchunkException"><code class="xref py py-class docutils literal notranslate"><span class="pre">KerchunkException</span></code></a></p>
@@ -287,6 +281,13 @@ These are considered <strong>fatal</strong> errors that need a major correction 
 </dd></dl>
 
 <dl class="py exception">
+<dt class="sig sig-object py" id="padocc.core.errors.MissingDataError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.errors.</span></span><span class="sig-name descname"><span class="pre">MissingDataError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reason</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.errors.MissingDataError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#padocc.core.errors.KerchunkException" title="padocc.core.errors.KerchunkException"><code class="xref py py-class docutils literal notranslate"><span class="pre">KerchunkException</span></code></a></p>
+<p>Data missing from kerchunk product</p>
+</dd></dl>
+
+<dl class="py exception">
 <dt class="sig sig-object py" id="padocc.core.errors.MissingKerchunkError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.errors.</span></span><span class="sig-name descname"><span class="pre">MissingKerchunkError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.errors.MissingKerchunkError" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#padocc.core.errors.KerchunkException" title="padocc.core.errors.KerchunkException"><code class="xref py py-class docutils literal notranslate"><span class="pre">KerchunkException</span></code></a></p>
@@ -337,7 +338,7 @@ These are considered <strong>fatal</strong> errors that need a major correction 
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padocc.core.errors.error_handler">
-<span class="sig-prename descclassname"><span class="pre">padocc.core.errors.</span></span><span class="sig-name descname"><span class="pre">error_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">err</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Exception</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subset_bypass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jobid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status_fh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padocc.core.errors.error_handler" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">padocc.core.errors.</span></span><span class="sig-name descname"><span class="pre">error_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">err</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Exception</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subset_bypass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jobid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status_fh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agg_shorthand</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padocc.core.errors.error_handler" title="Link to this definition"></a></dt>
 <dd><p>This function should be used at top-level loops over project codes ONLY - 
 not within the main body of the package.</p>
 <ol class="arabic simple">
@@ -361,11 +362,10 @@ is part of a sequence.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padocc.core.errors.worst_error">
-<span class="sig-prename descclassname"><span class="pre">padocc.core.errors.</span></span><span class="sig-name descname"><span class="pre">worst_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padocc.core.errors.worst_error" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">padocc.core.errors.</span></span><span class="sig-name descname"><span class="pre">worst_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padocc.core.errors.worst_error" title="Link to this definition"></a></dt>
 <dd><p>Determine the worst error level and return as a string.</p>
 </dd></dl>
 
-</section>
 </section>
 </section>
 
@@ -373,8 +373,8 @@ is part of a sequence.</p></li>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="operations.html" class="btn btn-neutral float-left" title="All Non-core Operations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="ceda_staff.html" class="btn btn-neutral float-right" title="Extra Details for CEDA Staff" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../core/ceda_staff.html" class="btn btn-neutral float-left" title="Extra Details for CEDA Staff" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="parallel.html" class="btn btn-neutral float-right" title="Parallel Deployment" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

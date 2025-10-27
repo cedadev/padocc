@@ -44,28 +44,26 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="core/inspiration.html">Inspiration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/terminology.html">PADOCC Terms and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/installation.html">Installing PADOCC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/user_guide.html">Basic User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/cli.html">Command Line Tool Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core/interactive.html">Interactive Notebook/Shell Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core/operations.html">All Operations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core/extras.html">Extra Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/ceda_staff.html">Extras for CEDA Staff</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Detailed View:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="operations/projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="operations/groups.html">The Group Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="operations/mixins.html">Core Mixins</a></li>
-<li class="toctree-l1"><a class="reference internal" href="operations/shepard.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="detailed/features.html">Bespoke Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="detailed/parallel.html">Parallel Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="detailed/shepard.html">SHEPARD Deployment</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="source_code/project_source.html">Projects</a></li>
 <li class="toctree-l1"><a class="reference internal" href="source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source_code/shepard_source.html">SHEPARD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="source_code/phase_source.html">Phases</a></li>
 <li class="toctree-l1"><a class="reference internal" href="source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
@@ -113,6 +111,7 @@
  | <a href="#N"><strong>N</strong></a>
  | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
+ | <a href="#Q"><strong>Q</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
@@ -125,6 +124,8 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardOperator.activate">activate() (padocc.groups.shepard.ShepardOperator method)</a>
+</li>
       <li><a href="source_code/phase_source.html#padocc.phases.ingest.add_download_link">add_download_link() (in module padocc.phases.ingest)</a>
 
       <ul>
@@ -135,12 +136,16 @@
       </ul></li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.modifiers.ModifiersMixin.add_project">add_project() (padocc.groups.mixins.modifiers.ModifiersMixin method)</a>
 </li>
-      <li><a href="source_code/project_source.html#padocc.core.mixins.dataset.DatasetHandlerMixin.add_s3_config">add_s3_config() (padocc.core.mixins.dataset.DatasetHandlerMixin method)</a>
+      <li><a href="source_code/group_source.html#padocc.groups.group.GroupOperation.add_repeat_by_id">add_repeat_by_id() (padocc.groups.group.GroupOperation method)</a>
 </li>
-      <li><a href="source_code/group_source.html#padocc.groups.mixins.allocations.AllocationsMixin">AllocationsMixin (class in padocc.groups.mixins.allocations)</a>
+      <li><a href="source_code/project_source.html#padocc.core.mixins.dataset.DatasetHandlerMixin.add_s3_config">add_s3_config() (padocc.core.mixins.dataset.DatasetHandlerMixin method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="detailed/features.html#padocc.core.errors.AggregationError">AggregationError</a>
+</li>
+      <li><a href="source_code/group_source.html#padocc.groups.mixins.allocations.AllocationsMixin">AllocationsMixin (class in padocc.groups.mixins.allocations)</a>
+</li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.ListFileHandler.append">append() (padocc.core.filehandlers.ListFileHandler method)</a>
 </li>
       <li><a href="source_code/phase_source.html#padocc.phases.validate.PresliceSet.apply">apply() (padocc.phases.validate.PresliceSet method)</a>
@@ -151,13 +156,17 @@
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.utils.apply_substitutions">apply_substitutions() (in module padocc.core.utils)</a>
 </li>
-      <li><a href="core/extras.html#padocc.core.errors.ArchiveConnectError">ArchiveConnectError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.ArchiveConnectError">ArchiveConnectError</a>
 </li>
   </ul></td>
 </tr></table>
 
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardOperator.bypass">bypass (padocc.groups.shepard.ShepardOperator property)</a>
+</li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source_code/misc_source.html#padocc.core.utils.BypassSwitch">BypassSwitch (class in padocc.core.utils)</a>
 </li>
@@ -183,37 +192,27 @@
 </li>
       <li><a href="source_code/phase_source.html#padocc.phases.validate.check_for_nan">check_for_nan() (in module padocc.phases.validate)</a>
 </li>
-      <li><a href="core/extras.html#padocc.core.errors.ChunkDataError">ChunkDataError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.ChunkDataError">ChunkDataError</a>
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.GenericStore.clear">clear() (padocc.core.filehandlers.GenericStore method)</a>
 </li>
-      <li><a href="source_code/misc_source.html#padocc.core.filehandlers.CFADataset.close">close() (padocc.core.filehandlers.CFADataset method)</a>
-
-      <ul>
-        <li><a href="source_code/misc_source.html#padocc.core.filehandlers.GenericStore.close">(padocc.core.filehandlers.GenericStore method)</a>
-</li>
-        <li><a href="source_code/misc_source.html#padocc.core.filehandlers.JSONFileHandler.close">(padocc.core.filehandlers.JSONFileHandler method)</a>
-</li>
-        <li><a href="source_code/misc_source.html#padocc.core.filehandlers.ListFileHandler.close">(padocc.core.filehandlers.ListFileHandler method)</a>
-</li>
-      </ul></li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.properties.PropertiesMixin.cloud_format">cloud_format (padocc.core.mixins.properties.PropertiesMixin property)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source_code/group_source.html#padocc.groups.group.GroupOperation.complete_group">complete_group() (padocc.groups.group.GroupOperation method)</a>
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.properties.PropertiesMixin.complete_product">complete_product (padocc.core.mixins.properties.PropertiesMixin property)</a>
 </li>
       <li><a href="source_code/project_source.html#padocc.core.project.ProjectOperation.complete_project">complete_project() (padocc.core.project.ProjectOperation method)</a>
 </li>
-      <li><a href="core/extras.html#padocc.core.errors.ComputeError">ComputeError</a>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="detailed/features.html#padocc.core.errors.ComputeError">ComputeError</a>
 </li>
       <li><a href="source_code/phase_source.html#padocc.phases.compute.ComputeOperation">ComputeOperation (class in padocc.phases.compute)</a>
 </li>
-      <li><a href="core/extras.html#padocc.core.errors.ConcatenationError">ConcatenationError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.ConcatenationError">ConcatenationError</a>
 </li>
-      <li><a href="core/extras.html#padocc.core.errors.ConcatFatalError">ConcatFatalError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.ConcatFatalError">ConcatFatalError</a>
 </li>
       <li><a href="source_code/phase_source.html#padocc.phases.validate.ValidateDatasets.control_dataset_var">control_dataset_var() (padocc.phases.validate.ValidateDatasets method)</a>
 </li>
@@ -231,6 +230,10 @@
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.CSVFileHandler">CSVFileHandler (class in padocc.core.filehandlers)</a>
 </li>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardOperator.cycle_delay">cycle_delay (padocc.groups.shepard.ShepardOperator property)</a>
+</li>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardOperator.cycle_limit">cycle_limit (padocc.groups.shepard.ShepardOperator property)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -245,15 +248,31 @@
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.dataset.DatasetHandlerMixin">DatasetHandlerMixin (class in padocc.core.mixins.dataset)</a>
 </li>
+      <li><a href="source_code/phase_source.html#padocc.phases.validate.ValidateDatasets.decode_times_ok">decode_times_ok() (padocc.phases.validate.ValidateDatasets method)</a>
+</li>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardOperator.default_source">default_source (padocc.groups.shepard.ShepardOperator property)</a>
+</li>
       <li><a href="source_code/misc_source.html#padocc.core.utils.deformat_float">deformat_float() (in module padocc.core.utils)</a>
+</li>
+      <li><a href="source_code/group_source.html#padocc.groups.group.GroupOperation.delete_all_repeat_ids">delete_all_repeat_ids() (padocc.groups.group.GroupOperation method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.modifiers.ModifiersMixin.delete_group">delete_group() (padocc.groups.mixins.modifiers.ModifiersMixin method)</a>
 </li>
+      <li><a href="source_code/group_source.html#padocc.groups.group.GroupOperation.delete_logs">delete_logs() (padocc.groups.group.GroupOperation method)</a>
+
+      <ul>
+        <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardOperator.delete_logs">(padocc.groups.shepard.ShepardOperator method)</a>
+</li>
+      </ul></li>
       <li><a href="source_code/project_source.html#padocc.core.project.ProjectOperation.delete_project">delete_project() (padocc.core.project.ProjectOperation method)</a>
 </li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.allocations.AllocationsMixin.deploy_parallel">deploy_parallel() (padocc.groups.mixins.allocations.AllocationsMixin method)</a>
+</li>
+      <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.determine_status_sets">determine_status_sets() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
+</li>
+      <li><a href="source_code/project_source.html#padocc.core.project.ProjectOperation.diagnostic">diagnostic() (padocc.core.project.ProjectOperation method)</a>
 </li>
       <li><a href="source_code/project_source.html#padocc.core.project.ProjectOperation.dir">dir (padocc.core.project.ProjectOperation property)</a>
 </li>
@@ -265,15 +284,17 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/extras.html#padocc.core.errors.error_handler">error_handler() (in module padocc.core.errors)</a>
+      <li><a href="detailed/features.html#padocc.core.errors.error_handler">error_handler() (in module padocc.core.errors)</a>
 </li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin">EvaluationsMixin (class in padocc.groups.mixins.evaluations)</a>
 </li>
-      <li><a href="core/extras.html#padocc.core.errors.ExpectMemoryError">ExpectMemoryError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.ExpectMemoryError">ExpectMemoryError</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/extras.html#padocc.core.errors.ExpectTimeoutError">ExpectTimeoutError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.ExpectTimeoutError">ExpectTimeoutError</a>
+</li>
+      <li><a href="source_code/project_source.html#padocc.core.project.ProjectOperation.export_report">export_report() (padocc.core.project.ProjectOperation method)</a>
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.utils.extract_file">extract_file() (in module padocc.core.utils)</a>
 </li>
@@ -331,7 +352,13 @@
         <li><a href="source_code/misc_source.html#padocc.core.filehandlers.ListFileHandler.get">(padocc.core.filehandlers.ListFileHandler method)</a>
 </li>
       </ul></li>
+      <li><a href="source_code/project_source.html#padocc.core.project.ProjectOperation.get_agg_shorthand">get_agg_shorthand() (padocc.core.project.ProjectOperation method)</a>
+</li>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardTask.get_allocation">get_allocation() (padocc.groups.shepard.ShepardTask method)</a>
+</li>
       <li><a href="source_code/misc_source.html#padocc.core.utils.get_attribute">get_attribute() (in module padocc.core.utils)</a>
+</li>
+      <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.get_codes_by_status">get_codes_by_status() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.status.StatusMixin.get_last_run">get_last_run() (padocc.core.mixins.status.StatusMixin method)</a>
 </li>
@@ -339,6 +366,8 @@
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.status.StatusMixin.get_log_contents">get_log_contents() (padocc.core.mixins.status.StatusMixin method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.allocations.get_lotus_reqs">get_lotus_reqs() (in module padocc.groups.mixins.allocations)</a>
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.CFADataset.get_meta">get_meta() (padocc.core.filehandlers.CFADataset method)</a>
@@ -351,9 +380,7 @@
         <li><a href="source_code/misc_source.html#padocc.core.filehandlers.ZarrStore.get_meta">(padocc.core.filehandlers.ZarrStore method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.get_project">get_project() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
+      <li><a href="source_code/group_source.html#padocc.groups.group.GroupOperation.get_project">get_project() (padocc.groups.group.GroupOperation method)</a>
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.status.StatusMixin.get_report">get_report() (padocc.core.mixins.status.StatusMixin method)</a>
 </li>
@@ -433,15 +460,15 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source_code/phase_source.html#padocc.phases.compute.KerchunkConverter">KerchunkConverter (class in padocc.phases.compute)</a>
 </li>
-      <li><a href="core/extras.html#padocc.core.errors.KerchunkDecodeError">KerchunkDecodeError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.KerchunkDecodeError">KerchunkDecodeError</a>
 </li>
-      <li><a href="core/extras.html#padocc.core.errors.KerchunkDriverFatalError">KerchunkDriverFatalError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.KerchunkDriverFatalError">KerchunkDriverFatalError</a>
 </li>
       <li><a href="source_code/phase_source.html#padocc.phases.compute.KerchunkDS">KerchunkDS (class in padocc.phases.compute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/extras.html#padocc.core.errors.KerchunkException">KerchunkException</a>
+      <li><a href="detailed/features.html#padocc.core.errors.KerchunkException">KerchunkException</a>
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.KerchunkFile">KerchunkFile (class in padocc.core.filehandlers)</a>
 </li>
@@ -491,9 +518,11 @@
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.properties.PropertiesMixin.minor_version_increment">minor_version_increment() (padocc.core.mixins.properties.PropertiesMixin method)</a>
 </li>
-      <li><a href="core/extras.html#padocc.core.errors.MissingKerchunkError">MissingKerchunkError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.MissingDataError">MissingDataError</a>
 </li>
-      <li><a href="core/extras.html#padocc.core.errors.MissingVariableError">MissingVariableError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.MissingKerchunkError">MissingKerchunkError</a>
+</li>
+      <li><a href="detailed/features.html#padocc.core.errors.MissingVariableError">MissingVariableError</a>
 </li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.modifiers.ModifiersMixin">ModifiersMixin (class in padocc.groups.mixins.modifiers)</a>
 </li>
@@ -501,7 +530,7 @@
     module
 
       <ul>
-        <li><a href="core/extras.html#module-padocc.core.errors">padocc.core.errors</a>
+        <li><a href="detailed/features.html#module-padocc.core.errors">padocc.core.errors</a>
 </li>
         <li><a href="source_code/misc_source.html#module-padocc.core.filehandlers">padocc.core.filehandlers</a>
 </li>
@@ -529,6 +558,8 @@
 </li>
         <li><a href="source_code/group_source.html#module-padocc.groups.mixins.modifiers">padocc.groups.mixins.modifiers</a>
 </li>
+        <li><a href="source_code/shepard_source.html#module-padocc.groups.shepard">padocc.groups.shepard</a>
+</li>
         <li><a href="source_code/phase_source.html#module-padocc.phases.compute">padocc.phases.compute</a>
 </li>
         <li><a href="source_code/phase_source.html#module-padocc.phases.ingest">padocc.phases.ingest</a>
@@ -548,11 +579,11 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/extras.html#padocc.core.errors.NoOverwriteError">NoOverwriteError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.NoOverwriteError">NoOverwriteError</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/extras.html#padocc.core.errors.NoValidTimeSlicesError">NoValidTimeSlicesError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.NoValidTimeSlicesError">NoValidTimeSlicesError</a>
 </li>
   </ul></td>
 </tr></table>
@@ -572,6 +603,8 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/phase_source.html#padocc.phases.compute.ComputeOperation.order_native_files">order_native_files() (padocc.phases.compute.ComputeOperation method)</a>
+</li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.properties.PropertiesMixin.outpath">outpath (padocc.core.mixins.properties.PropertiesMixin property)</a>
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.properties.PropertiesMixin.outproduct">outproduct (padocc.core.mixins.properties.PropertiesMixin property)</a>
@@ -586,7 +619,7 @@
     padocc.core.errors
 
       <ul>
-        <li><a href="core/extras.html#module-padocc.core.errors">module</a>
+        <li><a href="detailed/features.html#module-padocc.core.errors">module</a>
 </li>
       </ul></li>
       <li>
@@ -683,6 +716,13 @@
 </li>
       </ul></li>
       <li>
+    padocc.groups.shepard
+
+      <ul>
+        <li><a href="source_code/shepard_source.html#module-padocc.groups.shepard">module</a>
+</li>
+      </ul></li>
+      <li>
     padocc.phases.compute
 
       <ul>
@@ -710,7 +750,7 @@
         <li><a href="source_code/phase_source.html#module-padocc.phases.validate">module</a>
 </li>
       </ul></li>
-      <li><a href="core/extras.html#padocc.core.errors.PartialDriverError">PartialDriverError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.PartialDriverError">PartialDriverError</a>
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.JSONFileHandler.pop">pop() (padocc.core.filehandlers.JSONFileHandler method)</a>
 </li>
@@ -725,9 +765,19 @@
   </ul></td>
 </tr></table>
 
+<h2 id="Q">Q</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardOperator.quarantine">quarantine() (padocc.groups.shepard.ShepardOperator method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.random_hash">random_hash() (in module padocc.groups.shepard)</a>
+</li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.properties.PropertiesMixin.remote">remote (padocc.core.mixins.properties.PropertiesMixin property)</a>
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.ListFileHandler.remove">remove() (padocc.core.filehandlers.ListFileHandler method)</a>
@@ -740,12 +790,14 @@
 </li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.modifiers.ModifiersMixin.remove_project">remove_project() (padocc.groups.mixins.modifiers.ModifiersMixin method)</a>
 </li>
-      <li><a href="source_code/project_source.html#padocc.core.mixins.dataset.DatasetHandlerMixin.remove_s3_config">remove_s3_config() (padocc.core.mixins.dataset.DatasetHandlerMixin method)</a>
+      <li><a href="source_code/group_source.html#padocc.groups.mixins.modifiers.ModifiersMixin.remove_projects">remove_projects() (padocc.groups.mixins.modifiers.ModifiersMixin method)</a>
 </li>
-      <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.remove_subset">remove_subset() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
+      <li><a href="source_code/project_source.html#padocc.core.mixins.dataset.DatasetHandlerMixin.remove_s3_config">remove_s3_config() (padocc.core.mixins.dataset.DatasetHandlerMixin method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.remove_subset">remove_subset() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
+</li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.repeat_by_status">repeat_by_status() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
 </li>
       <li><a href="source_code/phase_source.html#padocc.phases.validate.ValidateDatasets.replace_dataset">replace_dataset() (padocc.phases.validate.ValidateDatasets method)</a>
@@ -764,12 +816,24 @@
         <li><a href="source_code/phase_source.html#padocc.phases.compute.KerchunkConverter.run">(padocc.phases.compute.KerchunkConverter method)</a>
 </li>
       </ul></li>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardOperator.run_batch">run_batch() (padocc.groups.shepard.ShepardOperator method)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/misc_source.html#padocc.core.filehandlers.CFADataset.save">save() (padocc.core.filehandlers.CFADataset method)</a>
+
+      <ul>
+        <li><a href="source_code/misc_source.html#padocc.core.filehandlers.GenericStore.save">(padocc.core.filehandlers.GenericStore method)</a>
+</li>
+        <li><a href="source_code/misc_source.html#padocc.core.filehandlers.JSONFileHandler.save">(padocc.core.filehandlers.JSONFileHandler method)</a>
+</li>
+        <li><a href="source_code/misc_source.html#padocc.core.filehandlers.ListFileHandler.save">(padocc.core.filehandlers.ListFileHandler method)</a>
+</li>
+      </ul></li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.dataset.DatasetHandlerMixin.save_ds_filehandlers">save_ds_filehandlers() (padocc.core.mixins.dataset.DatasetHandlerMixin method)</a>
 </li>
       <li><a href="source_code/project_source.html#padocc.core.project.ProjectOperation.save_files">save_files() (padocc.core.project.ProjectOperation method)</a>
@@ -780,7 +844,11 @@
         <li><a href="source_code/phase_source.html#padocc.phases.compute.ComputeOperation.save_files">(padocc.phases.compute.ComputeOperation method)</a>
 </li>
       </ul></li>
+      <li><a href="source_code/phase_source.html#padocc.phases.validate.ValidateDatasets.save_report">save_report() (padocc.phases.validate.ValidateDatasets method)</a>
+</li>
       <li><a href="source_code/phase_source.html#padocc.phases.scan.ScanOperation">ScanOperation (class in padocc.phases.scan)</a>
+</li>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardOperator.scrub_errors">scrub_errors() (padocc.groups.shepard.ShepardOperator method)</a>
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.JSONFileHandler.set">set() (padocc.core.filehandlers.JSONFileHandler method)</a>
 
@@ -806,13 +874,17 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardOperator">ShepardOperator (class in padocc.groups.shepard)</a>
+</li>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardTask">ShepardTask (class in padocc.groups.shepard)</a>
+</li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.status.StatusMixin.show_log_contents">show_log_contents() (padocc.core.mixins.status.StatusMixin method)</a>
 </li>
       <li><a href="source_code/phase_source.html#padocc.phases.validate.slice_all_dims">slice_all_dims() (in module padocc.phases.validate)</a>
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.properties.PropertiesMixin.source_format">source_format (padocc.core.mixins.properties.PropertiesMixin property)</a>
 </li>
-      <li><a href="core/extras.html#padocc.core.errors.SourceNotFoundError">SourceNotFoundError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.SourceNotFoundError">SourceNotFoundError</a>
 </li>
       <li><a href="source_code/misc_source.html#padocc.core.filehandlers.CFADataset.spawn_copy">spawn_copy() (padocc.core.filehandlers.CFADataset method)</a>
 
@@ -830,7 +902,13 @@
 </li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.summarise_data">summarise_data() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
 </li>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardOperator.summarise_flocks">summarise_flocks() (padocc.groups.shepard.ShepardOperator method)</a>
+</li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.evaluations.EvaluationsMixin.summarise_status">summarise_status() (padocc.groups.mixins.evaluations.EvaluationsMixin method)</a>
+</li>
+      <li><a href="source_code/project_source.html#padocc.core.project.ProjectOperation.switch_local">switch_local() (padocc.core.project.ProjectOperation method)</a>
+</li>
+      <li><a href="source_code/project_source.html#padocc.core.project.ProjectOperation.switch_remote">switch_remote() (padocc.core.project.ProjectOperation method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -844,12 +922,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.modifiers.ModifiersMixin.transfer_project">transfer_project() (padocc.groups.mixins.modifiers.ModifiersMixin method)</a>
 </li>
+      <li><a href="source_code/group_source.html#padocc.groups.mixins.modifiers.ModifiersMixin.transfer_projects">transfer_projects() (padocc.groups.mixins.modifiers.ModifiersMixin method)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source_code/shepard_source.html#padocc.groups.shepard.ShepardTask.uid">uid (padocc.groups.shepard.ShepardTask property)</a>
+</li>
       <li><a href="source_code/group_source.html#padocc.groups.mixins.modifiers.ModifiersMixin.unmerge">unmerge() (padocc.groups.mixins.modifiers.ModifiersMixin method)</a>
 </li>
       <li><a href="source_code/project_source.html#padocc.core.mixins.dataset.DatasetHandlerMixin.update_attribute">update_attribute() (padocc.core.mixins.dataset.DatasetHandlerMixin method)</a>
@@ -890,7 +972,7 @@
 </li>
       <li><a href="source_code/phase_source.html#padocc.phases.validate.ValidateOperation">ValidateOperation (class in padocc.phases.validate)</a>
 </li>
-      <li><a href="core/extras.html#padocc.core.errors.ValidationError">ValidationError</a>
+      <li><a href="detailed/features.html#padocc.core.errors.ValidationError">ValidationError</a>
 </li>
       <li><a href="source_code/phase_source.html#padocc.phases.validate.value_to_mem">value_to_mem() (in module padocc.phases.validate)</a>
 </li>
@@ -902,7 +984,7 @@
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/extras.html#padocc.core.errors.worst_error">worst_error() (in module padocc.core.errors)</a>
+      <li><a href="detailed/features.html#padocc.core.errors.worst_error">worst_error() (in module padocc.core.errors)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>

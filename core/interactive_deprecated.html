@@ -22,9 +22,7 @@
         <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="All Non-core Operations" href="operations.html" />
-    <link rel="prev" title="PADOCC Command Line Tool" href="cli.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,47 +45,26 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool Examples</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Interactive Notebook/Shell Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#using-the-groupoperation-class">Using the GroupOperation class</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#access-a-group-and-view-properties">1. Access a group and view properties</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#get-project-summaries">2. Get project Summaries</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#group-subsets-repeats">3. Group subsets/repeats</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#merging-and-unmerging-groups">4. Merging and Unmerging Groups</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#manipulating-projects">5. Manipulating Projects</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#completion-of-a-group-of-projects">6. Completion of a group of projects</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#using-the-projectoperation-class">Using the ProjectOperation class</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#general-access-to-a-project">1. General access to a project</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#editable-properties">2. Editable properties</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#datasets-attached-to-the-project">3. Datasets attached to the project</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#status-of-the-project">4. Status of the project</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#stac-representation-of-a-project">5. STAC Representation of a project</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="operations.html">All Operations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="extras.html">Extra Features</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
-<li class="toctree-l1"><a class="reference internal" href="complex_operation.html">Complex (Parallel) Operation</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../operations/projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/groups.html">The Group Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/mixins.html">Core Mixins</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/shepard.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="terminology.html">PADOCC Terms and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing PADOCC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">Basic User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Detailed View:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/features.html">Bespoke Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/parallel.html">Parallel Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/shepard.html">SHEPARD Deployment</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/project_source.html">Projects</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/shepard_source.html">SHEPARD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/phase_source.html">Phases</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
@@ -108,7 +85,7 @@
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">Running padocc interactively (Notebook/Shell)</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/core/interactive.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/core/interactive_deprecated.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -430,10 +407,7 @@
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="cli.html" class="btn btn-neutral float-left" title="PADOCC Command Line Tool" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="operations.html" class="btn btn-neutral float-right" title="All Non-core Operations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 

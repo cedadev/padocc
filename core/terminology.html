@@ -1,0 +1,434 @@
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PADOCC Terms and Operators &mdash; PADOCC Package v1.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=45183d27"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Getting Started" href="installation.html" />
+    <link rel="prev" title="Inspiration for Cloud Formats and Aggregations" href="inspiration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            PADOCC Package
+              <img src="../_static/padocc_wt.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PADOCC Terms and Operators</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#terminology-guide">Terminology Guide</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#revision-numbers">Revision Numbers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#virtualisation-in-padocc-12-08-2025">Virtualisation in PADOCC (12.08.2025)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-padocc-aggregator">The PADOCC aggregator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#virtualizarr">VirtualiZarr</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#groups-in-padocc">Groups in PADOCC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#help-with-the-groupoperation">Help with the GroupOperation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#instantiating-a-group">Instantiating a Group</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#initialisation-from-a-file">Initialisation from a File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#applying-an-operation">Applying an operation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#projects-in-padocc">Projects in PADOCC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-project-operator-class">The Project Operator class</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#padocc-core-mixins">PADOCC Core Mixins</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#directory-mixin">Directory Mixin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#status-mixin">Status Mixin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#properties-mixin">Properties Mixin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dataset-mixin">Dataset Mixin</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing PADOCC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">Basic User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Detailed View:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/features.html">Bespoke Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/parallel.html">Parallel Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/shepard.html">SHEPARD Deployment</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/project_source.html">Projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/shepard_source.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/phase_source.html">Phases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PADOCC Package</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">PADOCC Terms and Operators</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/core/terminology.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="padocc-terms-and-operators">
+<h1>PADOCC Terms and Operators<a class="headerlink" href="#padocc-terms-and-operators" title="Link to this heading"></a></h1>
+<section id="terminology-guide">
+<h2>Terminology Guide<a class="headerlink" href="#terminology-guide" title="Link to this heading"></a></h2>
+<p>This section is designed as a quick reference for commonly used terms in PADOCC.</p>
+<ul class="simple">
+<li><p><strong>Project</strong>: The term for a set of native files to be aggregated into a single cloud product. PADOCC does not use <code class="docutils literal notranslate"><span class="pre">dataset</span></code> for this term as that can refer to the individual files in some instances.</p></li>
+<li><p><strong>Group</strong>: A group of projects to be acted upon in parallel. The grouping of projects is arbitrary and defined only by the user. Projects can be transferred between groups if needed.</p></li>
+<li><p><strong>Product</strong>: The final output of PADOCC for a given project, typically this will be a kerchunk file/store or a zarr store. This is typically referred to as a Cloud product, or just product for short.</p></li>
+<li><p><strong>Revision</strong>: The version number and cloud format identifier given by PADOCC to each output product (See below.)</p></li>
+<li><p><strong>Aggregation</strong>: The process of combining multiple source files into a larger dataset, either virtual or ‘real’</p></li>
+<li><p><strong>Virtualisation</strong>: Aggregation of multiple source files into an explicitly virtual dataset, using either <code class="docutils literal notranslate"><span class="pre">Kerchunk</span></code> or <code class="docutils literal notranslate"><span class="pre">VirtualiZarr</span></code>.</p></li>
+</ul>
+<section id="revision-numbers">
+<h3>Revision Numbers<a class="headerlink" href="#revision-numbers" title="Link to this heading"></a></h3>
+<p>The PADOCC revision numbers for each product are auto-generated using the following rules.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>All projects begin with the revision number <code class="docutils literal notranslate"><span class="pre">1.0</span></code>.</p></li>
+<li><p>The first number denotes major updates to the product, for instance where a data source file has been replaced.</p></li>
+<li><p>The second number denotes minor changes like alterations to attributes and metadata.</p></li>
+<li><p>The cloud format <code class="docutils literal notranslate"><span class="pre">k</span></code> or <code class="docutils literal notranslate"><span class="pre">z</span></code> comes before the version number, as well as an <code class="docutils literal notranslate"><span class="pre">r</span></code> letter which indicates that the file is <code class="docutils literal notranslate"><span class="pre">remote-enabled</span></code>. This occurs automatically for kerchunk files that have had ‘download links’ applied - from the command line this can be done as part of the completion workflow.</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+<section id="virtualisation-in-padocc-12-08-2025">
+<h2>Virtualisation in PADOCC (12.08.2025)<a class="headerlink" href="#virtualisation-in-padocc-12-08-2025" title="Link to this heading"></a></h2>
+<section id="the-padocc-aggregator">
+<h3>The PADOCC aggregator<a class="headerlink" href="#the-padocc-aggregator" title="Link to this heading"></a></h3>
+<p>Newly added for v1.4.0, the PADOCC Aggregator is a prototype aggregation method meant to provide faster aggregation for well-behaved datasets. This method is tried as default for all datasets, so it is easier to talk about the known cases for when this basic aggregator fails:
+- Unexpected/badly behaved chunking: Has been observed when combining individual chunk references that the chunk sizes and total array sizes for some variables are inconsistent.
+- Unit conversion: PADOCC Aggregation is only applicable when there are no unit conversions between files.</p>
+<p>This aggregator is a prototype and is only the first attempt at aggregation.</p>
+</section>
+<section id="virtualizarr">
+<h3>VirtualiZarr<a class="headerlink" href="#virtualizarr" title="Link to this heading"></a></h3>
+<p>PADOCC v1.4.0 will see the release of the first PADOCC version that now incorporates some elements of the Zarr-developer package <code class="docutils literal notranslate"><span class="pre">VirtualiZarr</span></code>. Incorporation is currently limited so to not remove certain features that already exist in PADOCC.</p>
+<p>VirtualiZarr is only implemented in the aggregation phase, where kerchunk references are combined, and even then this only occurs where the CFA creation has been successful. This is due to the strict ordering requirements for files input to VirtualiZarr, where usually the correct ordering of input files is not guaranteed by PADOCC, and the standard kerchunk aggregator module does not require it.</p>
+<p>VirtualiZarr is not currently used for creating and caching individual kerchunk files as there is currently no way to disable the inline encoding when virtualising to kerchunk, and VirtualiZarr is not able to re-load cached kerchunk files with inline encoded variables.</p>
+<p>VirtualiZarr also occasionally causes unexplained chunk reference anomalies that may require manual intervention to bypass and use the normal Kerchunk aggregator instead:
+- Aggregated Dimension anomalies: These are recorded in PADOCC as AggregationErrors in the <code class="docutils literal notranslate"><span class="pre">validate</span></code> phase, where a dimension (e.g) time is not linearly/regularly increasing. There may be gaps or overlaps in the dimension itself.
+- Missing dimension segments: These are recorded as ValidationErrors in the <code class="docutils literal notranslate"><span class="pre">validate</span></code> phase, where a sample from one of the source files cannot be located in the combined product file.</p>
+</section>
+</section>
+<section id="groups-in-padocc">
+<h2>Groups in PADOCC<a class="headerlink" href="#groups-in-padocc" title="Link to this heading"></a></h2>
+<p>The advantage of using PADOCC over other tools for creating cloud-format files is the scalability built-in, with parallelisation and deployment in mind.
+PADOCC allows the creation of groups of datasets, each with N source files, that can be operated upon as a single entity.
+The operation can be applied to all or a subset of the datasets within the group with relative ease. Here we outline some basic functionality of the <code class="docutils literal notranslate"><span class="pre">GroupOperation</span></code>.
+See the source documentation page for more detail.</p>
+<section id="help-with-the-groupoperation">
+<h3>Help with the GroupOperation<a class="headerlink" href="#help-with-the-groupoperation" title="Link to this heading"></a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Group Operator</span>
+<span class="go">&gt; group.get_stac_representation()      - Provide a mapper and obtain values in the form of STAC records for all projects</span>
+<span class="go">&gt; group.info()                         - Obtain a dictionary of key values</span>
+<span class="go">&gt; group.run()                          - Run a specific operation across part of the group.</span>
+<span class="go">&gt; group.save_files()                   - Save any changes to any files in the group as part of an operation</span>
+<span class="go">&gt; group.check_writable()               - Check if all directories are writable for this group.</span>
+<span class="go">Allocations:</span>
+<span class="go">&gt; group.create_allocations()           - Create a set of allocations, returns a binned list of bands</span>
+<span class="go">&gt; group.create_sbatch()                - Create sbatch script for submitting to slurm.</span>
+<span class="go">Initialisations:</span>
+<span class="go">&gt; group.init_from_stac()               - Initialise a group from a set of STAC records</span>
+<span class="go">&gt; group.init_from_file()               - Initialise a group based on values from a local file</span>
+<span class="go">Evaluations:</span>
+<span class="go">&gt; group.get_project()                  - Get a project operator, indexed by project code</span>
+<span class="go">&gt; group.repeat_by_status()             - Create a new subset group to (re)run an operation, based on the current status</span>
+<span class="go">&gt; group.remove_by_status()             - Delete projects based on a given status</span>
+<span class="go">&gt; group.merge_subsets()                - Merge created subsets</span>
+<span class="go">&gt; group.summarise_data()               - Get a printout summary of data representations in this group</span>
+<span class="go">&gt; group.summarise_status()             - Summarise the status of all group member projects.</span>
+<span class="go">Modifiers:</span>
+<span class="go">&gt; group.add_project()                  - Add a new project, requires a base config (padocc.core.utils.BASE_CFG) compliant dictionary</span>
+<span class="go">&gt; group.remove_project()               - Delete project and all associated files</span>
+<span class="go">&gt; group.transfer_project()             - Transfer project to a new &quot;receiver&quot; group</span>
+<span class="go">&gt; group.merge()                        - Merge two groups</span>
+<span class="go">&gt; group.unmerge()                      - Split one group into two sets, given a list of datasets to move into the new group.</span>
+</pre></div>
+</div>
+</section>
+<section id="instantiating-a-group">
+<h3>Instantiating a Group<a class="headerlink" href="#instantiating-a-group" title="Link to this heading"></a></h3>
+<p>A group is most easily created using a python terminal or Jupyter notebook, with a similar form to the below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">padocc</span><span class="w"> </span><span class="kn">import</span> <span class="n">GroupOperation</span>
+
+<span class="n">my_group</span> <span class="o">=</span> <span class="n">GroupOperation</span><span class="p">(</span>
+    <span class="s1">&#39;mygroup&#39;</span><span class="p">,</span>
+    <span class="n">workdir</span><span class="o">=</span><span class="s1">&#39;path/to/dir&#39;</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>At the point of defining the group, all required files and folders are created on the file system with default
+or initial values for some parameters. Further processing steps which incur changes to parameters will only be saved
+upon completion of an operation. If in doubt, all files can be saved with current values using <code class="docutils literal notranslate"><span class="pre">.save_files()</span></code>
+for the group.</p>
+<p>This is a blank group with no attached parameters, so the initial values in all created files will be blank or templated
+with default values. To fill the group with actual data, we need to initialise from an input file.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the future it will be possible to instantiate from other file types or records (e.g STAC) but for now the accepted
+format is a csv file, where each entry fits the format:
+<code class="docutils literal notranslate"><span class="pre">project_code,</span> <span class="pre">/file/pattern/**/*.nc,</span> <span class="pre">/path/to/updates.json</span> <span class="pre">or</span> <span class="pre">empty,</span> <span class="pre">/path/to/removals.json</span> <span class="pre">or</span> <span class="pre">empty</span></code></p>
+</div>
+</section>
+<section id="initialisation-from-a-file">
+<h3>Initialisation from a File<a class="headerlink" href="#initialisation-from-a-file" title="Link to this heading"></a></h3>
+<p>A group can be initialised from a CSV file using:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_group</span><span class="o">.</span><span class="n">init_from_file</span><span class="p">(</span><span class="s1">&#39;/path/to/csv.csv&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Substitutions can be provided here if necessary, of the format:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">substitutions</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;init_file&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;swap/this/for&#39;</span><span class="p">:</span><span class="s1">&#39;this&#39;</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;dataset_file&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;swap/that/for&#39;</span><span class="p">:</span><span class="s1">&#39;that&#39;</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;datasets&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;swap/that/for&#39;</span><span class="p">:</span><span class="s1">&#39;these&#39;</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>Where the respective sections relate to the following:</dt><dd><ul class="simple">
+<li><p>Init file: Substitutions to the path to the provided CSV file</p></li>
+<li><p>Dataset file: Substitutions in the CSV file, specifically with the paths to <code class="docutils literal notranslate"><span class="pre">.txt</span></code> files or patterns.</p></li>
+<li><p>Datasets: Substitutions in the <code class="docutils literal notranslate"><span class="pre">.txt</span></code> file that lists each individual file in the dataset.</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="applying-an-operation">
+<h3>Applying an operation<a class="headerlink" href="#applying-an-operation" title="Link to this heading"></a></h3>
+<p>Now we have an initialised group, in the same group instance we can apply an operation.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mygroup</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">&#39;scan&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;kerchunk&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The operation/phase being applied is a positional argument and must be one of <code class="docutils literal notranslate"><span class="pre">scan</span></code>, <code class="docutils literal notranslate"><span class="pre">compute</span></code> or <code class="docutils literal notranslate"><span class="pre">validate</span></code>.
+(<code class="docutils literal notranslate"><span class="pre">ingest/catalog</span></code> may be added with the full version 1.3). There are also several keyword arguments that can be applied here:
+- mode: The format to use for the operation (default is Kerchunk)
+- repeat_id: If subsets have been produced for this group, use the subset ID, otherwise this defaults to <code class="docutils literal notranslate"><span class="pre">main</span></code>.
+- proj_code: For running a single project code within the group instead of all groups.
+- subset: Used in combination with project code, if both are set they must be integers where the group is divided into <code class="docutils literal notranslate"><span class="pre">subset</span></code> sections, and this operation is concerned with the nth one given by <code class="docutils literal notranslate"><span class="pre">proj_code</span></code> which is now an integer.
+- bypass: BypassSwitch object for bypassing certain errors (see the Deep Dive section for more details)</p>
+</section>
+</section>
+<section id="projects-in-padocc">
+<h2>Projects in PADOCC<a class="headerlink" href="#projects-in-padocc" title="Link to this heading"></a></h2>
+<p>To differentiate syntax of datasets/datafiles with other packages that have varying definitions of those terms,
+PADOCC uses the term <code class="docutils literal notranslate"><span class="pre">Project</span></code> to refer to a set of files to be aggregated into a single ‘Cloud Product’.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ProjectOperation</span></code> class within PADOCC allows us to access all information about a specific dataset, including
+fetching data from files within the pipeline directory. This class also inherits from several Mixin classes which
+act as containers for specific behaviours for easier organisation and future debugging.</p>
+<section id="the-project-operator-class">
+<h3>The Project Operator class<a class="headerlink" href="#the-project-operator-class" title="Link to this heading"></a></h3>
+<p>The ‘core’ behaviour of all classes is contained in the <code class="docutils literal notranslate"><span class="pre">ProjectOperation</span></code> class.
+This class has public UI methods like <code class="docutils literal notranslate"><span class="pre">info</span></code> and <code class="docutils literal notranslate"><span class="pre">help</span></code> that give general information about a project,
+and list some of the other public methods available respectively.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Project Operator:</span>
+<span class="go">&gt; project.info()                       - Get some information about this project</span>
+<span class="go">&gt; project.get_version()                - Get the version number for the output product</span>
+<span class="go">&gt; project.save_files()                 - Save all open files related to this project</span>
+<span class="go">Dataset Handling:</span>
+<span class="go">&gt; project.dataset                      - Default product Filehandler (pointer) property</span>
+<span class="go">&gt; project.dataset_attributes           - Fetch metadata from the default dataset</span>
+<span class="go">&gt; project.kfile                        - Kerchunk Filehandler property</span>
+<span class="go">&gt; project.kstore                       - Kerchunk (Parquet) Filehandler property</span>
+<span class="go">&gt; project.cfa_dataset                  - CFA Filehandler property</span>
+<span class="go">&gt; project.zstore                       - Zarr Filehandler property</span>
+<span class="go">&gt; project.update_attribute()           - Update an attribute within the metadata</span>
+<span class="go">Status Options:</span>
+<span class="go">&gt; project.get_last_run()               - Get the last performed phase and time it occurred</span>
+<span class="go">&gt; project.get_last_status()            - Get the status of the previous core operation.</span>
+<span class="go">&gt; project.get_log_contents()           - Get the log contents of a previous core operation</span>
+<span class="go">Extra Properties:</span>
+<span class="go">&gt; project.outpath                      - path to the output product (Kerchunk/Zarr)</span>
+<span class="go">&gt; project.outproduct                   - name of the output product (minus extension)</span>
+<span class="go">&gt; project.revision                     - Revision identifier (major + minor version plus type indicator)</span>
+<span class="go">&gt; project.version_no                   - Get major + minor version identifier</span>
+<span class="go">&gt; project.cloud_format[EDITABLE]       - Cloud format (Kerchunk/Zarr) for this project</span>
+<span class="go">&gt; project.file_type[EDITABLE]          - The file type to use (e.g JSON/parq for kerchunk).</span>
+<span class="go">&gt; project.source_format                - Get the driver used by kerchunk</span>
+<span class="go">&gt; project.get_stac_representation()    - Provide a mapper, fills with values from the project to create a STAC record.</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>Key Functions:</dt><dd><ul class="simple">
+<li><p>Acts as an access point to all information and data about a project (dataset).</p></li>
+<li><p>Can adjust values within key files (abstracted) by setting specific parameters of the project instance and then using <code class="docutils literal notranslate"><span class="pre">save_files</span></code>.</p></li>
+<li><p>Enables quick stats gathering for use with group statistics calculations.</p></li>
+<li><p>Can run any process on a project from the Project Operator.</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+</section>
+<section id="padocc-core-mixins">
+<h2>PADOCC Core Mixins<a class="headerlink" href="#padocc-core-mixins" title="Link to this heading"></a></h2>
+<p>The core module comes enabled with a host of containerised “behaviour” classes, that other classes in padocc can inherit from.
+These classes apply specifically to different components of padocc (typically <code class="docutils literal notranslate"><span class="pre">ProjectOperation</span></code> or <code class="docutils literal notranslate"><span class="pre">GroupOperation</span></code>) and should not be used on their own.</p>
+<section id="directory-mixin">
+<h3>Directory Mixin<a class="headerlink" href="#directory-mixin" title="Link to this heading"></a></h3>
+<p><strong>Target: Project or Group</strong></p>
+<p>The directory mixin class contains all behaviours relating to creating directories within a project (or group) in PADOCC.
+This includes the inherited ability for any project to create its parent working directory and group directory if needed, as well
+as a subdirectory for cached data files. The switch values <code class="docutils literal notranslate"><span class="pre">forceful</span></code> and <code class="docutils literal notranslate"><span class="pre">dryrun</span></code> are also closely tied to this
+container class, as the creation of new directories may be bypassed/forced if they exist already, or bypassed completely in a dry run.</p>
+</section>
+<section id="status-mixin">
+<h3>Status Mixin<a class="headerlink" href="#status-mixin" title="Link to this heading"></a></h3>
+<p><strong>Target: Project Only</strong></p>
+<p>Previously, all evaluations were handled by an assessor module (pre 1.3), but this has now been reorganised
+into a mixin class for the projects themselves, meaning any project instance has the capacity for self-evaluation. The routines
+grouped into this container class relate to the self analysis of details and parameters of the project and various
+files:
+- get last run: Determine the parameters used in the most recent operation for a project.
+- get last status: Get the status of the most recent (completed) operation.
+- get log contents: Examine the log contents for a specific project.</p>
+<p>This list will be expanded in the full release version 1.3 to include many more useful evaluators including
+statistics that can be averaged across a group.</p>
+</section>
+<section id="properties-mixin">
+<h3>Properties Mixin<a class="headerlink" href="#properties-mixin" title="Link to this heading"></a></h3>
+<p><strong>Target: Project Only</strong></p>
+<p>A collection of dynamic properties about a specific project. The Properties Mixin class abstracts any
+complications or calculations with retrieving specific parameters; some may come from multiple files, are worked out on-the-fly
+or may be based on an external request. Properties currently included are:
+- Outpath: The output path to a ‘product’, which could be a zarr store, kerchunk file etc.
+- Outproduct: The name of the output product which includes the cloud format and version number.
+- Revision/Version: Abstracts the construction of revision and version numbers for the project.
+- Cloud Format: Kerchunk/Zarr etc. - value stored in the base config file and can be set manually for further processing.
+- File Type: Extension applied to the output product, can be one of ‘json’ or ‘parquet’ for Kerchunk products.
+- Source Format: Format(s) detected during scan - retrieved from the detail config file after scanning.</p>
+<p>The properties mixin also enables a manual adjustment of some properties, like cloud format or file type, but also enables
+minor and major version increments. This will later be wrapped into an <code class="docutils literal notranslate"><span class="pre">Updater</span></code> module to enable easier updates to
+Cloud Product data/metadata.</p>
+</section>
+<section id="dataset-mixin">
+<h3>Dataset Mixin<a class="headerlink" href="#dataset-mixin" title="Link to this heading"></a></h3>
+<p><strong>Target: Project Only</strong></p>
+<p>This class handles all elements of the ‘cloud product properties’.
+Each project may include one or more cloud products, each handled by a filehandler of the correct type.
+The default cloud product is given by the <code class="docutils literal notranslate"><span class="pre">dataset</span></code> property defined in this mixin, while other specific products are given by specific properties.
+The behaviours for all dataset objects are contained here in one place for ease of use, and ease of integration of features between the <code class="docutils literal notranslate"><span class="pre">ProjectOperation</span></code> and <code class="docutils literal notranslate"><span class="pre">filehandler</span></code> objects.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="inspiration.html" class="btn btn-neutral float-left" title="Inspiration for Cloud Formats and Aggregations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="installation.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2024, Centre of Environmental Data Analysis Developers,Scientific and Technical Facilities Council (STFC),UK Research and Innovation (UKRI). BSD 2-Clause License. All rights reserved..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>  
+
+  <style>
+    /* Sidebar header (and topbar for mobile) */
+    .wy-side-nav-search, .wy-nav-top {
+      background: #e92603;
+    }
+
+    .caption-text, .header h1 {
+        color: #ef4d5a
+    }
+
+    .note {
+        background: #BEEF9E
+    }
+    .admonition-title {
+        background: #335145
+    }
+
+    .wy-nav-side {
+        background: #001711;
+    }
+
+  </style>
+
+
+</body>
+</html>

@@ -24,7 +24,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="GroupOperation Core and Mixin Behaviours" href="group_source.html" />
-    <link rel="prev" title="The SHEPARD Module" href="../operations/shepard.html" /> 
+    <link rel="prev" title="The SHEPARD Module" href="../detailed/shepard.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,23 +47,20 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../core/inspiration.html">Inspiration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/terminology.html">PADOCC Terms and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installing PADOCC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/user_guide.html">Basic User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/operations.html">All Operations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/ceda_staff.html">Extras for CEDA Staff</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Detailed View:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../operations/projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/groups.html">The Group Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/mixins.html">Core Mixins</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/shepard.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/features.html">Bespoke Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/parallel.html">Parallel Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/shepard.html">SHEPARD Deployment</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul class="current">
@@ -71,13 +68,18 @@
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.project.ProjectOperation"><code class="docutils literal notranslate"><span class="pre">ProjectOperation</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.complete_project"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.complete_project()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.delete_project"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.delete_project()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.diagnostic"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.diagnostic()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.dir"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.dir</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.export_report"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.export_report()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.file_exists"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.file_exists()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.get_agg_shorthand"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.get_agg_shorthand()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.help"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.help()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.info"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.info()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.migrate"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.migrate()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.run"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.run()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.save_files"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.save_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.switch_local"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.switch_local()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.project.ProjectOperation.switch_remote"><code class="docutils literal notranslate"><span class="pre">ProjectOperation.switch_remote()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.mixins.dataset.DatasetHandlerMixin"><code class="docutils literal notranslate"><span class="pre">DatasetHandlerMixin</span></code></a><ul>
@@ -136,6 +138,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shepard_source.html">SHEPARD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="phase_source.html">Phases</a></li>
 <li class="toctree-l1"><a class="reference internal" href="misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
@@ -169,14 +172,14 @@
 <p>Source code for individual project operations and mixin behaviours.</p>
 <dl class="py class" id="module-padocc.core.project">
 <dt class="sig sig-object py" id="padocc.core.project.ProjectOperation">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.project.</span></span><span class="sig-name descname"><span class="pre">ProjectOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_time:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ft_kwargs:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger:</span> <span class="pre">~logging.Logger</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass:</span> <span class="pre">~padocc.core.utils.BypassSwitch</span> <span class="pre">=</span> <span class="pre">&lt;padocc.core.utils.BypassSwitch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem_allowed:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote_s3:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.project.</span></span><span class="sig-name descname"><span class="pre">ProjectOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_time:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ft_kwargs:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger:</span> <span class="pre">~logging.Logger</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass:</span> <span class="pre">~padocc.core.utils.BypassSwitch</span> <span class="pre">=</span> <span class="pre">&lt;padocc.core.utils.BypassSwitch</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostic:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem_allowed:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote_s3:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xarray_kwargs:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_version:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation" title="Link to this definition"></a></dt>
 <dd><p>PADOCC Project Operation class.</p>
 <p>Able to access project files
 and perform some simple functions. Single-project operations
 always inherit from this class (e.g. Scan, Compute, Validate)</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.complete_project">
-<span class="sig-name descname"><span class="pre">complete_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">move_to</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.project.ProjectOperation.complete_project" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">complete_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">move_to</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.project.ProjectOperation.complete_project" title="Link to this definition"></a></dt>
 <dd><p>Move project to a completeness directory</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -196,6 +199,12 @@ always inherit from this class (e.g. Scan, Compute, Validate)</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.diagnostic">
+<span class="sig-name descname"><span class="pre">diagnostic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation.diagnostic" title="Link to this definition"></a></dt>
+<dd><p>Diagnostic mode, enable skipping specific features.</p>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.dir">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dir</span></span><a class="headerlink" href="#padocc.core.project.ProjectOperation.dir" title="Link to this definition"></a></dt>
@@ -203,10 +212,22 @@ always inherit from this class (e.g. Scan, Compute, Validate)</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.export_report">
+<span class="sig-name descname"><span class="pre">export_report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation.export_report" title="Link to this definition"></a></dt>
+<dd><p>Export report to a new location from within the pipeline.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.file_exists">
 <span class="sig-name descname"><span class="pre">file_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation.file_exists" title="Link to this definition"></a></dt>
 <dd><p>Check if a named file exists (without extension).</p>
 <p>This can be any generic filehandler attached.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.get_agg_shorthand">
+<span class="sig-name descname"><span class="pre">get_agg_shorthand</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.project.ProjectOperation.get_agg_shorthand" title="Link to this definition"></a></dt>
+<dd><p>Get Aggregation shorthand</p>
 </dd></dl>
 
 <dl class="py method">
@@ -242,7 +263,7 @@ moves all associated filehandlers (individually).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'kerchunk'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="misc_source.html#padocc.core.utils.BypassSwitch" title="padocc.core.utils.BypassSwitch"><span class="pre">BypassSwitch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padocc.core.project.ProjectOperation.run" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="misc_source.html#padocc.core.utils.BypassSwitch" title="padocc.core.utils.BypassSwitch"><span class="pre">BypassSwitch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forceful</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dryrun</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padocc.core.project.ProjectOperation.run" title="Link to this definition"></a></dt>
 <dd><p>Main function for running any project operation.</p>
 <p>All subclasses act as plugins for this function, and require a
 <code class="docutils literal notranslate"><span class="pre">_run</span></code> method called from here. This means all error handling
@@ -275,6 +296,20 @@ from scratch, otherwise saved refs from previous runs will be loaded.</p></li>
 <dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.save_files">
 <span class="sig-name descname"><span class="pre">save_files</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.project.ProjectOperation.save_files" title="Link to this definition"></a></dt>
 <dd><p>Save all filehandlers associated with this group.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.switch_local">
+<span class="sig-name descname"><span class="pre">switch_local</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation.switch_local" title="Link to this definition"></a></dt>
+<dd><p>Switch back to local version of kerchunk file if it exists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.switch_remote">
+<span class="sig-name descname"><span class="pre">switch_remote</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation.switch_remote" title="Link to this definition"></a></dt>
+<dd><p>Function to create remote copy of a dataset if relevant.</p>
+<p>Kerchunk - create new remote version.</p>
+<p>Zarr - Ignore</p>
 </dd></dl>
 
 </dd></dl>
@@ -720,7 +755,7 @@ during phased operation of the pipeline.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../operations/shepard.html" class="btn btn-neutral float-left" title="The SHEPARD Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../detailed/shepard.html" class="btn btn-neutral float-left" title="The SHEPARD Module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="group_source.html" class="btn btn-neutral float-right" title="GroupOperation Core and Mixin Behaviours" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

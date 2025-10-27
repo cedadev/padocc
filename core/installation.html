@@ -23,8 +23,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="PADOCC Command Line Tool" href="cli.html" />
-    <link rel="prev" title="Inspiration for Cloud Formats and Aggregations" href="inspiration.html" /> 
+    <link rel="next" title="Basic User Guide" href="user_guide.html" />
+    <link rel="prev" title="PADOCC Terms and Operators" href="terminology.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,10 +47,11 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="inspiration.html">Inspiration</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="terminology.html">PADOCC Terms and Operators</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installing PADOCC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#pip-installation">pip installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#install-from-source">Install from source</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#step-1-git-clone-the-repository">Step 1: Git clone the repository</a></li>
@@ -59,27 +60,23 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#environment-configuration">Environment configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#assembling-pipeline-inputs">Assembling Pipeline Inputs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#running-the-pipeline-cli">Running the pipeline CLI</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">Basic User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Tool Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="interactive.html">Interactive Notebook/Shell Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="operations.html">All Operations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="extras.html">Extra Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ceda_staff.html">Extras for CEDA Staff</a></li>
-<li class="toctree-l1"><a class="reference internal" href="complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Detailed View:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../operations/projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/groups.html">The Group Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/mixins.html">Core Mixins</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/shepard.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/features.html">Bespoke Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/parallel.html">Parallel Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/shepard.html">SHEPARD Deployment</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/project_source.html">Projects</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source_code/shepard_source.html">SHEPARD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/phase_source.html">Phases</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../source_code/misc_source.html">Filehandlers, Logs, and Utilities</a></li>
 </ul>
@@ -112,7 +109,7 @@
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Ensure you have local modules enabled such that you have python 3.x installed in your local environment. A version of the pipeline source code exists at <code class="docutils literal notranslate"><span class="pre">/gws/nopw/j04/cedaproc/padocc</span></code> so for CEDA staff please see if this can be used before cloning the repository elsewhere.</p>
+<p>Ensure you have local modules enabled such that you have python 3.11 or higher installed in your local environment.</p>
 </div>
 <section id="pip-installation">
 <h2>pip installation<a class="headerlink" href="#pip-installation" title="Link to this heading"></a></h2>
@@ -144,10 +141,14 @@
 <section id="environment-configuration">
 <h2>Environment configuration<a class="headerlink" href="#environment-configuration" title="Link to this heading"></a></h2>
 <p>Create a config file to set necessary environment variables. (Suggested to place these in the local <cite>config/</cite> folder as this will be ignored by git). Eg:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export WORKDIR = /path/to/kerchunk-pipeline</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export WORKDIR=/path/to/kerchunk-pipeline</span>
 </pre></div>
 </div>
-<p>Now you should be set up to run the pipeline properly.</p>
+<p>For parallel deployment with Lotus (Lotus 2 on JASMIN), an additional <code class="docutils literal notranslate"><span class="pre">LOTUS_CFG</span></code> environment variable is needed. See the section on parallel deployment for details.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For frequent PADOCC users it may be useful to set the <code class="docutils literal notranslate"><span class="pre">WORKDIR</span></code> and <code class="docutils literal notranslate"><span class="pre">LOTUS_CFG</span></code> variables either in your <code class="docutils literal notranslate"><span class="pre">.bashrc</span></code> file so they are always set, or alternatively using a shell script to set these values.</p>
+</div>
 </section>
 <section id="assembling-pipeline-inputs">
 <h2>Assembling Pipeline Inputs<a class="headerlink" href="#assembling-pipeline-inputs" title="Link to this heading"></a></h2>
@@ -170,45 +171,14 @@
 </dd>
 </dl>
 </section>
-<section id="running-the-pipeline-cli">
-<h2>Running the pipeline CLI<a class="headerlink" href="#running-the-pipeline-cli" title="Link to this heading"></a></h2>
-<p>See the section around using the CLI tool for more details. This is a brief introduction to how to run the CLI tool.</p>
-<p>Some useful option/flags to add:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">v</span> <span class="c1"># Verbose</span>
-   <span class="c1">#  - add multiple v&#39;s for debug messages</span>
-<span class="o">-</span><span class="n">f</span> <span class="c1"># Forceful</span>
-   <span class="c1">#  - perform step even if output file already exists</span>
-<span class="o">-</span><span class="n">b</span> <span class="c1"># Bypass</span>
-   <span class="c1"># See bypass section in pipeline flags explained.</span>
-<span class="o">-</span><span class="n">r</span> <span class="c1"># repeat_id</span>
-   <span class="c1">#  - default uses main, if you have created repeat_ids manually or with assess.py, specify here.</span>
-<span class="o">-</span><span class="n">d</span> <span class="c1"># dryrun</span>
-   <span class="c1">#  - Skip creating any new files in this phase</span>
-</pre></div>
-</div>
-<p>The pipeline is now run using the entrypoint script <code class="docutils literal notranslate"><span class="pre">padocc</span></code> as a command-line interface (CLI) tool.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 4.1 Initialise from your CSV file:</span>
-<span class="n">padocc</span> <span class="n">init</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">i</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">file</span><span class="o">.</span><span class="n">csv</span>
-
-<span class="c1"># 4.2 Perform scanning of netcdf files:</span>
-<span class="n">padocc</span> <span class="n">scan</span> <span class="o">-</span><span class="n">G</span> <span class="o">&lt;</span><span class="n">group_name</span><span class="o">&gt;</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For Jasmin users with SLURM access, you should check after every <code class="docutils literal notranslate"><span class="pre">scan</span></code>, <code class="docutils literal notranslate"><span class="pre">compute</span></code> and <code class="docutils literal notranslate"><span class="pre">validate</span></code> that your SLURM jobs are running properly:</p>
-<p><code class="docutils literal notranslate"><span class="pre">squeue</span> <span class="pre">-u</span> <span class="pre">&lt;jasmin_username&gt;</span></code></p>
-<p>And once the SLURM jobs are complete you should check error logs to see which jobs were successful and which failed for different reasons. See the Interactive section for how to check status and logs of projects in the pipeline.</p>
-</div>
-</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="inspiration.html" class="btn btn-neutral float-left" title="Inspiration for Cloud Formats and Aggregations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="cli.html" class="btn btn-neutral float-right" title="PADOCC Command Line Tool" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="terminology.html" class="btn btn-neutral float-left" title="PADOCC Terms and Operators" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="user_guide.html" class="btn btn-neutral float-right" title="Basic User Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

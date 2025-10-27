@@ -46,34 +46,32 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../core/inspiration.html">Inspiration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/terminology.html">PADOCC Terms and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installing PADOCC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/user_guide.html">Basic User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/cli.html">Command Line Tool Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/interactive.html">Interactive Notebook/Shell Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/operations.html">All Operations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/extras.html">Extra Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/ceda_staff.html">Extras for CEDA Staff</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../core/complex_operation.html">Complex (Parallel) Operation</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Operations:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Detailed View:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../operations/projects.html">The Project Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/groups.html">The Group Operator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/mixins.html">Core Mixins</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../operations/shepard.html">SHEPARD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/features.html">Bespoke Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/parallel.html">Parallel Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detailed/shepard.html">SHEPARD Deployment</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">PADOCC API Reference:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="project_source.html">Projects</a></li>
 <li class="toctree-l1"><a class="reference internal" href="group_source.html">Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shepard_source.html">SHEPARD</a></li>
 <li class="toctree-l1"><a class="reference internal" href="phase_source.html">Phases</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Filehandlers, Logs, and Utilities</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.filehandlers.CFADataset"><code class="docutils literal notranslate"><span class="pre">CFADataset</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.CFADataset.close"><code class="docutils literal notranslate"><span class="pre">CFADataset.close()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.CFADataset.get_meta"><code class="docutils literal notranslate"><span class="pre">CFADataset.get_meta()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.CFADataset.open_dataset"><code class="docutils literal notranslate"><span class="pre">CFADataset.open_dataset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.CFADataset.save"><code class="docutils literal notranslate"><span class="pre">CFADataset.save()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.CFADataset.set_meta"><code class="docutils literal notranslate"><span class="pre">CFADataset.set_meta()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.CFADataset.spawn_copy"><code class="docutils literal notranslate"><span class="pre">CFADataset.spawn_copy()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.CFADataset.update_history"><code class="docutils literal notranslate"><span class="pre">CFADataset.update_history()</span></code></a></li>
@@ -94,9 +92,9 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.filehandlers.GenericStore"><code class="docutils literal notranslate"><span class="pre">GenericStore</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.GenericStore.clear"><code class="docutils literal notranslate"><span class="pre">GenericStore.clear()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.GenericStore.close"><code class="docutils literal notranslate"><span class="pre">GenericStore.close()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.GenericStore.get_meta"><code class="docutils literal notranslate"><span class="pre">GenericStore.get_meta()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.GenericStore.is_empty"><code class="docutils literal notranslate"><span class="pre">GenericStore.is_empty</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.GenericStore.save"><code class="docutils literal notranslate"><span class="pre">GenericStore.save()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.GenericStore.set_meta"><code class="docutils literal notranslate"><span class="pre">GenericStore.set_meta()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.GenericStore.spawn_copy"><code class="docutils literal notranslate"><span class="pre">GenericStore.spawn_copy()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.GenericStore.store_path"><code class="docutils literal notranslate"><span class="pre">GenericStore.store_path</span></code></a></li>
@@ -104,10 +102,10 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler"><code class="docutils literal notranslate"><span class="pre">JSONFileHandler</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler.close"><code class="docutils literal notranslate"><span class="pre">JSONFileHandler.close()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler.create_file"><code class="docutils literal notranslate"><span class="pre">JSONFileHandler.create_file()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler.get"><code class="docutils literal notranslate"><span class="pre">JSONFileHandler.get()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler.pop"><code class="docutils literal notranslate"><span class="pre">JSONFileHandler.pop()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler.save"><code class="docutils literal notranslate"><span class="pre">JSONFileHandler.save()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler.set"><code class="docutils literal notranslate"><span class="pre">JSONFileHandler.set()</span></code></a></li>
 </ul>
 </li>
@@ -127,9 +125,9 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler"><code class="docutils literal notranslate"><span class="pre">ListFileHandler</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler.append"><code class="docutils literal notranslate"><span class="pre">ListFileHandler.append()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler.close"><code class="docutils literal notranslate"><span class="pre">ListFileHandler.close()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler.get"><code class="docutils literal notranslate"><span class="pre">ListFileHandler.get()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler.remove"><code class="docutils literal notranslate"><span class="pre">ListFileHandler.remove()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler.save"><code class="docutils literal notranslate"><span class="pre">ListFileHandler.save()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.filehandlers.ListFileHandler.set"><code class="docutils literal notranslate"><span class="pre">ListFileHandler.set()</span></code></a></li>
 </ul>
 </li>
@@ -220,12 +218,6 @@ processes.</p>
 <li><p>Open dataset - opens the CFA dataset</p></li>
 </ol>
 <dl class="py method">
-<dt class="sig sig-object py" id="padocc.core.filehandlers.CFADataset.close">
-<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.CFADataset.close" title="Link to this definition"></a></dt>
-<dd><p>Set the meta attribute for this dataset.</p>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.CFADataset.get_meta">
 <span class="sig-name descname"><span class="pre">get_meta</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.CFADataset.get_meta" title="Link to this definition"></a></dt>
 <dd><p>Get the metadata/attributes for this dataset.</p>
@@ -235,6 +227,12 @@ processes.</p>
 <dt class="sig sig-object py" id="padocc.core.filehandlers.CFADataset.open_dataset">
 <span class="sig-name descname"><span class="pre">open_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dataset</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.CFADataset.open_dataset" title="Link to this definition"></a></dt>
 <dd><p>Open the CFA Dataset [READ-ONLY]</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.filehandlers.CFADataset.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.CFADataset.save" title="Link to this definition"></a></dt>
+<dd><p>Set the meta attribute for this dataset.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -324,7 +322,7 @@ for all Filehandler subclasses.</p>
 no attributes passed to either of these.</p>
 <blockquote>
 <div><p>fh.create_file()
-fh.close()</p>
+fh.save()</p>
 </div></blockquote>
 <ol class="arabic" start="3">
 <li><p>Get/set:</p>
@@ -406,12 +404,6 @@ operations on component files.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="padocc.core.filehandlers.GenericStore.close">
-<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.GenericStore.close" title="Link to this definition"></a></dt>
-<dd><p>Close the meta filehandler for this store</p>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.GenericStore.get_meta">
 <span class="sig-name descname"><span class="pre">get_meta</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.filehandlers.GenericStore.get_meta" title="Link to this definition"></a></dt>
 <dd><p>Obtain the metadata dictionary</p>
@@ -421,6 +413,12 @@ operations on component files.</p>
 <dt class="sig sig-object py" id="padocc.core.filehandlers.GenericStore.is_empty">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_empty</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#padocc.core.filehandlers.GenericStore.is_empty" title="Link to this definition"></a></dt>
 <dd><p>Check if the store contains any data</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.filehandlers.GenericStore.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.GenericStore.save" title="Link to this definition"></a></dt>
+<dd><p>Close the meta filehandler for this store</p>
 </dd></dl>
 
 <dl class="py method">
@@ -490,12 +488,6 @@ operations on component files.</p>
 <li><p>Create_file - Specific for JSON files.</p></li>
 </ol>
 <dl class="py method">
-<dt class="sig sig-object py" id="padocc.core.filehandlers.JSONFileHandler.close">
-<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.JSONFileHandler.close" title="Link to this definition"></a></dt>
-<dd><p>Save the content of the filehandler</p>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.JSONFileHandler.create_file">
 <span class="sig-name descname"><span class="pre">create_file</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.JSONFileHandler.create_file" title="Link to this definition"></a></dt>
 <dd><p>JSON files require entry of a single dict on creation.</p>
@@ -522,6 +514,12 @@ operations on component files.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.filehandlers.JSONFileHandler.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.JSONFileHandler.save" title="Link to this definition"></a></dt>
+<dd><p>Save the content of the filehandler</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.JSONFileHandler.set">
 <span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.JSONFileHandler.set" title="Link to this definition"></a></dt>
 <dd><p>Set the value of the whole dictionary.</p>
@@ -537,7 +535,7 @@ operations on component files.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.KerchunkFile">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.filehandlers.</span></span><span class="sig-name descname"><span class="pre">KerchunkFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.filehandlers.KerchunkFile" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.core.filehandlers.</span></span><span class="sig-name descname"><span class="pre">KerchunkFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xarray_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.filehandlers.KerchunkFile" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#padocc.core.filehandlers.JSONFileHandler" title="padocc.core.filehandlers.JSONFileHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">JSONFileHandler</span></code></a></p>
 <p>Filehandler for Kerchunk file, enables substitution/replacement
 for local/remote links, and updating content.</p>
@@ -568,9 +566,9 @@ for local/remote links, and updating content.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fsspec_kwargs</strong> – (dict) Kwargs applied to fsspec mapper.</p></li>
-<li><p><strong>retry</strong> – (bool) Unused property for multiple tries when searching for kerchunk
-dataset.</p></li>
+<li><p><strong>fsspec_kwargs</strong> – (dict) Kwargs applied to fsspec mapper - deprecated</p></li>
+<li><p><strong>retry</strong> – (bool) Unused property for multiple tries when searching for kerchunk 
+dataset - deprecated.</p></li>
 </ul>
 </dd>
 </dl>
@@ -677,12 +675,6 @@ will allow combining stores in future.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="padocc.core.filehandlers.ListFileHandler.close">
-<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.ListFileHandler.close" title="Link to this definition"></a></dt>
-<dd><p>Save the content of the filehandler</p>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.filehandlers.ListFileHandler.get">
 <span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.ListFileHandler.get" title="Link to this definition"></a></dt>
 <dd><p>Get the current value</p>
@@ -697,6 +689,12 @@ will allow combining stores in future.</p>
 <dd class="field-odd"><p><strong>oldvalue</strong> – (str) Remove past value from list.</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.core.filehandlers.ListFileHandler.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.filehandlers.ListFileHandler.save" title="Link to this definition"></a></dt>
+<dd><p>Save the content of the filehandler</p>
 </dd></dl>
 
 <dl class="py method">
