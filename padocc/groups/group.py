@@ -440,7 +440,7 @@ class GroupOperation(
     def _compute_config(
             self, 
             proj_code: str,
-            mode: str = 'kerchunk',
+            mode: Union[str,None] = None,
             bypass: Union[BypassSwitch,None] = None,
             run_kwargs: Union[dict,None] = None,
             **kwargs
@@ -472,7 +472,7 @@ class GroupOperation(
 
         if mode not in COMPUTE:
             raise ValueError(
-                f'Mode "{mode}" not recognised, must be one of '
+                f'Format "{mode}" not recognised, must be one of '
                 f'"{list(COMPUTE.keys())}"'
             )
         

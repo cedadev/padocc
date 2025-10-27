@@ -163,24 +163,25 @@ class AllocationsMixin:
             self,
             phase           : str,
             source          : str,
-            band_increase   : str = None,
-            forceful        : bool = None,
-            dryrun          : bool = None,
-            thorough        : bool = None,
             verbose         : int = 0,
-            binpack         : bool = None,
-            time_allowed    : str = None,
-            memory          : str = None,
-            subset          : int = None,
-            repeat_id       : str = 'main',
-            bypass          : BypassSwitch = BypassSwitch(),
-            mode            : str = 'kerchunk',
-            new_version     : str = None,
-            func            : Callable = print,
-            xarray_kwargs   : dict = None,
-            valid           : Union[dict,None] = None,
             joblabel        : str = 'PADOCC',
+            repeat_id       : str = 'main',
+            mode            : str = 'kerchunk',
             wait            : bool = False,
+            func            : Callable = print,
+            bypass          : BypassSwitch = BypassSwitch(),
+            band_increase   : Union[str,None] = None,
+            forceful        : Union[bool,None] = None,
+            dryrun          : Union[bool,None] = None,
+            thorough        : Union[bool,None] = None,
+            binpack         : Union[bool,None] = None,
+            time_allowed    : Union[str,None] = None,
+            memory          : Union[str,None] = None,
+            subset          : Union[int,None] = None,
+            new_version     : Union[str,None] = None,
+            xarray_kwargs   : Union[dict,None] = None,
+            run_kwargs      : Union[dict,None] = None,
+            valid           : Union[dict,None] = None,
         ) -> None:
         """
         Organise parallel deployment via SLURM.
@@ -249,7 +250,8 @@ class AllocationsMixin:
                     sbatch, 
                     group_length=alloc[2],
                     sbatch_kwargs=sbatch_kwargs,
-                    time=alloc[1]
+                    time=alloc[1],
+                    run_kwargs=run_kwargs,
                 )
         else:
 
@@ -276,6 +278,7 @@ class AllocationsMixin:
                     sbatch,
                     group_length=num_datasets,
                     sbatch_kwargs=sbatch_kwargs,
+                    run_kwargs=run_kwargs,
                     time=time_allowed,
                     memory=memory,
                     valid=valid,
@@ -291,6 +294,7 @@ class AllocationsMixin:
             sbatch: ListFileHandler,
             group_length: int,
             sbatch_kwargs: dict,
+            run_kwargs: Union[dict,None] = None,
             time: Union[str,None] = None,
             memory: Union[str,None] = None,
             valid: Union[str,None] = None,
@@ -310,6 +314,9 @@ class AllocationsMixin:
 
         if valid is not None:
             sbatch_flags += f' -i {valid}'
+
+        for k, v in run_kwargs:
+            sbatch_flags += f' --{k} {v}'
 
         lotus_requirements = get_lotus_reqs(self.logger)
   
