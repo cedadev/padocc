@@ -22,6 +22,11 @@ from padocc.core.filehandlers import JSONFileHandler, ZarrStore, KerchunkFile
 from padocc.core.utils import find_closest, make_tuple, timestamp
 from padocc.phases.validate import ValidateDatasets
 
+from kerchunk.hdf import SingleHdf5ToZarr
+from kerchunk.netCDF3 import NetCDF3ToZarr
+from kerchunk.tiff import TiffToZarr
+from kerchunk.grib2 import GribToZarr
+
 CONCAT_MSG = 'See individual files for more details'    
 
 class KerchunkConverter(LoggedOperation):
@@ -43,6 +48,9 @@ class KerchunkConverter(LoggedOperation):
         self.loaded_refs   = False
 
         self.ctype = None
+
+        h5z = logging.getLogger('h5-to-zarr')
+        h5z.setLevel(logging.WARN)
 
         self.drivers = {
             'ncf3': self._ncf3_to_zarr,
@@ -128,22 +136,18 @@ class KerchunkConverter(LoggedOperation):
                     
     def _hdf5_to_zarr(self, nfile: str, **kwargs) -> dict:
         """Wrapper for converting NetCDF4/HDF5 type files to Kerchunk"""
-        from kerchunk.hdf import SingleHdf5ToZarr
         return SingleHdf5ToZarr(nfile,**kwargs).translate()
 
     def _ncf3_to_zarr(self, nfile: str, **kwargs) -> dict:
         """Wrapper for converting NetCDF3 type files to Kerchunk"""
-        from kerchunk.netCDF3 import NetCDF3ToZarr
         return NetCDF3ToZarr(nfile, **kwargs).translate()
 
     def _tiff_to_zarr(self, tfile: str, **kwargs) -> dict:
         """Wrapper for converting GeoTiff type files to Kerchunk"""
-        from kerchunk.tiff import TiffToZarr
         return TiffToZarr(tfile, **kwargs).translate()
     
     def _grib_to_zarr(self, gfile: str, **kwargs) -> dict:
         """Wrapper for converting GRIB type files to Kerchunk"""
-        from kerchunk.grib2 import GribToZarr
         return GribToZarr(gfile, **kwargs).translate()
 
 class ComputeOperation(ProjectOperation):
@@ -207,7 +211,8 @@ class ComputeOperation(ProjectOperation):
             **kwargs)
         
         if parallel:
-            self.update_status(self.phase, 'Pending',jobid=self._logid)
+            endtime = os.environ.get('SLURM_JOB_END_TIME')
+            self.update_status(self.phase, f'Pending',jobid=self._logid)
         
         self._is_trial = is_trial
 

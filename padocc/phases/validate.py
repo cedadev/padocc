@@ -630,8 +630,8 @@ class ValidateDatasets(LoggedOperation):
             try:
                 testdim = self.test_dataset_var(dim)
                 test_range = (
-                    testdim.head(1),
-                    testdim.tail(1)
+                    testdim.head(1)[0],
+                    testdim.tail(1)[0]
                 )
             except KeyError:
                 self.logger.warning(f'{dim} could not be validated for data content')
@@ -640,8 +640,8 @@ class ValidateDatasets(LoggedOperation):
             try:
                 controldim = self.control_dataset_var(dim)
                 control_range = (
-                    controldim.head(1),
-                    controldim.tail(1)
+                    controldim.head(1)[0],
+                    controldim.tail(1)[0]
                 )
             except KeyError:
                 self.logger.warning(f'{dim} could not be validated for data content')
@@ -771,17 +771,29 @@ class ValidateDatasets(LoggedOperation):
             self.logger.debug(f'Skipped {dim}')
             return
 
-        if test_range != control_range:
-            if test_range[0] == test_range[1]:
-                test_range = [test_range[0]]
-                
-            if control_range[0] == control_range[1]:
-                control_range = [control_range[0]]
+        if test_range[0] == test_range[1]:
+            test_range = [test_range[0]]
+            
+        if control_range[0] == control_range[1]:
+            control_range = [control_range[0]]
+
+        self.logger.debug('test range')
+        self.logger.debug(test_range)
+        self.logger.debug('control range')
+        self.logger.debug(control_range)
+
+        if test_range[0] != control_range[0] or test_range[1] != control_range[1]:
+
+            try:
+                test_value = format_tuple(tuple(np.array(test_range, dtype=test_range[0].dtype).tolist()))
+                control_value = format_tuple(tuple(np.array(control_range, dtype=control_range[0].dtype).tolist()))
+            except:
+                self.logger.warning('Unable to specify error values')
+                test_value, control_value = None, None
+
             self._data_report[f'dimensions,data_errors,{dim}'] = {
-                    self._labels[0]: format_tuple(
-                        tuple(np.array(test_range, dtype=test_range[0].dtype).tolist())),
-                    self._labels[1]: format_tuple(
-                        tuple(np.array(control_range, dtype=control_range[0].dtype).tolist())),
+                    self._labels[0]: test_value,
+                    self._labels[1]: control_value
                 }            
 
     def _validate_dimlens(self, dim: str, test, control, ignore=None):

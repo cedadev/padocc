@@ -6,6 +6,7 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
 import argparse
 import yaml
+import logging
 
 from padocc import GroupOperation, phase_map
 from padocc.core.utils import BypassSwitch, get_attribute, list_groups, group_exists
@@ -170,12 +171,32 @@ def get_args():
 
     return args
 
+def set_verbose(level: int):
+    """
+    Reset the logger basic config.
+    """
+
+    levels = [
+        logging.WARN,
+        logging.INFO,
+        logging.DEBUG,
+    ]
+
+    if level >= len(levels):
+        level = len(levels) - 1
+
+    for name in logging.root.manager.loggerDict:
+        lg = logging.getLogger(name)
+        lg.setLevel(levels[level])
+
 def main():
     """
     Run Command Line functions for PADOCC serial
     processing. Parallel process deployment will 
     be re-added in the full version."""
     args = get_args()
+
+    set_verbose(0)
 
     xarray_kwargs = None
     if args.xarray_kwargs is not None:
