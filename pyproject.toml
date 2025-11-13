@@ -1,6 +1,6 @@
 [project]
 name = "padocc"
-version = "1.4.0"
+version = "1.4.1"
 description = "Pipeline to Aggregate Data for Optimised Cloud Capabilities"
 authors = [
     {name = "Daniel Westwood",email = "daniel.westwood@stfc.ac.uk"}
@@ -27,7 +27,7 @@ dependencies = [
     "matplotlib (==3.9.2)",
     "requests (>=2.32.3,<3.0.0)",
     "aiohttp (>=3.10.10,<4.0.0)",
-    "cfapyx (>=2025.8.4,<2026.0.0)",
+    "cfapyx (>=2025.11.5,<2026.0.0)",
     "myst-nb (>=1.1.2,<2.0.0)",
     "types-pyyaml (>=6.0.12.20240917,<7.0.0.0)",
     "zarr (>=2.18.4)",
