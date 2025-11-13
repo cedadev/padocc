@@ -143,12 +143,13 @@ class ProjectOperation(
 
         # ft_kwargs <- stored in base_cfg after this point.
         if first_time:
+
             if isinstance(ft_kwargs, dict):
                 self._setup_config(**ft_kwargs)
             self._configure_filelist()
 
-        if len(self.allfiles) < 1:
-            raise ValueError(f'Project {self.proj_code} contains no files')
+            if len(self.allfiles) < 1:
+                raise ValueError(f'Project {self.proj_code} contains no files')
 
         # ProjectOperation attributes
         self.status_log = CSVFileHandler(self.dir, 'status_log', logger=self.logger, **self.fh_kwargs)
@@ -449,12 +450,12 @@ class ProjectOperation(
         if status is None:
             self.logger.warning(
                 f'Most recent phase for {self.proj_code} is unconfirmed. - '
-                'please re-validate any changes or ensure products are otherwise validated.'
+                'please ensure re-validation of any changes or ensure products are otherwise validated.'
             )
         elif 'validate' not in status:
             self.logger.warning(
                 f'Most recent phase for {self.proj_code} is NOT validation - '
-                'please re-validate any changes or ensure products are otherwise validated.'
+                'please ensure re-validation of any changes or ensure products are otherwise validated.'
             )
         else:
             pass

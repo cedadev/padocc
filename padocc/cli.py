@@ -221,13 +221,13 @@ def new_group(group, **kwargs):
     """Save newly created group"""
     group.save_files()
 
-def init_group(group, input_file: Union[str,None] = None):
+def init_group(group, run_kwargs: Union[dict,None] = None, **kwargs):
     """Initialise group from input file"""
 
-    if input_file is None:
+    if run_kwargs.get('input_file',None) is None:
         raise ValueError('Missing input file `-i`')
 
-    group.init_from_file(input_file)
+    group.init_from_file(run_kwargs.get('input_file'))
     group.save_files()
 
 def scan_group(group, **kwargs):
@@ -355,7 +355,7 @@ def parse_group(
             'compute_total':parallel_project.split('/')[1]
         }
 
-    run_kwargs['error_bypass'] = input_file
+    run_kwargs['input_file'] = input_file
     run_kwargs['aggregator'] = aggregator
     run_kwargs['b64vars'] = b64vars
 

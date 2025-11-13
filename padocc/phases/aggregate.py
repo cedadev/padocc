@@ -419,6 +419,11 @@ def padocc_combine(
     if logger is None:
         logger = init_logger(2, 'padocc_aggregator')
 
+    if len(agg_dims) != 1:
+        raise NotImplementedError(
+            'Multi-dimensional aggregation not supported'
+        )
+
     logger.info("PADOCC-A: Starting PADOCC aggregator")
 
     # Always attempt b64 encoding for agg dims

@@ -367,10 +367,11 @@ class ComputeOperation(ProjectOperation):
                 f'have specified to use {mode} which requires the use '
                 'of a different `DS` operator (Kerchunk/Zarr supported).'
             )
-        
-        if not self.cfa_enabled and not self._thorough:
-            # Bypass CFA if deactivated.
-            return 'Skipped', False
+                
+        if not self.cfa_enabled:
+            if not self._thorough:
+                # Bypass CFA if deactivated.
+                return 'Skipped', False
         
         if file_limit == len(self.allfiles):
             file_limit = None

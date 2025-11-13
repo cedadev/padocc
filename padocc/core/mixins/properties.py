@@ -87,7 +87,7 @@ class PropertiesMixin:
 
     @property
     def cfa_enabled(self):
-        return not self.base_cfg.get(index='disable_CFA',default=True) and self.detail_cfg.get(index='CFA',default=True)
+        return not self.base_cfg.get(index='disable_cfa',default=True) and self.detail_cfg.get(index='CFA',default=True)
     
     @cfa_enabled.setter
     def cfa_enabled(self, value: bool):

@@ -198,9 +198,12 @@ class ModifiersMixin:
             if i in self.proj_codes['main']:
                 code_labels.append(i)
             elif i.isnumeric():
-                code_labels.append(self.proj_codes['main'][i])
+                code_labels.append(self.proj_codes['main'][int(i)])
+
         for pc in code_labels:
             self.remove_project(pc, ask=ask)
+
+        self.save_files()
 
     def remove_project(self, proj_code: str, ask: bool = True) -> None:
         """

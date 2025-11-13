@@ -31,8 +31,8 @@ phases = [
 
 # Which files acceptable to pull from Moles Tags file.
 source_opts = [
-    '.nc',
-    '.tif'
+    'nc',
+    'tif'
 ]
 
 # Which operations are parallelisable.

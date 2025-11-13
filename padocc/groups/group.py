@@ -47,6 +47,7 @@ class GroupOperation(
             logid    : str = None,
             verbose  : int = 0,
             xarray_kwargs: dict = None,
+            new_version: bool = False,
         ) -> None:
         """
         Initialisation for a GroupOperation object to handle all interactions
@@ -83,14 +84,13 @@ class GroupOperation(
 
         """
 
+        self.allow_new_version = new_version
+
         if label is None:
             label = 'group-operation'
 
         if workdir is None:
-            try:
-                workdir = os.environ.get('WORKDIR')
-            except:
-                pass
+            workdir = os.environ.get('WORKDIR')
 
         if workdir is None:
             raise MissingVariableError('$WORKDIR')
@@ -186,6 +186,7 @@ class GroupOperation(
                 groupID=self.groupID,
                 logger=self.logger,
                 xarray_kwargs=self._xarray_kwargs,
+                new_version=self.allow_new_version,
                 **fh_kwargs
             )
 
@@ -245,7 +246,7 @@ class GroupOperation(
                     continue
 
                 # Skip already complete ones
-                if 'complete' in status:
+                if 'complete' in status and not self._thorough:
                     self.logger.info(f'{proj}: Skipped')
                     continue
 
@@ -505,6 +506,8 @@ class GroupOperation(
         bypass = bypass or BypassSwitch()
 
         self.logger.debug(f"Starting validation for {proj_code}")
+
+        run_kwargs['error_bypass'] = run_kwargs.pop('input_file',None)
 
         try:
             valid = ValidateOperation(

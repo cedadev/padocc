@@ -146,8 +146,9 @@ class PresliceSet:
     Preslice Object for handling slices applied to datasets.
     """
 
-    def __init__(self):
+    def __init__(self, logger):
         self._preslice_set = {}
+        self.logger = logger
 
     def add_preslice(self, preslice: dict[slice], var: str):
         self._preslice_set[var] = preslice
@@ -164,9 +165,12 @@ class PresliceSet:
                 if isinstance(dslice,tuple):
                     squeeze_dims.append(dslice[1])
                     self._preslice_set[var][dim] = dslice[0]
+
+            self.logger.debug(self._preslice_set[var])
+            self.logger.debug(squeeze_dims)
             da = data_arr.isel(**self._preslice_set[var])
             if len(squeeze_dims) > 0:
-                da = da.squeeze(dim=squeeze_dims,drop=True)
+                da = da.squeeze(dim=squeeze_dims, drop=True)
             return da
 
     def _default_preslice(self, data_arr: xr.DataArray) -> xr.DataArray:
@@ -300,13 +304,6 @@ class ValidateDatasets(LoggedOperation):
         self._metadata_report = None
         self._data_report = None
 
-        self._preslice_fns = preslice_fns or [PresliceSet() for d in datasets]
-
-        if len(self._datasets) > 2:
-            raise NotImplementedError(
-                'Simultaneous Validation of multiple datasets is not supported.'
-            )
-
         super().__init__(
             logger,
             label=label,
@@ -314,6 +311,13 @@ class ValidateDatasets(LoggedOperation):
             logid=logid,
             verbose=verbose
         )
+
+        self._preslice_fns = preslice_fns or [PresliceSet(self.logger) for d in datasets]
+
+        if len(self._datasets) > 2:
+            raise NotImplementedError(
+                'Simultaneous Validation of multiple datasets is not supported.'
+            )
 
     def __str__(self):
         return f'<PADOCC Validator: {self._id}>'
@@ -619,6 +623,8 @@ class ValidateDatasets(LoggedOperation):
         if 'ignore' in allowances:
             ignore = allowances['ignore']
 
+        ignore.append('aggregation')
+
         attrset = []
         for d in self._datasets:
             attrset.append(d.attrs)
@@ -639,7 +645,7 @@ class ValidateDatasets(LoggedOperation):
             # Check for ignored attributes
             if attr in ignore:
                 self._metadata_report[f'attributes,{source},{attr}'] = {
-                    'type': 'ignore'
+                    'type': 'ignored'
                 }
                 continue
 
@@ -1222,7 +1228,7 @@ class ValidateOperation(ProjectOperation):
         virtual = self.detail_cfg.get('virtual_concat',False)
         # Use rf to squeeze non-present dimensions
 
-        preslice = PresliceSet()
+        preslice = PresliceSet(self.logger)
         for var in variables:
             preslice_var = {}
 
@@ -1232,6 +1238,8 @@ class ValidateOperation(ProjectOperation):
                     continue
 
             dim_diffs = set(test[var].dims) - set(sample[var].dims)
+            self.logger.debug(f'Test dims: {set(test[var].dims)}')
+            self.logger.debug(f'Sample dims: {set(sample[var].dims)}')
 
             for dim in sample[var].dims:
 
@@ -1262,6 +1270,7 @@ class ValidateOperation(ProjectOperation):
                     pos0,
                     end
                 )
+                
                 preslice_var[dim] = slice_dim
 
             # Covers virtual dimensions

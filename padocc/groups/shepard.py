@@ -2,11 +2,6 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-"""
-SHEPARD: (v1.0)
-Serialised Handler for Enabling Padocc Aggregations via Recurrent Deployment
-"""
-
 import argparse
 import glob
 import json
@@ -17,18 +12,17 @@ from typing import Union
 import random
 import yaml
 import string
+import importlib
 
 from padocc.core.logs import LoggedOperation, clear_loggers
 from padocc.core.utils import phases, BypassSwitch, times, format_str
 
 from .group import GroupOperation
 
-shepard_template = {
-    'workdir': '/my/workdir',
-    'group_file': '/my/group/file.csv',
-    'groupID': 'my-group1',
-    'substitutions':['a','b']
-}
+"""
+SHEPARD: (v1.0)
+Serialised Handler for Enabling Padocc Aggregations via Recurrent Deployment
+"""
 
 def random_hash(length: int):
     """
@@ -428,6 +422,12 @@ class ShepardOperator(LoggedOperation):
                 # Summarise and save
                 summary = flock.summarise_data(func=None)
                 self._write_summary(flock.groupID, summary)
+
+                ## Pre-completion scripting
+                if self._pre_completion is not None:
+                    mod = importlib.import_module(self._pre_completion['module'])
+                    func = getattr(mod, self._pre_completion['function'])
+                    func(flock)
 
                 # Complete with thoroughness - complete as job.
                 flock.deploy_parallel(
