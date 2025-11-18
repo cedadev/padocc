@@ -47,6 +47,7 @@ class GroupOperation(
             logid    : str = None,
             verbose  : int = 0,
             xarray_kwargs: dict = None,
+            new_version : bool = None
         ) -> None:
         """
         Initialisation for a GroupOperation object to handle all interactions
