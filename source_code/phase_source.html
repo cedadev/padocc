@@ -68,35 +68,8 @@
 <li class="toctree-l1"><a class="reference internal" href="group_source.html">Groups</a></li>
 <li class="toctree-l1"><a class="reference internal" href="shepard_source.html">SHEPARD</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Phases</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-padocc.phases.scan">Scan Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.phases.scan.ScanOperation"><code class="docutils literal notranslate"><span class="pre">ScanOperation</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.scan.ScanOperation.help"><code class="docutils literal notranslate"><span class="pre">ScanOperation.help()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#module-padocc.phases.compute">Compute Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.ComputeOperation"><code class="docutils literal notranslate"><span class="pre">ComputeOperation</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.ComputeOperation.filelist"><code class="docutils literal notranslate"><span class="pre">ComputeOperation.filelist</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.ComputeOperation.help"><code class="docutils literal notranslate"><span class="pre">ComputeOperation.help()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.ComputeOperation.order_native_files"><code class="docutils literal notranslate"><span class="pre">ComputeOperation.order_native_files()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.ComputeOperation.save_files"><code class="docutils literal notranslate"><span class="pre">ComputeOperation.save_files()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.KerchunkConverter"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.KerchunkConverter.run"><code class="docutils literal notranslate"><span class="pre">KerchunkConverter.run()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.KerchunkDS"><code class="docutils literal notranslate"><span class="pre">KerchunkDS</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.KerchunkDS.create_refs"><code class="docutils literal notranslate"><span class="pre">KerchunkDS.create_refs()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.phases.compute.ZarrDS"><code class="docutils literal notranslate"><span class="pre">ZarrDS</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#padocc.phases.compute.ZarrDS.create_store"><code class="docutils literal notranslate"><span class="pre">ZarrDS.create_store()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="#scan-operations">Scan Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#compute-operations">Compute Operations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-padocc.phases.validate">Validate Operations</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.phases.validate.PresliceSet"><code class="docutils literal notranslate"><span class="pre">PresliceSet</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#padocc.phases.validate.PresliceSet.apply"><code class="docutils literal notranslate"><span class="pre">PresliceSet.apply()</span></code></a></li>
@@ -124,11 +97,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#padocc.phases.validate.value_to_mem"><code class="docutils literal notranslate"><span class="pre">value_to_mem()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#ingest-operations">Ingest Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.phases.ingest.add_download_link"><code class="docutils literal notranslate"><span class="pre">add_download_link()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.phases.ingest.ingest_config"><code class="docutils literal notranslate"><span class="pre">ingest_config()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="#ingest-operations">Ingest Operations</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="misc_source.html">Filehandlers, Logs, and Utilities</a></li>
@@ -160,116 +129,11 @@
              
   <section id="phased-operators">
 <h1>Phased Operators<a class="headerlink" href="#phased-operators" title="Link to this heading"></a></h1>
-<section id="module-padocc.phases.scan">
-<span id="scan-operations"></span><h2>Scan Operations<a class="headerlink" href="#module-padocc.phases.scan" title="Link to this heading"></a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="padocc.phases.scan.ScanOperation">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.scan.</span></span><span class="sig-name descname"><span class="pre">ScanOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'scan'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.scan.ScanOperation" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="project_source.html#padocc.core.project.ProjectOperation" title="padocc.core.project.ProjectOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProjectOperation</span></code></a></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="padocc.phases.scan.ScanOperation.help">
-<span class="sig-name descname"><span class="pre">help</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn=&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.scan.ScanOperation.help" title="Link to this definition"></a></dt>
-<dd><p>Public user functions for the project operator.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>func</strong> – (Callable) provide an alternative to ‘print’ function
-for displaying help information.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
+<section id="scan-operations">
+<h2>Scan Operations<a class="headerlink" href="#scan-operations" title="Link to this heading"></a></h2>
 </section>
-<section id="module-padocc.phases.compute">
-<span id="compute-operations"></span><h2>Compute Operations<a class="headerlink" href="#module-padocc.phases.compute" title="Link to this heading"></a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="padocc.phases.compute.ComputeOperation">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.compute.</span></span><span class="sig-name descname"><span class="pre">ComputeOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'in_progress'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'See</span> <span class="pre">individual</span> <span class="pre">files</span> <span class="pre">for</span> <span class="pre">more</span> <span class="pre">details'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limiter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_concat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'compute'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identical_dims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_dims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.ComputeOperation" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="project_source.html#padocc.core.project.ProjectOperation" title="padocc.core.project.ProjectOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProjectOperation</span></code></a></p>
-<p>PADOCC Dataset Processor Class, capable of processing a single
-dataset’s worth of input files into a single aggregated file/store.</p>
-<dl class="py property">
-<dt class="sig sig-object py" id="padocc.phases.compute.ComputeOperation.filelist">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">filelist</span></span><a class="headerlink" href="#padocc.phases.compute.ComputeOperation.filelist" title="Link to this definition"></a></dt>
-<dd><p>Quick function for obtaining a subset of the whole fileset. Originally
-used to open all the files using Xarray for concatenation later.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="padocc.phases.compute.ComputeOperation.help">
-<span class="sig-name descname"><span class="pre">help</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn=&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.ComputeOperation.help" title="Link to this definition"></a></dt>
-<dd><p>Public user functions for the project operator.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>func</strong> – (Callable) provide an alternative to ‘print’ function
-for displaying help information.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="padocc.phases.compute.ComputeOperation.order_native_files">
-<span class="sig-name descname"><span class="pre">order_native_files</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.phases.compute.ComputeOperation.order_native_files" title="Link to this definition"></a></dt>
-<dd><p>Ensure ordering of native files based on aggregation dimensions.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="padocc.phases.compute.ComputeOperation.save_files">
-<span class="sig-name descname"><span class="pre">save_files</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.ComputeOperation.save_files" title="Link to this definition"></a></dt>
-<dd><p>Save all filehandlers associated with this group.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="padocc.phases.compute.KerchunkConverter">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.compute.</span></span><span class="sig-name descname"><span class="pre">KerchunkConverter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass_driver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.KerchunkConverter" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="misc_source.html#padocc.core.logs.LoggedOperation" title="padocc.core.logs.LoggedOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">LoggedOperation</span></code></a></p>
-<p>Class for converting a single file to a Kerchunk reference object. Handles known
-or unknown file types (NetCDF3/4 versions).</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="padocc.phases.compute.KerchunkConverter.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filehandler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#padocc.phases.compute.KerchunkConverter.run" title="Link to this definition"></a></dt>
-<dd><p>Safe creation allows for known issues and tries multiple drivers</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dictionary of Kerchunk references if successful, raises error
-otherwise if unsuccessful.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="padocc.phases.compute.KerchunkDS">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.compute.</span></span><span class="sig-name descname"><span class="pre">KerchunkDS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'in_progress'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.KerchunkDS" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#padocc.phases.compute.ComputeOperation" title="padocc.phases.compute.ComputeOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ComputeOperation</span></code></a></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="padocc.phases.compute.KerchunkDS.create_refs">
-<span class="sig-name descname"><span class="pre">create_refs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check_refs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute_subset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute_total</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aggregator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filesubset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b64vars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.phases.compute.KerchunkDS.create_refs" title="Link to this definition"></a></dt>
-<dd><p>Organise creation and loading of refs
-- Load existing cached refs
-- Create new refs
-- Combine metadata and global attributes into a single set
-- Coordinate combining and saving of data</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="padocc.phases.compute.ZarrDS">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.phases.compute.</span></span><span class="sig-name descname"><span class="pre">ZarrDS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proj_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'in_progress'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem_allowed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'100MB'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preferences</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.ZarrDS" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#padocc.phases.compute.ComputeOperation" title="padocc.phases.compute.ComputeOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ComputeOperation</span></code></a></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="padocc.phases.compute.ZarrDS.create_store">
-<span class="sig-name descname"><span class="pre">create_store</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.compute.ZarrDS.create_store" title="Link to this definition"></a></dt>
-<dd><p>Create the Zarr Store</p>
-</dd></dl>
-
-</dd></dl>
-
+<section id="compute-operations">
+<h2>Compute Operations<a class="headerlink" href="#compute-operations" title="Link to this heading"></a></h2>
 </section>
 <section id="module-padocc.phases.validate">
 <span id="validate-operations"></span><h2>Validate Operations<a class="headerlink" href="#module-padocc.phases.validate" title="Link to this heading"></a></h2>
@@ -431,20 +295,6 @@ to the integer value.</p>
 <p class="admonition-title">Note</p>
 <p>Not featured in this development, the ingest operations are still being planned and scoped.</p>
 </div>
-<dl class="py function" id="module-padocc.phases.ingest">
-<dt class="sig sig-object py" id="padocc.phases.ingest.add_download_link">
-<span class="sig-prename descclassname"><span class="pre">padocc.phases.ingest.</span></span><span class="sig-name descname"><span class="pre">add_download_link</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proj_code</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.ingest.add_download_link" title="Link to this definition"></a></dt>
-<dd><p>Add the download link to each of the Kerchunk references</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="padocc.phases.ingest.ingest_config">
-<span class="sig-prename descclassname"><span class="pre">padocc.phases.ingest.</span></span><span class="sig-name descname"><span class="pre">ingest_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.phases.ingest.ingest_config" title="Link to this definition"></a></dt>
-<dd><p>Configure for ingestion of a set of project codes, currently defined
-by a repeat_id but this could be changed later to apply to all project
-codes fitting some parameters</p>
-</dd></dl>
-
 </section>
 </section>
 
