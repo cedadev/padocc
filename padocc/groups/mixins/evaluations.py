@@ -490,6 +490,11 @@ class EvaluationsMixin:
         ot.append(f'Group: {self.groupID}')
         ot.append(f'  Total Codes: {num_codes}')
         ot.append('')
+
+        if num_codes == 0:
+            fn('\n'.join(ot))
+            return
+
         ot.append('Pipeline Current:')
 
         if longest_err > 30 and not long_display:
