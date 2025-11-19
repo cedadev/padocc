@@ -420,13 +420,13 @@ class ComputeOperation(ProjectOperation):
             lg.setLevel(levels[self._verbose])
 
         except ImportError:
-            return False
+            return None, False
 
         try:
 
             if not self._thorough and self.cfa_complete:
                 self.logger.info("CFA file already created - skipping computation")
-                return {}
+                return self.base_cfg.get('data_properties',{}), True
 
             self.logger.info("Starting CFA Computation")
 
