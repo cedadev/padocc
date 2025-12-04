@@ -693,8 +693,8 @@ class ValidateDatasets(LoggedOperation):
             try:
                 testdim = self.test_dataset_var(dim)
                 test_range = (
-                    testdim.head(1),
-                    testdim.tail(1)
+                    testdim.head(1)[0],
+                    testdim.tail(1)[0]
                 )
             except KeyError:
                 self.logger.warning(f'{dim} could not be validated for data content')
@@ -703,8 +703,8 @@ class ValidateDatasets(LoggedOperation):
             try:
                 controldim = self.control_dataset_var(dim)
                 control_range = (
-                    controldim.head(1),
-                    controldim.tail(1)
+                    controldim.head(1)[0],
+                    controldim.tail(1)[0]
                 )
             except KeyError:
                 self.logger.warning(f'{dim} could not be validated for data content')
@@ -833,6 +833,13 @@ class ValidateDatasets(LoggedOperation):
         if ignore:
             self.logger.debug(f'Skipped {dim}')
             return
+
+        if test_range[0] == test_range[1]:
+            test_range = [test_range[0]]
+            
+        if control_range[0] == control_range[1]:
+            control_range = [control_range[0]]
+
 
         test_range = np.array(test_range)
         control_range = np.array(control_range)
