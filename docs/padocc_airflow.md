@@ -1,5 +1,7 @@
 # Padocc in Airflow - Pseudo Workflow
 
+__Example Section__
+
 The PADOCC pipeline consists of three main stages (with a fourth in development):
  - scan
  - compute

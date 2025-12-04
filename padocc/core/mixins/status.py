@@ -54,7 +54,7 @@ class StatusMixin:
         :param jobid:   (str) ID of SLURM job in which this operation has taken place.
         """
         self.status_log.update_status(phase, status, jobid=jobid)
-        self.status_log.close()
+        self.status_log.save()
 
     def set_last_run(self, phase: str, time : str) -> None:
         """

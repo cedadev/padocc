@@ -73,6 +73,7 @@ class LoggedOperation:
         :param dryrun:          (bool) If True will prevent output files being generated
             or updated and instead will demonstrate commands that would otherwise happen.
 
+
         :param thorough:        (bool) From args.quality - if True will create all files 
             from scratch, otherwise saved refs from previous runs will be loaded.
         """
@@ -138,6 +139,17 @@ class LoggedOperation:
         self._forceful = forceful or self._forceful
         self._dryrun   = dryrun or self._dryrun
         self._thorough = thorough or self._thorough
+
+def clear_loggers(
+        ignore: list[str] = None
+    ):
+
+    ignore = ignore or []
+    for name in logging.root.manager.loggerDict:
+        if name not in ignore:
+            lg = logging.getLogger(name)
+            while lg.hasHandlers():
+                lg.removeHandler(lg.handlers[0])
 
 def reset_file_handler(
         logger  : logging.Logger,
@@ -209,13 +221,12 @@ def init_logger(
         name = f'{name}_{logid}'
 
     logger = logging.getLogger(name)
+    logger.propagate = False
 
     if fh is not None:
         return reset_file_handler(logger, verbose, fh)
 
-    logger = logging.getLogger(name)
     logger.setLevel(levels[verbose])
-    logger.propagate = False
 
     ch = logging.StreamHandler()
     ch.setLevel(levels[verbose])

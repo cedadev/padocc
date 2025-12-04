@@ -47,6 +47,7 @@ class GroupOperation(
             logid    : str = None,
             verbose  : int = 0,
             xarray_kwargs: dict = None,
+            new_version: bool = False,
         ) -> None:
         """
         Initialisation for a GroupOperation object to handle all interactions
@@ -83,14 +84,13 @@ class GroupOperation(
 
         """
 
+        self.allow_new_version = new_version
+
         if label is None:
             label = 'group-operation'
 
         if workdir is None:
-            try:
-                workdir = os.environ.get('WORKDIR')
-            except:
-                pass
+            workdir = os.environ.get('WORKDIR')
 
         if workdir is None:
             raise MissingVariableError('$WORKDIR')
@@ -107,6 +107,8 @@ class GroupOperation(
             fh=fh,
             logid=logid,
             verbose=verbose)
+        
+        self.__ongoing_projects = {}
 
         self._setup_directories()
 
@@ -163,6 +165,33 @@ class GroupOperation(
 
         return self.get_project(proj_code)
     
+    def get_project(self, proj_code: str,**kwargs):
+        """
+        Get a project operation from this group
+
+        Works on string codes only.
+        """
+
+        if not isinstance(proj_code, str):
+            raise ValueError(
+                f'GetProject function takes string as input, not {type(proj_code)}'
+            )
+        
+        fh_kwargs = self.fh_kwargs | kwargs
+
+        if proj_code not in self.__ongoing_projects:
+            self.__ongoing_projects[proj_code] = ProjectOperation(
+                proj_code,
+                self.workdir,
+                groupID=self.groupID,
+                logger=self.logger,
+                xarray_kwargs=self._xarray_kwargs,
+                new_version=self.allow_new_version,
+                **fh_kwargs
+            )
+
+        return self.__ongoing_projects[proj_code]
+    
     def complete_group(
             self, 
             move_to: str,
@@ -207,16 +236,28 @@ class GroupOperation(
         )
 
         for proj in proj_list:
+
             try:
                 proj_op = self[proj]
 
+                status = proj_op.get_last_status()
+                if status is None:
+                    self.logger.warning(f'{proj}: Skipped - Undetermined status')
+                    continue
+
+                # Skip already complete ones
+                if 'complete' in status and not self._thorough:
+                    self.logger.info(f'{proj}: Skipped')
+                    continue
+
                 # Export report
-                proj_op.export_report(report_location)
+                proj_op.export_report(move_to)
 
                 # Export products
                 proj_op.complete_project(move_to, thorough=thorough)
+                self.logger.info(f'{proj}: OK')
             except Exception as err:
-                self.logger.warning(f'Skipped {proj} - {err}')
+                self.logger.warning(f'{proj}: Skipped - {err}')
 
     def get_stac_representation(
             self, 
@@ -323,6 +364,11 @@ class GroupOperation(
                     )
                 # Perform by index
                 codeset = [codeset[int(proj_code)]]
+            elif ',' in proj_code:
+                try:
+                    codeset = [codeset[int(p)] for p in proj_code.split(',')]
+                except:
+                    raise ValueError('Invalid codeset provided')
 
         func = phases[phase]
 
@@ -335,12 +381,12 @@ class GroupOperation(
             logid = id
             if jobid is not None:
                 logid = jobid
-
+                
             status = func(
                 proj_code, 
                 mode=mode, 
                 logid=logid, 
-                label=phase, 
+                label=f'{self.groupID}_{phase}', 
                 fh=fh, 
                 bypass=bypass,
                 run_kwargs=run_kwargs,
@@ -389,12 +435,13 @@ class GroupOperation(
             dryrun=self._dryrun, **kwargs)
         status = scan.run(mode=mode, **self.fh_kwargs, **run_kwargs)
         scan.save_files()
+
         return status
 
     def _compute_config(
             self, 
             proj_code: str,
-            mode: str = 'kerchunk',
+            mode: Union[str,None] = None,
             bypass: Union[BypassSwitch,None] = None,
             run_kwargs: Union[dict,None] = None,
             **kwargs
@@ -426,7 +473,7 @@ class GroupOperation(
 
         if mode not in COMPUTE:
             raise ValueError(
-                f'Mode "{mode}" not recognised, must be one of '
+                f'Format "{mode}" not recognised, must be one of '
                 f'"{list(COMPUTE.keys())}"'
             )
         
@@ -460,6 +507,8 @@ class GroupOperation(
 
         self.logger.debug(f"Starting validation for {proj_code}")
 
+        run_kwargs['error_bypass'] = run_kwargs.pop('input_file',None)
+
         try:
             valid = ValidateOperation(
                 proj_code, self.workdir, groupID=self.groupID,
@@ -480,25 +529,32 @@ class GroupOperation(
 
     def _save_proj_codes(self):
         for pc in self.proj_codes.keys():
-            self.proj_codes[pc].close()
+            self.proj_codes[pc].save()
 
     def save_files(self):
         """
         Save all files associated with this group.
         """
-        self.faultlist.close()
-        self.datasets.close()
+        self.faultlist.save()
+        self.datasets.save()
         self._save_proj_codes()
 
     def _add_proj_codeset(self, name : str, newcodes : list):
-        self.proj_codes[name] = ListFileHandler(
-            self.proj_codes_dir,
-            name,
-            init_value=newcodes,
-            logger=self.logger,
-            dryrun=self._dryrun,
-            forceful=self._forceful
-        )
+
+        if name in self.proj_codes:
+            self.logger.warning(f'Appending to existing codeset: {name}')
+            self.proj_codes[name].set(self.proj_codes[name].get() + newcodes)
+        else:
+            self.proj_codes[name] = ListFileHandler(
+                self.proj_codes_dir,
+                name,
+                init_value=newcodes,
+                logger=self.logger,
+                dryrun=self._dryrun,
+                forceful=self._forceful
+            )
+
+        self.proj_codes[name].save()
     
     def _delete_proj_codeset(self, name: str):
         """
@@ -519,6 +575,32 @@ class GroupOperation(
 
         self.proj_codes[name].remove_file()
         self.proj_codes.pop(name)
+
+    def delete_all_repeat_ids(self):
+        """
+        Delete all project repeat IDs for this group
+        """
+        old_repeats = list(self.proj_codes.keys())
+        for repeat_id in old_repeats:
+            if repeat_id != 'main':
+                self._delete_proj_codeset(repeat_id)
+
+    def delete_logs(self):
+        """
+        Delete all log files and sbatch sections."""
+
+        os.system(f'rm -rf {self.groupdir}/errs/*')
+        os.system(f'rm -rf {self.groupdir}/outs/*')
+        os.system(f'rm -rf {self.groupdir}/sbatch/*')
+
+    def add_repeat_by_id(self, repeat_id: str, idset: list[int]):
+        """
+        Add a new repeat ID by the IDs of the projects.
+        """
+        codeset = []
+        for id in idset:
+            codeset.append(self.proj_codes['main'][id])
+        self._add_proj_codeset(repeat_id, codeset)
 
     def check_writable(self):
         if not os.access(self.workdir, os.W_OK):

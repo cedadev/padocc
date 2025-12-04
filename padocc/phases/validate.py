@@ -11,7 +11,7 @@ import numpy as np
 import xarray as xr
 
 from padocc.core import BypassSwitch, LoggedOperation, ProjectOperation
-from padocc.core.errors import worst_error
+from padocc.core.errors import worst_error, ValidationError, AggregationError
 from padocc.core.filehandlers import JSONFileHandler
 from padocc.core.utils import format_tuple, timestamp, extract_json
 
@@ -132,6 +132,11 @@ def _recursive_set(source: dict, keyset: list, value):
             _ = json.dumps(value)
             current = value
         except TypeError:
+            try:
+                print(value)
+            except:
+                print('Unable to print value')
+                x=input()
             current = 'N/A'
         source[keyset[0]] = value
     return source
@@ -141,8 +146,9 @@ class PresliceSet:
     Preslice Object for handling slices applied to datasets.
     """
 
-    def __init__(self):
+    def __init__(self, logger):
         self._preslice_set = {}
+        self.logger = logger
 
     def add_preslice(self, preslice: dict[slice], var: str):
         self._preslice_set[var] = preslice
@@ -159,9 +165,12 @@ class PresliceSet:
                 if isinstance(dslice,tuple):
                     squeeze_dims.append(dslice[1])
                     self._preslice_set[var][dim] = dslice[0]
+
+            self.logger.debug(self._preslice_set[var])
+            self.logger.debug(squeeze_dims)
             da = data_arr.isel(**self._preslice_set[var])
             if len(squeeze_dims) > 0:
-                da = da.squeeze(dim=squeeze_dims,drop=True)
+                da = da.squeeze(dim=squeeze_dims, drop=True)
             return da
 
     def _default_preslice(self, data_arr: xr.DataArray) -> xr.DataArray:
@@ -184,6 +193,11 @@ class Report:
 
     def __setitem__(self, index, value):
         nest = index.split(',')
+
+        if len(nest) == 1:
+            self._value[nest[0]] = value
+            return
+
         current = {}
         if nest[0] in self._value:
             current = self._value[nest[0]]
@@ -254,6 +268,7 @@ class ValidateDatasets(LoggedOperation):
             logid: Union[str,None] = None,
             verbose: int = 0,
             bypass_vars: Union[list,None] = None,
+            concat_dims: Union[list,None] = None
         ):
         """
         Initiator for the ValidateDataset Class.
@@ -266,6 +281,8 @@ class ValidateDatasets(LoggedOperation):
 
         # Bypass checking specific variables if requested
         self.bypass_vars = bypass_vars or []
+
+        self.concat_dims = concat_dims or []
 
         # Bypass considering fatal/warnings from entire report
         self.error_bypass = error_bypass or {}
@@ -280,17 +297,12 @@ class ValidateDatasets(LoggedOperation):
         self.variables  = None
         self.dimensions = None
 
+        self.decoded_times = True
+
         self.fhs = filehandlers or [{},{}]
 
         self._metadata_report = None
         self._data_report = None
-
-        self._preslice_fns = preslice_fns or [PresliceSet() for d in datasets]
-
-        if len(self._datasets) > 2:
-            raise NotImplementedError(
-                'Simultaneous Validation of multiple datasets is not supported.'
-            )
 
         super().__init__(
             logger,
@@ -299,6 +311,13 @@ class ValidateDatasets(LoggedOperation):
             logid=logid,
             verbose=verbose
         )
+
+        self._preslice_fns = preslice_fns or [PresliceSet(self.logger) for d in datasets]
+
+        if len(self._datasets) > 2:
+            raise NotImplementedError(
+                'Simultaneous Validation of multiple datasets is not supported.'
+            )
 
     def __str__(self):
         return f'<PADOCC Validator: {self._id}>'
@@ -350,15 +369,15 @@ class ValidateDatasets(LoggedOperation):
 
         if filehandler is not None:
             filehandler.set(report)
-            filehandler.close()
+            filehandler.save()
             return err
         
         if isinstance(self.fhs[0], JSONFileHandler):
             self.fhs[0].set(report.get('metadata',{}))
-            self.fhs[0].close()
+            self.fhs[0].save()
 
             self.fhs[1].set(report.get('data',{}))
-            self.fhs[1].close()
+            self.fhs[1].save()
             return err
         
         raise ValueError(
@@ -427,6 +446,26 @@ class ValidateDatasets(LoggedOperation):
         """
         return self._preslice_fns[id].apply(self._datasets[id][var], var)
 
+    def decode_times_ok(self):
+        """
+        Determine if test and sample datasets have matching encodings.
+        """
+
+        self.logger.info('Checking matching time encoding/dtype')
+        
+        if not hasattr(self._datasets[0],'time'):
+            return False
+
+        dtypes = {}
+        for ds in self._datasets:
+            dtypes[ds.time.dtype] = 1
+
+        if len(dtypes.keys()) > 1:
+            self.logger.warning('Time encoding mismatch - recorded')
+            self.decoded_times = False
+            return False
+        return True
+
     def validate_metadata(self, allowances: dict = None) -> dict:
         """
         Run all validation steps on this set of datasets.
@@ -435,6 +474,24 @@ class ValidateDatasets(LoggedOperation):
         # Reset for new report run
         self._metadata_report = Report()
         self.logger.info('Initialised metadata report')
+
+        self.concat_dims=['time']
+
+        aggregation_errors = []
+        for dim in self.concat_dims:
+            testdim = self.test_dataset_var(dim)
+
+            # Increasing across aggregation dim
+            fwd  = np.all(np.array(testdim[1:]) > np.array(testdim[:-1]))
+
+            # Decreasing across aggregation dim
+            back = np.all(np.array(testdim[1:]) < np.array(testdim[:-1]))
+
+            if not fwd and not back:
+                aggregation_errors.append(dim)
+            
+        if len(aggregation_errors) > 0:
+            raise AggregationError(aggregation_errors)
 
         allowances = allowances or {}
         ignore_vars, ignore_dims, ignore_globals = None, None, None
@@ -566,6 +623,8 @@ class ValidateDatasets(LoggedOperation):
         if 'ignore' in allowances:
             ignore = allowances['ignore']
 
+        ignore.append('aggregation')
+
         attrset = []
         for d in self._datasets:
             attrset.append(d.attrs)
@@ -586,7 +645,7 @@ class ValidateDatasets(LoggedOperation):
             # Check for ignored attributes
             if attr in ignore:
                 self._metadata_report[f'attributes,{source},{attr}'] = {
-                    'type': 'ignore'
+                    'type': 'ignored'
                 }
                 continue
 
@@ -623,6 +682,10 @@ class ValidateDatasets(LoggedOperation):
         # Reset for new report run
         self._data_report = Report()
         self.logger.info('Initialised data report')
+
+        if not self.decoded_times:
+            self.logger.warning('Validating without decoding times.')
+            self._data_report['time_encoding_mismatch'] = True
 
         for dim in self.dims:
             self.logger.debug(f'Validating size of {dim}')
@@ -777,12 +840,17 @@ class ValidateDatasets(LoggedOperation):
         if control_range[0] == control_range[1]:
             control_range = [control_range[0]]
 
-        self.logger.debug('test range')
-        self.logger.debug(test_range)
-        self.logger.debug('control range')
-        self.logger.debug(control_range)
 
-        if test_range[0] != control_range[0] or test_range[1] != control_range[1]:
+        test_range = np.array(test_range)
+        control_range = np.array(control_range)
+        
+        self.logger.debug('test range')
+        self.logger.debug(np.array(test_range).size)
+        self.logger.debug('control range')
+        self.logger.debug(np.array(control_range).size)
+
+        # Compare array values.
+        if not np.array_equal(test_range, control_range):
 
             try:
                 test_value = format_tuple(tuple(np.array(test_range, dtype=test_range[0].dtype).tolist()))
@@ -1038,10 +1106,12 @@ class ValidateOperation(ProjectOperation):
         self.set_last_run(self.phase, timestamp())
         self.logger.info("Starting validation")
 
+        self.logger.debug(f"Error bypass: {bool(error_bypass)}")
+
         if mode != self.cloud_format and mode is not None:
             self.cloud_format = mode
 
-        test   = self.dataset.open_dataset()
+        test       = self.dataset.open_dataset()
         sample, rf = self._open_sample()
 
         self.logger.info(f'Using sample {rf} along aggregated dimension')
@@ -1051,6 +1121,8 @@ class ValidateOperation(ProjectOperation):
 
         bypass_vars = self.base_cfg.get('validation',{}).get('bypass',[])
 
+        concat_dims = self.detail_cfg.get('kwargs',{}).get('combine_kwargs',{}).get('concat_dims',None)
+
         vd = ValidateDatasets(
             [test,sample],
             f'validator-padocc-{self.proj_code}',
@@ -1058,46 +1130,96 @@ class ValidateOperation(ProjectOperation):
             filehandlers=[meta_fh, data_fh],
             logger=self.logger,
             bypass_vars=bypass_vars,
-            error_bypass=error_bypass)
+            error_bypass=error_bypass,
+            concat_dims=concat_dims)
 
         # Run metadata testing
         vd.validate_metadata()
 
+        # Data Validation Selection
+
         if self.cfa_enabled:
             self.logger.info('CFA-enabled validation')
-            control = self._open_cfa()
-            vd.replace_dataset(control, label=self.source_format)
+            # CFA now opens with decoded times (2025.8.4)
+            try:
+                control = self._open_cfa()
+                vd.replace_dataset(control, label=self.source_format)
+            except:
+                # CFA has failed for some reason - file must be deleted.
+                self.cfa_enabled = False
+
+        if self.cfa_enabled:
+            # Run single validation attempt
+            vd.validate_data(dim_mid=dim_mid)
         else:
-            self.logger.info('Source-slice validation')
-            preslice = self._get_preslice(test, sample, test.variables, rf=rf)
-            self.logger.debug('Slicing using preslice selections:')
-            sets = "\n - ".join(preslice._preslice_set)
-            self.logger.debug(f' - {sets}')
 
-            vd.replace_preslice(preslice, label=self.cloud_format)
+            filetests = [0]
+            nfiles = len(self.allfiles.get())
+            if self.allfiles[0] != self.allfiles[-1]:
+                filetests.append(nfiles-1)
+            if nfiles > 2:
+                # Get random file
+                filetests.append(None)
 
-        vd.validate_data(dim_mid=dim_mid)
+            checks = len(filetests)
+            for check, rf in enumerate(filetests):
+                vd = self._run_data_validation(test, rf, check, checks, vd, dim_mid)
 
-        err = vd.save_report() or 'Success'
+        err = self.get_agg_shorthand() + (vd.save_report() or 'Success')
 
         self.update_status('validate', err, jobid=self._logid)
         
         return vd.pass_fail(err)
+    
+    def _run_data_validation(self, test: xr.Dataset, rf: int, check: int, checks: int, vd: ValidateDatasets, dim_mid):
+        """
+        Prepare and run for a single validation attempt.
+        """
 
-    def _open_sample(self) -> tuple:
+         # Open a random file or as specified above.
+        sample, rfnum = self._open_sample(rf=rf)
+        vd.replace_dataset(sample, label=self.source_format)
+
+        decode_times = vd.decode_times_ok()
+
+        # Time encoding mismatch
+        if not decode_times:
+            test   = self.dataset.open_dataset(decode_times=decode_times)
+            vd.replace_dataset(test, label=self.cloud_format)
+            sample, rf = self._open_sample(decode_times=decode_times)
+            vd.replace_dataset(sample, label=self.source_format)
+
+        self.logger.info(f'Source-slice validation: {check+1}/{checks} using file {rfnum}')
+        preslice = self._get_preslice(test, sample, test.variables, rf=rf)
+        vd.replace_preslice(preslice, label=self.cloud_format)
+
+        self.logger.debug('Slicing using preslice selections:')
+        slice_set = "\n -".join(preslice._preslice_set)
+        self.logger.debug(f' - {slice_set}')
+
+        vd.validate_data(dim_mid=dim_mid)
+
+        return vd
+
+    def _open_sample(self, rf: Union[int,None] = None, **kwargs) -> tuple:
         """
         Open a random sample dataset for validation checking.
         """
+        if rf is not None:
+            file = self.allfiles[rf]
+            randomfile = rf
+        else:
+            randomfile = random.randint(0,len(self.allfiles)-1)
+            file = self.allfiles[randomfile]
 
-        randomfile = random.randint(0,len(self.allfiles)-1)
-        file = self.allfiles[randomfile]
-        return xr.open_dataset(file, **self._xarray_kwargs), randomfile
+        xarray_kwargs = self._xarray_kwargs | kwargs
+        return xr.open_dataset(file, **xarray_kwargs), randomfile
 
-    def _open_cfa(self):
+    def _open_cfa(self, **kwargs):
         """
         Open the CFA dataset for this project
         """
-        return self.cfa_dataset.open_dataset()
+        return self.cfa_dataset.open_dataset(**kwargs)
 
     def _get_preslice(self, test, sample, variables, rf:int = 0):
         """Match timestamp of xarray object to kerchunk object.
@@ -1113,7 +1235,7 @@ class ValidateOperation(ProjectOperation):
         virtual = self.detail_cfg.get('virtual_concat',False)
         # Use rf to squeeze non-present dimensions
 
-        preslice = PresliceSet()
+        preslice = PresliceSet(self.logger)
         for var in variables:
             preslice_var = {}
 
@@ -1123,10 +1245,13 @@ class ValidateOperation(ProjectOperation):
                     continue
 
             dim_diffs = set(test[var].dims) - set(sample[var].dims)
+            self.logger.debug(f'Test dims: {set(test[var].dims)}')
+            self.logger.debug(f'Sample dims: {set(sample[var].dims)}')
 
             for dim in sample[var].dims:
 
                 if len(sample[dim]) < 2:
+                    # Non-coordinate dimensions with no axis.
 
                     dim_array = np.array(test[dim])
                     index = np.where(dim_array == np.array(sample[dim][0]))[0][0]
@@ -1135,18 +1260,24 @@ class ValidateOperation(ProjectOperation):
                     end = stop # np.array(test[dim][stop], dtype=test[dim].dtype)
 
                 else:
-                    # Switch to selection not iselection if needed later?
-                    #pos0 = np.array(sample[dim][0], dtype=sample[dim].dtype)
-                    #pos1 = np.array(sample[dim][1], dtype=sample[dim].dtype)
+                    # Source Slice validation for coodinate dimensions
 
-                    #end = np.array(sample[dim][-1], dtype=sample[dim].dtype) + (pos1-pos0)
-                    pos0 = 0
-                    end  = len(sample[dim])
+                    # Index of the 0th sample dim value in the test dim array
+                    matching_value = np.where(test[dim] == sample[dim][0])[0]
+                    if matching_value.size == 0:
+                        raise ValidationError(
+                            'Fatal dimension mismatch - '
+                            f'cannot align sample section with test dataset for {dim}')
+                    index0 = matching_value[0]
+
+                    pos0 = index0
+                    end  = index0 + len(sample[dim])
 
                 slice_dim = slice(
                     pos0,
                     end
                 )
+                
                 preslice_var[dim] = slice_dim
 
             # Covers virtual dimensions

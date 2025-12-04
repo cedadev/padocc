@@ -178,7 +178,7 @@ def main():
             create_dims(ds, dims, ignore_attrs)
             create_vars(ds, vars, ignore_attrs)
 
-            ds.close()
+            ds.save()
 
 if __name__ == '__main__':
     main()

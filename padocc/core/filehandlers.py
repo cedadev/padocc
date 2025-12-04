@@ -37,7 +37,7 @@ class FileIOMixin(LoggedOperation):
     no attributes passed to either of these.
 
         fh.create_file()
-        fh.close()
+        fh.save()
 
     3. Get/set:
 
@@ -274,7 +274,6 @@ class ListFileHandler(FileIOMixin):
             to the new value.
         """
         if len(value) == 0:
-            self.logger.warning(f'No value given to ListFileHandler {self.filepath}')
             return
 
         if isinstance(value[0],list):
@@ -371,7 +370,6 @@ class ListFileHandler(FileIOMixin):
         in the file.
         """
         if self._dryrun or self._value == []:
-            self.logger.debug(f"Skipped setting value in {self.file}")
             return
 
         if not self.file_exists():
@@ -380,7 +378,7 @@ class ListFileHandler(FileIOMixin):
         with open(self.filepath,'w') as f:
             f.write('\n'.join(self._value))
 
-    def close(self) -> None:
+    def save(self) -> None:
         """
         Save the content of the filehandler
         """
@@ -553,7 +551,11 @@ class JSONFileHandler(FileIOMixin):
             return
 
         with open(self.filepath) as f:
-            self._value = json.load(f)
+            try:
+                self._value = json.load(f)
+            except:
+                self.logger.warning(f'Invalid file contents at {self.filepath}')
+                self._value = {}
 
     def _set_value_in_file(self) -> None:
         """
@@ -585,7 +587,7 @@ class JSONFileHandler(FileIOMixin):
         nv.update(self._value)
         self._value = dict(nv)
 
-    def close(self) -> None:
+    def save(self) -> None:
         """
         Save the content of the filehandler
         """
@@ -701,49 +703,26 @@ class KerchunkFile(JSONFileHandler):
         """
         Open the kerchunk file as a dataset
         
-        :param fsspec_kwargs:   (dict) Kwargs applied to fsspec mapper.
+        :param fsspec_kwargs:   (dict) Kwargs applied to fsspec mapper - deprecated
 
-        :param retry:   (bool) Unused property for multiple tries when searching for kerchunk
-            dataset.
+        :param retry:   (bool) Unused property for multiple tries when searching for kerchunk 
+            dataset - deprecated.
         """
 
-        default_fsspec = {'target_options':{'compression':None}}
-        if fsspec_kwargs is not None:
-            default_fsspec.update(fsspec_kwargs)
-
-        default_zarr = {'consolidated':False, 'decode_times':True}
-        default_zarr.update(kwargs)
-        default_zarr.update(self._xarray_kwargs)
+        if fsspec_kwargs is not None and retry:
+            self.logger.warning("'fsspec kwargs' and 'retry' are deprecated and will be removed shortly.")
 
         self.logger.info('Attempting to open Kerchunk JSON file')
+
+        if not os.path.isfile(self.filepath):
+            raise FileNotFoundError(self.filepath)
+
         try:
-            mapper  = fsspec.get_mapper('reference://',fo=self.filepath, **default_fsspec)
-        except json.JSONDecodeError as err:
-            self.logger.error(f"Kerchunk file {self.filepath} appears to be empty")
-            return None
+            ds = xr.open_dataset(self.filepath, engine='kerchunk', **kwargs)
+        except Exception as err:
+            self.logger.error('Unable to open kerchunk file')
+            raise err
         
-        # Need a safe repeat here
-        ds = None
-        attempts = 0
-        while attempts < 3 and not ds:
-            attempts += 1
-            try:
-                ds = xr.open_zarr(mapper, **default_zarr)
-            except OverflowError:
-                ds = None
-            except KeyError as err:
-                if re.match('.*https.*',str(err)) and not retry:
-                    # RemoteProtocol is not https - retry with correct protocol
-                    self.logger.warning('Found KeyError "https" on opening the Kerchunk file - retrying with local filepaths.')
-                    return self.open_dataset(fsspec_kwargs=default_fsspec, retry=True)
-                else:
-                    raise err
-            except Exception as err:
-                if 'decode' in str(err):
-                    raise KerchunkDecodeError
-                raise err #MissingKerchunkError(message=f'Failed to open kerchunk file {kfile}')
-        if not ds:
-            raise ChunkDataError
         self.logger.debug('Successfully opened Kerchunk with virtual xarray ds')
         return ds
 
@@ -905,12 +884,12 @@ class GenericStore(LoggedOperation):
         else:
             os.system(f'cp -R {self.store_path} {copy}.{self._extension}/')
 
-    def close(self) -> None:
+    def save(self) -> None:
         """
         Close the meta filehandler for this store
         """
         if not self.is_empty:
-            self._meta.close()
+            self._meta.save()
 
     @property
     def store_path(self) -> str:
@@ -1326,7 +1305,7 @@ class CSVFileHandler(ListFileHandler):
         """
 
         status = status.replace(',', '.').replace('\n','.')
-        addition = f'{phase},{status},{datetime.now().strftime("%H:%M %D")},{jobid}'
+        addition = f'{phase},{status},{datetime.now().strftime("%H:%M %d/%m/%y")},{jobid}'
         self.append(addition)
         self.logger.info(f'Updated new status: {phase} - {status}')
 
@@ -1482,9 +1461,9 @@ class CFADataset(LoggedOperation):
         ds = netCDF4.Dataset(self.filepath)
         for nca in ds.ncattrs():
             self._meta[nca] = ds.getncattr(nca)
-        ds.close()
+        ds.save()
 
-    def close(self) -> None:
+    def save(self) -> None:
         """
         Set the meta attribute for this dataset.
         """
@@ -1494,7 +1473,7 @@ class CFADataset(LoggedOperation):
         ds = netCDF4.Dataset(self.filepath, mode='w')
         for k, v in self._meta.items():
             ds.setncattr(k, v)
-        ds.close()
+        ds.save()
 
     def get_meta(self) -> dict:
         """
