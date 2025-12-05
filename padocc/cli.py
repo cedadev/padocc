@@ -6,10 +6,10 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
 import argparse
 import yaml
-import logging
 from typing import Union
 
 from padocc import GroupOperation
+from padocc.core.logs import set_verbose
 from padocc.core.utils import (
     BypassSwitch, get_attribute, list_groups, 
     group_exists, BASE_CFG, DETAIL_CFG)
@@ -93,7 +93,7 @@ def check_attribute(group, attr: str, repeat_id: str = 'main', **kwargs):
         pass
     else:
         raise ValueError(
-            f'Unable to set attribute "{attr}", not found in project'
+            f'Unable to check attribute "{attr}", not found in project'
         )
     
     for project in group.proj_codes[repeat_id]:
@@ -278,25 +278,6 @@ NEW_GROUP_ACTIONS = [
     'transfer'
 ]
 
-def set_verbose(level: int):
-    """
-    Reset the logger basic config.
-    """
-
-    levels = [
-        logging.WARN,
-        logging.INFO,
-        logging.DEBUG,
-    ]
-
-    if level >= len(levels):
-        level = len(levels) - 1
-
-    for name in logging.root.manager.loggerDict:
-        lg = logging.getLogger(name)
-        lg.setLevel(levels[level])
-
-
 def parse_group(
         operation: str,
         groupID  : str,
@@ -332,7 +313,7 @@ def parse_group(
     # Filter arguments
     bypass=BypassSwitch(bypass)
 
-    set_verbose(0)
+    set_verbose(0, 'padocc')
 
     xarray_kwargs = None
     if xarray_kwargs_raw is not None:
@@ -522,7 +503,7 @@ def get_args():
                                 parents=[universal_parser, group_parser])
     ## Report
     report = subparsers.add_parser('report', help='Obtain the validation report for a given project, or a combined report for a group.', 
-                                parents=[universal_parser, group_parser]
+                                parents=[universal_parser, group_parser])
     ## Scan
     scan = subparsers.add_parser('scan',help='Scan a project, group or subset of projects. (Pipeline phase 1)', 
                                 parents=[universal_parser, group_parser, phased_parser])

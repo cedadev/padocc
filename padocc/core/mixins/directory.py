@@ -80,6 +80,9 @@ class DirectoryMixin(LoggedOperation):
         
         :param verbose:     (int) Level of verbosity for log messages (see core.init_logger).
         """
+
+        if workdir.endswith('/'):
+            workdir = workdir[:-1]
         
         self.workdir = workdir
         self.groupID = groupID
