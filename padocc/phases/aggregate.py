@@ -134,7 +134,7 @@ def mzz_combine(refs: list, output_file: str, concat_dims: list, identical_dims:
 
 # Because at this point PADOCC does everything else, why not go one step further?
 
-def check_chunk_sizes(var, arr, logger: logging.Logger):
+def check_chunk_sizes(var, arr, logger: logging.Logger) -> Union[None,list]:
 
     ndims = arr[0].get('chunks',[])
     if isinstance(ndims,list):
@@ -143,9 +143,21 @@ def check_chunk_sizes(var, arr, logger: logging.Logger):
         ndims = 1
 
     for dim in range(ndims):
-        chunksizes = [a.get('chunks',0)[dim] for a in arr]
+        chunksizes = np.array([a.get('chunks',0)[dim] for a in arr])
+        shapes = np.array([a.get('shape',0)[dim] for a in arr])
+
+        # Defunct - this fix did not yield useful results
+        # if np.any(chunksizes > shapes):
+        #     # 1.4.3 Fix - Adjust chunk sizes manually
+        #     chunksizes[chunksizes > shapes] = shapes[chunksizes > shapes]
+        #     # Unpack adjustments
+        #     for i in range(len(chunksizes)):
+        #         arr[i]['chunks'][dim] = chunksizes[i].item()
+
         if len(set(chunksizes)) > 1:
+            logger.debug(set(chunksizes))
             raise ValueError(f'ConcatFatalError: {var}')
+    return arr
 
 def process_identical_vars(identical_dim_zarrays: dict, logger: logging.Logger):
     """
@@ -185,7 +197,7 @@ def process_agg_dims(agg_dim_zarrays: dict, logger: logging.Logger, ideal: int =
         if len(dtypes) > 1:
             raise NotImplementedError('Varying aggregation dtypes not supported in PADOCC Aggregator yet.')
 
-        check_chunk_sizes(dim, arr, logger)
+        arr = check_chunk_sizes(dim, arr, logger)
 
         standard_rechunk = True
         size_sum = 0
