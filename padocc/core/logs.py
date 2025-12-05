@@ -120,7 +120,7 @@ class LoggedOperation:
             self, 
             forceful: bool = None, 
             dryrun: bool = None, 
-            thorough: bool = None
+            thorough: bool = None,
         ) -> None:
         """
         Set the FH Kwargs for all objects.
@@ -139,6 +139,31 @@ class LoggedOperation:
         self._forceful = forceful or self._forceful
         self._dryrun   = dryrun or self._dryrun
         self._thorough = thorough or self._thorough
+
+def set_verbose(level: int, nametypes: Union[str,list]):
+    """
+    Reset the logger basic config.
+    """
+
+    levels = [
+        logging.WARN,
+        logging.INFO,
+        logging.DEBUG,
+    ]
+    if isinstance(nametypes, str):
+        nametypes = [nametypes]
+
+    if level >= len(levels):
+        level = len(levels) - 1
+
+    for name in logging.root.manager.loggerDict:
+        allowed = False
+        for nt in nametypes:
+            if nt in name:
+                allowed = True
+        if allowed:
+            lg = logging.getLogger(name)
+            lg.setLevel(levels[level])
 
 def clear_loggers(
         ignore: list[str] = None
@@ -216,6 +241,9 @@ def init_logger(
     :returns:       A new logger object.
     
     """
+
+    name = f'padocc_{name}'
+
     verbose = min(verbose, len(levels)-1)
     if logid is not None:
         name = f'{name}_{logid}'
