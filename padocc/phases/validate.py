@@ -692,20 +692,12 @@ class ValidateDatasets(LoggedOperation):
 
             try:
                 testdim = self.test_dataset_var(dim)
-                test_range = (
-                    testdim.head(1)[0],
-                    testdim.tail(1)[0]
-                )
             except KeyError:
                 self.logger.warning(f'{dim} could not be validated for data content')
                 continue
 
             try:
                 controldim = self.control_dataset_var(dim)
-                control_range = (
-                    controldim.head(1)[0],
-                    controldim.tail(1)[0]
-                )
             except KeyError:
                 self.logger.warning(f'{dim} could not be validated for data content')
                 continue
@@ -718,8 +710,8 @@ class ValidateDatasets(LoggedOperation):
 
             self._validate_dimvalues(
                 dim,
-                test_range,
-                control_range
+                testdim,
+                controldim
             )
 
         for var in self.variables:
@@ -818,15 +810,17 @@ class ValidateDatasets(LoggedOperation):
                     self._labels[1]: ','.join(control_dr)
                 }
 
-    def _validate_dimvalues(self, dim: str, test_range, control_range, ignore=None):
+    def _validate_dimvalues(self, dim: str, testdim: xr.DataArray, controldim: xr.DataArray, ignore=None):
         """
         Validate that the first and last values of the dimension arrays are equal.
 
         :param dim:         (str) The name of the current dimension.
 
-        :param test_range:        (obj) The cloud-format first and last values.
+        :param testdim:        (obj) The cloud-format dimension array - as of 1.4.3 
+            validation applies to the entire array.
 
-        :param control_range:     (obj) The native-format first and last values.
+        :param controldim:     (obj) The native-format dimension array - as of 1.4.3 
+            validation applies to the entire array.
 
         :param ignore:      (bool) Option to ignore specific dimension.
         """
@@ -834,34 +828,12 @@ class ValidateDatasets(LoggedOperation):
             self.logger.debug(f'Skipped {dim}')
             return
 
-        if test_range[0] == test_range[1]:
-            test_range = [test_range[0]]
-            
-        if control_range[0] == control_range[1]:
-            control_range = [control_range[0]]
-
-
-        test_range = np.array(test_range)
-        control_range = np.array(control_range)
-        
-        self.logger.debug('test range')
-        self.logger.debug(np.array(test_range).size)
-        self.logger.debug('control range')
-        self.logger.debug(np.array(control_range).size)
-
         # Compare array values.
-        if not np.array_equal(test_range, control_range):
-
-            try:
-                test_value = format_tuple(tuple(np.array(test_range, dtype=test_range[0].dtype).tolist()))
-                control_value = format_tuple(tuple(np.array(control_range, dtype=control_range[0].dtype).tolist()))
-            except:
-                self.logger.warning('Unable to specify error values')
-                test_value, control_value = None, None
+        if not np.array_equal(testdim.compute(), controldim.compute(),equal_nan=True):
 
             self._data_report[f'dimensions,data_errors,{dim}'] = {
-                    self._labels[0]: test_value,
-                    self._labels[1]: control_value
+                    self._labels[0]: testdim.compute()[0],
+                    self._labels[1]: controldim.compute()[0]
                 }            
 
     def _validate_dimlens(self, dim: str, test, control, ignore=None):
