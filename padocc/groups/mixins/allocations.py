@@ -5,6 +5,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 import os
 import json
 from typing import Callable, Union
+import math
 
 import binpacking
 
@@ -159,6 +160,56 @@ class AllocationsMixin:
         # Return list of tuples.
         return allocs
     
+    def deploy_parallel_project(
+            self,
+            project         : int,
+            source          : str,
+            repeat_id       : str = 'main',
+            time            : Union[str,None] = None,
+            sbatch_kwargs   : Union[dict,None] = None,
+            run_kwargs      : Union[dict,None] = None,
+            memory          : Union[str,None] = None,
+            valid           : Union[str,None] = None,
+            wait            : bool = False,
+            inter_parallel_limit: int = 1000
+        ) -> None:
+        """
+        Deploy parallelised project, specifically for computation process.
+        """
+        run_kwargs = run_kwargs or {}
+        sbatch_kwargs = sbatch_kwargs or {}
+    
+        sbatch_dir  = f'{self.groupdir}/sbatch'
+        jobname = f'compute_pp_{repeat_id}_{project}'
+
+        proj = self[project]
+        ngroups = math.ceil(proj.detail_cfg.get('num_files')/inter_parallel_limit)
+    
+        sbatch = ListFileHandler(
+            sbatch_dir, 
+            f'{jobname}.sbatch', 
+            logger=self.logger, 
+            dryrun=self._dryrun, 
+            forceful=self._forceful)
+
+        self._create_slurm_script(
+            'compute',
+            source, 
+            jobname,
+            repeat_id,
+            sbatch, 
+            group_length=ngroups,
+            sbatch_kwargs=sbatch_kwargs,
+            time=time,
+            run_kwargs=run_kwargs,
+            memory=memory,
+            valid=valid,
+            wait=wait,
+            project_flag=f'-p {project} --parallel_project $SLURM_ARRAY_TASK_ID/{ngroups}'
+        )
+
+        proj.update_status('compute','SubsetDeployed')
+    
     def deploy_parallel(
             self,
             phase           : str,
@@ -170,6 +221,7 @@ class AllocationsMixin:
             wait            : bool = False,
             func            : Callable = print,
             bypass          : BypassSwitch = BypassSwitch(),
+            inter_parallel_limit: int = 1000,
             band_increase   : Union[str,None] = None,
             forceful        : Union[bool,None] = None,
             dryrun          : Union[bool,None] = None,
@@ -216,6 +268,38 @@ class AllocationsMixin:
 
         if xarray_kwargs is not None:
             sbatch_kwargs['xarray_kwargs'] = xarray_kwargs
+
+        if phase == 'compute':
+            group_parallel = []
+            for proj in self.proj_codes[repeat_id]:
+                project = self.get_project(proj)
+                if project.detail_cfg['num_files'] < inter_parallel_limit or project.is_subset_complete(thorough=thorough):
+                    group_parallel.append(proj)
+                else:
+                    self.deploy_parallel_project(
+                        proj,
+                        source=source,
+                        repeat_id=repeat_id,
+                        time=time_allowed,
+                        sbatch_kwargs=sbatch_kwargs,
+                        run_kwargs=run_kwargs,
+                        memory=memory,
+                        valid=valid,
+                        wait=wait,
+                        inter_parallel_limit=inter_parallel_limit
+                    )
+
+            if len(group_parallel) == 0:
+                self.logger.info('All projects submitted for super-parallelism')
+                return
+        
+            self.add_repeat_by_id(
+                repeat_id + '_grouped',
+                group_parallel
+            )
+
+        # Reset to use only grouped projects
+        repeat_id = repeat_id + '_grouped'
 
         # Ensure directories are created for logs
         self._setup_slurm_directories()
@@ -299,6 +383,7 @@ class AllocationsMixin:
             memory: Union[str,None] = None,
             valid: Union[str,None] = None,
             wait: bool = False,
+            project_flag: str = '-p $SLURM_ARRAY_TASK_ID',
         ):
         """
         Create the sbatch content job array.
@@ -335,7 +420,7 @@ class AllocationsMixin:
 
             f'export WORKDIR={self.workdir}',
 
-            f'padocc {phase} -p $SLURM_ARRAY_TASK_ID {sbatch_flags}',
+            f'padocc {phase} {project_flag} {sbatch_flags}',
         ]
 
         sbatch.set(sbatch_contents)

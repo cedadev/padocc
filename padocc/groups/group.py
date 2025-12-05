@@ -187,6 +187,7 @@ class GroupOperation(
                 logger=self.logger,
                 xarray_kwargs=self._xarray_kwargs,
                 new_version=self.allow_new_version,
+                verbose=self._verbose,
                 **fh_kwargs
             )
 
@@ -317,7 +318,7 @@ class GroupOperation(
             mode: Union[str,None] = None,
             repeat_id: str = 'main',
             proj_code: Optional[str] = None,
-            subset: Optional[str] = None,
+            proj_subset: Optional[str] = None, # Renamed to avoid confusion
             bypass: Union[BypassSwitch, None] = None,
             forceful: Optional[bool] = None,
             thorough: Optional[bool] = None,
@@ -342,6 +343,8 @@ class GroupOperation(
             jobid = f"{os.getenv('SLURM_ARRAY_JOB_ID')}-{os.getenv('SLURM_ARRAY_TASK_ID')}"
             is_parallel = True
 
+        run_kwargs['parallel'] = is_parallel
+
         # Select set of datasets from repeat_id
 
         if phase not in phases:
@@ -349,8 +352,8 @@ class GroupOperation(
             return
         
         codeset = self.proj_codes[repeat_id].get()
-        if subset is not None:
-            codeset = self._configure_subset(codeset, subset, proj_code)
+        if proj_subset is not None:
+            codeset = self._configure_subset(codeset, proj_subset, proj_code)
 
         if proj_code is not None:
             if proj_code in codeset:
@@ -372,6 +375,8 @@ class GroupOperation(
 
         func = phases[phase]
 
+        run_kwargs['verbose'] = kwargs.pop('verbose',None) or self._verbose
+
         results = {}
         for id, proj_code in enumerate(codeset):
             self.logger.info(f'Starting operation: {id+1}/{len(codeset)} ({format_str(proj_code, 15, concat=True, shorten=True)})')
@@ -390,7 +395,6 @@ class GroupOperation(
                 fh=fh, 
                 bypass=bypass,
                 run_kwargs=run_kwargs,
-                parallel=is_parallel,
                 **kwargs)
             
             if status in results:
@@ -429,10 +433,11 @@ class GroupOperation(
 
         :returns:   None
         """
+
         scan = ScanOperation(
             proj_code, self.workdir, groupID=self.groupID,
-            verbose=self._verbose, bypass=bypass, 
-            dryrun=self._dryrun, **kwargs)
+            verbose=self._verbose,
+            bypass=bypass, **kwargs)
         status = scan.run(mode=mode, **self.fh_kwargs, **run_kwargs)
         scan.save_files()
 
@@ -486,8 +491,8 @@ class GroupOperation(
 
         compute = ds(
             proj_code, self.workdir, groupID=self.groupID,
-            verbose=self._verbose, bypass=bypass,
-            dryrun=self._dryrun, **kwargs
+            verbose=self._verbose,
+            bypass=bypass, **kwargs
         )
 
         status = compute.run(mode=mode, **self.fh_kwargs, **run_kwargs)
@@ -512,8 +517,8 @@ class GroupOperation(
         try:
             valid = ValidateOperation(
                 proj_code, self.workdir, groupID=self.groupID,
-                verbose=self._verbose, bypass=bypass,
-                dryrun=self._dryrun, **kwargs)
+                verbose=self._verbose,
+                bypass=bypass, **kwargs)
         except TypeError:
             raise ValueError(
                 f'{proj_code}, {self.groupID}, {self.workdir}'

@@ -325,6 +325,37 @@ class ProjectOperation(
         else:
             return f'{self.workdir}/in_progress/general/{self.proj_code}'
         
+    def get_cfa_cache_files(self, get_missing: bool = False):
+        """
+        Get the correctly ordered set of CFA cache files
+        """
+        subset_total = self.detail_cfg.get('compute_subsets')
+        num_files    = self.detail_cfg.get('num_files')
+
+        if subset_total is None:
+            raise ValueError(
+                'No subset was recorded, unable to continue'
+            )
+        
+        if num_files is None:
+            raise ValueError(
+                'Unknown number of native files'
+            )
+
+        cfafiles = []
+        missing = []
+        group_size = int(num_files)/int(subset_total)
+        for cfa_i in range(0, int(subset_total)):
+            if os.path.isfile(f'{self.dir}/cfacache/{cfa_i*int(group_size)}.nca'):
+                cfafiles.append(f'{self.dir}/cfacache/{cfa_i*int(group_size)}.nca')
+            else:
+                missing.append(f'{self.dir}/cfacache/{cfa_i*int(group_size)}.nca')
+
+        if get_missing:
+            return missing
+        
+        return cfafiles
+
     def get_agg_shorthand(self) -> None:
         """
         Get Aggregation shorthand"""

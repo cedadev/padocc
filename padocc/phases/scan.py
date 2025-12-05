@@ -178,6 +178,9 @@ class ScanOperation(ProjectOperation):
         # Create all files in mini-kerchunk set here. Then try an assessment.
         limiter = min(100, max(2, int(nfiles/20)))
 
+        # TEMPORARY
+        limiter = 5
+
         self.logger.info(f'Determined {limiter} files to scan (out of {nfiles})')
         self.logger.info(f'Performing CFA Base Scan (Standard)')
         self._scan_cfa(limiter=limiter)
@@ -227,7 +230,7 @@ class ScanOperation(ProjectOperation):
         # Order subset
         filesubset = mini_ds.order_native_files()
         
-        mini_ds.create_refs(ctype=ctype, filesubset=filesubset)
+        mini_ds.create_refs(ctype=ctype, filesubset=filesubset, lim1=limiter)
 
         self.padocc_aggregation = mini_ds.padocc_aggregation
         self.virtualizarr       = mini_ds.virtualizarr
@@ -300,9 +303,10 @@ class ScanOperation(ProjectOperation):
             logger=self.logger,
             groupID=self.groupID, 
             dryrun=self._dryrun,
+            verbose=self._verbose
         )
 
-        status = comp._run(file_limit=limiter)
+        status = comp._run(lim0=0, lim1=limiter, subset=True, output=False)
 
         if status == 'Success':
             self.logger.info('Determined data properties:')
