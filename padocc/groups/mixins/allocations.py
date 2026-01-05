@@ -169,7 +169,6 @@ class AllocationsMixin:
             sbatch_kwargs   : Union[dict,None] = None,
             run_kwargs      : Union[dict,None] = None,
             memory          : Union[str,None] = None,
-            valid           : Union[str,None] = None,
             wait            : bool = False,
             inter_parallel_limit: int = 1000
         ) -> None:
@@ -183,7 +182,17 @@ class AllocationsMixin:
         jobname = f'compute_pp_{repeat_id}_{project}'
 
         proj = self[project]
-        ngroups = math.ceil(proj.detail_cfg.get('num_files')/inter_parallel_limit)
+
+        if os.path.isdir(f'{proj.dir}/cfacache') and self._thorough:
+            os.system(f'rm {proj.dir}/cfacache/*')
+
+        nf = int(proj.detail_cfg.get('num_files'))
+
+        inter_parallel_limit = max(
+            inter_parallel_limit, 
+            int(math.sqrt(nf)))
+        
+        ngroups = math.ceil(nf/inter_parallel_limit)
     
         sbatch = ListFileHandler(
             sbatch_dir, 
@@ -203,7 +212,6 @@ class AllocationsMixin:
             time=time,
             run_kwargs=run_kwargs,
             memory=memory,
-            valid=valid,
             wait=wait,
             project_flag=f'-p {project} --parallel_project $SLURM_ARRAY_TASK_ID/{ngroups}'
         )
@@ -214,6 +222,7 @@ class AllocationsMixin:
             self,
             phase           : str,
             source          : str,
+            proj_code       : str = None,
             verbose         : int = 0,
             joblabel        : str = 'PADOCC',
             repeat_id       : str = 'main',
@@ -233,7 +242,6 @@ class AllocationsMixin:
             new_version     : Union[str,None] = None,
             xarray_kwargs   : Union[dict,None] = None,
             run_kwargs      : Union[dict,None] = None,
-            valid           : Union[dict,None] = None,
         ) -> None:
         """
         Organise parallel deployment via SLURM.
@@ -266,14 +274,30 @@ class AllocationsMixin:
             'new_version' : new_version
         }
 
+        # Ensure directories are created for logs
+        self._setup_slurm_directories()
+        sbatch_dir  = f'{self.groupdir}/sbatch'
+
         if xarray_kwargs is not None:
             sbatch_kwargs['xarray_kwargs'] = xarray_kwargs
 
         if phase == 'compute':
             group_parallel = []
-            for proj in self.proj_codes[repeat_id]:
-                project = self.get_project(proj)
-                if project.detail_cfg['num_files'] < inter_parallel_limit or project.is_subset_complete(thorough=thorough):
+
+            codepool = self.proj_codes[repeat_id]
+            if proj_code:
+                codepool = proj_code.split(',')
+
+
+            for proj in codepool:
+                project = self[proj]
+
+                nf = int(project.detail_cfg.get('num_files'))
+                self.logger.debug(f'{project.proj_code}: {nf}')
+                if nf is None:
+                    # No files specified - probably skipped scan
+                    continue
+                if nf < inter_parallel_limit or project.is_subset_complete(thorough=thorough):
                     group_parallel.append(proj)
                 else:
                     self.deploy_parallel_project(
@@ -284,7 +308,6 @@ class AllocationsMixin:
                         sbatch_kwargs=sbatch_kwargs,
                         run_kwargs=run_kwargs,
                         memory=memory,
-                        valid=valid,
                         wait=wait,
                         inter_parallel_limit=inter_parallel_limit
                     )
@@ -293,17 +316,14 @@ class AllocationsMixin:
                 self.logger.info('All projects submitted for super-parallelism')
                 return
         
-            self.add_repeat_by_id(
+            self._add_proj_codeset(
                 repeat_id + '_grouped',
-                group_parallel
+                group_parallel,
+                overwrite=True
             )
 
-        # Reset to use only grouped projects
-        repeat_id = repeat_id + '_grouped'
-
-        # Ensure directories are created for logs
-        self._setup_slurm_directories()
-        sbatch_dir  = f'{self.groupdir}/sbatch'
+            # Reset to use only grouped projects
+            repeat_id = repeat_id + '_grouped'
 
         # Perform allocation assignments here.
         if binpack:
@@ -365,7 +385,6 @@ class AllocationsMixin:
                     run_kwargs=run_kwargs,
                     time=time_allowed,
                     memory=memory,
-                    valid=valid,
                     wait=wait
                 )
             
@@ -381,7 +400,6 @@ class AllocationsMixin:
             run_kwargs: Union[dict,None] = None,
             time: Union[str,None] = None,
             memory: Union[str,None] = None,
-            valid: Union[str,None] = None,
             wait: bool = False,
             project_flag: str = '-p $SLURM_ARRAY_TASK_ID',
         ):
@@ -397,11 +415,9 @@ class AllocationsMixin:
 
         sbatch_flags = self._sbatch_kwargs(time, memory, repeat_id, **sbatch_kwargs)
 
-        if valid is not None:
-            sbatch_flags += f' -i {valid}'
-
-        for k, v in run_kwargs:
-            sbatch_flags += f' --{k} {v}'
+        for k, v in run_kwargs.items():
+            if v is not None:
+                sbatch_flags += f' --{k} {v}'
 
         lotus_requirements = get_lotus_reqs(self.logger)
   
@@ -500,8 +516,9 @@ class AllocationsMixin:
         optional = []
 
         if verbose is not None:
-            verb = 'v' * int(verbose)
-            optional.append(f'-{verb}')
+            if verbose > 0:
+                verb = 'v' * int(verbose)
+                optional.append(f'-{verb}')
 
         for value in value_options.keys():
             if value_options[value][1] is not None:
