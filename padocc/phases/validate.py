@@ -74,7 +74,6 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
             isnan = handle_boxissue(err)
     else:
         try:
-            #print(get_origin(arr))
             isnan = np.all(arr == np.nan)
         except Exception as err:
             isnan = handle_boxissue(err)
@@ -132,11 +131,6 @@ def _recursive_set(source: dict, keyset: list, value):
             _ = json.dumps(value)
             current = value
         except TypeError:
-            try:
-                print(value)
-            except:
-                print('Unable to print value')
-                x=input()
             current = 'N/A'
         source[keyset[0]] = value
     return source
@@ -740,7 +734,16 @@ class ValidateDatasets(LoggedOperation):
             # Check access to the source data somehow here
             # Initiate growbox method - recursive increasing box size.
             self.logger.debug(f'Validating data for {var}')
-            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid)
+            
+            if len(testvar.dims) == 0:
+                # Single attempt allowed
+                current = 2
+            else:
+                # 100 or less if the largest dimension is smaller than this limit.
+                # Means we don't try growboxes of equal size too many times.
+                current = min(100, max([testvar[d].size for d in testvar.dims])/2)
+            
+            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid, current=current)
 
     def _validate_shapes(self, var: str, test, control, ignore=None):
         """
@@ -827,9 +830,16 @@ class ValidateDatasets(LoggedOperation):
         if ignore:
             self.logger.debug(f'Skipped {dim}')
             return
-
+        
+        try:
+            equal = np.array_equal(testdim.compute(), controldim.compute(),equal_nan=True)
+        except TypeError:
+            try: 
+                equal = np.array_equal(testdim.compute(), controldim.compute())
+            except TypeError:
+                equal = False
         # Compare array values.
-        if not np.array_equal(testdim.compute(), controldim.compute(),equal_nan=True):
+        if not equal:
 
             self._data_report[f'dimensions,data_errors,{dim}'] = {
                     self._labels[0]: testdim.compute()[0],
@@ -1110,7 +1120,7 @@ class ValidateOperation(ProjectOperation):
 
         # Data Validation Selection
 
-        if self.cfa_enabled:
+        if self.cfa_enabled and self.cloud_format != 'CFA':
             self.logger.info('CFA-enabled validation')
             # CFA now opens with decoded times (2025.8.4)
             try:
@@ -1120,7 +1130,7 @@ class ValidateOperation(ProjectOperation):
                 # CFA has failed for some reason - file must be deleted.
                 self.cfa_enabled = False
 
-        if self.cfa_enabled:
+        if self.cfa_enabled and self.cloud_format != 'CFA':
             # Run single validation attempt
             vd.validate_data(dim_mid=dim_mid)
         else:
