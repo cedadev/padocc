@@ -292,7 +292,12 @@ class AllocationsMixin:
             for proj in codepool:
                 project = self[proj]
 
-                nf = int(project.detail_cfg.get('num_files'))
+                nf = project.detail_cfg.get('num_files')
+
+                if nf is None:
+                    project.detail_cfg['num_files'] = len(project.allfiles)
+                    nf = len(project.allfiles)
+
                 self.logger.debug(f'{project.proj_code}: {nf}')
                 if nf is None:
                     # No files specified - probably skipped scan
@@ -416,7 +421,9 @@ class AllocationsMixin:
         sbatch_flags = self._sbatch_kwargs(time, memory, repeat_id, **sbatch_kwargs)
 
         for k, v in run_kwargs.items():
-            if v is not None:
+            if isinstance(v,list):
+                sbatch_flags += f' --{k} {",".join(v)}'
+            elif v is not None:
                 sbatch_flags += f' --{k} {v}'
 
         lotus_requirements = get_lotus_reqs(self.logger)
@@ -457,8 +464,9 @@ class AllocationsMixin:
         sbatch_command = ' '.join(sbatch_cmd)
 
         if self._dryrun:
-            self.logger.info('DRYRUN: sbatch command: ')
-            print(sbatch_command)
+            self.logger.info('DRYRUN:')
+            for line in sbatch_contents:
+                self.logger.info(line)
         else:
             os.system(sbatch_command)
 
