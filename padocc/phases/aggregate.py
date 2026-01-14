@@ -14,6 +14,7 @@ import warnings
 import xarray as xr
 import logging
 import struct
+import os
 
 from obstore.store import from_url
 from virtualizarr import open_virtual_dataset
@@ -40,12 +41,18 @@ MAPPINGS = {
     '<i4':'<i'
 }
 
-def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list, logger) -> None:
+def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list, nfiles: int, logger) -> None:
 
     logger.info('VirtualiZarr: Starting Concatenation')
 
     # Must be ordered in terms of mathematical position i.e 0,1,2 not 0,1,10,...
-    cachefiles = glob.glob(f'{cache_dir}/*.json')
+    cachefiles = []
+    for i in range(nfiles):
+        if not os.path.isfile(f'{cache_dir}/{i}.json'):
+            raise MissingDataError(
+                f'Cache file {i} not find'
+            )
+        cachefiles.append(f'{cache_dir}/{i}.json')
     cachekerchunk = [cf for cf in cachefiles if 'temp' not in cf]
 
     file_path = cachekerchunk[0]
@@ -95,7 +102,7 @@ def mzz_combine(refs: list, output_file: str, concat_dims: list, identical_dims:
         mzz = MultiZarrToZarr(list(refs), concat_dims=concat_dims, identical_dims=identical_dims).translate()
     except ValueError as err:
         if 'chunk size mismatch' in str(err):
-            raise ConcatFatalError
+            raise ConcatFatalError(var=','.join(concat_dims))
         else:
             raise err
         
@@ -232,7 +239,8 @@ def process_agg_dims(agg_dim_zarrays: dict, logger: logging.Logger, ideal: int =
                 logger.debug('PADOCC-A: Combined rechunking enabled')
                 arr['chunks'] = size_sum
 
-        arr['shape'] = [int(chunk_bounds[dim][-1])] # Reset shape size for agg dims.
+        # Shape is relative to chunksize
+        arr['shape'] = [int(chunk_bounds[dim][-1]*arr['chunks'][0])] # Reset shape size for agg dims.
         agg_dim_zarrays[dim] = arr
 
         logger.info(f'PADOCC-A: {dim} Shape: {arr["shape"]}, Chunk Size: {arr["chunks"]}')
