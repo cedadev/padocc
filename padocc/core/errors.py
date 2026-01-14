@@ -419,7 +419,10 @@ class ConcatFatalError(KerchunkException): # Keep
             groupdir: Union[str,None] = None
         ) -> None:
 
-        self.message = f"Chunk sizes differ between refs for {var}: {chunk1} - {chunk2} - files cannot be concatenated"
+        self.message = f"Chunk sizes differ between refs for {var}"
+        if chunk1 is not None: 
+            self.message += f"{chunk1} - {chunk2}"
+        self.message += " - files cannot be concatenated"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'
