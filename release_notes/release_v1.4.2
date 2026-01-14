@@ -20,6 +20,11 @@
 - Properly implemented `minor_version_increment` in response to using new aggregation methods.
 - Refactored aggregation method selection internally
 
+## Validation Phase
+- Added limiter to growbox based on size of largest dimension. This will prohibit i.e 100 test boxes applied to a variable with size 0.
+- Fixed dimension value comparison to use array_equal.
+
+
 ## Miscellaneous
 - Removed CFA history updating as this is not a priority and does not function correctly in past versions
 - Added `kerchunk_aggregation` and `order_confirmed` properties. Ordering is now tracked separately to `virtualizarr` property which is used to denote if virtualizarr can be used as an aggregation method.
