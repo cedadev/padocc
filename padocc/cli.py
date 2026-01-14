@@ -107,7 +107,7 @@ def check_attribute(group, attr: str, repeat_id: str = 'main', **kwargs):
             
         print(f'{proj.proj_code} - {attr}: {value}')
 
-def set_attribute(group, attr: str, value: str, repeat_id: str = 'main',**kwargs):
+def set_attribute(group, attr: str, value: str, repeat_id: str = 'main', proj_code: str = None,**kwargs):
     """
     Check attribute name against known attributes and set value"""
     file_data_source = None
@@ -123,6 +123,13 @@ def set_attribute(group, attr: str, value: str, repeat_id: str = 'main',**kwargs
             f'Unable to set attribute "{attr}", not found in project'
         )
     
+    if value == 'True':
+        value = True
+    elif value == 'False':
+        value = False
+    elif value == 'None':
+        value = None
+    
     def recursive_reset(src, attrset, value):
         if len(attrset) > 1:
             src[attrset[0]] = recursive_reset(src[attrset[0]], attrset[1:], value)
@@ -130,30 +137,50 @@ def set_attribute(group, attr: str, value: str, repeat_id: str = 'main',**kwargs
             src[attrset[0]] = value
         return src
     
-    for project in group.proj_codes[repeat_id]:
+    codes = group.proj_codes[repeat_id]
+    if proj_code is not None:
+        codes = proj_code.split(',')
+    
+    for project in codes:
         proj = group[project]
         if file_data_source is None:
             setattr(proj, attr, value)
         else:
             fh = getattr(proj, file_data_source)
-            fh.set(recursive_reset(fh.get(), attr_parts))
+            fh.set(recursive_reset(fh.get(), attr_parts, value))
 
             # Ensure filehandler is preserved above so it doesn't get reset as a non-dict here
             setattr(proj, file_data_source, fh)
             proj.save_files()
 
-def complete_group(group, completion_dir: str, proj_code: Union[str,None] = None, repeat_id: str = 'main', thorough: bool = True, **kwargs):
+def complete_group(
+        group, 
+        completion_dir: str, 
+        proj_code: Union[str,None] = None, 
+        repeat_id: str = 'main', 
+        thorough: bool = True,
+        remote_sub: Union[str,None] = None,
+        remote_replace: Union[str,None] = None,
+        **kwargs
+    ):
     """Complete projects in a group"""
+    complete_kwargs = {}
+
+    if remote_sub is not None:
+        complete_kwargs['sub'] = remote_sub
+    if remote_replace is not None:
+        complete_kwargs['replace'] = remote_replace
 
     if proj_code is None:
         group.complete_group(
             completion_dir,
             repeat_id=repeat_id,
-            thorough=thorough)
+            thorough=thorough,
+            **complete_kwargs)
     else:
         try:
             project = group[proj_code]
-            project.complete_project(move_to=completion_dir, thorough=thorough)
+            project.complete_project(move_to=completion_dir, thorough=thorough,**complete_kwargs)
         except:
             print(f'ERROR: Unable to instantiate project {proj_code} from {group.groupID}')
 
@@ -291,6 +318,7 @@ def parse_group(
         thorough : bool = False,
         binpack  : bool = False,
         band_increase: bool = False,
+        proj_code: Union[str,None] = None,
         venvpath : Union[str,None] = None,
         aggregator : Union[str,None] = None,
         subset : Union[str,None] = None,
@@ -304,13 +332,14 @@ def parse_group(
         wait_sbatch: bool = False,
         new_version: bool = False,
         b64vars: Union[list,None] = None,
+        toggle_CFA: Union[str,None] = None,
         func: callable = print,
         **kwargs
 ):
     """
     Parse all group-based arguments to group instantiation"""
 
-    # Filter arguments
+    ## 1. Filter arguments
     bypass=BypassSwitch(bypass)
 
     set_verbose(0, 'padocc')
@@ -330,14 +359,8 @@ def parse_group(
     if not group_exists(groupID, workdir):
         if operation not in NEW_GROUP_ACTIONS:
             raise ValueError(f'Unsupported action for new group {groupID}')
-        
-    if identical_dims is not None:
-        identical_dims = identical_dims.split(',')
 
-    if concat_dims is not None:
-        concat_dims = concat_dims.split(',')
-
-    # Create group
+    ## 2. Create group
     op_group = GroupOperation(
         groupID,
         workdir=workdir,
@@ -351,6 +374,19 @@ def parse_group(
         xarray_kwargs=xarray_kwargs
     )
 
+    ## 3. Toggle CFA on/off
+    if toggle_CFA == 'y':
+        for proj in op_group.assemble_codeset(proj_code, subset, repeat_id=repeat_id):
+            project = op_group[proj]
+            project.cfa_enabled = True
+            project.save_files()
+    elif toggle_CFA == 'n':
+        for proj in op_group.assemble_codeset(proj_code, subset, repeat_id=repeat_id):
+            project = op_group[proj]
+            project.cfa_enabled = False
+            project.save_files()
+
+    ## 4. Assemble 'run_kwargs'
     run_kwargs = {}
     if parallel_project is not None:
         run_kwargs = {
@@ -358,13 +394,24 @@ def parse_group(
             'compute_total':parallel_project.split('/')[1]
         }
 
+    if identical_dims is not None:
+        run_kwargs['identical_dims'] = identical_dims.split(',')
+
+    if concat_dims is not None:
+        run_kwargs['concat_dims'] = concat_dims.split(',')
+
     run_kwargs['input_file'] = input_file
     run_kwargs['aggregator'] = aggregator
     run_kwargs['b64vars'] = b64vars
 
+    ## 5a. Run Parallel
     if parallel:
+
+        mode = kwargs.pop('mode')
+
         op_group.deploy_parallel(
             operation,
+            proj_code=proj_code,
             bypass=bypass,
             source=venvpath,
             band_increase=band_increase,
@@ -375,12 +422,13 @@ def parse_group(
             repeat_id=repeat_id,
             xarray_kwargs=xarray_kwargs_raw, # Unprocessed raw CLI value
             run_kwargs=run_kwargs,
-            valid=input_file,
             wait=wait_sbatch,
+            mode=mode
         )
         return
     
-    OPERATIONS[operation](op_group, run_kwargs=run_kwargs,repeat_id=repeat_id, **kwargs)
+    ## 5b. Run Serial
+    OPERATIONS[operation](op_group, run_kwargs=run_kwargs,repeat_id=repeat_id, proj_code=proj_code,**kwargs)
 
 def get_args():
 
@@ -404,13 +452,14 @@ def get_args():
 
 
     # Operations involving an input file
-    input_parser.add_argument('-i','--input', dest='input_file', help='Input file for `init`, `add` or `validate` operations.')
+    input_parser.add_argument('-i','--input_file', dest='input_file', help='Input file for `init`, `add` or `validate` operations.')
 
     # Generic arguments for all phased operations
     phased_parser.add_argument('-f','--forceful',dest='forceful',action='store_true', help='Force overwrite of steps if previously done')
     phased_parser.add_argument('-d','--dryrun',  dest='dryrun',  action='store_true', help='Perform dry-run (i.e no new files/dirs created)' )
     phased_parser.add_argument('-b','--bypass-errs', dest='bypass', default='D', help=BypassSwitch().help())
     phased_parser.add_argument('-C','--cloud-format', dest='mode', default=None, help='Output format to be used.')
+    phased_parser.add_argument('--CFA', dest='toggle_CFA', help='Output format to be used.')
     phased_parser.add_argument('-t','--time-allowed',dest='time_allowed',  help='Time limit for this job (parallel only)')
     phased_parser.add_argument('-M','--memory', dest='memory', default='2G', help='Memory allocation for this job (parallel only)(i.e "2G" for 2GB)')
 
@@ -437,6 +486,8 @@ def get_args():
     complete = subparsers.add_parser('complete', help='Complete projects from a group or the entire group - transfer reports and data files.', 
                                 parents=[universal_parser, group_parser])
     complete.add_argument('--completion_dir',help='Directory for completion - data and reports will be transferred.', required=True)
+    complete.add_argument('--sub', dest='remote_sub',help='Substitution if not the default')
+    complete.add_argument('--replace', dest='remote_replace',help='Replacement to substitution if not the default')
     ## Compute
     compute = subparsers.add_parser('compute',help='Compute data aggregations for a project, group or subset of projects. (Pipeline phase 2)', 
                                 parents=[universal_parser, group_parser, phased_parser])
@@ -482,6 +533,7 @@ def get_args():
     ## Check Attr
     check_attr = subparsers.add_parser('check_attr', help='Check the value of an attribute across all group projects.', 
                                 parents=[universal_parser, group_parser])
+    check_attr.add_argument('--attr', dest='attr', help='Attribute name to check')
     ## Delete
     delete = subparsers.add_parser('delete', help='Delete projects from a group or the entire group.',
                                 parents=[universal_parser, group_parser])
