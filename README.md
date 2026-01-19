@@ -11,18 +11,17 @@ Currently the Pipeline supports writing JSON/Parquet Kerchunk files for input Ne
 
 ![Kerchunk Pipeline](docs/source/_images/pipeline.png)
 
-## Release 1.3.5
-Release date: 17 April 2025
+## Release 1.4.3
 
-See the ![release notes](https://github.com/cedadev/padocc/releases/tag/v1.3.5) for details.
+Release date: 19th January 2026
+
+See the ![release notes](https://github.com/cedadev/padocc/releases/tag/v1.4.3) for details.
 
 This package acknowledges contributions by [Matt Brown](matbro@ceh.ac.uk) as a pre-release tester.
 
 ## Installation
 
-To install this package, clone the repository using git clone (and switch to the MigrationOO branch - `git checkout MigrationOO` if release v1.3 has not been released.)
-
-Then follow the steps below to install the package with the necessary dependencies.
+To install this package, clone the repository using git clone, then follow the steps below to install the package with the necessary dependencies.
 
 ```
 python -m venv .venv
@@ -33,4 +32,4 @@ poetry install
 
 ## Usage
 
-Please refer to the `tests/` scripts for how to use the `GroupOperation` and `ProjectOperation` classes.
+Please refer to the documentation pages linked above for exact specifications on how to effectively use PADOCC.
