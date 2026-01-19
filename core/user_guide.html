@@ -194,6 +194,12 @@ required in later phases.</p>
 or referencing using one of the Kerchunk drivers to create a reference file.
 In either case the computation may be extensive and require processing in the background
 or deployment and parallelisation across the group of projects.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default all compute operations will include CFA aggregation for future validation, unless CFA computation has failed in the past and you have not specified the <cite>-T</cite> thorough flag.
+CFA computation can also be manually disabled/toggled using the <code class="docutils literal notranslate"><span class="pre">--CFA</span></code> flag which takes <code class="docutils literal notranslate"><span class="pre">y</span></code> or <code class="docutils literal notranslate"><span class="pre">n</span></code> as an input to toggle whether CFA computation is wanted.
+This will reset the <code class="docutils literal notranslate"><span class="pre">CFA_enabled</span></code> setting for all projects in the current group selection.</p>
+</div>
 <p>Computation can be executed in serial for a group with the following:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">padocc compute -G my-group -v</span>
 <span class="gp"># </span>See<span class="w"> </span>padocc<span class="w"> </span>compute<span class="w"> </span>-h<span class="w"> </span><span class="k">for</span><span class="w"> </span>more<span class="w"> </span>info<span class="w"> </span>on<span class="w"> </span>possible<span class="w"> </span>flags
@@ -202,6 +208,13 @@ or deployment and parallelisation across the group of projects.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Typical flags on the CLI can be passed here too.</span>
 <span class="n">mygroup</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">&#39;compute&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the <code class="docutils literal notranslate"><span class="pre">validate</span></code> phase below fails for any reason, it is possible to revisit the compute phase to try using a different aggregation method.
+This is accomplished using the <code class="docutils literal notranslate"><span class="pre">--aggregator</span></code> flag, with either <code class="docutils literal notranslate"><span class="pre">V</span></code> for virtualizarr or <code class="docutils literal notranslate"><span class="pre">K</span></code> for kerchunk, depending on available methods.
+The validate log message found when running a status check (<code class="docutils literal notranslate"><span class="pre">padocc</span> <span class="pre">status</span></code>) will indicate the method used and the next method to attempt. i.e for <code class="docutils literal notranslate"><span class="pre">P&gt;VK</span></code> the options <code class="docutils literal notranslate"><span class="pre">V</span></code> and <code class="docutils literal notranslate"><span class="pre">K</span></code> are available to try next.
+<code class="docutils literal notranslate"><span class="pre">P</span></code> refers to the inbuilt aggregation PADOCC uses as a first attempt for simple datasets.</p>
 </div>
 </section>
 <section id="validate">
@@ -226,7 +239,14 @@ validator which checks the Xarray representations and identifies differences in 
 <span class="n">mygroup</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">&#39;compute&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">error_bypass</span><span class="o">=</span><span class="s1">&#39;bypass.json&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Here we are passing an <strong>error bypass</strong> file to the validation, that will allow for certain known errors to be bypassed. For example, the validator will often report that all variables/dimensions present in a different order between the native file and the cloud product. This is not often an issue, so can be ignored. The error still registers in the final data report, but it will have a <code class="docutils literal notranslate"><span class="pre">skip</span></code> label attached. See the Validation Report section in <strong>Bespoke Features</strong> for more details.</p>
+<p>Here we are passing an <strong>error bypass</strong> file to the validation, that will allow for certain known errors to be bypassed.
+For example, the validator will often report that all variables/dimensions present in a different order between the native file and the cloud product.
+This is not often an issue, so can be ignored.
+The error still registers in the final data report, but it will have a <code class="docutils literal notranslate"><span class="pre">skip</span></code> label attached. See the Validation Report section in <strong>Bespoke Features</strong> for more details.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>See the above section in <code class="docutils literal notranslate"><span class="pre">compute</span></code> for rerunning when there are errors that may be aggregation method-specific.</p>
+</div>
 </section>
 </section>
 </section>

@@ -163,7 +163,9 @@ Complete
     # Complete individual project
     $ padocc complete -G <group> --completion_dir <directory> -p 0
 
-The final step in the pipeline is to complete each project, transferring a copy of the output products and reports to a directory outside the pipeline. When the ``-T`` thorough flag is used, this automatically converts kerchunk files to a ``remote`` version, which has ``https://dap.ceda.ac.uk`` links added to each kerchunk reference.
+The final step in the pipeline is to complete each project, transferring a copy of the output products and reports to a directory outside the pipeline. 
+When the ``-T`` thorough flag is used, this automatically converts kerchunk files to a ``remote`` version, which has ``https://dap.ceda.ac.uk`` links added to each kerchunk reference.
+If an alternative substitution scheme is needed, the flags ``--sub`` and ``--replace`` to specify non-default values (default is to sub ``/`` with the above CEDA-specific link).
 
 Additionally, using the ``repeat_id`` flag will enable completing subsets of a group. See the ``repeat`` section below. Note that any project selected for completion that is already complete will be skipped.
 
@@ -254,8 +256,6 @@ This can be used to update the current status message for one or more projects. 
 
     $ padocc update_status -G <group> --old_phase compute --old_status ValueError --new_status Redo
 
-
-
 Aggregations
 ------------
 
@@ -282,6 +282,7 @@ This will produce a listing of all project codes and the value of the attribute 
     $ padocc set_attr -G <group> --attr <attribute> --value <value>
 
 Similarly the ``set_attr`` method enables setting a value for all projects in a group (or repeat_id subset), if the attribute is known to exist in the detail/base_cfg files or as a main project attribute.
+Note that attributes with a boolean value can be set using this mechanism, as ``True`` and ``False`` as the value will be interpreted as their correct boolean values.
 
 Delete
 ------

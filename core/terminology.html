@@ -146,6 +146,7 @@
 <li><p>The first number denotes major updates to the product, for instance where a data source file has been replaced.</p></li>
 <li><p>The second number denotes minor changes like alterations to attributes and metadata.</p></li>
 <li><p>The cloud format <code class="docutils literal notranslate"><span class="pre">k</span></code> or <code class="docutils literal notranslate"><span class="pre">z</span></code> comes before the version number, as well as an <code class="docutils literal notranslate"><span class="pre">r</span></code> letter which indicates that the file is <code class="docutils literal notranslate"><span class="pre">remote-enabled</span></code>. This occurs automatically for kerchunk files that have had ‘download links’ applied - from the command line this can be done as part of the completion workflow.</p></li>
+<li><p>Repeated computations using different aggregators will automatically increment the minor version.</p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -157,7 +158,7 @@
 <p>Newly added for v1.4.0, the PADOCC Aggregator is a prototype aggregation method meant to provide faster aggregation for well-behaved datasets. This method is tried as default for all datasets, so it is easier to talk about the known cases for when this basic aggregator fails:
 - Unexpected/badly behaved chunking: Has been observed when combining individual chunk references that the chunk sizes and total array sizes for some variables are inconsistent.
 - Unit conversion: PADOCC Aggregation is only applicable when there are no unit conversions between files.</p>
-<p>This aggregator is a prototype and is only the first attempt at aggregation.</p>
+<p>This aggregator is a prototype and is only the first attempt at aggregation. Use <code class="docutils literal notranslate"><span class="pre">--aggregator</span> <span class="pre">P</span></code> to specifically use only this method for aggregation.</p>
 </section>
 <section id="virtualizarr">
 <h3>VirtualiZarr<a class="headerlink" href="#virtualizarr" title="Link to this heading"></a></h3>
@@ -167,6 +168,7 @@
 <p>VirtualiZarr also occasionally causes unexplained chunk reference anomalies that may require manual intervention to bypass and use the normal Kerchunk aggregator instead:
 - Aggregated Dimension anomalies: These are recorded in PADOCC as AggregationErrors in the <code class="docutils literal notranslate"><span class="pre">validate</span></code> phase, where a dimension (e.g) time is not linearly/regularly increasing. There may be gaps or overlaps in the dimension itself.
 - Missing dimension segments: These are recorded as ValidationErrors in the <code class="docutils literal notranslate"><span class="pre">validate</span></code> phase, where a sample from one of the source files cannot be located in the combined product file.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">--aggregator</span> <span class="pre">V</span></code> to specifically compute using this aggregation method.</p>
 </section>
 </section>
 <section id="groups-in-padocc">

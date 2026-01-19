@@ -107,6 +107,12 @@ or referencing using one of the Kerchunk drivers to create a reference file.
 In either case the computation may be extensive and require processing in the background
 or deployment and parallelisation across the group of projects.
 
+.. note::
+
+    By default all compute operations will include CFA aggregation for future validation, unless CFA computation has failed in the past and you have not specified the `-T` thorough flag.
+    CFA computation can also be manually disabled/toggled using the ``--CFA`` flag which takes ``y`` or ``n`` as an input to toggle whether CFA computation is wanted. 
+    This will reset the ``CFA_enabled`` setting for all projects in the current group selection.
+    
 Computation can be executed in serial for a group with the following:
 
 .. code-block:: console
@@ -118,6 +124,13 @@ Computation can be executed in serial for a group with the following:
 
     # Typical flags on the CLI can be passed here too.
     mygroup.run('compute', verbose=1)
+
+.. note::
+
+    If the ``validate`` phase below fails for any reason, it is possible to revisit the compute phase to try using a different aggregation method.
+    This is accomplished using the ``--aggregator`` flag, with either ``V`` for virtualizarr or ``K`` for kerchunk, depending on available methods.
+    The validate log message found when running a status check (``padocc status``) will indicate the method used and the next method to attempt. i.e for ``P>VK`` the options ``V`` and ``K`` are available to try next.
+    ``P`` refers to the inbuilt aggregation PADOCC uses as a first attempt for simple datasets.
 
 Validate
 --------
@@ -146,4 +159,11 @@ validator which checks the Xarray representations and identifies differences in 
     # Typical flags on the CLI can be passed here too.
     mygroup.run('compute', verbose=1, error_bypass='bypass.json')
 
-Here we are passing an **error bypass** file to the validation, that will allow for certain known errors to be bypassed. For example, the validator will often report that all variables/dimensions present in a different order between the native file and the cloud product. This is not often an issue, so can be ignored. The error still registers in the final data report, but it will have a ``skip`` label attached. See the Validation Report section in **Bespoke Features** for more details.
+Here we are passing an **error bypass** file to the validation, that will allow for certain known errors to be bypassed. 
+For example, the validator will often report that all variables/dimensions present in a different order between the native file and the cloud product. 
+This is not often an issue, so can be ignored. 
+The error still registers in the final data report, but it will have a ``skip`` label attached. See the Validation Report section in **Bespoke Features** for more details.
+
+.. note::
+
+    See the above section in ``compute`` for rerunning when there are errors that may be aggregation method-specific.
