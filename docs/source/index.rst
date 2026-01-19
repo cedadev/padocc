@@ -12,7 +12,7 @@ The ``padocc`` tool makes it easy to generate data-aggregated access patterns in
 
 Vast amounts of archival data in a variety of formats can be processed using the package's group mechanics and automatic deployment to a job submission system.
 
-**Latest Release: v1.4.0 27/10/2025**: Version 1.4 has several updates to dependencies for PADOCC, as well as new features for virtualization using VirtualiZarr, added Validation checks and the first release of the **SHEPARD** module. (See the `release notes <https://github.com/cedadev/padocc/releases/tag/v1.4.0>`_ for details). 
+**Latest Release: v1.4.2 19/01/2026**: Version 1.4 has several updates to dependencies for PADOCC, as well as new features for virtualization using VirtualiZarr, added Validation checks and the first release of the **SHEPARD** module. (See the `release notes <https://github.com/cedadev/padocc/releases/tag/v1.4.2>`_ for details). 
 
 Formats that can be generated
 -----------------------------

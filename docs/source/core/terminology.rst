@@ -23,6 +23,7 @@ The PADOCC revision numbers for each product are auto-generated using the follow
  * The first number denotes major updates to the product, for instance where a data source file has been replaced.
  * The second number denotes minor changes like alterations to attributes and metadata.
  * The cloud format ``k`` or ``z`` comes before the version number, as well as an ``r`` letter which indicates that the file is ``remote-enabled``. This occurs automatically for kerchunk files that have had 'download links' applied - from the command line this can be done as part of the completion workflow.
+ * Repeated computations using different aggregators will automatically increment the minor version.
 
 Virtualisation in PADOCC (12.08.2025)
 =====================================
@@ -34,7 +35,7 @@ Newly added for v1.4.0, the PADOCC Aggregator is a prototype aggregation method 
 - Unexpected/badly behaved chunking: Has been observed when combining individual chunk references that the chunk sizes and total array sizes for some variables are inconsistent.
 - Unit conversion: PADOCC Aggregation is only applicable when there are no unit conversions between files.
 
-This aggregator is a prototype and is only the first attempt at aggregation.
+This aggregator is a prototype and is only the first attempt at aggregation. Use ``--aggregator P`` to specifically use only this method for aggregation.
 
 VirtualiZarr
 ------------
@@ -48,6 +49,8 @@ VirtualiZarr is not currently used for creating and caching individual kerchunk 
 VirtualiZarr also occasionally causes unexplained chunk reference anomalies that may require manual intervention to bypass and use the normal Kerchunk aggregator instead:
 - Aggregated Dimension anomalies: These are recorded in PADOCC as AggregationErrors in the ``validate`` phase, where a dimension (e.g) time is not linearly/regularly increasing. There may be gaps or overlaps in the dimension itself.
 - Missing dimension segments: These are recorded as ValidationErrors in the ``validate`` phase, where a sample from one of the source files cannot be located in the combined product file.
+
+Use ``--aggregator V`` to specifically compute using this aggregation method.
 
 Groups in PADOCC
 ================
