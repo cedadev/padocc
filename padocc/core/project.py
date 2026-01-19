@@ -572,6 +572,7 @@ class ProjectOperation(
             os.makedirs(new_dir)
 
         os.system(f'mv {cls.dir}/* {new_dir}')
+        os.system(f'rm -rf {cls.dir}')
 
         # 4. Create a new basic project instance
         new_cls = ProjectOperation(

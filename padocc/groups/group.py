@@ -177,6 +177,9 @@ class GroupOperation(
                 f'GetProject function takes string as input, not {type(proj_code)}'
             )
         
+        if proj_code not in self.proj_codes['main']:
+            raise ValueError('Action not supported for a new project')
+        
         fh_kwargs = self.fh_kwargs | kwargs
 
         if proj_code not in self.__ongoing_projects:
@@ -426,6 +429,8 @@ class GroupOperation(
                     codeset = [codeset[int(p)] for p in proj_code.split(',')]
                 except:
                     raise ValueError('Invalid codeset provided')
+            else:
+                raise ValueError(f'Unknown proj_code: {proj_code} for group {self.groupID}')
         return codeset
 
     def _scan_config(
