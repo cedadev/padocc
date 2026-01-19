@@ -10,7 +10,6 @@ import xarray as xr
 from ..filehandlers import (CFADataset, GenericStore, KerchunkFile,
                             KerchunkStore, ZarrStore)
 from ..utils import extract_json
-from ..catalog import catalog_ceda
 
 
 class DatasetHandlerMixin:
