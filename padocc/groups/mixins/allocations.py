@@ -5,6 +5,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 import os
 import json
 from typing import Callable, Union
+import math
 
 import binpacking
 
@@ -159,10 +160,69 @@ class AllocationsMixin:
         # Return list of tuples.
         return allocs
     
+    def deploy_parallel_project(
+            self,
+            project         : int,
+            source          : str,
+            repeat_id       : str = 'main',
+            time            : Union[str,None] = None,
+            sbatch_kwargs   : Union[dict,None] = None,
+            run_kwargs      : Union[dict,None] = None,
+            memory          : Union[str,None] = None,
+            wait            : bool = False,
+            inter_parallel_limit: int = 1000
+        ) -> None:
+        """
+        Deploy parallelised project, specifically for computation process.
+        """
+        run_kwargs = run_kwargs or {}
+        sbatch_kwargs = sbatch_kwargs or {}
+    
+        sbatch_dir  = f'{self.groupdir}/sbatch'
+        jobname = f'compute_pp_{repeat_id}_{project}'
+
+        proj = self[project]
+
+        if os.path.isdir(f'{proj.dir}/cfacache') and self._thorough:
+            os.system(f'rm {proj.dir}/cfacache/*')
+
+        nf = int(proj.detail_cfg.get('num_files'))
+
+        inter_parallel_limit = max(
+            inter_parallel_limit, 
+            int(math.sqrt(nf)))
+        
+        ngroups = math.ceil(nf/inter_parallel_limit)
+    
+        sbatch = ListFileHandler(
+            sbatch_dir, 
+            f'{jobname}.sbatch', 
+            logger=self.logger, 
+            dryrun=self._dryrun, 
+            forceful=self._forceful)
+
+        self._create_slurm_script(
+            'compute',
+            source, 
+            jobname,
+            repeat_id,
+            sbatch, 
+            group_length=ngroups,
+            sbatch_kwargs=sbatch_kwargs,
+            time=time,
+            run_kwargs=run_kwargs,
+            memory=memory,
+            wait=wait,
+            project_flag=f'-p {project} --parallel_project $SLURM_ARRAY_TASK_ID/{ngroups}'
+        )
+
+        proj.update_status('compute','SubsetDeployed')
+    
     def deploy_parallel(
             self,
             phase           : str,
             source          : str,
+            proj_code       : str = None,
             verbose         : int = 0,
             joblabel        : str = 'PADOCC',
             repeat_id       : str = 'main',
@@ -170,6 +230,7 @@ class AllocationsMixin:
             wait            : bool = False,
             func            : Callable = print,
             bypass          : BypassSwitch = BypassSwitch(),
+            inter_parallel_limit: int = 1000,
             band_increase   : Union[str,None] = None,
             forceful        : Union[bool,None] = None,
             dryrun          : Union[bool,None] = None,
@@ -181,7 +242,6 @@ class AllocationsMixin:
             new_version     : Union[str,None] = None,
             xarray_kwargs   : Union[dict,None] = None,
             run_kwargs      : Union[dict,None] = None,
-            valid           : Union[dict,None] = None,
         ) -> None:
         """
         Organise parallel deployment via SLURM.
@@ -214,12 +274,61 @@ class AllocationsMixin:
             'new_version' : new_version
         }
 
-        if xarray_kwargs is not None:
-            sbatch_kwargs['xarray_kwargs'] = xarray_kwargs
-
         # Ensure directories are created for logs
         self._setup_slurm_directories()
         sbatch_dir  = f'{self.groupdir}/sbatch'
+
+        if xarray_kwargs is not None:
+            sbatch_kwargs['xarray_kwargs'] = xarray_kwargs
+
+        if phase == 'compute':
+            group_parallel = []
+
+            codepool = self.proj_codes[repeat_id]
+            if proj_code:
+                codepool = proj_code.split(',')
+
+
+            for proj in codepool:
+                project = self[proj]
+
+                nf = project.detail_cfg.get('num_files')
+
+                if nf is None:
+                    project.detail_cfg['num_files'] = len(project.allfiles)
+                    nf = len(project.allfiles)
+
+                self.logger.debug(f'{project.proj_code}: {nf}')
+                if nf is None:
+                    # No files specified - probably skipped scan
+                    continue
+                if nf < inter_parallel_limit or project.is_subset_complete(thorough=thorough):
+                    group_parallel.append(proj)
+                else:
+                    self.deploy_parallel_project(
+                        proj,
+                        source=source,
+                        repeat_id=repeat_id,
+                        time=time_allowed,
+                        sbatch_kwargs=sbatch_kwargs,
+                        run_kwargs=run_kwargs,
+                        memory=memory,
+                        wait=wait,
+                        inter_parallel_limit=inter_parallel_limit
+                    )
+
+            if len(group_parallel) == 0:
+                self.logger.info('All projects submitted for super-parallelism')
+                return
+        
+            self._add_proj_codeset(
+                repeat_id + '_grouped',
+                group_parallel,
+                overwrite=True
+            )
+
+            # Reset to use only grouped projects
+            repeat_id = repeat_id + '_grouped'
 
         # Perform allocation assignments here.
         if binpack:
@@ -281,7 +390,6 @@ class AllocationsMixin:
                     run_kwargs=run_kwargs,
                     time=time_allowed,
                     memory=memory,
-                    valid=valid,
                     wait=wait
                 )
             
@@ -297,8 +405,8 @@ class AllocationsMixin:
             run_kwargs: Union[dict,None] = None,
             time: Union[str,None] = None,
             memory: Union[str,None] = None,
-            valid: Union[str,None] = None,
             wait: bool = False,
+            project_flag: str = '-p $SLURM_ARRAY_TASK_ID',
         ):
         """
         Create the sbatch content job array.
@@ -312,11 +420,11 @@ class AllocationsMixin:
 
         sbatch_flags = self._sbatch_kwargs(time, memory, repeat_id, **sbatch_kwargs)
 
-        if valid is not None:
-            sbatch_flags += f' -i {valid}'
-
-        for k, v in run_kwargs:
-            sbatch_flags += f' --{k} {v}'
+        for k, v in run_kwargs.items():
+            if isinstance(v,list):
+                sbatch_flags += f' --{k} {",".join(v)}'
+            elif v is not None:
+                sbatch_flags += f' --{k} {v}'
 
         lotus_requirements = get_lotus_reqs(self.logger)
   
@@ -335,7 +443,7 @@ class AllocationsMixin:
 
             f'export WORKDIR={self.workdir}',
 
-            f'padocc {phase} -p $SLURM_ARRAY_TASK_ID {sbatch_flags}',
+            f'padocc {phase} {project_flag} {sbatch_flags}',
         ]
 
         sbatch.set(sbatch_contents)
@@ -356,8 +464,9 @@ class AllocationsMixin:
         sbatch_command = ' '.join(sbatch_cmd)
 
         if self._dryrun:
-            self.logger.info('DRYRUN: sbatch command: ')
-            print(sbatch_command)
+            self.logger.info('DRYRUN:')
+            for line in sbatch_contents:
+                self.logger.info(line)
         else:
             os.system(sbatch_command)
 
@@ -415,8 +524,9 @@ class AllocationsMixin:
         optional = []
 
         if verbose is not None:
-            verb = 'v' * int(verbose)
-            optional.append(f'-{verb}')
+            if verbose > 0:
+                verb = 'v' * int(verbose)
+                optional.append(f'-{verb}')
 
         for value in value_options.keys():
             if value_options[value][1] is not None:

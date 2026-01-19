@@ -325,6 +325,39 @@ class ProjectOperation(
         else:
             return f'{self.workdir}/in_progress/general/{self.proj_code}'
         
+    def get_cfa_cache_files(self, get_missing: bool = False):
+        """
+        Get the correctly ordered set of CFA cache files
+        """
+        subset_total = self.detail_cfg.get('compute_subsets')
+        num_files    = self.detail_cfg.get('num_files')
+
+        if subset_total is None:
+            raise ValueError(
+                'No subset was recorded, unable to continue'
+            )
+        
+        if num_files is None:
+            num_files = len(self.allfiles.get())
+            self.detail_cfg['num_files'] = num_files
+        
+        self.logger.debug(f'Checking {self.dir}/cfacache')
+
+        cfafiles = []
+        missing = []
+        group_size = int(num_files)/int(subset_total)
+        for cfa_i in range(0, int(subset_total)):
+            if os.path.isfile(f'{self.dir}/cfacache/{cfa_i*int(group_size)}.nca'):
+                cfafiles.append(f'{self.dir}/cfacache/{cfa_i*int(group_size)}.nca')
+            else:
+                self.logger.debug(f'Missing: {cfa_i}, {cfa_i*int(group_size)}')
+                missing.append(f'{self.dir}/cfacache/{cfa_i*int(group_size)}.nca')
+
+        if get_missing:
+            return missing
+        
+        return cfafiles
+
     def get_agg_shorthand(self) -> None:
         """
         Get Aggregation shorthand"""
@@ -335,8 +368,10 @@ class ProjectOperation(
                 return '(P>VK)'
             elif self.virtualizarr:
                 return '(V>K)'
-            else:
+            elif self.kerchunk_aggregation:
                 return '(K)'
+            else:
+                return '(X)'
         else:
             return '(PVK)'
 
@@ -395,7 +430,10 @@ class ProjectOperation(
         self.remote = False
         self.save_files()
 
-    def switch_remote(self):
+    def switch_remote(
+            self,
+            **kwargs
+        ):
         """
         Function to create remote copy of a dataset if relevant.
 
@@ -417,6 +455,9 @@ class ProjectOperation(
         new_rev  = ''.join((self.cloud_format[0],'r',self.version_no))
         new_path = os.path.splitext(ds.filepath)[0].replace(self.revision, new_rev) # No extension
 
+        if self._thorough:
+            os.system(f'rm {new_path}*')
+
         self.remote = True
         if not glob.glob(f'{new_path}*'):
             self.logger.debug('Creating new remote kerchunk file.')
@@ -427,7 +468,7 @@ class ProjectOperation(
             
             self.logger.debug('Applying remote criteria to kerchunk file.')
             # Reinstantiate new filehandler + add download_link in place
-            self.dataset.add_download_link()
+            self.dataset.add_download_link(**kwargs)
         
         else:
             # Refresh kfile handler (different order to above.)
@@ -436,7 +477,11 @@ class ProjectOperation(
 
         self.save_files()
 
-    def complete_project(self, move_to: str, thorough: bool = False) -> None:
+    def complete_project(
+            self, 
+            move_to: str,
+            thorough: bool = False,
+            **kwargs) -> None:
         """
         Move project to a completeness directory
 
@@ -452,9 +497,9 @@ class ProjectOperation(
                 f'Most recent phase for {self.proj_code} is unconfirmed. - '
                 'please ensure re-validation of any changes or ensure products are otherwise validated.'
             )
-        elif 'validate' not in status:
+        elif 'validate' not in status and 'complete' not in status:
             self.logger.warning(
-                f'Most recent phase for {self.proj_code} is NOT validation - '
+                f'Most recent phase for {self.proj_code} is NOT validation/completion - '
                 'please ensure re-validation of any changes or ensure products are otherwise validated.'
             )
         else:
@@ -464,7 +509,19 @@ class ProjectOperation(
 
         if thorough:
             # Switch to remote version before completion
-            self.switch_remote()
+            self.switch_remote(**kwargs)
+
+        history = self.dataset_attributes.get('history','')
+        if isinstance(history,str):
+            history = history.split('\n')
+
+        hist    = '\n'.join([h for h in history if h != ''])
+        new_hist = self.base_cfg.get('internal_history',None)
+        if new_hist:
+            hist += '\n' + '\n'.join(new_hist)
+
+        self.update_attribute('history', hist)
+        self.dataset.save()
 
         data_move = f'{move_to}/data'
         if not os.path.isdir(data_move):
@@ -480,7 +537,7 @@ class ProjectOperation(
         self.dataset.spawn_copy(complete_dataset)
 
         # Spawn copy of cfa dataset
-        if self.cfa_enabled:
+        if self.cfa_enabled and self.cfa_complete and self.cloud_format != 'CFA':
             complete_cfa = self.cfa_path.replace(self.dir, data_move) + '_' + self.version_no
             self.cfa_dataset.spawn_copy(complete_cfa)
 
@@ -515,6 +572,7 @@ class ProjectOperation(
             os.makedirs(new_dir)
 
         os.system(f'mv {cls.dir}/* {new_dir}')
+        os.system(f'rm -rf {cls.dir}')
 
         # 4. Create a new basic project instance
         new_cls = ProjectOperation(
@@ -599,18 +657,21 @@ class ProjectOperation(
             if status:
                 self.logger.warning(status)
 
-        # Data sanitisation
-        for x, file in enumerate(fileset):
-            if not os.path.isfile(file):
-                raise ValueError(
-                    f'File {file} ({x}) for project {self.proj_code}'
-                    'not found on file system.')
-            if file.split('.')[-1] not in source_opts:
-                raise ValueError(
-                    f'File {file} ({x}) for project {self.proj_code}, extension'
-                    f' {file.split(".")[-1]} not allowed - must be one of {source_opts}')
+        # Data sanitisation - unless skipped
+        if not self._bypass.skip_filechecks:
+            for x, file in enumerate(fileset):
+                if not os.path.isfile(file):
+                    raise ValueError(
+                        f'File {file} ({x}) for project {self.proj_code}'
+                        'not found on file system.')
+                if file.split('.')[-1] not in source_opts:
+                    raise ValueError(
+                        f'File {file} ({x}) for project {self.proj_code}, extension'
+                        f' {file.split(".")[-1]} not allowed - must be one of {source_opts}')
         
         self.allfiles.set(fileset) 
+        self.detail_cfg['num_files'] = len(fileset)
+        self.detail_cfg.save()
 
     def _setup_config(
             self, 
@@ -713,3 +774,49 @@ class ProjectOperation(
             os.system(f'touch {new_location}/reports/{self.proj_code}_{self.revision}_report.json')
             with open(f'{new_location}/reports/{self.proj_code}_{self.revision}_report.json','w') as f:
                 f.write(json.dumps(final_report))
+
+    def aggregation_method(self) -> str:
+        """
+        Returns the current aggregation method used.
+        """
+
+        if self.padocc_aggregation:
+            return 'padocc'
+        if self.virtualizarr:
+            return 'virtualizarr'
+        if self.kerchunk_aggregation:
+            return 'kerchunk'
+        
+        for log in self.status_log.get():
+            if 'compute' in log:
+                return 'unable'
+        return None
+
+    def minor_version_increment(self, addition: Union[str,None] = None):
+        """
+        Increment the minor x.Y number for the version.
+
+        Use this function for when properties of the cloud file have been changed.
+
+        :param addition:    (str) Reason for version change; attribute change or otherwise.
+        """
+
+        major, minor = self.version_no.split('.')
+        minor = str(int(minor)+1)
+
+        self.base_cfg['version_no'] = f'{major}.{minor}'
+        self._disconnect_ds_filehandlers()
+
+    def major_version_increment(self):
+        """
+        Increment the major X.y part of the version number.
+
+        Use this function for major changes to the cloud file 
+        - e.g. replacement of source file data.
+        """
+        raise NotImplementedError
+    
+        major, minor = self.version_no.split('.')
+        major = str(int(major)+1)
+
+        self.version_no = f'{major}.{minor}'

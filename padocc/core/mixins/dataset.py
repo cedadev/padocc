@@ -10,7 +10,6 @@ import xarray as xr
 from ..filehandlers import (CFADataset, GenericStore, KerchunkFile,
                             KerchunkStore, ZarrStore)
 from ..utils import extract_json
-from ..catalog import catalog_ceda
 
 
 class DatasetHandlerMixin:
@@ -44,6 +43,13 @@ class DatasetHandlerMixin:
         func(' > project.cfa_dataset - CFA Filehandler property')
         func(' > project.zstore - Zarr Filehandler property')
         func(' > project.update_attribute() - Update an attribute within the metadata')
+
+    def _disconnect_ds_filehandlers(self):
+        ""
+        self._kfile = None
+        self._kstore = None
+        self._zstore = None
+        self._cfa_dataset = None
 
     def save_ds_filehandlers(self):
         """
@@ -122,7 +128,7 @@ class DatasetHandlerMixin:
                 return self.kfile
         elif self.cloud_format == 'zarr':
             return self.zstore
-        elif self.cloud_format == 'cfa':
+        elif self.cloud_format == 'CFA':
             return self.cfa_dataset
         else:
             raise ValueError(
@@ -201,9 +207,13 @@ class DatasetHandlerMixin:
         meta[attribute] = value
 
         getattr(self, target).set_meta(meta)
-        if target != 'cfa_dataset' and self.cloud_format != 'cfa':
+
+        # CFA Dataset has no additional history
+        # Padocc 1.5 12/01/2026
+
+        #if target != 'cfa_dataset' and self.cloud_format != 'cfa':
             # Also update the CFA dataset.
-            self.cfa_dataset.set_meta(meta)
+            #self.cfa_dataset.set_meta(meta)
 
     def remove_attribute(
             self, 
@@ -354,6 +364,8 @@ class DatasetHandlerMixin:
         """
         Catalog the output product of this project.
         """
+
+        raise NotImplementedError
 
         # Unique identifier
         if name_replace is None:

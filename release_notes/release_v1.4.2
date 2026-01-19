@@ -1,0 +1,41 @@
+# Release Notes for version 1.4.2
+
+## CLI Changes
+- Fixed issue with boolean values for `set_attribute` command
+- Added `remote_sub` and `remote_replace` options for `complete` command
+- Added `--CFA` toggle cfa option with `y/n` options to enable/disable cfa on specific computations
+- Reorganised `run_kwargs` for serial/parallel processing
+
+## New version
+- Fixed longstanding issue with minor version increment:
+ - Filehandlers are now disconnected when a version increment occurs.
+ - Old files are left in the project directory and can be reconnected by switching the revision back.
+ - New files are created with new filehandlers on a version increase
+ - New versions are created automatically where computation is re-run while output files exist and thorough is false, this is particularly useful for switching aggregation methods.
+
+## Compute Phase
+- CFA versions 2025.12 now include the ability to combine products for easier parallelisation. This has now been implemented for all datasets with >1000 files, when using the `parallel` flag.
+- Added manual combine kwargs, set from CLI flags `identical_dims` and `concat_dims` which are now functional in implementation.
+- Changes to when native file ordering function is run, should now use CFA in more cases.
+- Reconfigured limits for subset processing with kerchunk/CFA.
+- Properly implemented `minor_version_increment` in response to using new aggregation methods.
+- Refactored aggregation method selection internally
+
+## Validation Phase
+- Added limiter to growbox based on size of largest dimension. This will prohibit i.e 100 test boxes applied to a variable with size 0.
+- Fixed dimension value comparison to use array_equal.
+- Fixed issue with using head/tail methods for data arrays.
+- Fixed issue in CLI with `valid` parameter as a kwarg.
+
+## Miscellaneous
+- Removed CFA history updating as this is not a priority and does not function correctly in past versions
+- Added `kerchunk_aggregation` and `order_confirmed` properties. Ordering is now tracked separately to `virtualizarr` property which is used to denote if virtualizarr can be used as an aggregation method.
+- Fixed issue with `add_download_link` function where the value of a ref has length 3 but is NOT a list-type object.
+- Added new aggregation shorthand for `failed all aggregations (X)`
+- Added a bypass for individual file checks when creating a new project with a large number of files that are known to exist.
+- Parallel dryrun now displays the content of sbatch file, instead of file location.
+- Fixed issues with sbatch_kwargs using new CLI flags.
+- Added `assemble_codeset` GroupOperation function for determining full codeset for an operation (internal and external use within groups.)
+- Improved logging for virtualizarr missing cache files.
+- Fixed issue with transferring projects where an empty dir is left behind.
+- Fixed issue with misspelled project ids that creates a new directory incorrectly.

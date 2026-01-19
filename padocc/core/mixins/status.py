@@ -2,7 +2,9 @@ __author__    = "Daniel Westwood"
 __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
-from typing import Callable
+from typing import Callable, Union
+import os
+import glob
 
 from padocc.core.filehandlers import JSONFileHandler
 
@@ -35,6 +37,40 @@ class StatusMixin:
         func(' > project.get_last_status() - Get the status of the previous core operation.')
         func(' > project.get_log_contents() - Get the log contents of a previous core operation')
 
+    def is_subset_complete(self, thorough: Union[bool,None] = None) -> bool:
+        """
+        Determine if compute subsets have all completed for this project.
+        """
+
+        if self._thorough or thorough:
+            self.logger.warning(
+                "Using thorough option negates existing subsetting"
+            )
+            return False
+
+        last_status = self.get_last_status().split(',')
+        if last_status[1] != 'SubsetDeployed':
+            return False
+        
+        num_files    = self.detail_cfg.get('num_files')
+        if num_files is None:
+            raise ValueError(
+                'Unknown number of native files'
+            )
+        
+        missing = self.get_cfa_cache_files(get_missing=True)
+        if len(missing) > 0:
+            self.logger.error(f'CFA File missing - expected {",".join(missing)}')
+            return False
+        
+        num_caches = len(glob.glob(f'{self.dir}/cache/*.json'))
+        if num_caches < num_files+1:
+            # Accounts for temp_zattrs.json file
+            self.logger.error(f'Kerchunk Files missing - expected {num_files+1}, got {num_caches}')
+            return False
+        
+        return True
+        
     def update_status(
             self, 
             phase : str, 

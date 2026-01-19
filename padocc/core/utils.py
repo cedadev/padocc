@@ -63,7 +63,7 @@ BASE_CFG = {
     },
     'last_run': (None, None),
     'remote': False,
-    'disable_cfa':False
+    'disable_CFA':False
 }
 
 DETAIL_CFG = {
@@ -405,6 +405,7 @@ class BypassSwitch:
         self.skip_scan     = ('F' in switch) # Fasttrack
         self.skip_links    = ('L' in switch)
         self.skip_subsets  = ('S' in switch)
+        self.skip_filechecks = ('f' in switch)
 
     def __str__(self):
         """Return the switch string (letters representing switches)"""

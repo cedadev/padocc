@@ -74,7 +74,6 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
             isnan = handle_boxissue(err)
     else:
         try:
-            #print(get_origin(arr))
             isnan = np.all(arr == np.nan)
         except Exception as err:
             isnan = handle_boxissue(err)
@@ -132,11 +131,6 @@ def _recursive_set(source: dict, keyset: list, value):
             _ = json.dumps(value)
             current = value
         except TypeError:
-            try:
-                print(value)
-            except:
-                print('Unable to print value')
-                x=input()
             current = 'N/A'
         source[keyset[0]] = value
     return source
@@ -692,20 +686,12 @@ class ValidateDatasets(LoggedOperation):
 
             try:
                 testdim = self.test_dataset_var(dim)
-                test_range = (
-                    testdim.head(1),
-                    testdim.tail(1)
-                )
             except KeyError:
                 self.logger.warning(f'{dim} could not be validated for data content')
                 continue
 
             try:
                 controldim = self.control_dataset_var(dim)
-                control_range = (
-                    controldim.head(1),
-                    controldim.tail(1)
-                )
             except KeyError:
                 self.logger.warning(f'{dim} could not be validated for data content')
                 continue
@@ -718,8 +704,8 @@ class ValidateDatasets(LoggedOperation):
 
             self._validate_dimvalues(
                 dim,
-                test_range,
-                control_range
+                testdim,
+                controldim
             )
 
         for var in self.variables:
@@ -748,7 +734,16 @@ class ValidateDatasets(LoggedOperation):
             # Check access to the source data somehow here
             # Initiate growbox method - recursive increasing box size.
             self.logger.debug(f'Validating data for {var}')
-            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid)
+            
+            if len(testvar.dims) == 0:
+                # Single attempt allowed
+                current = 2
+            else:
+                # 100 or less if the largest dimension is smaller than this limit.
+                # Means we don't try growboxes of equal size too many times.
+                current = min(100, max([testvar[d].size for d in testvar.dims])/2)
+            
+            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid, current=current)
 
     def _validate_shapes(self, var: str, test, control, ignore=None):
         """
@@ -818,43 +813,37 @@ class ValidateDatasets(LoggedOperation):
                     self._labels[1]: ','.join(control_dr)
                 }
 
-    def _validate_dimvalues(self, dim: str, test_range, control_range, ignore=None):
+    def _validate_dimvalues(self, dim: str, testdim: xr.DataArray, controldim: xr.DataArray, ignore=None):
         """
         Validate that the first and last values of the dimension arrays are equal.
 
         :param dim:         (str) The name of the current dimension.
 
-        :param test_range:        (obj) The cloud-format first and last values.
+        :param testdim:        (obj) The cloud-format dimension array - as of 1.4.3 
+            validation applies to the entire array.
 
-        :param control_range:     (obj) The native-format first and last values.
+        :param controldim:     (obj) The native-format dimension array - as of 1.4.3 
+            validation applies to the entire array.
 
         :param ignore:      (bool) Option to ignore specific dimension.
         """
         if ignore:
             self.logger.debug(f'Skipped {dim}')
             return
-
-        test_range = np.array(test_range)
-        control_range = np.array(control_range)
         
-        self.logger.debug('test range')
-        self.logger.debug(np.array(test_range).size)
-        self.logger.debug('control range')
-        self.logger.debug(np.array(control_range).size)
-
+        try:
+            equal = np.array_equal(testdim.compute(), controldim.compute(),equal_nan=True)
+        except TypeError:
+            try: 
+                equal = np.array_equal(testdim.compute(), controldim.compute())
+            except TypeError:
+                equal = False
         # Compare array values.
-        if not np.array_equal(test_range, control_range):
-
-            try:
-                test_value = format_tuple(tuple(np.array(test_range, dtype=test_range[0].dtype).tolist()))
-                control_value = format_tuple(tuple(np.array(control_range, dtype=control_range[0].dtype).tolist()))
-            except:
-                self.logger.warning('Unable to specify error values')
-                test_value, control_value = None, None
+        if not equal:
 
             self._data_report[f'dimensions,data_errors,{dim}'] = {
-                    self._labels[0]: test_value,
-                    self._labels[1]: control_value
+                    self._labels[0]: testdim.compute()[0],
+                    self._labels[1]: controldim.compute()[0]
                 }            
 
     def _validate_dimlens(self, dim: str, test, control, ignore=None):
@@ -1131,7 +1120,7 @@ class ValidateOperation(ProjectOperation):
 
         # Data Validation Selection
 
-        if self.cfa_enabled:
+        if self.cfa_enabled and self.cloud_format != 'CFA':
             self.logger.info('CFA-enabled validation')
             # CFA now opens with decoded times (2025.8.4)
             try:
@@ -1141,7 +1130,7 @@ class ValidateOperation(ProjectOperation):
                 # CFA has failed for some reason - file must be deleted.
                 self.cfa_enabled = False
 
-        if self.cfa_enabled:
+        if self.cfa_enabled and self.cloud_format != 'CFA':
             # Run single validation attempt
             vd.validate_data(dim_mid=dim_mid)
         else:

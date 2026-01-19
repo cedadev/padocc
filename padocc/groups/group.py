@@ -177,6 +177,9 @@ class GroupOperation(
                 f'GetProject function takes string as input, not {type(proj_code)}'
             )
         
+        if proj_code not in self.proj_codes['main']:
+            raise ValueError('Action not supported for a new project')
+        
         fh_kwargs = self.fh_kwargs | kwargs
 
         if proj_code not in self.__ongoing_projects:
@@ -187,6 +190,7 @@ class GroupOperation(
                 logger=self.logger,
                 xarray_kwargs=self._xarray_kwargs,
                 new_version=self.allow_new_version,
+                verbose=self._verbose,
                 **fh_kwargs
             )
 
@@ -197,7 +201,8 @@ class GroupOperation(
             move_to: str,
             thorough: bool = False,
             repeat_id: str = 'main',
-            report_location: Union[str,None] = None
+            report_location: Union[str,None] = None,
+            **kwargs
         ):
         """
         Complete all projects for a group.
@@ -254,10 +259,13 @@ class GroupOperation(
                 proj_op.export_report(move_to)
 
                 # Export products
-                proj_op.complete_project(move_to, thorough=thorough)
+                proj_op.complete_project(move_to, thorough=thorough, **kwargs)
                 self.logger.info(f'{proj}: OK')
             except Exception as err:
-                self.logger.warning(f'{proj}: Skipped - {err}')
+                if self._bypass.skip_subsets:
+                    self.logger.warning(f'{proj}: Skipped - {err}')
+                else:
+                    raise err
 
     def get_stac_representation(
             self, 
@@ -317,7 +325,7 @@ class GroupOperation(
             mode: Union[str,None] = None,
             repeat_id: str = 'main',
             proj_code: Optional[str] = None,
-            subset: Optional[str] = None,
+            proj_subset: Optional[str] = None, # Renamed to avoid confusion
             bypass: Union[BypassSwitch, None] = None,
             forceful: Optional[bool] = None,
             thorough: Optional[bool] = None,
@@ -342,35 +350,19 @@ class GroupOperation(
             jobid = f"{os.getenv('SLURM_ARRAY_JOB_ID')}-{os.getenv('SLURM_ARRAY_TASK_ID')}"
             is_parallel = True
 
+        run_kwargs['parallel'] = is_parallel
+
         # Select set of datasets from repeat_id
 
         if phase not in phases:
             self.logger.error(f'Unrecognised phase "{phase}" - choose from {phases.keys()}')
             return
         
-        codeset = self.proj_codes[repeat_id].get()
-        if subset is not None:
-            codeset = self._configure_subset(codeset, subset, proj_code)
-
-        if proj_code is not None:
-            if proj_code in codeset:
-                self.logger.info(f'Project code: {proj_code}')
-                codeset = [proj_code]
-            elif proj_code.isnumeric():
-                if abs(int(proj_code)) > len(codeset):
-                    raise ValueError(
-                        'Invalid project code specfied. If indexing, '
-                        f'must be less than {len(codeset)-1}'
-                    )
-                # Perform by index
-                codeset = [codeset[int(proj_code)]]
-            elif ',' in proj_code:
-                try:
-                    codeset = [codeset[int(p)] for p in proj_code.split(',')]
-                except:
-                    raise ValueError('Invalid codeset provided')
+        codeset = self.assemble_codeset(proj_code, proj_subset, repeat_id=repeat_id)
 
         func = phases[phase]
+
+        run_kwargs['verbose'] = kwargs.pop('verbose',None) or self._verbose
 
         results = {}
         for id, proj_code in enumerate(codeset):
@@ -390,7 +382,6 @@ class GroupOperation(
                 fh=fh, 
                 bypass=bypass,
                 run_kwargs=run_kwargs,
-                parallel=is_parallel,
                 **kwargs)
             
             if status in results:
@@ -404,6 +395,43 @@ class GroupOperation(
 
         self.save_files()
         return results
+    
+    def assemble_codeset(
+            self, 
+            proj_code: Union[str,int,None] = None,
+            proj_subset: Union[str,None] = None,
+            repeat_id: str = 'main', 
+        ):
+        """
+        Assemble the current working codeset for this iteration.
+
+        By default this will return the full project code list from 
+        the `main` set for this group i.e All project codes.
+        """
+        codeset = self.proj_codes[repeat_id].get()
+        if proj_subset is not None:
+            codeset = self._configure_subset(codeset, proj_subset, proj_code)
+
+        if proj_code is not None:
+            if proj_code in codeset:
+                self.logger.info(f'Project code: {proj_code}')
+                codeset = [proj_code]
+            elif proj_code.isnumeric():
+                if abs(int(proj_code)) > len(codeset):
+                    raise ValueError(
+                        'Invalid project code specfied. If indexing, '
+                        f'must be less than {len(codeset)-1}'
+                    )
+                # Perform by index
+                codeset = [codeset[int(proj_code)]]
+            elif ',' in proj_code:
+                try:
+                    codeset = [codeset[int(p)] for p in proj_code.split(',')]
+                except:
+                    raise ValueError('Invalid codeset provided')
+            else:
+                raise ValueError(f'Unknown proj_code: {proj_code} for group {self.groupID}')
+        return codeset
 
     def _scan_config(
             self,
@@ -429,10 +457,11 @@ class GroupOperation(
 
         :returns:   None
         """
+
         scan = ScanOperation(
             proj_code, self.workdir, groupID=self.groupID,
-            verbose=self._verbose, bypass=bypass, 
-            dryrun=self._dryrun, **kwargs)
+            verbose=self._verbose,
+            bypass=bypass, **kwargs)
         status = scan.run(mode=mode, **self.fh_kwargs, **run_kwargs)
         scan.save_files()
 
@@ -486,8 +515,10 @@ class GroupOperation(
 
         compute = ds(
             proj_code, self.workdir, groupID=self.groupID,
-            verbose=self._verbose, bypass=bypass,
-            dryrun=self._dryrun, **kwargs
+            verbose=self._verbose,
+            thorough=self._thorough,
+            new_version=self.allow_new_version,
+            bypass=bypass, **kwargs
         )
 
         status = compute.run(mode=mode, **self.fh_kwargs, **run_kwargs)
@@ -512,8 +543,8 @@ class GroupOperation(
         try:
             valid = ValidateOperation(
                 proj_code, self.workdir, groupID=self.groupID,
-                verbose=self._verbose, bypass=bypass,
-                dryrun=self._dryrun, **kwargs)
+                verbose=self._verbose,
+                bypass=bypass, **kwargs)
         except TypeError:
             raise ValueError(
                 f'{proj_code}, {self.groupID}, {self.workdir}'
@@ -539,11 +570,15 @@ class GroupOperation(
         self.datasets.save()
         self._save_proj_codes()
 
-    def _add_proj_codeset(self, name : str, newcodes : list):
+    def _add_proj_codeset(self, name : str, newcodes : list, overwrite: bool = False):
 
         if name in self.proj_codes:
-            self.logger.warning(f'Appending to existing codeset: {name}')
-            self.proj_codes[name].set(self.proj_codes[name].get() + newcodes)
+            if overwrite:
+                self.logger.warning(f'Overwriting codeset: {name}')
+                self.proj_codes[name].set(newcodes)
+            else:
+                self.logger.warning(f'Appending to existing codeset: {name}')
+                self.proj_codes[name].set(self.proj_codes[name].get() + newcodes)
         else:
             self.proj_codes[name] = ListFileHandler(
                 self.proj_codes_dir,

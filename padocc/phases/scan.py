@@ -23,7 +23,7 @@ def _format_float(value: float, logger: logging.Logger = FalseLogger()) -> str:
     """
     Format byte-value with proper units.
     """
-
+    
     logger.debug(f'Formatting value {value} in bytes')
     if value is not None:
         unit_index = 0
@@ -169,7 +169,7 @@ class ScanOperation(ProjectOperation):
         nfiles = len(self.allfiles)
 
         if nfiles < 3:
-            self.detail_cfg.set({'skipped':True})
+            self.detail_cfg.set({'skipped':True, 'num_files':nfiles})
             self.logger.info(f'Skip scanning phase (only found {nfiles} files) >> proceed directly to compute')
             self.update_status('scan','Success',jobid=self._logid)
             return
@@ -227,7 +227,7 @@ class ScanOperation(ProjectOperation):
         # Order subset
         filesubset = mini_ds.order_native_files()
         
-        mini_ds.create_refs(ctype=ctype, filesubset=filesubset)
+        mini_ds.create_refs(ctype=ctype, filesubset=filesubset, lim1=limiter)
 
         self.padocc_aggregation = mini_ds.padocc_aggregation
         self.virtualizarr       = mini_ds.virtualizarr
@@ -300,11 +300,12 @@ class ScanOperation(ProjectOperation):
             logger=self.logger,
             groupID=self.groupID, 
             dryrun=self._dryrun,
+            verbose=self._verbose
         )
 
-        status = comp._run(file_limit=limiter)
+        status = comp._run(lim0=0, lim1=limiter, subset=True, output=False)
 
-        if status == 'Success':
+        if status[0] == 'Success':
             self.logger.info('Determined data properties:')
             self.logger.info(yaml.dump(self.base_cfg['data_properties']))
         else:

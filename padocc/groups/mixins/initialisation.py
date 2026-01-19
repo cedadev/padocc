@@ -368,7 +368,8 @@ class InitialisationMixin:
                 ft_kwargs=cfg_values,
                 dryrun=self._dryrun,
                 forceful=self._forceful,
-                remote_s3=remote_s3
+                remote_s3=remote_s3,
+                bypass=self._bypass
             )
 
             proj_op.update_status('init','Success')

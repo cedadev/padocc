@@ -553,8 +553,8 @@ class JSONFileHandler(FileIOMixin):
         with open(self.filepath) as f:
             try:
                 self._value = json.load(f)
-            except:
-                self.logger.warning(f'Invalid file contents at {self.filepath}')
+            except Exception as err:
+                self.logger.warning(f'Invalid file contents at {self.filepath} - {err}')
                 self._value = {}
 
     def _set_value_in_file(self) -> None:
@@ -638,7 +638,7 @@ class KerchunkFile(JSONFileHandler):
         refs = self._value.pop('refs')
         for key in refs.keys():
             try:
-                if len(refs[key]) == 3:
+                if len(refs[key]) == 3 and isinstance(refs[key], list):
                     if refs[key][0][0:len(sub)] == sub:
                         refs[key][0] = replace + refs[key][0][len(sub):]
             except TypeError:

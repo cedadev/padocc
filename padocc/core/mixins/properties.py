@@ -64,6 +64,15 @@ class PropertiesMixin:
         return None
 
     @property
+    def kerchunk_aggregation(self):
+        return self.base_cfg.get('kerchunk_aggregation',False)
+    
+    @kerchunk_aggregation.setter
+    def kerchunk_aggregation(self, value: bool):
+        self.base_cfg['kerchunk_aggregation'] = value
+        self.base_cfg.save()
+
+    @property
     def virtualizarr(self):
         return self.base_cfg.get('virtualizarr',False)
     
@@ -80,6 +89,15 @@ class PropertiesMixin:
     def padocc_aggregation(self, value: bool):
         self.base_cfg['padocc_aggregation'] = value
         self.base_cfg.save()
+
+    @property
+    def order_confirmed(self):
+        return self.base_cfg.get('order_confirmed',False)
+    
+    @order_confirmed.setter
+    def order_confirmed(self, value: bool):
+        self.base_cfg['order_confirmed'] = value
+        self.base_cfg.save()
     
     @property
     def cfa_complete(self):
@@ -87,7 +105,7 @@ class PropertiesMixin:
 
     @property
     def cfa_enabled(self):
-        return not self.base_cfg.get(index='disable_cfa',default=True) and self.detail_cfg.get(index='CFA',default=True)
+        return not self.base_cfg.get(index='disable_CFA',default=True) and self.detail_cfg.get(index='CFA',default=True)
     
     @cfa_enabled.setter
     def cfa_enabled(self, value: bool):
@@ -261,48 +279,6 @@ class PropertiesMixin:
         scanning process if that step has been completed.
         """
         return self.detail_cfg.get(index='driver', default='src')
-    
-    def minor_version_increment(self, addition: Union[str,None] = None):
-        """
-        Increment the minor x.Y number for the version.
-
-        Use this function for when properties of the cloud file have been changed.
-
-        :param addition:    (str) Reason for version change; attribute change or otherwise.
-        """
-
-        addition = addition or 'Minor increment.'
-        
-        major, minor = self.version_no.split('.')
-        minor = str(int(minor)+1)
-
-        self.base_cfg['version_no'] = f'{major}.{minor}'
-
-        self.dataset.update_history(
-            addition = f'Minor: {addition}',
-            new_version = self.version_no,
-        )
-
-        # Also update the CFA dataset history.
-        if self.cloud_format != 'cfa':
-            self.cfa_dataset.update_history(
-                addition = f'Minor: {addition}',
-                new_version = self.version_no,
-            )
-
-    def major_version_increment(self):
-        """
-        Increment the major X.y part of the version number.
-
-        Use this function for major changes to the cloud file 
-        - e.g. replacement of source file data.
-        """
-        raise NotImplementedError
-    
-        major, minor = self.version_no.split('.')
-        major = str(int(major)+1)
-
-        self.version_no = f'{major}.{minor}'
 
     def get_stac_representation(self, stac_mapping: dict) -> dict:
         """
