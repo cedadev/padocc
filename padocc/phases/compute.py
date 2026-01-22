@@ -1269,7 +1269,7 @@ class KerchunkDS(ComputeOperation):
         """
         Estimate number of chunks for a particular variable/dimension
         """
-        return float(self.detail_cfg['chunk_info'].get(var,0)) * len(self.allfiles.get())
+        return float(self.detail_cfg['chunk_info'].get('variables',{}).get(var,0)) * len(self.allfiles.get())
 
     def _data_to_json(
             self, 
