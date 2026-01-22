@@ -88,6 +88,7 @@ def worst_error(report: dict, bypass: dict = None) -> str:
         'dim_size_errors':"Fatal", 
         'data_errors':"Fatal", 
         'dim_errors':"Fatal",
+        'growbox':"Warn",
         'bypassed':"Warn",
         'dtype/precision':"Warn"
     }
