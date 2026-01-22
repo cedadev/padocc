@@ -399,6 +399,11 @@ class ComputeOperation(ProjectOperation):
                 compute_subset,
                 compute_total)
             
+        # Errors for final part as lim1 is None
+        if lim1 is None:
+            lim1 = len(self.allfiles)
+            
+        # Errors for final part as lim1 is None
         if lim1 - lim0 != len(self.allfiles):
             self.detail_cfg['compute_subsets'] = compute_total
             self.detail_cfg.save()
@@ -409,7 +414,10 @@ class ComputeOperation(ProjectOperation):
         if parallel:
             if not subset or lim0 == 0:
                 self.update_status(self.phase, 'Pending', jobid=self._logid)
-      
+        elif subset:
+            # Running a subset in non-parallel (manual rerun)
+            self.update_status(self.phase, 'Pending', jobid=self._logid)
+
         if not self.cfa_enabled:
             if not self._thorough:
                 self.logger.info("CFA Operation: Disabled")
@@ -654,7 +662,7 @@ class ComputeOperation(ProjectOperation):
             # Need to work on this for updating the dataset filepaths etc.
             # Minor version increments should be reflected in the dataset object.
             if os.path.isfile(self.dataset.filepath) or os.path.isdir(self.dataset.filepath):
-                self.logger.info(f'Revision {self.revision} already exists')
+                self.logger.info(f'Revision {self.revision} already exists - {self.dataset.filepath}')
                 if self._allow_new_version and self.aggregation_method != 'unable':
 
                     internal_history = self.base_cfg.get('internal_history',[])
@@ -1257,6 +1265,12 @@ class KerchunkDS(ComputeOperation):
             out.flush()
             self.logger.info(f'Written to parquet store - {self.kstore}')
 
+    def _chunk_estm_per_var(self, var):
+        """
+        Estimate number of chunks for a particular variable/dimension
+        """
+        return float(self.detail_cfg['chunk_info'].get(var,0)) * len(self.allfiles.get())
+
     def _data_to_json(
             self, 
             refs: dict, 
@@ -1316,7 +1330,18 @@ class KerchunkDS(ComputeOperation):
             # manual selection will cause modes to be skipped.
             attempt_aggs = []
             if (aggregator == 'P' or aggregator is None):
-                attempt_aggs.append('PADOCC Aggregator')
+                # Allow manual override for P method if requested.
+
+                chunk_estm = 0
+                for d in self.combine_kwargs['concat_dims']:
+                    chunk_estm += self._chunk_estm_per_var(d)
+                chunk_estm = max(len(self.allfiles.get()), chunk_estm)
+                self.logger.debug(f'Dimensional Chunk Estimate: {chunk_estm}')
+
+                if chunk_estm < 1000 or aggregator == 'P':
+                    attempt_aggs.append('PADOCC Aggregator')
+                else:
+                    self.logger.info('Dismissed PADOCC Aggregator for datasets over 1000 files in size.')
             if aggregator == 'V' or aggregator is None:
                 attempt_aggs.append('VirtualiZarr')
             if aggregator == 'K' or aggregator is None:
