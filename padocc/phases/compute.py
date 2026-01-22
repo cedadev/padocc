@@ -1269,7 +1269,11 @@ class KerchunkDS(ComputeOperation):
         """
         Estimate number of chunks for a particular variable/dimension
         """
-        return float(self.detail_cfg['chunk_info'].get('variables',{}).get(var,0)) * len(self.allfiles.get())
+        if not self.detail_cfg.get('chunk_info'):
+            return 0
+
+        value = float(self.detail_cfg.get('chunk_info',{}).get('variables',{}).get(var,0)) * len(self.allfiles.get())
+        return value
 
     def _data_to_json(
             self, 
@@ -1338,10 +1342,17 @@ class KerchunkDS(ComputeOperation):
                 chunk_estm = max(len(self.allfiles.get()), chunk_estm)
                 self.logger.debug(f'Dimensional Chunk Estimate: {chunk_estm}')
 
-                if chunk_estm < 1000 or aggregator == 'P':
-                    attempt_aggs.append('PADOCC Aggregator')
+                if chunk_estm < 1000:
+                    if aggregator == 'P':
+                        attempt_aggs.append('PADOCC Aggregator')
+                        self.logger.warning(
+                            f'PADOCC Aggregator using {chunk_estm} dimensional chunks not advised '
+                            'due to performance issues with final product'
+                        )
+                    else:
+                        self.logger.info('Dismissed PADOCC Aggregator for datasets with over 1000 dimensional chunks.')
                 else:
-                    self.logger.info('Dismissed PADOCC Aggregator for datasets over 1000 files in size.')
+                    attempt_aggs.append('PADOCC Aggregator')
             if aggregator == 'V' or aggregator is None:
                 attempt_aggs.append('VirtualiZarr')
             if aggregator == 'K' or aggregator is None:
