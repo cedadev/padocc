@@ -536,7 +536,7 @@ def padocc_combine(
                 continue
 
             array_label = key.split('/')[0]
-            if array_label in b64_encode:
+            if array_label in b64vars:
 
                 # Data Encoding - function
 

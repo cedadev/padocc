@@ -11,11 +11,11 @@ Currently the Pipeline supports writing JSON/Parquet Kerchunk files for input Ne
 
 ![Kerchunk Pipeline](docs/source/_images/pipeline.png)
 
-## Release 1.4.3
+## Release 1.4.4
 
-Release date: 19th January 2026
+Release date: 22nd January 2026
 
-See the ![release notes](https://github.com/cedadev/padocc/releases/tag/v1.4.3) for details.
+See the ![release notes](https://github.com/cedadev/padocc/releases/tag/v1.4.4) for details.
 
 This package acknowledges contributions by [Matt Brown](matbro@ceh.ac.uk) as a pre-release tester.
 

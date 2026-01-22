@@ -899,9 +899,7 @@ class ValidateDatasets(LoggedOperation):
             self.logger.debug('Maximum recursion depth reached')
             self.logger.info(f'Validation for {var} not performed')
 
-            self._data_report[f'variables,data_errors,{var}'] = {
-                'type':'grow_box_exceeded'
-            }
+            self._data_report[f'variables,growbox,{var}'] = 'all_nans'
             return None
         
         slice_applied = slice_all_dims(test, current, dim_mid=dim_mid)

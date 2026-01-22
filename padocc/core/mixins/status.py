@@ -58,10 +58,11 @@ class StatusMixin:
                 'Unknown number of native files'
             )
         
-        missing = self.get_cfa_cache_files(get_missing=True)
-        if len(missing) > 0:
-            self.logger.error(f'CFA File missing - expected {",".join(missing)}')
-            return False
+        if self.cfa_enabled:
+            missing = self.get_cfa_cache_files(get_missing=True)
+            if len(missing) > 0:
+                self.logger.error(f'CFA File missing - expected {",".join(missing)}')
+                return False
         
         num_caches = len(glob.glob(f'{self.dir}/cache/*.json'))
         if num_caches < num_files+1:

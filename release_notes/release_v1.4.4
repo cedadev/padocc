@@ -1,0 +1,8 @@
+# Release Notes for version 1.4.4
+
+## Bug Fixes
+- Fixed issue with scanning CFA files where all CFA files are included in the scan.
+- Updated `growbox` error message for clarity, no longer a Fatal data error.
+- Added `chunks_per_variable` to detail_cfg, derived in scanning.
+- PADOCC Aggregator now runs only where the `chunks_per_variable` for aggregation_dimensions is under 1000. This is a limiatation of the PADOCC aggregator, where virtualizarr and kerchunk aggregators tend to combine b64 chunks for better performance.
+- Fixed subset_complete function so it takes into account non-CFA datasets.

@@ -178,9 +178,15 @@ class ScanOperation(ProjectOperation):
         # Create all files in mini-kerchunk set here. Then try an assessment.
         limiter = min(100, max(2, int(nfiles/20)))
 
-        self.logger.info(f'Determined {limiter} files to scan (out of {nfiles})')
-        self.logger.info(f'Performing CFA Base Scan (Standard)')
-        self._scan_cfa(limiter=limiter)
+        props = None
+        if self.cfa_enabled or self._thorough:
+            self.logger.info(f'Determined {limiter} files to scan (out of {nfiles})')
+            self.logger.info(f'Performing CFA Base Scan (Standard)')
+            _, props = self._scan_cfa(limiter=limiter)
+
+        if props is not None:
+            self.base_cfg['data_properties'] = props
+            self.base_cfg.save()
 
         if mode == 'zarr':
             self.logger.debug('Performing Zarr Scan')
@@ -243,12 +249,14 @@ class ScanOperation(ProjectOperation):
         std_vars   = None
         std_chunks = None
         ctypes   = mini_ds.ctypes
+
+        chunks_per_var = {}
         
         self.logger.info(f'Summarising scan results for {limiter} files')
 
         for count in range(limiter):
             try:
-                volume, chunks_per_file, varchunks = self._summarise_json(count)
+                volume, chunks_per_file, varchunks, cpv = self._summarise_json(count)
                 vars = sorted(list(varchunks.keys()))
 
                 # Keeping the below options although may be redundant as have already processed the files
@@ -263,6 +271,11 @@ class ScanOperation(ProjectOperation):
                 for var in std_vars:
                     if std_chunks[var] != varchunks[var]:
                         raise ConcatFatalError(var=var, chunk1=std_chunks[var], chunk2=varchunks[var])
+                    
+                for var, chunks in cpv.items():
+                    if var not in chunks_per_var:
+                        chunks_per_var[var] = []
+                    chunks_per_var[var].append(chunks)
 
                 cpf.append(chunks_per_file)
                 volms.append(volume)
@@ -277,9 +290,13 @@ class ScanOperation(ProjectOperation):
             'validate_time': mini_ds.validate_time
         }
 
+        # Avg per file for each variable
+        chunks_per_var = {var: sum(chunks)/len(chunks) for var, chunks in chunks_per_var.items()}
+
         self._compile_outputs(
             std_vars, cpf, volms, timings, 
-            ctypes, escape=escape, scanned_with='kerchunk'
+            ctypes, escape=escape, scanned_with='kerchunk',
+            chunks_per_var=chunks_per_var
         )
 
     def _scan_cfa(
@@ -303,15 +320,17 @@ class ScanOperation(ProjectOperation):
             verbose=self._verbose
         )
 
-        status = comp._run(lim0=0, lim1=limiter, subset=True, output=False)
+        status = comp._run(compute_subset=0, compute_total=limiter, subset=True, output=False)
 
         if status[0] == 'Success':
             self.logger.info('Determined data properties:')
-            self.logger.info(yaml.dump(self.base_cfg['data_properties']))
+            self.logger.info(yaml.dump({k:list(v) for k, v in comp.base_cfg['data_properties'].items()}))
+            props = comp.base_cfg['data_properties']
         else:
+            props = None
             self.logger.info(f' > Result generation failed - {status}')
 
-        return status
+        return status, props
 
     def _scan_zarr(
             self, 
@@ -376,11 +395,16 @@ class ScanOperation(ProjectOperation):
         sizes  = []
         vars   = {}
         chunks = 0
+        chunks_per_var = {}
 
         for chunkkey in kdict.keys():
             if bool(re.search(r'\d', chunkkey)):
                 try:
                     sizes.append(int(kdict[chunkkey][2]))
+                    var = chunkkey.split('/')[0]
+                    if var not in chunks_per_var:
+                        chunks_per_var[var] = 0
+                    chunks_per_var[var] += 1
                 except ValueError:
                     pass
                 chunks += 1
@@ -396,7 +420,7 @@ class ScanOperation(ProjectOperation):
                         chunksize = dict(kdict[chunkkey])['chunks']
                     vars[var] = chunksize
 
-        return np.sum(sizes), chunks, vars
+        return np.sum(sizes), chunks, vars, chunks_per_var
 
     def _compile_outputs(
         self, 
@@ -407,8 +431,11 @@ class ScanOperation(ProjectOperation):
         ctypes: list[str], 
         escape: bool = None, 
         override_type: str = None, 
-        scanned_with : str = None
+        scanned_with : str = None,
+        chunks_per_var: dict = None
     ) -> None:
+        
+        chunks_per_var = chunks_per_var or {}
 
         self.logger.info('Summary complete, compiling outputs')
         (avg_cpf, num_vars, avg_chunk, 
@@ -421,6 +448,9 @@ class ScanOperation(ProjectOperation):
             'scanned_with'     : scanned_with,
             'num_files'        : len(self.allfiles),
             'chunk_info'     : {
+                'variables': {
+                    var: _safe_format(chunk, '{value:.1f}') for var, chunk in chunks_per_var.items()
+                },
                 'chunks_per_file'  : _safe_format(avg_cpf,'{value:.1f}'),
                 'total_chunks'     : _safe_format(total_chunks,'{value:.2f}'),
                 'estm_chunksize'   : _format_float(avg_chunk, logger=self.logger),
