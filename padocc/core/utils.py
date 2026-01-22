@@ -72,7 +72,7 @@ DETAIL_CFG = {
     'scanned_with': None,
     'num_files': None,
     'timings': {},
-    'chunk_info':None,
+    'chunk_info':{},
     'kwargs': {},
 }
 
