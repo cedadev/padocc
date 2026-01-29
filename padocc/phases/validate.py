@@ -11,7 +11,7 @@ import numpy as np
 import xarray as xr
 
 from padocc.core import BypassSwitch, LoggedOperation, ProjectOperation
-from padocc.core.errors import worst_error, ValidationError, AggregationError
+from padocc.core.errors import worst_error, ValidationError, AggregationError, MissingDataError
 from padocc.core.filehandlers import JSONFileHandler
 from padocc.core.utils import format_tuple, timestamp, extract_json
 
@@ -1217,6 +1217,18 @@ class ValidateOperation(ProjectOperation):
 
         preslice = PresliceSet(self.logger)
         for var in variables:
+
+            if var not in sample:
+                if self.cfa_enabled:
+                    followup='Missing from CFA sample'
+                else:
+                    followup='Missing from NetCDF sample'
+
+                raise MissingDataError(
+                    reason=var,
+                    followup=followup
+                )
+            
             preslice_var = {}
 
             if virtual:
