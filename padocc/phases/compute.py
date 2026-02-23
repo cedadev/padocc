@@ -756,11 +756,9 @@ class ComputeOperation(ProjectOperation):
         self.logger.debug('Comparing similar keys')
 
         for attr in nonequal.keys():
-            if len(set(all_values[attr])) == 1:
-                base[attr] = all_values[attr][0]
-            else:
-                base[attr] = self.concat_msg
-                self.special_attrs[attr] = 0
+
+            base[attr] = self.concat_msg
+            self.special_attrs[attr] = 0
 
         self.logger.debug('Finished checking similar keys')
         return base
@@ -1401,7 +1399,7 @@ class KerchunkDS(ComputeOperation):
                             output_file=self.kfile.filepath, 
                             agg_dims=self.combine_kwargs['concat_dims'],
                             data_vars=self.combine_kwargs['aggregated_vars'],
-                            nfiles=self.detail_cfg['num_files'],
+                            nfiles=self.limiter,
                             logger=self.logger)
                         break
                     except Exception as err:
