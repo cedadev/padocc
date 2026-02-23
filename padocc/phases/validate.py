@@ -469,8 +469,6 @@ class ValidateDatasets(LoggedOperation):
         self._metadata_report = Report()
         self.logger.info('Initialised metadata report')
 
-        self.concat_dims=['time']
-
         aggregation_errors = []
         for dim in self.concat_dims:
             testdim = self.test_dataset_var(dim)
@@ -657,10 +655,15 @@ class ValidateDatasets(LoggedOperation):
                 
             # Check for non-equal attributes
             s = set_of_values[0]
-            if not np.all(s == np.array(set_of_values[1:])):
+            try:
+                if not np.all(s == np.array(set_of_values[1:])):
+                    self._metadata_report[f'attributes,{source},{attr}'] = {
+                        'type': 'not_equal'
+                    }
+            except ValueError:
                 self._metadata_report[f'attributes,{source},{attr}'] = {
-                    'type': 'not_equal'
-                }
+                        'type': 'non-comparable'
+                    }
 
     def validate_data(self, dim_mid: Union[dict,None] = None):
         """
@@ -741,7 +744,11 @@ class ValidateDatasets(LoggedOperation):
             else:
                 # 100 or less if the largest dimension is smaller than this limit.
                 # Means we don't try growboxes of equal size too many times.
-                current = min(100, max([testvar[d].size for d in testvar.dims])/2)
+                current = max([testvar[d].size for d in testvar.dims])
+                if current > 100:
+                    current = 100
+                if current < 2:
+                    current = 2
             
             self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid, current=current)
 
@@ -1160,14 +1167,13 @@ class ValidateOperation(ProjectOperation):
         sample, rfnum = self._open_sample(rf=rf)
         vd.replace_dataset(sample, label=self.source_format)
 
-        decode_times = vd.decode_times_ok()
+        _ = vd.decode_times_ok()
 
-        # Time encoding mismatch
-        if not decode_times:
-            test   = self.dataset.open_dataset(decode_times=decode_times)
-            vd.replace_dataset(test, label=self.cloud_format)
-            sample, rf = self._open_sample(decode_times=decode_times)
-            vd.replace_dataset(sample, label=self.source_format)
+        # Never decode times when running data validation.    
+        test   = self.dataset.open_dataset(decode_times=False)
+        vd.replace_dataset(test, label=self.cloud_format)
+        sample, rf = self._open_sample(decode_times=False)
+        vd.replace_dataset(sample, label=self.source_format)
 
         self.logger.info(f'Source-slice validation: {check+1}/{checks} using file {rfnum}')
         preslice = self._get_preslice(test, sample, test.variables, rf=rf)
