@@ -203,11 +203,12 @@ class MissingDataError(KerchunkException): # Keep
     def __init__(
             self,
             reason,
+            followup: str = 'Kerchunk product incomplete',
             verbose: int = 0,
             proj_code: Union[str,None] = None, 
             groupdir: Union[str,None] = None
         ) -> None:
-        self.message = f'Data missing: {reason} - Kerchunk product incomplete'
+        self.message = f'Data missing: {reason} - {followup}'
         super().__init__(proj_code, groupdir)
         if verbose < 1:
             self.__class__.__module__ = 'builtins'

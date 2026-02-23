@@ -223,6 +223,10 @@ class InitialisationMixin:
                 self.logger.debug('Ingesting csv file')
 
                 group_config = extract_file(input_file)
+            else:
+                raise NotImplementedError(
+                    'CSV is the only accepted format for group-based initialisation'
+                )
             self._init_group(group_config, substitutions=substitutions, remote_s3=remote_s3)
 
         else:
