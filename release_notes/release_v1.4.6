@@ -1,0 +1,10 @@
+# Release Notes for version 1.4.6
+
+## Bug Fixes
+- Fixed bug with virtualise scanning not respecting file limit when checking for cache files.
+- Fixed issue with checking attributes. Double check for attributes that introduces a potential error on casting a 1+D list to a set has been removed.
+- Fixed bug with validation where concat dims were always set as 'time'
+- Added catch for checking attribute values where numpy arrays of different sizes are involved.
+- Switched time decoding in validation to NEVER be used in the data validation section. Decoding is checked separately and reported.
+- Changed error message for MissingDataError to identify where the data is missing from.
+- Minor changes to initialisation module.

@@ -1,8 +1,5 @@
-# Release Notes for version 1.4.6
+# Release Notes for version 1.4.5
 
 ## Bug Fixes
-- Fixed bug with virtualise scanning not respecting file limit when checking for cache files.
-- Fixed issue with checking attributes. Double check for attributes that introduces a potential error on casting a 1+D list to a set has been removed.
-- Fixed bug with validation where concat dims were always set as 'time'
-- Added catch for checking attribute values where numpy arrays of different sizes are involved.
-- Switched time decoding in validation to NEVER be used in the data validation section. Decoding is checked separately and reported.
+- Fixed a critical bug with the new `chunk_info` parameter in the detail-cfg, where the default value is None but the expected value in scan/compute is an empty dictionary.
+- Updated warning message for padocc aggregation, which is now based on number of dimensional chunks.
