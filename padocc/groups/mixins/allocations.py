@@ -415,6 +415,8 @@ class AllocationsMixin:
         for submission to SLURM.
         """
 
+        run_kwargs = run_kwargs or {}
+
         outfile = f'{self.groupdir}/outs/{jobname}'
         errfile = f'{self.groupdir}/errs/{jobname}'
 

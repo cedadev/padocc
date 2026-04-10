@@ -393,7 +393,8 @@ class GroupOperation(
         for r in results.keys():
             self.logger.info(f'{r}: {results[r]}')
 
-        self.save_files()
+        # DO NOT SAVE GROUP FILES IN A RUN OPERATION
+        # Individual jobs cannot write to files that are being read by other jobs
         return results
     
     def assemble_codeset(
