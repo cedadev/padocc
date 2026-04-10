@@ -41,7 +41,7 @@ MAPPINGS = {
     '<i4':'<i'
 }
 
-def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list, nfiles: int, logger) -> None:
+def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list, nfiles: int, logger, allfiles: list) -> None:
 
     logger.info('VirtualiZarr: Starting Concatenation')
 
@@ -73,7 +73,7 @@ def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list
                 registry=registry
             ))
         except Exception as err:
-            raise ValueError('Kerchunk Parsing failed')
+            raise err #ValueError('Kerchunk Parsing failed')
 
     logger.info('VirtualiZarr: Combining Datasets')
     logger.debug(f'VirtualiZarr: Combining with agg_dims: {agg_dims}, data_vars: {data_vars}')
@@ -81,11 +81,31 @@ def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list
 
     try:
         combined_vds = xr.combine_nested(vds, concat_dim=agg_dims, data_vars=data_vars, coords='minimal',compat='override', combine_attrs='override')
-    except:
-        raise ValueError('Kerchunk Concatenation failed.')
+    except Exception as err:
+        raise err #ValueError('Kerchunk Concatenation failed.')
 
     logger.debug('VirtualiZarr: Virtualising combined dataset')
     try:
+        # TESTING
+        # import icechunk
+
+        # storage = icechunk.local_filesystem_storage(f'/home/users/dwest77/cedadev/padocc/data/{output_file.split("/")[-1]}.ice')
+        # config = icechunk.RepositoryConfig.default()
+
+        # containers = {}
+        # for file in allfiles:
+        #     uri = f'file://{file}'
+        #     containers[uri] = icechunk.VirtualChunkContainer(
+        #         url_prefix=uri,
+        #         store=icechunk.local_filesystem_storage(uri)
+        #     )
+        # config.set_virtual_chunk_container(containers)
+
+        # repo = icechunk.Repository.create(storage, config)
+        # session=repo.writable_session('main')
+
+        # combined_vds.virtualize.to_icechunk(session.store)
+
         combined_vds.virtualize.to_kerchunk(output_file, format='json')
     except:
         raise ValueError('Kerchunk serialisation failed.')
@@ -124,10 +144,6 @@ def mzz_combine(refs: list, output_file: str, concat_dims: list, identical_dims:
     files_in_kerchunk = list(files_in_kerchunk.keys())
 
     # Compare std dev files to refs. Allow diff.
-
-    for f in fileset:
-        if f not in files_in_kerchunk:
-            raise MissingDataError(f'File {f} missing')
         
     if zattrs is not None:
         mzz['refs']['.zattrs'] = json.dumps(zattrs)
@@ -138,6 +154,10 @@ def mzz_combine(refs: list, output_file: str, concat_dims: list, identical_dims:
     else:
         with open(output_file,'w') as f:
             f.write(json.dumps(mzz))
+
+    for f in fileset:
+        if f not in files_in_kerchunk:
+            raise MissingDataError(f'File {f} missing')
 
 # Because at this point PADOCC does everything else, why not go one step further?
 
@@ -163,7 +183,7 @@ def check_chunk_sizes(var, arr, logger: logging.Logger) -> Union[None,list]:
 
         if len(set(chunksizes)) > 1:
             logger.debug(set(chunksizes))
-            raise ValueError(f'ConcatFatalError: {var}')
+            raise ConcatFatalError(var, chunk1=list(set(chunksizes))[0], chunk2=list(set(chunksizes))[-1])
     return arr
 
 def process_identical_vars(identical_dim_zarrays: dict, logger: logging.Logger):
@@ -239,8 +259,8 @@ def process_agg_dims(agg_dim_zarrays: dict, logger: logging.Logger, ideal: int =
                 logger.debug('PADOCC-A: Combined rechunking enabled')
                 arr['chunks'] = size_sum
 
-        # Shape is relative to chunksize
-        arr['shape'] = [int(chunk_bounds[dim][-1]*arr['chunks'][0])] # Reset shape size for agg dims.
+        # Shape is NOT relative to chunksize
+        arr['shape'] = [int(chunk_bounds[dim][-1])] # Reset shape size for agg dims.
         agg_dim_zarrays[dim] = arr
 
         logger.info(f'PADOCC-A: {dim} Shape: {arr["shape"]}, Chunk Size: {arr["chunks"]}')
@@ -273,6 +293,9 @@ def process_agg_vars(
     for var in agg_var_zarrays.keys():
         logger.info(f'PADOCC-A: Aggregation variable: {var}')
         arr = agg_var_zarrays[var]
+        if arr is None:
+            continue
+
         check_chunk_sizes(var, arr, logger)
 
         ndims = len(arr[0]['chunks'])
@@ -467,7 +490,7 @@ def padocc_combine(
 
     # Initial values, where shape must be updated.
     agg_dim_zarrays       = {dim: [json.loads(r['refs'][f'{dim}/.zarray']) for r in ordered_refs] for dim in agg_dims}
-    agg_var_zarrays       = {var: [json.loads(r['refs'][f'{var}/.zarray']) for r in ordered_refs] for var in agg_vars}
+    agg_var_zarrays       = {var: [json.loads(r['refs'].get(f'{var}/.zarray','None')) for r in ordered_refs] for var in agg_vars}
 
     pure_dims = {}
     # Pure dimensions do not have associated dim zarrays.
@@ -510,16 +533,9 @@ def padocc_combine(
     for k, v in refs_to_output.items():
         mzz['refs'][k] = v
 
-    b64_encode = list(agg_dim_rechunk.keys()) + list(agg_var_rechunk.keys())
+    b64vars = list(agg_dim_rechunk.keys()) + list(agg_var_rechunk.keys()) + list(b64vars)
 
     rechunk_cache = {a:{} for a in agg_dim_rechunk.keys()} | {a:{} for a in agg_var_rechunk.keys()}
-
-    #b64_0th_coords, b64_0th_values = {},{}
-    #for v in b64_encode:
-    #    coords = ".".join(['0' for i in aggregation_zarrays[v][0]["chunks"]])
-    #    b64_0th_coords[v] = f'{v}/{coords}' # Extracts e.g time/0.0.0 for all b64 variables.
-
-    #b64_nth_values = {v: [0 for i in range(len(ordered_refs))] for v in b64_encode}
 
     #additive_encoding = False
     for file_ord, ref in enumerate(ordered_refs):
@@ -548,18 +564,6 @@ def padocc_combine(
                 infile.seek(int(value[1]))
                 data = infile.read(int(value[2]))
 
-                # Additive Encoding - Failed attempt
-                #b64_nth_values[array_label][file_ord] = data
-
-                #if key == b64_0th_coords[array_label] and array_label not in b64_0th_values:
-                 #   b64_0th_values[array_label] = data
-
-                #elif b64_0th_values[array_label] is not None and data == b64_0th_values[array_label]:
-                #    additive_encoding = True
-                    
-                #if additive_encoding:
-                 #   data = _b64_summ(data, agg_dim_zarrays[array_label]['dtype'], b64_nth_values[array_label], file_ord)
-
                 value = (b'base64:' + base64.b64encode(data)).decode()
 
                 # End Data Encoding
@@ -585,8 +589,6 @@ def padocc_combine(
                 if new_key in mzz['refs']:
                     raise ValueError(f'Overlapping chunk sections for key: {new_key}')
             mzz['refs'][new_key] = value
-            if new_key == 'time_bounds/482119.0':
-                pass
 
     # Apply collected rechunking
     refs_to_output = apply_rechunking(rechunk_cache, agg_dim_rechunk | agg_var_rechunk, logger)
