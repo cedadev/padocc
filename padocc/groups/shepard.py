@@ -204,6 +204,7 @@ class ShepardOperator(LoggedOperation):
 
         self.batch_limit = self.conf.get('batch_limit',None) or 100
         self.source_venv = self.conf.get('source_venv', self.default_source)
+        self.obliterate_quarantine = self.conf.get('obliterate_quarantine',False)
 
     @property
     def default_source(self) -> str:
@@ -307,20 +308,47 @@ class ShepardOperator(LoggedOperation):
             verbose=self._verbose,
         )
 
+        reject_log = []
         for flock in self._init_all_flocks():
             quarantine_codes = flock.determine_status_sets('!Pending&!Success')
+            # For each, determine alternative processing step if available.
+            # New function per-project to return:
+            # compute,'V'
+            # compute,'K'
+            # None if no alternative processing step is available
+
+
+
             self.logger.info(f"Quarantine: {len(quarantine_codes)} from {flock.groupID}")
             # Do this before removing any projects
             proj_codes = [flock.proj_codes['main'][qc] for qc in quarantine_codes]
 
-            for pc in proj_codes:
-                flock.transfer_project(
-                    pc,
-                    quart
+            if not self.obliterate_quarantine:
+                for pc in proj_codes:
+                    flock.transfer_project(
+                        pc,
+                        quart
+                    )
+                
+                quart.save_files()
+                flock.save_files()
+            else:
+                # Obliterating quarantine, save a log file only instead.
+                for pc in proj_codes:
+                    project = flock[pc]
+                    reject_msg = project.status_log.get()[-1]
+                    reject_log.append(f'{pc},{reject_msg}')
+
+                flock.remove_projects(
+                    ','.join(proj_codes),
+                    ask=False
                 )
-            
-            quart.save_files()
-            flock.save_files()
+
+        if len(reject_log) > 0:
+            now = datetime.now()
+            with open(f"{self.flock_dir}/rejected/{datetime.strftime(now,'%H%M_%d%m%Y')}.csv",'w') as f:
+                f.write('\n'.join(reject_log))
+
 
     def delete_logs(self) -> None:
         """
@@ -516,7 +544,7 @@ class ShepardOperator(LoggedOperation):
         """
 
         if phase == 'validate':
-            return {'valid':self.common_valid}
+            return {'run_kwargs':{'input_file':self.common_valid}}
         
         if phase == 'scan':
             return {'thorough': True}
@@ -604,6 +632,13 @@ class ShepardOperator(LoggedOperation):
 
             processed_flocks[fid] = num_datasets
             proj_count += num_datasets
+
+        if len(task_list) > 10000:
+            self.logger.warning(
+                'Group size of more than 10,000 is not recommended, '
+                'batch maximum limit is 10,000'
+            )
+            task_list = task_list[:10000]
 
         for task in task_list:
             self.logger.debug(f'{task.new_phase}: {task.codeset}')
