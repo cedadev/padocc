@@ -74,7 +74,7 @@ def check_for_nan(box, bypass, logger, label=None): # Ingest into class structu
             isnan = handle_boxissue(err)
     else:
         try:
-            isnan = np.all(arr == np.nan)
+            isnan = np.all(np.isnan(arr))
         except Exception as err:
             isnan = handle_boxissue(err)
 
@@ -146,6 +146,11 @@ class PresliceSet:
 
     def add_preslice(self, preslice: dict[slice], var: str):
         self._preslice_set[var] = preslice
+
+    def missing_variables(self):
+        """
+        Get the list of variables able to be validated."""
+        return [v for v in self._preslice_set.keys() if self._preslice_set.get(v,False) is None]
 
     def apply(self, data_arr: xr.DataArray, var: str) -> xr.DataArray:
         """
@@ -261,7 +266,7 @@ class ValidateDatasets(LoggedOperation):
             fh: Union[str,None] = None,
             logid: Union[str,None] = None,
             verbose: int = 0,
-            bypass_vars: Union[list,None] = None,
+            validate_vars: Union[list,None] = None,
             concat_dims: Union[list,None] = None
         ):
         """
@@ -274,7 +279,7 @@ class ValidateDatasets(LoggedOperation):
         """
 
         # Bypass checking specific variables if requested
-        self.bypass_vars = bypass_vars or []
+        self.validate_vars = validate_vars or []
 
         self.concat_dims = concat_dims or []
 
@@ -288,8 +293,8 @@ class ValidateDatasets(LoggedOperation):
 
         self._labels    = dataset_labels or [str(i) for i in range(len(datasets))]
 
-        self.variables  = None
-        self.dimensions = None
+        self.data_vars  = None
+        self.dims = None
 
         self.decoded_times = True
 
@@ -508,7 +513,7 @@ class ValidateDatasets(LoggedOperation):
         Validate variables public method
         """
         self.logger.info('Performing validation checks: Variables')
-        self._validate_selector(allowances=allowances, selector='variables')
+        self._validate_selector(allowances=allowances, selector='data_vars')
 
     def _validate_dimensions(self, allowances: dict = None):
         """
@@ -664,13 +669,28 @@ class ValidateDatasets(LoggedOperation):
                 self._metadata_report[f'attributes,{source},{attr}'] = {
                         'type': 'non-comparable'
                     }
+                
+    def disallowed_vars(self):
+        """
+        Obtain the list of variables that exist in both preslices.
+        """
+
+        miss_vars = None
+
+        for preslice in self._preslice_fns:
+            if miss_vars is None:
+                miss_vars = preslice.missing_variables()
+            
+            miss_vars = list(set(miss_vars) | set(preslice.missing_variables()))
+
+        return miss_vars
 
     def validate_data(self, dim_mid: Union[dict,None] = None):
         """
         Perform data validations using the growbox method for all variable DataArrays.
         """
 
-        if self.variables is None:
+        if self.data_vars is None:
             raise ValueError(
                 'Unable to validate data, please ensure metadata has been validated first.'
                 'Use `validate_metadata()` method.'
@@ -685,6 +705,13 @@ class ValidateDatasets(LoggedOperation):
             self._data_report['time_encoding_mismatch'] = True
 
         for dim in self.dims:
+
+            if dim in self.disallowed_vars():
+                self._data_report[f'dimensions,skipped,{dim}'] = {
+                    'type':'allowed_missing'
+                }
+                continue
+
             self.logger.debug(f'Validating size of {dim}')
 
             try:
@@ -711,11 +738,17 @@ class ValidateDatasets(LoggedOperation):
                 controldim
             )
 
-        for var in self.variables:
+        for var in self.data_vars:
 
-            if var in self.bypass_vars:
+            if self.validate_vars != [] and var not in self.validate_vars:
                 self._data_report[f'variables,skipped,{var}'] = {
-                    'type':'singled-out'
+                    'type':'ignored'
+                }
+                continue
+
+            if var in self.disallowed_vars():
+                self._data_report[f'variables,skipped,{var}'] = {
+                    'type':'allowed_missing'
                 }
                 continue
 
@@ -1106,7 +1139,7 @@ class ValidateOperation(ProjectOperation):
         meta_fh = JSONFileHandler(self.dir, 'metadata_report',logger=self.logger, **self.fh_kwargs)
         data_fh = JSONFileHandler(self.dir, 'data_report',logger=self.logger, **self.fh_kwargs)
 
-        bypass_vars = self.base_cfg.get('validation',{}).get('bypass',[])
+        self.validate_vars = self.base_cfg.get('keep_vars') or [v for v in test.variables if v not in test.dims]
 
         concat_dims = self.detail_cfg.get('kwargs',{}).get('combine_kwargs',{}).get('concat_dims',None)
 
@@ -1116,7 +1149,7 @@ class ValidateOperation(ProjectOperation):
             dataset_labels=[self.cloud_format, self.source_format], 
             filehandlers=[meta_fh, data_fh],
             logger=self.logger,
-            bypass_vars=bypass_vars,
+            validate_vars=self.validate_vars,
             error_bypass=error_bypass,
             concat_dims=concat_dims)
 
@@ -1163,20 +1196,25 @@ class ValidateOperation(ProjectOperation):
         Prepare and run for a single validation attempt.
         """
 
-         # Open a random file or as specified above.
+        ## 1. Time Decoding Check
+         # Open a random file or as specified above to check time decoding
         sample, rfnum = self._open_sample(rf=rf)
         vd.replace_dataset(sample, label=self.source_format)
 
         _ = vd.decode_times_ok()
 
+        ## 2. Data Check
         # Never decode times when running data validation.    
         test   = self.dataset.open_dataset(decode_times=False)
         vd.replace_dataset(test, label=self.cloud_format)
-        sample, rf = self._open_sample(decode_times=False)
+        sample, rf = self._open_sample(rf=rf,decode_times=False)
         vd.replace_dataset(sample, label=self.source_format)
 
         self.logger.info(f'Source-slice validation: {check+1}/{checks} using file {rfnum}')
-        preslice = self._get_preslice(test, sample, test.variables, rf=rf)
+
+        preslice_vars = list(set(self.validate_vars) | set(self.detail_cfg['kwargs']['combine_kwargs']['concat_dims']))
+
+        preslice = self._get_preslice(test, sample, preslice_vars, rf=rf)
         vd.replace_preslice(preslice, label=self.cloud_format)
 
         self.logger.debug('Slicing using preslice selections:')
@@ -1194,6 +1232,7 @@ class ValidateOperation(ProjectOperation):
         if rf is not None:
             file = self.allfiles[rf]
             randomfile = rf
+
         else:
             randomfile = random.randint(0,len(self.allfiles)-1)
             file = self.allfiles[randomfile]
@@ -1230,11 +1269,14 @@ class ValidateOperation(ProjectOperation):
                 else:
                     followup='Missing from NetCDF sample'
 
-                raise MissingDataError(
-                    reason=var,
-                    followup=followup
-                )
-            
+                if not self._bypass.skip_scan:
+                    raise MissingDataError(
+                        reason=var,
+                        followup=followup
+                    )
+                
+                preslice.add_preslice(None, var)
+                continue
             preslice_var = {}
 
             if virtual:
@@ -1261,7 +1303,12 @@ class ValidateOperation(ProjectOperation):
                     # Source Slice validation for coodinate dimensions
 
                     # Index of the 0th sample dim value in the test dim array
-                    matching_value = np.where(test[dim] == sample[dim][0])[0]
+                    matching_value = np.where(
+                        np.isclose(
+                            np.array(test[dim], dtype=sample[dim].dtype),
+                            np.array(sample[dim][0])
+                        )
+                    )[0]
                     if matching_value.size == 0:
                         raise ValidationError(
                             'Fatal dimension mismatch - '
