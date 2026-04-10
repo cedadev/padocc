@@ -16,7 +16,7 @@ import xarray as xr
 
 from padocc.core import FalseLogger, LoggedOperation, ProjectOperation
 from padocc.core.errors import (KerchunkDriverFatalError, PartialDriverError,
-                                SourceNotFoundError)
+                                SourceNotFoundError, ConcatFatalError)
 from padocc.core.filehandlers import JSONFileHandler, ZarrStore, KerchunkFile
 from padocc.core.utils import find_closest, make_tuple, timestamp
 from padocc.phases.validate import ValidateDatasets
@@ -286,6 +286,9 @@ class ComputeOperation(ProjectOperation):
         self.create_kwargs  = kwargs.get('create_kwargs',None) or {'inline_threshold':0}
         self.pre_kwargs     = {}
 
+        self.keep_vars = self.base_cfg.get('keep_vars',None)
+        self.drop_vars = None
+
         self.special_attrs = {}
         self.var_shapes    = {}
 
@@ -351,6 +354,8 @@ class ComputeOperation(ProjectOperation):
             self, 
             compute_subset: Union[str,None] = None,
             compute_total: Union[str,None] = None,
+            lim0:  Union[str,int,None] = None,
+            lim1:  Union[str,int,None] = None,
             mode: str = 'CFA',
             output: bool = True,
             parallel: bool = False,
@@ -388,12 +393,7 @@ class ComputeOperation(ProjectOperation):
                 self._manual_combine_kwargs['concat_dims'] = concat_dims
             self.logger.debug(f'Override: {self._manual_combine_kwargs["concat_dims"]}')
 
-        subset = False
-        if compute_subset is not None:
-            lim0 = compute_subset
-            lim1 = compute_total
-
-        else:
+        if lim0 is None:
             lim0, lim1 = self._determine_limits(
                 self.allfiles.get(),
                 compute_subset,
@@ -402,9 +402,13 @@ class ComputeOperation(ProjectOperation):
         # Errors for final part as lim1 is None
         if lim1 is None:
             lim1 = len(self.allfiles)
+
+        lim0 = int(lim0)
+        lim1 = int(lim1)
             
+        subset = False
         # Errors for final part as lim1 is None
-        if lim1 - lim0 != len(self.allfiles):
+        if lim1-lim0 != len(self.allfiles):
             self.detail_cfg['compute_subsets'] = compute_total
             self.detail_cfg.save()
             subset = True
@@ -552,6 +556,7 @@ class ComputeOperation(ProjectOperation):
             }, is_ordered
 
         except Exception as err:
+            raise err
             self.logger.error(
                 f'Aggregation via CFA failed - {err} - report at https://github.com/cedadev/CFAPyX/issues'
             )
@@ -921,6 +926,46 @@ class ComputeOperation(ProjectOperation):
         
         return concat_dims, identical_dims, aggregated_vars
 
+    def _determine_drop_vars(self, ref: dict) -> list:
+        """
+        Determine which variables should be dropped.
+        
+        Return a list of their names
+        """
+        keep_all = self.keep_vars
+        all_vars = []
+
+        for chunk in ref['refs'].keys():
+            if '.zattrs' not in chunk or '/' not in chunk:
+                continue
+
+            var = chunk.split('/')[0]
+            all_vars.append(var)
+
+            cinfo = ref['refs'][chunk]
+            if isinstance(cinfo, str):
+                cinfo = json.loads(cinfo)
+            
+            if var in self.keep_vars:
+                keep_all += cinfo['_ARRAY_DIMENSIONS']
+
+        self.drop_vars = [a for a in all_vars if a not in keep_all]
+        self.logger.info(f"Determined to drop: {self.drop_vars}")
+    
+    def _drop_vars(self, ref: dict) -> list:
+        """
+        Drop variables from the ref as specified
+        """
+        chunks = ref.pop('refs')
+        ref['refs'] = {}
+        for chunk in chunks.keys():
+            var = chunk.split('/')[0]
+            if var in self.drop_vars:
+                continue
+
+            ref['refs'][chunk] = chunks[chunk]
+        return ref
+
     def _determine_dim_specs(self) -> None:
         """
         Perform identification of identical_dims and concat_dims here.
@@ -1008,19 +1053,27 @@ class KerchunkDS(ComputeOperation):
             compute_total)
 
         # Run CFA in super class.
-        cfa_status, ordering = super()._run(compute_subset=lim0, compute_total=lim1, subset=subset, **kwargs)
+        cfa_status, ordering = super()._run(lim0=lim0, lim1=lim1, subset=subset, **kwargs)
 
         # If CFA is not enabled and virtualisation has not previously been attempted.
 
-        order_files = (self._thorough or not self.order_confirmed) and not ordering
+        # Check arrangement if thorough or not order confirmed
+        # Don't check arrangement if already ordered or diagnostic or virtual or bypass
+
+        check_arrangement = not (
+            self.order_confirmed or \
+            ordering or \
+            self.diagnostic('File Ordering') or \
+            self.detail_cfg.get('virtual_concat',False) or \
+            self._bypass.skip_filechecks)
+
         if self.skip_concat:
             self.logger.info('Native order rearrangement bypassed for subsetting')
-
-        elif order_files and not self.diagnostic('File Ordering'):
+        elif check_arrangement:
             self.logger.info('Native file order unknown - attempting determination')
             self.order_native_files()
         else:
-            self.logger.info('Native file order confirmed')
+            self.logger.info('Native file order confirmed/bypassed')
 
             if not self.combine_kwargs.get('concat_dims',False) or self._thorough:
                 self._determine_dim_specs()
@@ -1126,15 +1179,21 @@ class KerchunkDS(ComputeOperation):
                     # Get again in case of future changes.
                     ref = CacheFile.get()
 
+            # Drop variables not selected.
+            if self.keep_vars:
+                if x == lim0:
+                    self._determine_drop_vars(ref)
+                ref = self._drop_vars(ref)
+
             if not ref:
                 continue
             
             allzattrs.append(ref['refs']['.zattrs'])
-            refs.append(ref)
 
-            if check_refs:
-                # Perform any and all checks here if required
-                refs = self._perform_shape_checks(ref)
+            # Perform any and all checks here if required
+            ref = self._perform_shape_checks(ref, check_refs=check_refs, ctype=ctype)
+
+            refs.append(ref)
 
             CacheFile.set(ref)
             CacheFile.save()
@@ -1200,7 +1259,7 @@ class KerchunkDS(ComputeOperation):
             self._collect_details() # Zarr might want this too.
             self.logger.info("Details updated in detail-cfg.json")
 
-    def _construct_virtual_dim(self, refs: dict) -> None:
+    def _construct_virtual_dim(self, refs: list) -> None:
         """
         Construct a Virtual dimension for stacking multiple files 
         where no suitable concatenation dimension is present.
@@ -1208,8 +1267,7 @@ class KerchunkDS(ComputeOperation):
         # For now this just means creating a list of numbers 0 to N files
         vdim = 'file_number'
 
-        for idx in range(len(refs)):
-            ref = refs[idx]
+        for idx, ref in enumerate(refs):
             zarray = json.dumps({
                 "chunks": [1],
                 "compressor": None,
@@ -1296,6 +1354,8 @@ class KerchunkDS(ComputeOperation):
             # - virtual concatenation
             # - aggregation/concat dims/vars + identical dims
 
+            self.combine_kwargs = self.combine_kwargs or {}
+
             if self.detail_cfg['virtual_concat']:
                 refs, vdim = self._construct_virtual_dim(refs)
                 self.combine_kwargs['concat_dims'] = [vdim]
@@ -1318,9 +1378,12 @@ class KerchunkDS(ComputeOperation):
                 self.logger.info('If aggregation is successful, these parameters will be saved.')
                 self.combine_kwargs["concat_dims"] = self._manual_combine_kwargs["concat_dims"]
 
+            self.drop_vars = self.drop_vars or []
+            agg_vars = [v for v in self.combine_kwargs["aggregated_vars"] if v not in self.drop_vars]
+
             self.logger.debug(f'Concat Dim(s): {self.combine_kwargs["concat_dims"]}')
             self.logger.debug(f'Identical Dim(s): {self.combine_kwargs["identical_dims"]}')
-            self.logger.debug(f'Aggregation Var(s): {self.combine_kwargs["aggregated_vars"]}')
+            self.logger.debug(f'Aggregation Var(s): {agg_vars}')
 
             # Virtualizarr special requirement - data ordering
             if not self.order_confirmed and aggregator == 'V':
@@ -1373,7 +1436,7 @@ class KerchunkDS(ComputeOperation):
                             refs,
                             self.filelist,
                             agg_dims=self.combine_kwargs['concat_dims'],
-                            agg_vars=self.combine_kwargs['aggregated_vars'],
+                            agg_vars=agg_vars,
                             output_file=self.kfile.filepath,
                             identical_vars=self.combine_kwargs["identical_dims"],
                             zattrs=self.temp_zattrs.get(),
@@ -1381,6 +1444,8 @@ class KerchunkDS(ComputeOperation):
                             logger=self.logger
                         )
                         break
+                    except ConcatFatalError as err:
+                        raise err
                     except Exception as err:
                         self.logger.info(f' > PADOCC Aggregator Failed - {err}')
                         self.padocc_aggregation = False
@@ -1398,10 +1463,13 @@ class KerchunkDS(ComputeOperation):
                             f'{self.dir}/cache/', 
                             output_file=self.kfile.filepath, 
                             agg_dims=self.combine_kwargs['concat_dims'],
-                            data_vars=self.combine_kwargs['aggregated_vars'],
+                            data_vars=agg_vars,
                             nfiles=self.limiter,
-                            logger=self.logger)
+                            logger=self.logger,
+                            allfiles=self.allfiles.get())
                         break
+                    except ConcatFatalError as err:
+                        raise err
                     except Exception as err:
                         self.logger.info(f' > Virtualizarr Failed - {err}')
                         self.virtualizarr = False
@@ -1424,6 +1492,8 @@ class KerchunkDS(ComputeOperation):
                             zattrs=self.temp_zattrs.get(),
                             fileset=self.filelist
                         )
+                    except ConcatFatalError as err:
+                        raise err
                     except Exception as err:
                         self.logger.info(f' > Kerchunk MZZ Failed - {err}')
                         self.kerchunk_aggregation = False
@@ -1436,19 +1506,21 @@ class KerchunkDS(ComputeOperation):
 
             self.kfile.save()
 
-    def _perform_shape_checks(self, ref: dict) -> dict:
+    def _perform_shape_checks(self, ref: dict, check_refs: bool = False, ctype: str = None) -> dict:
         """
         Check the shape of each variable for inconsistencies which will
         require a thorough validation process.
         """
 
-        if self.source_format not in ['ncf3','hdf5']:
+        if ctype not in ['ncf3','hdf5']:
             self.logger.warning(
-                'Skipped reference checks, source file not compatible.'
+                f'Skipped reference checks, source file not compatible. - {ctype}'
             )
 
         # Identify variables to be checked
-        if self.base_cfg['data_properties']['aggregated_vars'] != 'Unknown':
+        if self.keep_vars:
+            checklist = [f'{v}/.zarray' for v in self.keep_vars]
+        elif self.base_cfg['data_properties']['aggregated_vars'] != 'Unknown':
             variables = self.base_cfg['data_properties']['aggregated_vars']
             checklist = [f'{v}/.zarray' for v in variables]
         else:
@@ -1460,14 +1532,23 @@ class KerchunkDS(ComputeOperation):
 
         # Perform corrections
         for key in checklist:
-            zarray = json.loads(ref['refs'][key])
-            if key not in self.var_shapes:
-                self.var_shapes[key] = zarray['shape']
+            if key in ref['refs']:
+                zarray = json.loads(ref['refs'][key])
+                if zarray['shape'] == []:
+                    # Don't need to check a variable with no shape
+                    continue
 
-            if self.var_shapes[key] != zarray['shape']:
-                self.logger.debug(
-                    f'Reference Correction: {zarray["shape"]} to '
-                )
+                if check_refs:
+                    if key not in self.var_shapes:
+                        self.var_shapes[key] = zarray['shape']
+
+                    if self.var_shapes[key] != zarray['shape']:
+                        self.logger.debug(
+                            f'Reference Correction: {zarray["shape"]} to '
+                        )
+                ref['refs'][key] = json.dumps(zarray)
+        
+        return ref
 
 class ZarrDS(ComputeOperation):
 
