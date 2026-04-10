@@ -331,6 +331,9 @@ class InitialisationMixin:
                     raise ValueError(
                         f'Improperly formatted input file with "" quotes - {err}'
                     )
+            variables = None
+            if len(components) > 3:
+                variables = components[3:]
 
             if pattern.endswith('.txt') and substitutions:
                 pattern, status = apply_substitutions('dataset_file', subs=substitutions, content=[pattern])
@@ -375,6 +378,9 @@ class InitialisationMixin:
                 remote_s3=remote_s3,
                 bypass=self._bypass
             )
+
+            if variables:
+                proj_op.base_cfg['keep_vars'] = list(set(variables))
 
             proj_op.update_status('init','Success')
             proj_op.save_files()
