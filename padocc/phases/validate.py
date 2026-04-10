@@ -3,9 +3,9 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
 import json
-import random
 from datetime import datetime
 from typing import Optional, Union
+import math
 
 import numpy as np
 import xarray as xr
@@ -782,8 +782,13 @@ class ValidateDatasets(LoggedOperation):
                     current = 100
                 if current < 2:
                     current = 2
-            
-            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid, current=current)
+
+            # Limit for max growbox memory usage.
+            max_size = testvar.size * 64
+            max_mem = 2e9 # 2GB
+            box_size_limit = math.ceil(max(1, math.pow(max_size/max_mem, 1/len(testvar.dims))))
+
+            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid, current=current, box_size_limit=box_size_limit)
 
     def _validate_shapes(self, var: str, test, control, ignore=None):
         """
@@ -914,7 +919,7 @@ class ValidateDatasets(LoggedOperation):
             test: xr.DataArray,
             control: xr.DataArray,
             current : int = 100,
-            recursion_limit : int = 1, 
+            box_size_limit : int = 1, 
             dim_mid: Union[dict,None] = None,
         ) -> bool:
         """
@@ -935,8 +940,8 @@ class ValidateDatasets(LoggedOperation):
             )
             return
 
-        if current <= recursion_limit:
-            self.logger.debug('Maximum recursion depth reached')
+        if current <= box_size_limit:
+            self.logger.debug('Maximum box size reached')
             self.logger.info(f'Validation for {var} not performed')
 
             self._data_report[f'variables,growbox,{var}'] = 'all_nans'
@@ -948,7 +953,7 @@ class ValidateDatasets(LoggedOperation):
         cbox = control[slice_applied]
 
         if check_for_nan(cbox, BypassSwitch(), self.logger, label=var):
-            return self._validate_selection(var, test, control, current-1, recursion_limit=recursion_limit, dim_mid=dim_mid)
+            return self._validate_selection(var, test, control, current-1, box_size_limit=box_size_limit, dim_mid=dim_mid)
         else:
             return self._compare_data(var, slice_applied, tbox, cbox)
 
