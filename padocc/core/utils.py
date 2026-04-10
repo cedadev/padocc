@@ -74,6 +74,7 @@ DETAIL_CFG = {
     'timings': {},
     'chunk_info':{},
     'kwargs': {},
+    'virtual_concat':False
 }
 
 file_configs = {

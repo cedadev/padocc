@@ -455,7 +455,7 @@ class ProjectOperation(
         new_rev  = ''.join((self.cloud_format[0],'r',self.version_no))
         new_path = os.path.splitext(ds.filepath)[0].replace(self.revision, new_rev) # No extension
 
-        if self._thorough:
+        if self._thorough and glob.glob(new_path):
             os.system(f'rm {new_path}*')
 
         self.remote = True

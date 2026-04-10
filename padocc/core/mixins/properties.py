@@ -278,7 +278,7 @@ class PropertiesMixin:
         Note: This returns the driver used in the kerchunk
         scanning process if that step has been completed.
         """
-        return self.detail_cfg.get(index='driver', default='src')
+        return self.detail_cfg.get(index='driver', default=None)
 
     def get_stac_representation(self, stac_mapping: dict) -> dict:
         """

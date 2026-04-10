@@ -89,7 +89,7 @@ def check_attribute(group, attr: str, repeat_id: str = 'main', **kwargs):
         file_data_source = 'base_cfg'
     elif attr_parts[0] in DETAIL_CFG:
         file_data_source = 'detail_cfg'
-    elif getattr(group[0], attr):
+    elif getattr(group[0], attr, None):
         pass
     else:
         raise ValueError(

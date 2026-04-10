@@ -423,7 +423,7 @@ class ConcatFatalError(KerchunkException): # Keep
 
         self.message = f"Chunk sizes differ between refs for {var}"
         if chunk1 is not None: 
-            self.message += f"{chunk1} - {chunk2}"
+            self.message += f" {chunk1} vs {chunk2}"
         self.message += " - files cannot be concatenated"
         super().__init__(proj_code, groupdir)
         if verbose < 1:
