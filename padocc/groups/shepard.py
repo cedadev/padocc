@@ -12,6 +12,7 @@ from typing import Union
 import random
 import yaml
 import string
+import math
 import importlib
 
 from padocc.core.logs import LoggedOperation, clear_loggers
@@ -202,9 +203,16 @@ class ShepardOperator(LoggedOperation):
         if not os.path.isdir(f'{self.complete_dir}/data'):
             os.makedirs(f'{self.complete_dir}/data')
 
-        self.batch_limit = self.conf.get('batch_limit',None) or 100
-        self.source_venv = self.conf.get('source_venv', self.default_source)
+        self.batch_limit: int = self.conf.get('batch_limit',100)
+        self.source_venv: str = self.conf.get('source_venv', self.default_source)
         self.obliterate_quarantine = self.conf.get('obliterate_quarantine',False)
+
+        self.flock_size_limit: int = self.conf.get('flock_size_limit', 100)
+        self.flock_limit: int = self.conf.get('flock_limit', 20)
+        self.sweep_dir: str = self.conf.get('sweep_dir')
+        self.cache_dir: str = self.conf.get('cache_dir')
+        self.deployment_label: str = self.conf.get('deployment_label', 'SHEPARD')
+
 
     @property
     def default_source(self) -> str:
@@ -349,7 +357,6 @@ class ShepardOperator(LoggedOperation):
             with open(f"{self.flock_dir}/rejected/{datetime.strftime(now,'%H%M_%d%m%Y')}.csv",'w') as f:
                 f.write('\n'.join(reject_log))
 
-
     def delete_logs(self) -> None:
         """
         Delete logs for all groups
@@ -361,6 +368,8 @@ class ShepardOperator(LoggedOperation):
         """
         Main operation function to activate the deployment
         """
+
+        self._prepare_projects()
 
         mode = self.mode
 
@@ -425,6 +434,69 @@ class ShepardOperator(LoggedOperation):
 
         self.logger.info('Finished processing jobs')
         self._complete_flocks(flocks)
+
+    def _prepare_projects(self):
+        """
+        Run preparation tasks
+        """
+
+        # 0. Sweeper function
+        if self.sweep_dir:
+            # Transfer projects from sweep_dir to cache_dir
+            if not self.cache_dir:
+                raise ValueError('Cannot sweep where no cache area specified.')
+            
+            manifests = glob.glob(f'{self.sweep_dir}/*.txt')
+            for manifest in manifests:
+                os.system(f'mv {manifest} {self.cache_dir}/')
+
+        # 1. Initialise new groups
+        if not self.cache_dir or len(manifests) <= 0:
+            self.logger.info('No new manifests detected - skipping')
+            return
+
+        space_for_flocks = len(self._find_flocks()) - self.flock_limit
+        if space_for_flocks <= 0:
+            self.logger.info('No space available for new flocks')
+
+        # Always add at least one flock if there's space and manifests pending
+        nflocks    = max(1, math.floor(len(manifests)/self.flock_size_limit))
+
+        # Add flocks up to free space, or how many we want to add - whichever is smaller.
+        add_flocks = min(space_for_flocks, nflocks)
+        self.logger.info(f'Accommodating {add_flocks} new flock(s)')
+        
+        for fid in range(add_flocks):
+            # Flock name is hash of current datetime
+
+            dt = datetime.now()
+            groupname = f'{self.deployment_label}_{dt.day}_{dt.month}_{dt.year}_{dt.hour}{dt.minute}{dt.second}'
+
+            proj_codes = manifests[fid:fid+self.flock_size_limit]
+            datasets = []
+            for pc in proj_codes:
+                project = pc.split('/')[-1].replace('.txt','')
+                datasets.append(','.join[
+                    f'{project}', # Proj Code
+                    f'{self.cache_dir}/{project}.txt', # Filelist location
+                    '', # Updates
+                    '', # Removals
+                    '' # Variables
+                ])
+
+            flock = GroupOperation(
+                groupname,
+                self.flock_dir,
+                label=f'shepard->{fid}',
+                logid='shepard',
+                verbose=self._verbose,
+            )
+
+            flock.init_group(datasets)
+
+        for manifest in manifests:
+            mfile = manifest.split('/')[-1]
+            os.system(f'rm {self.cache_dir}/{mfile}')
 
     def _complete_flocks(self, flocks: list[GroupOperation]) -> None:
         """
