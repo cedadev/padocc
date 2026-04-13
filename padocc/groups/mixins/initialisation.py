@@ -227,7 +227,7 @@ class InitialisationMixin:
                 raise NotImplementedError(
                     'CSV is the only accepted format for group-based initialisation'
                 )
-            self._init_group(group_config, substitutions=substitutions, remote_s3=remote_s3)
+            self.init_group(group_config, substitutions=substitutions, remote_s3=remote_s3)
 
         else:
             # Only base-cfg style files are accepted here.
@@ -276,7 +276,7 @@ class InitialisationMixin:
         proj_op.update_status('init','Success')
         proj_op.save_files()
 
-    def _init_group(
+    def init_group(
             self, 
             datasets : list, 
             substitutions: dict = None,
