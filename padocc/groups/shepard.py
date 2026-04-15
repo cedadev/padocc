@@ -18,7 +18,7 @@ import importlib
 from padocc.core.logs import LoggedOperation, clear_loggers
 from padocc.core.utils import phases, BypassSwitch, times, format_str
 
-from .group import GroupOperation
+from padocc.groups.group import GroupOperation
 
 """
 SHEPARD: (v1.0)
@@ -450,12 +450,16 @@ class ShepardOperator(LoggedOperation):
             for manifest in manifests:
                 os.system(f'mv {manifest} {self.cache_dir}/')
 
+        # Find manifests from cache dir
+        if self.cache_dir:
+            manifests = glob.glob(f'{self.cache_dir}/*.txt')
+
         # 1. Initialise new groups
         if not self.cache_dir or len(manifests) <= 0:
             self.logger.info('No new manifests detected - skipping')
             return
 
-        space_for_flocks = len(self._find_flocks()) - self.flock_limit
+        space_for_flocks = self.flock_limit - len(self._find_flocks())
         if space_for_flocks <= 0:
             self.logger.info('No space available for new flocks')
 
@@ -476,13 +480,13 @@ class ShepardOperator(LoggedOperation):
             datasets = []
             for pc in proj_codes:
                 project = pc.split('/')[-1].replace('.txt','')
-                datasets.append(','.join[
+                datasets.append(','.join([
                     f'{project}', # Proj Code
                     f'{self.cache_dir}/{project}.txt', # Filelist location
                     '', # Updates
                     '', # Removals
                     '' # Variables
-                ])
+                ]))
 
             flock = GroupOperation(
                 groupname,
@@ -590,7 +594,7 @@ class ShepardOperator(LoggedOperation):
                 task.new_phase,
                 repeat_id=new_repeat_id,
                 bypass=self.bypass,
-                run_kwargs=self._phase_specific_kwargs(task.new_phase)
+                **self._phase_specific_kwargs(task.new_phase)
             )
 
         # Parallel deployment
@@ -723,7 +727,7 @@ class ShepardOperator(LoggedOperation):
         """
         group_proj_codes = self._find_flocks()
         shp_flock = []
-        self.logger.info(f'Discovering {len(group_proj_codes)} flocks')
+        self.logger.info(f'Checking {len(group_proj_codes)} flocks')
         for idx, flock_path in enumerate(group_proj_codes):
             # Flock path is the path to the main.txt proj_code 
             # document for each group.
