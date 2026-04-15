@@ -63,7 +63,8 @@ BASE_CFG = {
     },
     'last_run': (None, None),
     'remote': False,
-    'disable_CFA':False
+    'disable_CFA':False,
+    'keep_vars':'all'
 }
 
 DETAIL_CFG = {
