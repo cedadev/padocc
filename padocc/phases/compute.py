@@ -37,8 +37,6 @@ from kerchunk.netCDF3 import NetCDF3ToZarr
 from kerchunk.tiff import TiffToZarr
 from kerchunk.grib2 import GribToZarr
 
-CONCAT_MSG = 'See individual files for more details'    
-
 class KerchunkConverter(LoggedOperation):
     """Class for converting a single file to a Kerchunk reference object. Handles known
     or unknown file types (NetCDF3/4 versions)."""
@@ -172,7 +170,7 @@ class ComputeOperation(ProjectOperation):
             groupID   : str = None,
             stage     : str = 'in_progress',
             thorough    : bool = None,
-            concat_msg  : str = CONCAT_MSG,
+            concat_msg  : dict = None,
             limiter     : int = None, 
             skip_concat : bool = False, 
             label : str = 'compute',
@@ -194,7 +192,7 @@ class ComputeOperation(ProjectOperation):
         :param thorough:        (bool) From args.quality - if True will create all files 
             from scratch, otherwise saved refs from previous runs will be loaded.
         
-        :param concat_msg:      (str) Value displayed as global attribute for any attributes 
+        :param concat_msg:      (dict) Mapping for concat messages for any attributes 
             that differ across the set of files, instead of a list of the differences,
             this message will be used, default can be found above.
 
@@ -228,8 +226,6 @@ class ComputeOperation(ProjectOperation):
             label=label,
             **kwargs)
         
-        
-
         self._manual_combine_kwargs = { # Applied normally
             'identical_dims': None,
             'concat_dims': None
@@ -287,6 +283,9 @@ class ComputeOperation(ProjectOperation):
         self.pre_kwargs     = {}
 
         self.keep_vars = self.base_cfg.get('keep_vars',None)
+
+        if self.keep_vars == [] or self.keep_vars == [""]:
+            self.keep_vars = 'all'
         self.drop_vars = None
 
         self.special_attrs = {}
@@ -625,7 +624,7 @@ class ComputeOperation(ProjectOperation):
 
         if compute_subset is not None:
             try:
-                self.skip_concat = compute_subset[0] != 'c'
+                self.skip_concat = str(compute_subset)[0] != 'c'
 
                 cs = int(compute_subset)
                 if not self.skip_concat:
@@ -738,7 +737,6 @@ class ComputeOperation(ProjectOperation):
                 times[k] = [base[k]]
             all_values[k] = []
 
-        nonequal = {}
         # Compare other attribute sets to a starting set 0
         for ref in allzattrs[1:]:
             zattrs = json.loads(ref)
@@ -748,22 +746,35 @@ class ComputeOperation(ProjectOperation):
                     all_values[attr].append(zattrs[attr])
                 else:
                     all_values[attr] = [zattrs[attr]]
+
                 if attr in times:
                     times[attr].append(zattrs[attr])
-                elif attr not in base:
-                    nonequal[attr] = False
-                else:
-                    if base[attr] != zattrs[attr]:
-                        nonequal[attr] = False
 
         # Requires something special for start and end times
         base = {**base, **self._check_time_attributes(times)}
         self.logger.debug('Comparing similar keys')
 
-        for attr in nonequal.keys():
+        for attr, valset in all_values.items():
 
-            base[attr] = self.concat_msg
-            self.special_attrs[attr] = 0
+            uniqueset = list(set([np.array(v).tobytes() for v in valset]))
+            if len(uniqueset) == 1:
+                continue
+            
+            # Obtain the unique values from the list (2n complexity)
+            vset = []
+            x = 0
+            for u in uniqueset:
+                while np.array(valset[x]).tobytes() != u:
+                    x += 1
+                vset.append(valset[x])
+
+            if attr in self.concat_msg or 'all' in self.concat_msg:
+                self.logger.info(f"Substituting attribute '{attr}' for concat message")
+                base[attr] = self.concat_msg.get(attr, self.concat_msg.get('all'))
+                self.special_attrs[attr] = 0
+            else:
+                self.logger.info(f"Compiling values for '{attr}'")
+                base[attr] = list(set(valset))
 
         self.logger.debug('Finished checking similar keys')
         return base
@@ -932,9 +943,10 @@ class ComputeOperation(ProjectOperation):
         
         Return a list of their names
         """
-        keep_all = self.keep_vars
+        keep_all = self.keep_vars == 'all'
         all_vars = []
 
+        keep_vars = []
         for chunk in ref['refs'].keys():
             if '.zattrs' not in chunk or '/' not in chunk:
                 continue
@@ -945,12 +957,14 @@ class ComputeOperation(ProjectOperation):
             cinfo = ref['refs'][chunk]
             if isinstance(cinfo, str):
                 cinfo = json.loads(cinfo)
-            
-            if var in self.keep_vars:
-                keep_all += cinfo['_ARRAY_DIMENSIONS']
 
-        self.drop_vars = [a for a in all_vars if a not in keep_all]
-        self.logger.info(f"Determined to drop: {self.drop_vars}")
+            if keep_all or var in self.keep_vars:
+                keep_vars.append(var)
+                keep_vars += cinfo['_ARRAY_DIMENSIONS']
+
+        self.drop_vars = [a for a in all_vars if a not in keep_vars]
+        if self.drop_vars:
+            self.logger.info(f"Drop variables: {self.drop_vars}")
     
     def _drop_vars(self, ref: dict) -> list:
         """
@@ -1044,8 +1058,6 @@ class KerchunkDS(ComputeOperation):
             subset = True
 
             self.detail_cfg['compute_subsets'] = compute_total
-            self.detail_cfg.save()
-
 
         lim0, lim1 = self._determine_limits(
             self.allfiles.get(),
@@ -1518,8 +1530,8 @@ class KerchunkDS(ComputeOperation):
             )
 
         # Identify variables to be checked
-        if self.keep_vars:
-            checklist = [f'{v}/.zarray' for v in self.keep_vars]
+        if self.drop_vars:
+            checklist = [f'{v}/.zarray' for v in variables if v not in self.drop_vars]
         elif self.base_cfg['data_properties']['aggregated_vars'] != 'Unknown':
             variables = self.base_cfg['data_properties']['aggregated_vars']
             checklist = [f'{v}/.zarray' for v in variables]
