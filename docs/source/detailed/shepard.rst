@@ -32,11 +32,11 @@ Running this example command will execute a batch of SHEPARD jobs (in parallel),
     obliterate_quarantine: false # Delete (obliterate) or cache errored projects to quarantine area.
 
     # Optional parameters
-    self.sweep_dir: /path/to/sweep/dir # Collect text file manifests
-    self.cache_dir: /path/to/cache/dir # Cache manifests and assemble groups
-    self.flock_size_limit: 100 # Limit max size for auto-initialised flocks
-    self.flock_limit: 20 # Limit max number of active flocks
-    self.deployment_label: 'SHEPARD' # Label for group names
+    sweep_dir: /path/to/sweep/dir # Collect text file manifests
+    cache_dir: /path/to/cache/dir # Cache manifests and assemble groups
+    flock_size_limit: 100 # Limit max size for auto-initialised flocks
+    flock_limit: 20 # Limit max number of active flocks
+    deployment_label: 'SHEPARD' # Label for group names
 
 This example command can then be set up as a CRON job, to run e.g every hour to check on all groups within the flock directory. A task list is assembled for each group, where a project can be assigned the next task in the pipeline if it has succeeded in passing the previous phase. For example, a project which has a ``Success`` status for ``Compute``, will be added to the task list as a ``Validate`` task, as this is the next stage.
 
