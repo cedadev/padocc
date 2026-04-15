@@ -333,7 +333,13 @@ class InitialisationMixin:
                     )
             variables = None
             if len(components) > 3:
-                variables = components[3:]
+                variables = []
+                for v in components[3:]:
+                    if v:
+                        variables.append(v)
+
+                if not variables:
+                    variables = None
 
             if pattern.endswith('.txt') and substitutions:
                 pattern, status = apply_substitutions('dataset_file', subs=substitutions, content=[pattern])
