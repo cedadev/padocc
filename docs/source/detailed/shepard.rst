@@ -18,7 +18,7 @@ Deploying SHEPARD
 
 .. code::
 
-    $ shepard_deploy batch --conf <config.yaml> --parallel --autolog
+    $ shepard batch --conf <config.yaml> --parallel --autolog
 
 Running this example command will execute a batch of SHEPARD jobs (in parallel), with autologging to a directory specified in the config file. The config file is a YAML file that should have a structure similar to:
 
