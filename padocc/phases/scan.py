@@ -264,7 +264,6 @@ class ScanOperation(ProjectOperation):
                     std_vars = vars
                 if vars != std_vars:
                     self.logger.warning(f'Variables differ between files - {vars} vs {std_vars}')
-                    is_varwarn = True
 
                 if not std_chunks:
                     std_chunks = varchunks
