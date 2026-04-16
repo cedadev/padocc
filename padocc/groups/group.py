@@ -13,17 +13,13 @@ from padocc.core.filehandlers import CSVFileHandler, ListFileHandler
 from padocc.core.mixins import DirectoryMixin
 from padocc.core.utils import format_str, print_fmt_str
 from padocc.core.errors import MissingVariableError
-from padocc.phases import (KNOWN_PHASES, ComputeOperation, KerchunkDS,
-                           ScanOperation, ValidateOperation, ZarrDS)
+from padocc.phases import (KNOWN_PHASES, phase_map,
+                           ScanOperation, ValidateOperation)
 
 from .mixins import (AllocationsMixin, EvaluationsMixin, InitialisationMixin,
                      ModifiersMixin)
 
-COMPUTE = {
-    'kerchunk':KerchunkDS,
-    'zarr':ZarrDS,
-    'CFA': ComputeOperation,
-}
+COMPUTE = phase_map['compute']
 
 class GroupOperation(
         AllocationsMixin, 
