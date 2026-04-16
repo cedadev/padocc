@@ -1747,6 +1747,29 @@ class ZarrDS(ComputeOperation):
 
         return concat_dim_rechunk, dim_sizes, cpf/self.limiter, volume/self.limiter
 
+class IcechunkDS(ComputeOperation):
+
+    def _run(self, 
+            compute_subset: Union[int,None] = None,
+            compute_total: Union[int,None] = None,
+            **kwargs) -> bool:
+
+        subset = False
+        if compute_subset is not None:
+            subset = True
+
+            self.detail_cfg['compute_subsets'] = compute_total
+
+        lim0, lim1 = self._determine_limits(
+            self.allfiles.get(),
+            compute_subset,
+            compute_total)
+
+        # Run CFA in super class.
+        cfa_status, ordering = super()._run(lim0=lim0, lim1=lim1, subset=subset, **kwargs)
+
+        return True
+
 if __name__ == '__main__':
     print('Serial Processor for Kerchunk Pipeline')
     
