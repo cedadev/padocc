@@ -1104,7 +1104,6 @@ class ValidateOperation(ProjectOperation):
             self, 
             proj_code,
             workdir,
-            parallel: bool = False,
             **kwargs):
         """
         No current validate-specific parameters
@@ -1112,14 +1111,13 @@ class ValidateOperation(ProjectOperation):
 
         self.phase = 'validate'
         super().__init__(proj_code, workdir, **kwargs)
-        if parallel:
-            self.update_status(self.phase, 'Pending',jobid=self._logid)
 
     def _run(
             self,
             mode: str = 'kerchunk',
             dim_mid: Union[dict,None] = None,
             error_bypass: Union[dict,str,None] = None,
+            parallel: bool = False,
             **kwargs
         ) -> None:
         """
@@ -1128,6 +1126,9 @@ class ValidateOperation(ProjectOperation):
         :param mode:    (str) Cloud format to use, overriding the known cloud format from 
             previous steps.
         """
+        if parallel:
+            self.update_status(self.phase, 'Pending',jobid=self._logid)
+
         self.set_last_run(self.phase, timestamp())
         self.logger.info("Starting validation")
 

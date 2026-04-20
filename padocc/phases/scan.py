@@ -134,7 +134,7 @@ class ScanOperation(ProjectOperation):
             workdir   : str,
             groupID   : str = None, 
             label     : str = 'scan',
-            parallel  : bool = False,
+
             **kwargs,
         ) -> None:
 
@@ -144,9 +144,6 @@ class ScanOperation(ProjectOperation):
 
         super().__init__(
             proj_code, workdir, groupID=groupID, label=label,**kwargs)
-        
-        if parallel:
-            self.update_status(self.phase, 'Pending',jobid=self._logid)
 
     def help(self, fn=print):
         super().help(fn=fn)
@@ -159,9 +156,13 @@ class ScanOperation(ProjectOperation):
             mode: str = 'kerchunk', 
             ctype: Union[str,None] = None,
             mem_allowed: str = '100MB',
+            parallel  : bool = False,
             **kwargs
         ) -> None:
         """Main process handler for scanning phase"""
+
+        if parallel:
+            self.update_status(self.phase, 'Pending',jobid=self._logid)
 
         self.set_last_run(self.phase, timestamp())
         self.logger.info(f'Starting scan-{mode} operation for {self.proj_code}')

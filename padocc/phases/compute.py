@@ -417,6 +417,9 @@ class ComputeOperation(ProjectOperation):
         if parallel:
             if not subset or lim0 == 0:
                 self.update_status(self.phase, 'Pending', jobid=self._logid)
+            else:
+                # Subset Deployed via Group Allocations
+                pass
         elif subset:
             # Running a subset in non-parallel (manual rerun)
             self.update_status(self.phase, 'Pending', jobid=self._logid)
