@@ -10,7 +10,7 @@ from typing import Callable, Union
 import yaml
 import json
 
-from .errors import error_handler
+from .errors import error_handler, FATAL_ERRORS
 from .filehandlers import (CSVFileHandler, JSONFileHandler, ListFileHandler,
                            LogFileHandler, KerchunkFile)
 from .mixins import (DatasetHandlerMixin, DirectoryMixin, PropertiesMixin,
@@ -357,6 +357,12 @@ class ProjectOperation(
             return missing
         
         return cfafiles
+    
+    def get_next_agg(self) -> str:
+        next_agg = self.get_agg_shorthand()[1:-1].split('>')[-1][0]
+        if next_agg == 'X':
+            next_agg = None
+        return next_agg
 
     def get_agg_shorthand(self) -> None:
         """
@@ -373,6 +379,9 @@ class ProjectOperation(
             else:
                 return '(X)'
         else:
+            for error in FATAL_ERRORS:
+                if error in status_msg[1]:
+                    return '(X)'
             return '(PVK)'
 
     def diagnostic(self, message: str):
@@ -481,6 +490,7 @@ class ProjectOperation(
             self, 
             move_to: str,
             thorough: bool = False,
+            version_separator: str = None,
             **kwargs) -> None:
         """
         Move project to a completeness directory
@@ -491,6 +501,7 @@ class ProjectOperation(
         self.logger.debug(f' > {self.proj_code} [{self.cloud_format}]')
 
         status = self.get_last_status()
+        version_separator = version_separator or '_'
 
         if status is None:
             self.logger.warning(
@@ -532,19 +543,21 @@ class ProjectOperation(
             os.makedirs(report_move)
 
         # Spawn copy of dataset
-        complete_dataset = f'{data_move}/{self.complete_product}'
+        complete_dataset = f'{data_move}/{self.complete_product(version_separator=version_separator)}'
 
         self.dataset.spawn_copy(complete_dataset)
 
         # Spawn copy of cfa dataset
         if self.cfa_enabled and self.cfa_complete and self.cloud_format != 'CFA':
-            complete_cfa = self.cfa_path.replace(self.dir, data_move) + '_' + self.version_no
+            complete_cfa = self.cfa_path.replace(self.dir, data_move) + version_separator + self.version_no
             self.cfa_dataset.spawn_copy(complete_cfa)
 
         if not self._dryrun:
             self.update_status('complete','Success')
-
         self.save_files()
+
+        if self._forceful:
+            self.delete_project(ask=False)
 
     def migrate(cls, newgroupID: str):
         """
