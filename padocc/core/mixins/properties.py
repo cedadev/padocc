@@ -129,8 +129,7 @@ class PropertiesMixin:
         """
         return f'{self.dir}/{self.outproduct}'
     
-    @property
-    def complete_product(self) -> str:
+    def complete_product(self, version_separator: str = '.') -> str:
         """
         Return the name of the actual dataset.
 
@@ -140,7 +139,7 @@ class PropertiesMixin:
         where they are renamed with the project code
         and revision for the actual dataset.
         """
-        return f'{self.proj_code}.{self.revision}'
+        return f'{self.proj_code}{version_separator}{self.revision}'
 
     @property
     def outproduct(self) -> str:
