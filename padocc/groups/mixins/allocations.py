@@ -221,8 +221,8 @@ class AllocationsMixin:
     def deploy_parallel(
             self,
             phase           : str,
-            source          : str,
-            proj_code       : str = None,
+            source          : Union[str,None] = None,
+            proj_code       : Union[str,None] = None,
             verbose         : int = 0,
             joblabel        : str = 'PADOCC',
             repeat_id       : str = 'main',
@@ -242,6 +242,9 @@ class AllocationsMixin:
             new_version     : Union[str,None] = None,
             xarray_kwargs   : Union[dict,None] = None,
             run_kwargs      : Union[dict,None] = None,
+            completion_dir  : Union[str,None] = None,
+            version_separator: Union[str,None] = None,
+            **kwargs
         ) -> None:
         """
         Organise parallel deployment via SLURM.
@@ -361,6 +364,8 @@ class AllocationsMixin:
                     sbatch_kwargs=sbatch_kwargs,
                     time=alloc[1],
                     run_kwargs=run_kwargs,
+                    completion_dir=completion_dir,
+                    version_separator=version_separator
                 )
         else:
 
@@ -390,7 +395,9 @@ class AllocationsMixin:
                     run_kwargs=run_kwargs,
                     time=time_allowed,
                     memory=memory,
-                    wait=wait
+                    wait=wait,
+                    completion_dir=completion_dir,
+                    version_separator=version_separator
                 )
             
     def _create_slurm_script(
@@ -406,6 +413,8 @@ class AllocationsMixin:
             time: Union[str,None] = None,
             memory: Union[str,None] = None,
             wait: bool = False,
+            completion_dir: str = None,
+            version_separator: str = None,
             project_flag: str = '-p $SLURM_ARRAY_TASK_ID',
         ):
         """
@@ -420,7 +429,11 @@ class AllocationsMixin:
         outfile = f'{self.groupdir}/outs/{jobname}'
         errfile = f'{self.groupdir}/errs/{jobname}'
 
-        sbatch_flags = self._sbatch_kwargs(time, memory, repeat_id, **sbatch_kwargs)
+        sbatch_flags = self._sbatch_kwargs(
+            phase, repeat_id, 
+            completion_dir=completion_dir,
+            version_separator=version_separator,
+            **sbatch_kwargs)
 
         for k, v in run_kwargs.items():
             if isinstance(v,list):
@@ -485,14 +498,14 @@ class AllocationsMixin:
                 project.save_files()
 
     def _sbatch_kwargs(
-            self, 
-            time        : str, 
-            memory      : str, 
+            self,  
+            phase: str,
             repeat_id   : str, 
             verbose     : bool = None, 
             bypass      : Union[BypassSwitch,None] = None, 
             subset      : Union[int,None] = None, 
-            new_version : bool = None, 
+            completion_dir: str = None,
+            version_separator: str = None,
             mode        : Union[str,None] = None, 
             xarray_kwargs: dict = None,
             **bool_kwargs
@@ -501,24 +514,34 @@ class AllocationsMixin:
         Assemble all flags and options for CLI via SLURM.
         """
 
-        sbatch_kwargs = f'-G {self.groupID} -t {time} -M {memory} -r {repeat_id} '
+        sbatch_kwargs = f'-G {self.groupID} -r {repeat_id} '
 
         bool_options = {
             'forceful' : '-f',
             'thorough' : '-T',
             'dryrun'   : '-d',
             'binpack'  : '-A',
+            'new_version': '-n'
         }
 
         if isinstance(bypass, BypassSwitch):
             bypass = bypass.switch
 
         value_options = {
-            'bypass' : ('-b',bypass),
             'subset' : ('-s',subset),
-            'mode'   : ('-C',mode),
-            'new_version': ('-n',new_version),
         }
+
+        if mode and phase in ['scan','compute']:
+            value_options['mode'] = ('-C',mode)
+
+        if bypass and phase in ['scan','compute', 'validate']:
+            value_options['bypass'] = ('-b', bypass)
+
+        if completion_dir is not None:
+            value_options['completion_dir'] = ('--completion_dir', completion_dir)
+
+        if version_separator is not None:
+            value_options['version_separator'] = ('--version_separator', version_separator)
 
         if xarray_kwargs is not None:
             value_options['xarray_kwargs'] = ('--xarray_kwargs',xarray_kwargs)
@@ -532,7 +555,7 @@ class AllocationsMixin:
 
         for value in value_options.keys():
             if value_options[value][1] is not None:
-                optional.append(' '.join(value_options[value]))
+                optional.append(' '.join([str(i) for i in value_options[value]]))
 
         for kwarg in bool_kwargs.keys():
             if kwarg not in bool_options:
