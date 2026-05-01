@@ -19,7 +19,8 @@ from .errors import MissingVariableError
 times = {
     'scan'    :'15:00',
     'compute' :'60:00',
-    'validate':'10:00'
+    'validate':'10:00',
+    'complete':'5:00'
 }
 
 phases = [
@@ -27,6 +28,7 @@ phases = [
     'scan',
     'compute',
     'validate',
+    'complete'
 ]
 
 # Which files acceptable to pull from Moles Tags file.
@@ -39,7 +41,8 @@ source_opts = [
 parallel_modes = [
     'scan',
     'compute',
-    'validate'
+    'validate',
+    'complete'
 ]
 
 BASE_CFG = {
