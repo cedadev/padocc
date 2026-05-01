@@ -235,7 +235,7 @@ class ComputeOperation(ProjectOperation):
 
         self.logger.debug('Starting variable definitions')
 
-        self.concat_msg  = concat_msg
+        self.concat_msg  = concat_msg or {}
         self.skip_concat = skip_concat
 
         self.stage = stage
@@ -439,8 +439,12 @@ class ComputeOperation(ProjectOperation):
             self.save_files()
             return 'Fatal', False
 
+        if results.get('skipped'):
+            self.detail_cfg['CFA'] = False
+            return 'Skipped', False
+
         # Check results values
-        success = len(results.keys()) > 0 or results.get('skipped')
+        success = len(results.keys()) > 0
         for s in results.values():
             if s == 'Unknown':
                 success = False
@@ -507,6 +511,10 @@ class ComputeOperation(ProjectOperation):
                     )
             else:
                 files = self.allfiles.get()[lim0:lim1]
+
+            if len(files) < 2:
+                self.logger.info("CFA Aggregation for less than 2 files - skipped")
+                return {'skipped':True}, True
 
             self.logger.info(f"Starting CFA Computation - {lim0} to {lim1}")
 
@@ -759,17 +767,27 @@ class ComputeOperation(ProjectOperation):
 
         for attr, valset in all_values.items():
 
-            uniqueset = list(set([np.array(v).tobytes() for v in valset]))
+            uniqueset = []
+            for v in valset:
+                if np.array(v).tobytes() not in uniqueset:
+                    uniqueset.append(np.array(v).tobytes())
+
             if len(uniqueset) == 1:
                 continue
             
             # Obtain the unique values from the list (2n complexity)
+            # THIS FUNCTION DOES NOT WORK, SHOULD NEVER GIVE AN INDEX ERROR BUT IT DOES SOMETIMES
+
+            # Uniqueset is the set of unique bytes-representations for values in valset
+            # Uniqueset is always smaller than or equal to the size of valset
             vset = []
             x = 0
             for u in uniqueset:
+                # While loop handles any skips in the uniqueset
                 while np.array(valset[x]).tobytes() != u:
                     x += 1
                 vset.append(valset[x])
+                x += 1
 
             if attr in self.concat_msg or 'all' in self.concat_msg:
                 self.logger.info(f"Substituting attribute '{attr}' for concat message")
@@ -1225,10 +1243,9 @@ class KerchunkDS(ComputeOperation):
         if len(partials) > 0:
             raise PartialDriverError(filenums=partials)
 
-        if not self.temp_zattrs.get():
-            self.temp_zattrs.set(
-                self._correct_metadata(allzattrs)
-            )
+        self.temp_zattrs.set(
+            self._correct_metadata(allzattrs)
+        )
 
         try:
             if self.success and not self.skip_concat:
