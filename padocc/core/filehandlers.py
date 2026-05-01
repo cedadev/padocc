@@ -733,7 +733,7 @@ class KerchunkFile(JSONFileHandler):
         self._obtain_value()
 
         refs = self._value.get('refs',{})
-        zattrs = refs.get('.zattrs',None)
+        zattrs = refs.get('.zattrs',{})
         
         if isinstance(zattrs, str):
             zattrs = json.loads(zattrs)
