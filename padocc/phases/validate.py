@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 from typing import Optional, Union
 import math
+import random
 
 import numpy as np
 import xarray as xr
@@ -165,8 +166,8 @@ class PresliceSet:
                     squeeze_dims.append(dslice[1])
                     self._preslice_set[var][dim] = dslice[0]
 
-            self.logger.debug(self._preslice_set[var])
-            self.logger.debug(squeeze_dims)
+            self.logger.debug(f'preslice: {self._preslice_set[var]}')
+            self.logger.debug(f'squeeze dims: {squeeze_dims}')
             da = data_arr.isel(**self._preslice_set[var])
             if len(squeeze_dims) > 0:
                 da = da.squeeze(dim=squeeze_dims, drop=True)
@@ -1145,7 +1146,10 @@ class ValidateOperation(ProjectOperation):
         meta_fh = JSONFileHandler(self.dir, 'metadata_report',logger=self.logger, **self.fh_kwargs)
         data_fh = JSONFileHandler(self.dir, 'data_report',logger=self.logger, **self.fh_kwargs)
 
-        self.validate_vars = self.base_cfg.get('keep_vars') or [v for v in test.variables if v not in test.dims]
+        if self.base_cfg.get('keep_vars','all') == 'all':
+            self.validate_vars = [v for v in test.variables if v not in test.dims]
+        else:
+            self.validate_vars = self.base_cfg.get('keep_vars')
 
         concat_dims = self.detail_cfg.get('kwargs',{}).get('combine_kwargs',{}).get('concat_dims',None)
 
@@ -1257,7 +1261,7 @@ class ValidateOperation(ProjectOperation):
         
         :param test:     (obj) An xarray dataset representing the cloud product.
         
-        :param sample:   (obj) An xarray dataset representing the source file(s).
+        :param sample:   (obj) An xaxrray dataset representing the source file(s).
         
         :returns:   A slice object to apply to the test dataset to map directly
             to the sample dataset.
