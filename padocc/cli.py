@@ -161,6 +161,7 @@ def complete_group(
         thorough: bool = True,
         remote_sub: Union[str,None] = None,
         remote_replace: Union[str,None] = None,
+        version_separator: Union[str,None] = None,
         **kwargs
     ):
     """Complete projects in a group"""
@@ -176,14 +177,16 @@ def complete_group(
             completion_dir,
             repeat_id=repeat_id,
             thorough=thorough,
+            version_separator=version_separator,
             **complete_kwargs)
     else:
         try:
             project = group[proj_code]
-            project.complete_project(move_to=completion_dir, thorough=thorough,**complete_kwargs)
-        except:
-            print(f'ERROR: Unable to instantiate project {proj_code} from {group.groupID}')
-
+            project.complete_project(move_to=completion_dir, thorough=thorough,
+                                     version_separator=version_separator,**complete_kwargs)
+        except Exception as e:
+            raise e
+        
 def apply_pfunc(group, **kwargs):
     raise NotImplementedError
 
@@ -423,7 +426,8 @@ def parse_group(
             xarray_kwargs=xarray_kwargs_raw, # Unprocessed raw CLI value
             run_kwargs=run_kwargs,
             wait=wait_sbatch,
-            mode=mode
+            mode=mode,
+            **kwargs
         )
         return
     
@@ -488,6 +492,7 @@ def get_args():
     complete.add_argument('--completion_dir',help='Directory for completion - data and reports will be transferred.', required=True)
     complete.add_argument('--sub', dest='remote_sub',help='Substitution if not the default')
     complete.add_argument('--replace', dest='remote_replace',help='Replacement to substitution if not the default')
+    complete.add_argument('--version_separator', dest='version_separator',help='Separator for version ID')
     ## Compute
     compute = subparsers.add_parser('compute',help='Compute data aggregations for a project, group or subset of projects. (Pipeline phase 2)', 
                                 parents=[universal_parser, group_parser, phased_parser])
