@@ -19,8 +19,8 @@ from .errors import MissingVariableError
 times = {
     'scan'    :'15:00',
     'compute' :'60:00',
-    'validate':'10:00',
-    'complete':'5:00'
+    'validate':'15:00',
+    'complete':'10:00'
 }
 
 phases = [
