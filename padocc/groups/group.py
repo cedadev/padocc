@@ -199,6 +199,7 @@ class GroupOperation(
             repeat_id: str = 'main',
             report_location: Union[str,None] = None,
             version_separator: Union[str,None] = None,
+            final_delete: bool = False,
             **kwargs
         ):
         """
@@ -256,7 +257,9 @@ class GroupOperation(
                 proj_op.export_report(move_to)
 
                 # Export products
-                proj_op.complete_project(move_to, thorough=thorough, version_separator=version_separator, **kwargs)
+                proj_op.complete_project(
+                    move_to, thorough=thorough, 
+                    version_separator=version_separator, final_delete=final_delete,**kwargs)
                 self.logger.info(f'{proj}: OK')
             except Exception as err:
                 if self._bypass.skip_subsets:

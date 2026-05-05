@@ -334,7 +334,7 @@ class ShepardOperator(LoggedOperation):
 
             case 'complete':
                 kwargs['thorough'] = True
-                kwargs['forceful'] = True
+                kwargs['final_delete'] = False
                 kwargs['completion_dir'] = self.complete_dir
                 kwargs['version_separator'] = self.version_separator
 
@@ -374,7 +374,7 @@ class ShepardOperator(LoggedOperation):
                 info.append(format_str(msg, 12))
 
                 flock_err += errored
-            print(f'{format_str(flock.groupID,10)} -> {" |".join(info)}, ET: {flock_err}')
+            print(f'{format_str(flock.groupID,30)} -> {" |".join(info)}, ET: {flock_err}')
             total_errs += flock_err
         print(f'Errors: {total_errs}')
 
@@ -858,8 +858,10 @@ class ShepardOperator(LoggedOperation):
             exit_loop = False
             for phase in phases:
 
+                phase_tasks = []
+
                 if phase == 'complete':
-                    codesets = {'Success': status_dict.get(phase,[])}
+                    continue
                 else:
                     codesets = status_dict.get(phase, {})
 
@@ -867,7 +869,7 @@ class ShepardOperator(LoggedOperation):
                     new_tasks = self._process_status_phase(fid, status, phase, codes, flock)
                     for nt in new_tasks:
                         proj_count += len(nt)
-                        task_list.append(nt)
+                        phase_tasks.append(nt)
 
                         if proj_count >= batch_limit:
                             exit_loop = True
@@ -876,6 +878,20 @@ class ShepardOperator(LoggedOperation):
                         break
                 if exit_loop:
                     break
+
+                if phase == 'validate':
+                    taskset = []
+                    for p in phase_tasks:
+                        if p.new_phase == 'complete':
+                            taskset += p.codeset
+                        else:
+                            task_list.append(p)
+                    task_list.append(
+                        ShepardTask(fid, flock.groupID, 'validate', taskset)
+                    )
+                else:
+                    task_list += phase_tasks
+
 
             processed_flocks.append(fid)
 

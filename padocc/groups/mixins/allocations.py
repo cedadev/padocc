@@ -244,6 +244,7 @@ class AllocationsMixin:
             run_kwargs      : Union[dict,None] = None,
             completion_dir  : Union[str,None] = None,
             version_separator: Union[str,None] = None,
+            final_delete: bool = False,
             **kwargs
         ) -> None:
         """
@@ -274,7 +275,8 @@ class AllocationsMixin:
             'subset'  : subset,
             'bypass' : bypass,
             'mode' : mode,
-            'new_version' : new_version
+            'new_version' : new_version,
+            'final_delete': final_delete
         }
 
         # Ensure directories are created for logs
@@ -521,7 +523,8 @@ class AllocationsMixin:
             'thorough' : '-T',
             'dryrun'   : '-d',
             'binpack'  : '-A',
-            'new_version': '-n'
+            'new_version': '-n',
+            'final_delete': '--delete'
         }
 
         if isinstance(bypass, BypassSwitch):

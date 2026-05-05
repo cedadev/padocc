@@ -162,6 +162,7 @@ def complete_group(
         remote_sub: Union[str,None] = None,
         remote_replace: Union[str,None] = None,
         version_separator: Union[str,None] = None,
+        final_delete: bool = False,
         **kwargs
     ):
     """Complete projects in a group"""
@@ -178,6 +179,7 @@ def complete_group(
             repeat_id=repeat_id,
             thorough=thorough,
             version_separator=version_separator,
+            final_delete=final_delete,
             **complete_kwargs)
     else:
         try:
@@ -493,6 +495,7 @@ def get_args():
     complete.add_argument('--sub', dest='remote_sub',help='Substitution if not the default')
     complete.add_argument('--replace', dest='remote_replace',help='Replacement to substitution if not the default')
     complete.add_argument('--version_separator', dest='version_separator',help='Separator for version ID')
+    complete.add_argument('--delete', dest='final_delete',action='store_true',help='Delete on confirmed completion')
     ## Compute
     compute = subparsers.add_parser('compute',help='Compute data aggregations for a project, group or subset of projects. (Pipeline phase 2)', 
                                 parents=[universal_parser, group_parser, phased_parser])

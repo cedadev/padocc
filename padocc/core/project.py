@@ -491,6 +491,7 @@ class ProjectOperation(
             move_to: str,
             thorough: bool = False,
             version_separator: str = None,
+            final_delete: bool = False,
             **kwargs) -> None:
         """
         Move project to a completeness directory
@@ -556,7 +557,7 @@ class ProjectOperation(
             self.update_status('complete','Success')
         self.save_files()
 
-        if self._forceful:
+        if final_delete:
             self.delete_project(ask=False)
 
     def migrate(cls, newgroupID: str):
