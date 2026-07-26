@@ -1218,6 +1218,88 @@ class KerchunkStore(GenericStore):
             df.to_parquet(file)
 
 
+class IcechunkStore(GenericStore):
+    """
+    Filehandler for Icechunk stores in PADOCC.
+
+    Unlike a Zarr store, an Icechunk store holding virtual references does not
+    contain the chunk data. Opening it therefore requires the source file list,
+    so the virtual chunk containers can be reconstructed and authorised.
+
+    Added behaviours
+    ----------------
+
+    1. Open dataset - opens the Icechunk store's main branch.
+    """
+
+    def __init__(
+            self,
+            parent_dir: str,
+            store_name: str,
+            allfiles: Union[list,None] = None,
+            **kwargs
+        ) -> None:
+
+        self._allfiles = allfiles or []
+
+        super().__init__(
+            parent_dir, store_name,
+            metadata_name=None,
+            extension='icechunk',
+            **kwargs)
+
+    def __repr__(self) -> str:
+        """Programmatic representation"""
+        return f'<PADOCC IcechunkStore: {format_str(self._store_name,10)}>'
+
+    @property
+    def filepath(self) -> str:
+        """
+        Path to the store, under the name used by file-based filehandlers.
+
+        ``_determine_version`` inspects ``self.dataset.filepath`` without knowing
+        whether the product is a file or a store directory.
+        """
+        return self.store_path
+
+    @property
+    def allfiles(self) -> list:
+        """The source files this store holds virtual references to."""
+        return self._allfiles
+
+    @allfiles.setter
+    def allfiles(self, value: list) -> None:
+        self._allfiles = list(value)
+
+    def open_dataset(self, **kwargs) -> xr.Dataset:
+        """
+        Open the Icechunk store as an xarray dataset.
+
+        :returns:   (obj) The dataset from the tip of the main branch.
+        """
+
+        from padocc.phases.icechunk_store import open_virtual_repo
+
+        repo = open_virtual_repo(self.store_path, self._allfiles)
+        session = repo.readonly_session('main')
+
+        return xr.open_dataset(
+            session.store, engine='zarr', consolidated=False, **kwargs)
+
+    def get_meta(self) -> dict:
+        """
+        Metadata lives in the Zarr group attributes rather than a sidecar file.
+        """
+        return dict(self.open_dataset().attrs)
+
+    def set_meta(self, values: dict):
+        """Not yet implemented for Icechunk stores."""
+        raise NotImplementedError(
+            'Setting metadata on an Icechunk store requires a new commit - '
+            'not yet supported by PADOCC.'
+        )
+
+
 class LogFileHandler(ListFileHandler):
     """Log File handler for padocc phase logs."""
     description = "Log File handler for padocc phase logs."

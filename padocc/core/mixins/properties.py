@@ -248,7 +248,8 @@ class PropertiesMixin:
         type_map = {
             'kerchunk': ['json','parq'],
             'zarr':[None],
-            'CFA':[None]
+            'CFA':[None],
+            'icechunk':[None]
         }
 
         if value is None:

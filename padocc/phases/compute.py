@@ -22,7 +22,8 @@ from padocc.core.utils import find_closest, make_tuple, timestamp
 from padocc.phases.validate import ValidateDatasets
 from padocc.core.logs import levels, set_verbose
 
-from padocc.phases.aggregate import virtualise, mzz_combine, padocc_combine
+from padocc.phases.aggregate import (virtualise, virtualise_icechunk,
+                                     mzz_combine, padocc_combine)
 
 import warnings
 
@@ -1498,7 +1499,8 @@ class KerchunkDS(ComputeOperation):
                             data_vars=agg_vars,
                             nfiles=self.limiter,
                             logger=self.logger,
-                            allfiles=self.allfiles.get())
+                            allfiles=self.allfiles.get(),
+                            zattrs=self.temp_zattrs.get())
                         break
                     except ConcatFatalError as err:
                         raise err
@@ -1551,6 +1553,7 @@ class KerchunkDS(ComputeOperation):
 
         # Identify variables to be checked
         if self.drop_vars:
+            variables = [r.split('/')[0] for r in ref['refs'].keys() if '.zarray' in r]
             checklist = [f'{v}/.zarray' for v in variables if v not in self.drop_vars]
         elif self.base_cfg['data_properties']['aggregated_vars'] != 'Unknown':
             variables = self.base_cfg['data_properties']['aggregated_vars']
@@ -1767,28 +1770,108 @@ class ZarrDS(ComputeOperation):
 
         return concat_dim_rechunk, dim_sizes, cpf/self.limiter, volume/self.limiter
 
-class IcechunkDS(ComputeOperation):
+class IcechunkDS(KerchunkDS):
+    """
+    Compute operation producing a virtual Icechunk store.
 
-    def _run(self, 
-            compute_subset: Union[int,None] = None,
-            compute_total: Union[int,None] = None,
-            **kwargs) -> bool:
+    Subclasses ``KerchunkDS`` because the per-file Kerchunk caches it produces
+    are exactly the input the Icechunk aggregation consumes. Driver selection,
+    shape checking and metadata correction are therefore shared with the
+    Kerchunk format rather than reimplemented, which keeps the two outputs on
+    the same pipeline.
 
-        subset = False
-        if compute_subset is not None:
-            subset = True
+    Only the final serialisation differs, in ``_combine_and_save``.
+    """
 
-            self.detail_cfg['compute_subsets'] = compute_total
+    def _determine_version(self):
+        """
+        Apply the icechunk cloud format before the existing-product check.
 
-        lim0, lim1 = self._determine_limits(
-            self.allfiles.get(),
-            compute_subset,
-            compute_total)
+        ``ProjectOperation.run`` does not set the requested cloud format until
+        after the operation has been constructed, but the version check runs
+        during construction and resolves ``self.dataset`` from whatever format
+        the scan phase recorded. Without this, computing icechunk for a project
+        already computed as kerchunk reports a version clash against the
+        kerchunk product, which is a different output entirely.
+        """
 
-        # Run CFA in super class.
-        cfa_status, ordering = super()._run(lim0=lim0, lim1=lim1, subset=subset, **kwargs)
+        if self.cloud_format != 'icechunk':
+            self.cloud_format = 'icechunk'
 
-        return True
+        super()._determine_version()
+
+    def _combine_and_save(
+            self,
+            refs: dict,
+            aggregator: Union[str,None] = None,
+            b64vars: Union[list,None] = None
+        ) -> None:
+        """
+        Write the combined references to an Icechunk store.
+
+        Icechunk has a single aggregation route (VirtualiZarr) - the PADOCC
+        aggregator and Kerchunk MultiZarrToZarr fallbacks used by ``KerchunkDS``
+        both emit Kerchunk-shaped output and do not apply here.
+
+        :param refs:    (dict) The set of generated references.
+        """
+
+        self.logger.info('Starting concatenation of refs')
+
+        kwargs = self.detail_cfg.get('kwargs', {})
+        self.combine_kwargs = self.combine_kwargs or kwargs.get('combine_kwargs',{})
+
+        if not self.combine_kwargs.get('concat_dims', False):
+            self._determine_dim_specs()
+
+        if not self.combine_kwargs.get('concat_dims', False):
+            raise NotImplementedError(
+                'No concatenation dimensions determined - unsupported for '
+                'icechunk conversion.'
+            )
+
+        agg_vars = self.combine_kwargs.get('aggregated_vars', None)
+        if agg_vars is None:
+            agg_vars = self.base_cfg['data_properties'].get('aggregated_vars')
+
+        t1 = datetime.now()
+
+        if not self.icstore.is_empty:
+            if self._forceful or self._thorough:
+                self.icstore.clear()
+            else:
+                raise ValueError(
+                    'Unable to write icechunk store - store already exists '
+                    'and no overwrite plan has been given. Use '
+                    '-f or -Q on the commandline to clear or overwrite '
+                    'existing store'
+                )
+
+        self.virtualizarr = True
+        self.padocc_aggregation = False
+        self.kerchunk_aggregation = False
+
+        if self._dryrun:
+            self.logger.info('Skipped writing to icechunk store')
+        else:
+            virtualise_icechunk(
+                f'{self.dir}/cache/',
+                store_path=self.icstore.store_path,
+                agg_dims=self.combine_kwargs['concat_dims'],
+                data_vars=agg_vars,
+                nfiles=self.limiter,
+                logger=self.logger,
+                allfiles=self.allfiles.get(),
+                zattrs=self.temp_zattrs.get(),
+            )
+
+        self.concat_time = (datetime.now()-t1).total_seconds()/self.limiter
+        self.detail_cfg['kwargs']['combine_kwargs'] = self.combine_kwargs
+        self.detail_cfg.save()
+
+        if not self._dryrun:
+            self._collect_details()
+            self.logger.info("Details updated in detail-cfg.json")
 
 if __name__ == '__main__':
     print('Serial Processor for Kerchunk Pipeline')

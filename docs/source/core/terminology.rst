@@ -9,7 +9,7 @@ This section is designed as a quick reference for commonly used terms in PADOCC.
 
 * **Project**: The term for a set of native files to be aggregated into a single cloud product. PADOCC does not use ``dataset`` for this term as that can refer to the individual files in some instances.
 * **Group**: A group of projects to be acted upon in parallel. The grouping of projects is arbitrary and defined only by the user. Projects can be transferred between groups if needed.
-* **Product**: The final output of PADOCC for a given project, typically this will be a kerchunk file/store or a zarr store. This is typically referred to as a Cloud product, or just product for short.
+* **Product**: The final output of PADOCC for a given project, typically this will be a kerchunk file/store, a zarr store or an icechunk store. This is typically referred to as a Cloud product, or just product for short.
 * **Revision**: The version number and cloud format identifier given by PADOCC to each output product (See below.)
 * **Aggregation**: The process of combining multiple source files into a larger dataset, either virtual or 'real'
 * **Virtualisation**: Aggregation of multiple source files into an explicitly virtual dataset, using either ``Kerchunk`` or ``VirtualiZarr``.
@@ -22,7 +22,7 @@ The PADOCC revision numbers for each product are auto-generated using the follow
  * All projects begin with the revision number ``1.0``.
  * The first number denotes major updates to the product, for instance where a data source file has been replaced.
  * The second number denotes minor changes like alterations to attributes and metadata.
- * The cloud format ``k`` or ``z`` comes before the version number, as well as an ``r`` letter which indicates that the file is ``remote-enabled``. This occurs automatically for kerchunk files that have had 'download links' applied - from the command line this can be done as part of the completion workflow.
+ * The cloud format ``k``, ``z`` or ``i`` comes before the version number, as well as an ``r`` letter which indicates that the file is ``remote-enabled``. This occurs automatically for kerchunk files that have had 'download links' applied - from the command line this can be done as part of the completion workflow.
  * Repeated computations using different aggregators will automatically increment the minor version.
 
 Virtualisation in PADOCC (12.08.2025)
@@ -51,6 +51,44 @@ VirtualiZarr also occasionally causes unexplained chunk reference anomalies that
 - Missing dimension segments: These are recorded as ValidationErrors in the ``validate`` phase, where a sample from one of the source files cannot be located in the combined product file.
 
 Use ``--aggregator V`` to specifically compute using this aggregation method.
+
+Icechunk
+--------
+
+Icechunk is a transactional storage engine for Zarr, and is PADOCC's third
+virtualisation output alongside kerchunk JSON and parquet. Use
+``-C icechunk`` on the command line, or ``mode='icechunk'`` in the API.
+
+The compute phase reuses the kerchunk pipeline in full: per-file references are
+cached exactly as for ``-C kerchunk``, then combined with VirtualiZarr and
+written into an Icechunk repository rather than serialised to a kerchunk file.
+The PADOCC and MultiZarrToZarr aggregators do not apply, as both emit
+kerchunk-shaped output.
+
+The product is a **directory** (``i<version>.icechunk``) rather than a single
+file, and holds *virtual* references: byte ranges into the source files, with no
+copy of the data. Two consequences follow.
+
+**The source files must remain in place, at the paths they had at compute time.**
+Moving or deleting them leaves a store that opens cleanly and then errors as
+soon as any chunk is read.
+
+**Reading requires the source file list.** Icechunk resolves each virtual chunk
+through a *virtual chunk container*, matched on a URL prefix and separately
+authorised at read time. PADOCC derives both from the project's ``allfiles``, so
+the store is opened through the project rather than through Icechunk directly:
+
+.. code::
+
+    project.cloud_format = 'icechunk'
+    ds = project.dataset.open_dataset()
+
+Local (``file://``) and anonymous ``http(s)://`` sources are supported. Because
+containers are keyed on a prefix, one container covers every file under a given
+directory or host; there is deliberately no container per file.
+
+Multi-dimensional aggregation is not supported, matching the limitation of the
+PADOCC aggregator.
 
 Groups in PADOCC
 ================

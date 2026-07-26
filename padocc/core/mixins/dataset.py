@@ -7,8 +7,8 @@ from typing import Any, Callable, Union
 
 import xarray as xr
 
-from ..filehandlers import (CFADataset, GenericStore, KerchunkFile,
-                            KerchunkStore, ZarrStore)
+from ..filehandlers import (CFADataset, GenericStore, IcechunkStore,
+                            KerchunkFile, KerchunkStore, ZarrStore)
 from ..utils import extract_json
 
 
@@ -42,6 +42,7 @@ class DatasetHandlerMixin:
         func(' > project.kstore - Kerchunk (Parquet) Filehandler property')
         func(' > project.cfa_dataset - CFA Filehandler property')
         func(' > project.zstore - Zarr Filehandler property')
+        func(' > project.icstore - Icechunk Filehandler property')
         func(' > project.update_attribute() - Update an attribute within the metadata')
 
     def _disconnect_ds_filehandlers(self):
@@ -49,6 +50,7 @@ class DatasetHandlerMixin:
         self._kfile = None
         self._kstore = None
         self._zstore = None
+        self._icstore = None
         self._cfa_dataset = None
 
     def save_ds_filehandlers(self):
@@ -128,6 +130,8 @@ class DatasetHandlerMixin:
                 return self.kfile
         elif self.cloud_format == 'zarr':
             return self.zstore
+        elif self.cloud_format == 'icechunk':
+            return self.icstore
         elif self.cloud_format == 'CFA':
             return self.cfa_dataset
         else:
@@ -182,6 +186,23 @@ class DatasetHandlerMixin:
             )
 
         return self._zstore
+
+    @property
+    def icstore(self) -> Union[IcechunkStore, None]:
+        """
+        Retrieve the filehandler for the icechunk store
+        """
+
+        if self._icstore is None:
+            self._icstore = IcechunkStore(
+                self.dir,
+                self.outproduct,
+                allfiles=self.allfiles.get(),
+                logger=self.logger,
+                **self.fh_kwargs,
+            )
+
+        return self._icstore
 
     def update_attribute(
             self, 

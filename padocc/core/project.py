@@ -167,6 +167,7 @@ class ProjectOperation(
         self._kfile  = None
         self._kstore = None
         self._zstore = None
+        self._icstore = None
         self._cfa_dataset = None
         self._remote = False
 

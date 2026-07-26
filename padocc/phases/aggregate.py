@@ -41,7 +41,29 @@ MAPPINGS = {
     '<i4':'<i'
 }
 
-def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list, nfiles: int, logger, allfiles: list) -> None:
+def _combine_from_cache(cache_dir: str, agg_dims: list, data_vars: list, nfiles: int, logger, zattrs: Union[dict,None] = None) -> xr.Dataset:
+    """
+    Open PADOCC's per-file Kerchunk caches as virtual datasets and combine them.
+
+    Shared by the Kerchunk and Icechunk serialisers - the two formats differ only
+    in how the combined virtual dataset is written out.
+
+    :param cache_dir:   (str) Directory holding the per-file Kerchunk JSON caches.
+
+    :param agg_dims:    (list) Dimensions to concatenate along.
+
+    :param data_vars:   (list) Data variables to aggregate.
+
+    :param nfiles:      (int) Number of cache files expected.
+
+    :param logger:      (obj) Logger for progress reporting.
+
+    :param zattrs:      (dict) Corrected global attributes, as produced by
+                        ``_correct_metadata``. Replaces the combined attributes
+                        wholesale, matching ``mzz_combine``/``padocc_combine``.
+
+    :returns:           (obj) The combined virtual xarray Dataset.
+    """
 
     logger.info('VirtualiZarr: Starting Concatenation')
 
@@ -61,7 +83,12 @@ def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list
     store = from_url("file://")
     registry = ObjectStoreRegistry({"file://": store})
     registry.register(file_url, store)
-    parser = KerchunkJSONParser()
+
+    # Kerchunk records source paths exactly as they were given to the converter,
+    # so a project initialised with relative paths produces relative references.
+    # VirtualiZarr requires absolute posix paths or URIs in the manifest and
+    # rejects the whole dataset without an fs_root to qualify them against.
+    parser = KerchunkJSONParser(fs_root=f'file://{os.getcwd()}/')
 
     vds = []
     for f in cachekerchunk:
@@ -84,31 +111,69 @@ def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list
     except Exception as err:
         raise err #ValueError('Kerchunk Concatenation failed.')
 
+    if zattrs is not None:
+        # combine_attrs='override' takes the first file's attributes verbatim,
+        # discarding the reconciliation _correct_metadata performed across the
+        # whole fileset. The Kerchunk and PADOCC aggregators apply it here too.
+        combined_vds.attrs = dict(zattrs)
+
+    return combined_vds
+
+def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list, nfiles: int, logger, allfiles: list, zattrs: Union[dict,None] = None) -> None:
+
+    combined_vds = _combine_from_cache(cache_dir, agg_dims, data_vars, nfiles, logger, zattrs=zattrs)
+
     logger.debug('VirtualiZarr: Virtualising combined dataset')
     try:
-        # TESTING
-        # import icechunk
-
-        # storage = icechunk.local_filesystem_storage(f'/home/users/dwest77/cedadev/padocc/data/{output_file.split("/")[-1]}.ice')
-        # config = icechunk.RepositoryConfig.default()
-
-        # containers = {}
-        # for file in allfiles:
-        #     uri = f'file://{file}'
-        #     containers[uri] = icechunk.VirtualChunkContainer(
-        #         url_prefix=uri,
-        #         store=icechunk.local_filesystem_storage(uri)
-        #     )
-        # config.set_virtual_chunk_container(containers)
-
-        # repo = icechunk.Repository.create(storage, config)
-        # session=repo.writable_session('main')
-
-        # combined_vds.virtualize.to_icechunk(session.store)
-
-        combined_vds.virtualize.to_kerchunk(output_file, format='json')
+        combined_vds.vz.to_kerchunk(output_file, format='json')
     except:
         raise ValueError('Kerchunk serialisation failed.')
+
+def virtualise_icechunk(cache_dir: str, store_path: str, agg_dims: list, data_vars: list, nfiles: int, logger, allfiles: list, zattrs: Union[dict,None] = None) -> str:
+    """
+    Combine PADOCC's Kerchunk caches and write them to an Icechunk store.
+
+    The chunk references are virtual: the store records byte ranges into the
+    source files rather than copying any data, so ``allfiles`` is needed to
+    configure the virtual chunk containers that make those references resolvable.
+
+    :param cache_dir:   (str) Directory holding the per-file Kerchunk JSON caches.
+
+    :param store_path:  (str) Directory for the Icechunk repository.
+
+    :param agg_dims:    (list) Dimensions to concatenate along.
+
+    :param data_vars:   (list) Data variables to aggregate.
+
+    :param nfiles:      (int) Number of cache files expected.
+
+    :param logger:      (obj) Logger for progress reporting.
+
+    :param allfiles:    (list) The native source files being aggregated.
+
+    :param zattrs:      (dict) Corrected global attributes from ``_correct_metadata``.
+
+    :returns:           (str) The id of the committed snapshot.
+    """
+
+    # Imported here rather than at module scope: icechunk requires Python 3.12,
+    # while PADOCC supports 3.11, so it is an optional dependency and importing
+    # padocc.phases must not depend on it.
+    from padocc.phases.icechunk_store import write_virtual_dataset
+
+    combined_vds = _combine_from_cache(cache_dir, agg_dims, data_vars, nfiles, logger, zattrs=zattrs)
+
+    logger.debug('VirtualiZarr: Writing combined dataset to Icechunk')
+    try:
+        return write_virtual_dataset(
+            combined_vds,
+            store_path,
+            allfiles,
+            message=f'PADOCC aggregation of {nfiles} files',
+            logger=logger,
+        )
+    except Exception as err:
+        raise ValueError(f'Icechunk serialisation failed - {err}')
 
 def mzz_combine(refs: list, output_file: str, concat_dims: list, identical_dims: list, zattrs: dict, fileset: list) -> None:
     """
