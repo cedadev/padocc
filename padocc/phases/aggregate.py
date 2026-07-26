@@ -41,7 +41,7 @@ MAPPINGS = {
     '<i4':'<i'
 }
 
-def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list, nfiles: int, logger, allfiles: list) -> None:
+def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list, nfiles: int, logger, allfiles: list, zattrs: Union[dict,None] = None) -> None:
 
     logger.info('VirtualiZarr: Starting Concatenation')
 
@@ -61,7 +61,11 @@ def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list
     store = from_url("file://")
     registry = ObjectStoreRegistry({"file://": store})
     registry.register(file_url, store)
-    parser = KerchunkJSONParser()
+    # Kerchunk records source paths exactly as they were given to the converter,
+    # so a project initialised with relative paths produces relative references.
+    # VirtualiZarr requires absolute posix paths or URIs in the manifest and
+    # rejects the whole dataset without an fs_root to qualify them against.
+    parser = KerchunkJSONParser(fs_root=f'file://{os.getcwd()}/')
 
     vds = []
     for f in cachekerchunk:
@@ -83,6 +87,12 @@ def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list
         combined_vds = xr.combine_nested(vds, concat_dim=agg_dims, data_vars=data_vars, coords='minimal',compat='override', combine_attrs='override')
     except Exception as err:
         raise err #ValueError('Kerchunk Concatenation failed.')
+
+    if zattrs is not None:
+        # combine_attrs='override' takes the first file's attributes verbatim,
+        # discarding the reconciliation _correct_metadata performed across the
+        # whole fileset. The Kerchunk and PADOCC aggregators apply it here too.
+        combined_vds.attrs = dict(zattrs)
 
     logger.debug('VirtualiZarr: Virtualising combined dataset')
     try:
@@ -106,7 +116,7 @@ def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list
 
         # combined_vds.virtualize.to_icechunk(session.store)
 
-        combined_vds.virtualize.to_kerchunk(output_file, format='json')
+        combined_vds.vz.to_kerchunk(output_file, format='json')
     except:
         raise ValueError('Kerchunk serialisation failed.')
 

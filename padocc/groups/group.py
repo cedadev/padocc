@@ -520,6 +520,7 @@ class GroupOperation(
             proj_code, self.workdir, groupID=self.groupID,
             verbose=self._verbose,
             thorough=self._thorough,
+            forceful=self._forceful,
             bypass=bypass, **kwargs
         )
 

@@ -1498,7 +1498,8 @@ class KerchunkDS(ComputeOperation):
                             data_vars=agg_vars,
                             nfiles=self.limiter,
                             logger=self.logger,
-                            allfiles=self.allfiles.get())
+                            allfiles=self.allfiles.get(),
+                            zattrs=self.temp_zattrs.get())
                         break
                     except ConcatFatalError as err:
                         raise err
@@ -1551,6 +1552,7 @@ class KerchunkDS(ComputeOperation):
 
         # Identify variables to be checked
         if self.drop_vars:
+            variables = [r.split('/')[0] for r in ref['refs'].keys() if '.zarray' in r]
             checklist = [f'{v}/.zarray' for v in variables if v not in self.drop_vars]
         elif self.base_cfg['data_properties']['aggregated_vars'] != 'Unknown':
             variables = self.base_cfg['data_properties']['aggregated_vars']
