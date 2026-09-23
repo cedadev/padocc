@@ -139,7 +139,7 @@ class PropertiesMixin:
         where they are renamed with the project code
         and revision for the actual dataset.
         """
-        return f'{self.proj_code}{version_separator}{self.revision}'
+        return f'{self.proj_code}{version_separator}{self.cloud_format_id}{self.revision}'
 
     @property
     def outproduct(self) -> str:
@@ -149,10 +149,16 @@ class PropertiesMixin:
         Revision takes into account cloud format and
         type where applicable.
         """
-        vn = f'{self.revision}a'
+        vn = f'{self.cloud_format_id}{self.revision}a'
         if self._is_trial:
             vn = f'trial-{vn}'
         return vn
+
+    @property
+    def cloud_format_id(self) -> str:
+        if self.cloud_format is None:
+            return
+        return self.cloud_format[0]
     
     @property
     def remote(self) -> bool:
@@ -191,8 +197,8 @@ class PropertiesMixin:
             )
         
         if self.remote:
-            return ''.join((self.cloud_format[0],'r',self.version_no))
-        return ''.join((self.cloud_format[0],self.version_no))
+            return ''.join(('r',self.version_no))
+        return str(self.version_no)
         
     @property
     def version_no(self) -> str:
