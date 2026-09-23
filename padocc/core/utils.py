@@ -216,7 +216,7 @@ def get_attribute(env: str, args, value: str) -> str:
                 f'Env : "{os.getenv(env)}"'
                 f'User: "{value}')
             value = os.getenv(env)
-        return value
+        return getattr(args,value)
 
 def format_str(
         string: Any, 
