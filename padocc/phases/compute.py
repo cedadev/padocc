@@ -37,8 +37,6 @@ from kerchunk.netCDF3 import NetCDF3ToZarr
 from kerchunk.tiff import TiffToZarr
 from kerchunk.grib2 import GribToZarr
 
-CONCAT_MSG = 'See individual files for more details'    
-
 class KerchunkConverter(LoggedOperation):
     """Class for converting a single file to a Kerchunk reference object. Handles known
     or unknown file types (NetCDF3/4 versions)."""
@@ -172,7 +170,7 @@ class ComputeOperation(ProjectOperation):
             groupID   : str = None,
             stage     : str = 'in_progress',
             thorough    : bool = None,
-            concat_msg  : str = CONCAT_MSG,
+            concat_msg  : dict = None,
             limiter     : int = None, 
             skip_concat : bool = False, 
             label : str = 'compute',
@@ -194,7 +192,7 @@ class ComputeOperation(ProjectOperation):
         :param thorough:        (bool) From args.quality - if True will create all files 
             from scratch, otherwise saved refs from previous runs will be loaded.
         
-        :param concat_msg:      (str) Value displayed as global attribute for any attributes 
+        :param concat_msg:      (dict) Mapping for concat messages for any attributes 
             that differ across the set of files, instead of a list of the differences,
             this message will be used, default can be found above.
 
@@ -228,8 +226,6 @@ class ComputeOperation(ProjectOperation):
             label=label,
             **kwargs)
         
-        
-
         self._manual_combine_kwargs = { # Applied normally
             'identical_dims': None,
             'concat_dims': None
@@ -239,7 +235,7 @@ class ComputeOperation(ProjectOperation):
 
         self.logger.debug('Starting variable definitions')
 
-        self.concat_msg  = concat_msg
+        self.concat_msg  = concat_msg or {}
         self.skip_concat = skip_concat
 
         self.stage = stage
@@ -287,6 +283,9 @@ class ComputeOperation(ProjectOperation):
         self.pre_kwargs     = {}
 
         self.keep_vars = self.base_cfg.get('keep_vars',None)
+
+        if self.keep_vars == [] or self.keep_vars == [""]:
+            self.keep_vars = 'all'
         self.drop_vars = None
 
         self.special_attrs = {}
@@ -398,7 +397,7 @@ class ComputeOperation(ProjectOperation):
                 self.allfiles.get(),
                 compute_subset,
                 compute_total)
-            
+        
         # Errors for final part as lim1 is None
         if lim1 is None:
             lim1 = len(self.allfiles)
@@ -418,6 +417,9 @@ class ComputeOperation(ProjectOperation):
         if parallel:
             if not subset or lim0 == 0:
                 self.update_status(self.phase, 'Pending', jobid=self._logid)
+            else:
+                # Subset Deployed via Group Allocations
+                pass
         elif subset:
             # Running a subset in non-parallel (manual rerun)
             self.update_status(self.phase, 'Pending', jobid=self._logid)
@@ -437,8 +439,12 @@ class ComputeOperation(ProjectOperation):
             self.save_files()
             return 'Fatal', False
 
+        if results.get('skipped'):
+            self.detail_cfg['CFA'] = False
+            return 'Skipped', False
+
         # Check results values
-        success = len(results.keys()) > 0 or results.get('skipped')
+        success = len(results.keys()) > 0
         for s in results.values():
             if s == 'Unknown':
                 success = False
@@ -506,6 +512,10 @@ class ComputeOperation(ProjectOperation):
             else:
                 files = self.allfiles.get()[lim0:lim1]
 
+            if len(files) < 2:
+                self.logger.info("CFA Aggregation for less than 2 files - skipped")
+                return {'skipped':True}, True
+
             self.logger.info(f"Starting CFA Computation - {lim0} to {lim1}")
 
             if subset and self._thorough:
@@ -515,7 +525,11 @@ class ComputeOperation(ProjectOperation):
 
             set_verbose(self._verbose, 'cfapyx')
             cfa = CFANetCDF(files) # Add instance logger here.
-            cfa.create()
+
+            # Aggregation-specific updates here
+            cfa.create(updates={
+                'aggregation_date': datetime.strftime(datetime.now(),'%Y-%m-%dT%H:%M:%SZ')
+            })
 
             # Allow extensions to reset the native file order
             location = cfa.location
@@ -620,12 +634,12 @@ class ComputeOperation(ProjectOperation):
         """
         Determine the limits to apply to this dataset
         """
-        lim0 = 0
-        lim1 = self.limiter
+        lim0 = compute_subset or 0
+        lim1 = compute_total or self.limiter
 
         if compute_subset is not None:
             try:
-                self.skip_concat = compute_subset[0] != 'c'
+                self.skip_concat = str(compute_subset)[0] != 'c'
 
                 cs = int(compute_subset)
                 if not self.skip_concat:
@@ -738,7 +752,6 @@ class ComputeOperation(ProjectOperation):
                 times[k] = [base[k]]
             all_values[k] = []
 
-        nonequal = {}
         # Compare other attribute sets to a starting set 0
         for ref in allzattrs[1:]:
             zattrs = json.loads(ref)
@@ -748,22 +761,45 @@ class ComputeOperation(ProjectOperation):
                     all_values[attr].append(zattrs[attr])
                 else:
                     all_values[attr] = [zattrs[attr]]
+
                 if attr in times:
                     times[attr].append(zattrs[attr])
-                elif attr not in base:
-                    nonequal[attr] = False
-                else:
-                    if base[attr] != zattrs[attr]:
-                        nonequal[attr] = False
 
         # Requires something special for start and end times
         base = {**base, **self._check_time_attributes(times)}
         self.logger.debug('Comparing similar keys')
 
-        for attr in nonequal.keys():
+        for attr, valset in all_values.items():
 
-            base[attr] = self.concat_msg
-            self.special_attrs[attr] = 0
+            uniqueset = []
+            for v in valset:
+                if np.array(v).tobytes() not in uniqueset:
+                    uniqueset.append(np.array(v).tobytes())
+
+            if len(uniqueset) == 1:
+                continue
+            
+            # Obtain the unique values from the list (2n complexity)
+            # THIS FUNCTION DOES NOT WORK, SHOULD NEVER GIVE AN INDEX ERROR BUT IT DOES SOMETIMES
+
+            # Uniqueset is the set of unique bytes-representations for values in valset
+            # Uniqueset is always smaller than or equal to the size of valset
+            vset = []
+            x = 0
+            for u in uniqueset:
+                # While loop handles any skips in the uniqueset
+                while np.array(valset[x]).tobytes() != u:
+                    x += 1
+                vset.append(valset[x])
+                x += 1
+
+            if attr in self.concat_msg or 'all' in self.concat_msg:
+                self.logger.info(f"Substituting attribute '{attr}' for concat message")
+                base[attr] = self.concat_msg.get(attr, self.concat_msg.get('all'))
+                self.special_attrs[attr] = 0
+            else:
+                self.logger.info(f"Compiling values for '{attr}'")
+                base[attr] = list(set(valset))
 
         self.logger.debug('Finished checking similar keys')
         return base
@@ -833,6 +869,8 @@ class ComputeOperation(ProjectOperation):
                     new_zattrs[key] = zattrs[key]
         else:
             new_zattrs = zattrs # No removals required
+
+        new_zattrs['aggregation_date'] = datetime.strftime(datetime.now(),'%Y-%m-%dT%H:%M:%SZ')
 
         self.logger.debug('Finished metadata corrections')
         if not new_zattrs:
@@ -932,9 +970,10 @@ class ComputeOperation(ProjectOperation):
         
         Return a list of their names
         """
-        keep_all = self.keep_vars
+        keep_all = self.keep_vars == 'all'
         all_vars = []
 
+        keep_vars = []
         for chunk in ref['refs'].keys():
             if '.zattrs' not in chunk or '/' not in chunk:
                 continue
@@ -945,12 +984,14 @@ class ComputeOperation(ProjectOperation):
             cinfo = ref['refs'][chunk]
             if isinstance(cinfo, str):
                 cinfo = json.loads(cinfo)
-            
-            if var in self.keep_vars:
-                keep_all += cinfo['_ARRAY_DIMENSIONS']
 
-        self.drop_vars = [a for a in all_vars if a not in keep_all]
-        self.logger.info(f"Determined to drop: {self.drop_vars}")
+            if keep_all or var in self.keep_vars:
+                keep_vars.append(var)
+                keep_vars += cinfo['_ARRAY_DIMENSIONS']
+
+        self.drop_vars = [a for a in all_vars if a not in keep_vars]
+        if self.drop_vars:
+            self.logger.info(f"Drop variables: {self.drop_vars}")
     
     def _drop_vars(self, ref: dict) -> list:
         """
@@ -1044,8 +1085,6 @@ class KerchunkDS(ComputeOperation):
             subset = True
 
             self.detail_cfg['compute_subsets'] = compute_total
-            self.detail_cfg.save()
-
 
         lim0, lim1 = self._determine_limits(
             self.allfiles.get(),
@@ -1210,10 +1249,9 @@ class KerchunkDS(ComputeOperation):
         if len(partials) > 0:
             raise PartialDriverError(filenums=partials)
 
-        if not self.temp_zattrs.get():
-            self.temp_zattrs.set(
-                self._correct_metadata(allzattrs)
-            )
+        self.temp_zattrs.set(
+            self._correct_metadata(allzattrs)
+        )
 
         try:
             if self.success and not self.skip_concat:
@@ -1333,7 +1371,7 @@ class KerchunkDS(ComputeOperation):
 
     def _data_to_json(
             self, 
-            refs: dict, 
+            refs: list, 
             aggregator: Union[str,None] = None,
             b64vars: Union[list,None] = None,
         ) -> None:
@@ -1465,6 +1503,7 @@ class KerchunkDS(ComputeOperation):
                             agg_dims=self.combine_kwargs['concat_dims'],
                             data_vars=agg_vars,
                             nfiles=self.limiter,
+                            zattrs=self.temp_zattrs.get(),
                             logger=self.logger,
                             allfiles=self.allfiles.get())
                         break
@@ -1518,8 +1557,9 @@ class KerchunkDS(ComputeOperation):
             )
 
         # Identify variables to be checked
-        if self.keep_vars:
-            checklist = [f'{v}/.zarray' for v in self.keep_vars]
+        if self.drop_vars:
+            variables = self.base_cfg['data_properties']['aggregated_vars']
+            checklist = [f'{v}/.zarray' for v in variables if v not in self.drop_vars]
         elif self.base_cfg['data_properties']['aggregated_vars'] != 'Unknown':
             variables = self.base_cfg['data_properties']['aggregated_vars']
             checklist = [f'{v}/.zarray' for v in variables]
@@ -1734,6 +1774,29 @@ class ZarrDS(ComputeOperation):
             volume += ds[var].nbytes
 
         return concat_dim_rechunk, dim_sizes, cpf/self.limiter, volume/self.limiter
+
+class IcechunkDS(ComputeOperation):
+
+    def _run(self, 
+            compute_subset: Union[int,None] = None,
+            compute_total: Union[int,None] = None,
+            **kwargs) -> bool:
+
+        subset = False
+        if compute_subset is not None:
+            subset = True
+
+            self.detail_cfg['compute_subsets'] = compute_total
+
+        lim0, lim1 = self._determine_limits(
+            self.allfiles.get(),
+            compute_subset,
+            compute_total)
+
+        # Run CFA in super class.
+        cfa_status, ordering = super()._run(lim0=lim0, lim1=lim1, subset=subset, **kwargs)
+
+        return True
 
 if __name__ == '__main__':
     print('Serial Processor for Kerchunk Pipeline')

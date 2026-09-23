@@ -13,17 +13,13 @@ from padocc.core.filehandlers import CSVFileHandler, ListFileHandler
 from padocc.core.mixins import DirectoryMixin
 from padocc.core.utils import format_str, print_fmt_str
 from padocc.core.errors import MissingVariableError
-from padocc.phases import (KNOWN_PHASES, ComputeOperation, KerchunkDS,
-                           ScanOperation, ValidateOperation, ZarrDS)
+from padocc.phases import (KNOWN_PHASES, phase_map,
+                           ScanOperation, ValidateOperation)
 
 from .mixins import (AllocationsMixin, EvaluationsMixin, InitialisationMixin,
                      ModifiersMixin)
 
-COMPUTE = {
-    'kerchunk':KerchunkDS,
-    'zarr':ZarrDS,
-    'CFA': ComputeOperation,
-}
+COMPUTE = phase_map['compute']
 
 class GroupOperation(
         AllocationsMixin, 
@@ -202,6 +198,8 @@ class GroupOperation(
             thorough: bool = False,
             repeat_id: str = 'main',
             report_location: Union[str,None] = None,
+            version_separator: Union[str,None] = None,
+            final_delete: bool = False,
             **kwargs
         ):
         """
@@ -259,7 +257,9 @@ class GroupOperation(
                 proj_op.export_report(move_to)
 
                 # Export products
-                proj_op.complete_project(move_to, thorough=thorough, **kwargs)
+                proj_op.complete_project(
+                    move_to, thorough=thorough, 
+                    version_separator=version_separator, final_delete=final_delete,**kwargs)
                 self.logger.info(f'{proj}: OK')
             except Exception as err:
                 if self._bypass.skip_subsets:
@@ -514,11 +514,12 @@ class GroupOperation(
 
         ds = COMPUTE[mode]
 
+        kwargs['new_version'] = kwargs.get('new_version') or self.allow_new_version
+
         compute = ds(
             proj_code, self.workdir, groupID=self.groupID,
             verbose=self._verbose,
             thorough=self._thorough,
-            new_version=self.allow_new_version,
             bypass=bypass, **kwargs
         )
 

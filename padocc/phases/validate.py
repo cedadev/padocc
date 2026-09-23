@@ -3,9 +3,10 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
 import json
-import random
 from datetime import datetime
 from typing import Optional, Union
+import math
+import random
 
 import numpy as np
 import xarray as xr
@@ -165,8 +166,8 @@ class PresliceSet:
                     squeeze_dims.append(dslice[1])
                     self._preslice_set[var][dim] = dslice[0]
 
-            self.logger.debug(self._preslice_set[var])
-            self.logger.debug(squeeze_dims)
+            self.logger.debug(f'preslice: {self._preslice_set[var]}')
+            self.logger.debug(f'squeeze dims: {squeeze_dims}')
             da = data_arr.isel(**self._preslice_set[var])
             if len(squeeze_dims) > 0:
                 da = da.squeeze(dim=squeeze_dims, drop=True)
@@ -782,8 +783,16 @@ class ValidateDatasets(LoggedOperation):
                     current = 100
                 if current < 2:
                     current = 2
-            
-            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid, current=current)
+
+            # Limit for max growbox memory usage.
+            max_size = testvar.size * 64
+            max_mem = 2e9 # 2GB
+            if len(testvar.dims) > 0:
+                box_size_limit = math.ceil(max(1, math.pow(max_size/max_mem, 1/len(testvar.dims))))
+            else:
+                box_size_limit = 1
+
+            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid, current=current, box_size_limit=box_size_limit)
 
     def _validate_shapes(self, var: str, test, control, ignore=None):
         """
@@ -914,7 +923,7 @@ class ValidateDatasets(LoggedOperation):
             test: xr.DataArray,
             control: xr.DataArray,
             current : int = 100,
-            recursion_limit : int = 1, 
+            box_size_limit : int = 1, 
             dim_mid: Union[dict,None] = None,
         ) -> bool:
         """
@@ -935,8 +944,8 @@ class ValidateDatasets(LoggedOperation):
             )
             return
 
-        if current <= recursion_limit:
-            self.logger.debug('Maximum recursion depth reached')
+        if current <= box_size_limit:
+            self.logger.debug('Maximum box size reached')
             self.logger.info(f'Validation for {var} not performed')
 
             self._data_report[f'variables,growbox,{var}'] = 'all_nans'
@@ -948,7 +957,7 @@ class ValidateDatasets(LoggedOperation):
         cbox = control[slice_applied]
 
         if check_for_nan(cbox, BypassSwitch(), self.logger, label=var):
-            return self._validate_selection(var, test, control, current-1, recursion_limit=recursion_limit, dim_mid=dim_mid)
+            return self._validate_selection(var, test, control, current-1, box_size_limit=box_size_limit, dim_mid=dim_mid)
         else:
             return self._compare_data(var, slice_applied, tbox, cbox)
 
@@ -1099,7 +1108,6 @@ class ValidateOperation(ProjectOperation):
             self, 
             proj_code,
             workdir,
-            parallel: bool = False,
             **kwargs):
         """
         No current validate-specific parameters
@@ -1107,14 +1115,13 @@ class ValidateOperation(ProjectOperation):
 
         self.phase = 'validate'
         super().__init__(proj_code, workdir, **kwargs)
-        if parallel:
-            self.update_status(self.phase, 'Pending',jobid=self._logid)
 
     def _run(
             self,
             mode: str = 'kerchunk',
             dim_mid: Union[dict,None] = None,
             error_bypass: Union[dict,str,None] = None,
+            parallel: bool = False,
             **kwargs
         ) -> None:
         """
@@ -1123,6 +1130,9 @@ class ValidateOperation(ProjectOperation):
         :param mode:    (str) Cloud format to use, overriding the known cloud format from 
             previous steps.
         """
+        if parallel:
+            self.update_status(self.phase, 'Pending',jobid=self._logid)
+
         self.set_last_run(self.phase, timestamp())
         self.logger.info("Starting validation")
 
@@ -1139,7 +1149,10 @@ class ValidateOperation(ProjectOperation):
         meta_fh = JSONFileHandler(self.dir, 'metadata_report',logger=self.logger, **self.fh_kwargs)
         data_fh = JSONFileHandler(self.dir, 'data_report',logger=self.logger, **self.fh_kwargs)
 
-        self.validate_vars = self.base_cfg.get('keep_vars') or [v for v in test.variables if v not in test.dims]
+        if self.base_cfg.get('keep_vars','all') == 'all':
+            self.validate_vars = [v for v in test.variables if v not in test.dims]
+        else:
+            self.validate_vars = self.base_cfg.get('keep_vars')
 
         concat_dims = self.detail_cfg.get('kwargs',{}).get('combine_kwargs',{}).get('concat_dims',None)
 
@@ -1201,7 +1214,9 @@ class ValidateOperation(ProjectOperation):
         sample, rfnum = self._open_sample(rf=rf)
         vd.replace_dataset(sample, label=self.source_format)
 
-        _ = vd.decode_times_ok()
+        if check == 0:
+            # Only check time decoding for the first file
+            _ = vd.decode_times_ok()
 
         ## 2. Data Check
         # Never decode times when running data validation.    
@@ -1251,7 +1266,7 @@ class ValidateOperation(ProjectOperation):
         
         :param test:     (obj) An xarray dataset representing the cloud product.
         
-        :param sample:   (obj) An xarray dataset representing the source file(s).
+        :param sample:   (obj) An xaxrray dataset representing the source file(s).
         
         :returns:   A slice object to apply to the test dataset to map directly
             to the sample dataset.

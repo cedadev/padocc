@@ -12,12 +12,14 @@ from typing import Union
 import random
 import yaml
 import string
+import math
 import importlib
 
-from padocc.core.logs import LoggedOperation, clear_loggers
+from padocc.core.logs import LoggedOperation
 from padocc.core.utils import phases, BypassSwitch, times, format_str
+from padocc.core.errors import FATAL_ERRORS
 
-from .group import GroupOperation
+from padocc.groups.group import GroupOperation
 
 """
 SHEPARD: (v1.0)
@@ -42,7 +44,8 @@ class ShepardTask:
             old_phase: str, 
             codeset: list, 
             old_allocation: Union[str,None] = None,
-            redo: bool = False
+            redo: bool = False,
+            **kwargs
         ):
         """
         :param fid:     (int) Ordinal number for a given flock within the current set of flocks.
@@ -60,16 +63,30 @@ class ShepardTask:
         self.old_phase = old_phase
         self.codeset = codeset
         self.old_allocation = old_allocation or None
+        self._kwargs = kwargs
 
+        self.new_version = False
         if redo: 
             self.new_phase = old_phase
-        elif old_allocation is None and old_phase != 'validate':
-            self.new_phase = phases[phases.index(old_phase) + 1]
+            self.new_version = True
         else:
-            self.new_phase = old_phase
+            self.new_phase = phases[phases.index(old_phase) + 1]
 
         self.allowed = True
         self.time, self.memory = self.get_allocation()
+
+    @property
+    def kwargs(self):
+        return {
+            'run_kwargs': self._kwargs,
+            'new_version': self.new_version
+        }
+
+    def __len__(self):
+        return len(self.codeset)
+    
+    def display_params(self):
+        return f'{self.time} {self.memory} {self.kwargs}'
 
     @property
     def uid(self):
@@ -129,6 +146,7 @@ class ShepardOperator(LoggedOperation):
             mode: Union[str, None] = None, 
             conf: Union[dict,str,None] = None, 
             verbose: int = 0,
+            dryrun: bool = False,
             parallel: bool = False,
             autolog: bool = False,
         ) -> None:
@@ -148,6 +166,7 @@ class ShepardOperator(LoggedOperation):
         self.log_label = 'shepard-deploy'
 
         self.mode = mode
+        self.dryrun = dryrun
 
         if isinstance(conf, str):
             self.conf = self._load_config(conf)
@@ -193,6 +212,9 @@ class ShepardOperator(LoggedOperation):
                 'Lotus Configurations missing - please set '
                 'LOTUS_CFG environment variable'
             )
+        
+        if not os.path.isdir(f'{self.flock_dir}/rejected'):
+            os.makedirs(f'{self.flock_dir}/rejected')
 
         # Create output directories if they do not already exist.
         if not os.path.isdir(f'{self.complete_dir}/summaries'):
@@ -202,9 +224,16 @@ class ShepardOperator(LoggedOperation):
         if not os.path.isdir(f'{self.complete_dir}/data'):
             os.makedirs(f'{self.complete_dir}/data')
 
-        self.batch_limit = self.conf.get('batch_limit',None) or 100
-        self.source_venv = self.conf.get('source_venv', self.default_source)
+        self.batch_limit: int = self.conf.get('batch_limit',100)
+        self.source_venv: str = self.conf.get('source_venv', self.default_source)
         self.obliterate_quarantine = self.conf.get('obliterate_quarantine',False)
+
+        self.flock_size_limit: int = self.conf.get('flock_size_limit', 100)
+        self.flock_limit: int = self.conf.get('flock_limit', 20)
+        self.sweep_dir: str = self.conf.get('sweep_dir')
+        self.cache_dir: str = self.conf.get('cache_dir')
+        self.deployment_label: str = self.conf.get('deployment_label', 'SHEPARD')
+        self.version_separator: str = self.conf.get('version_separator','_')
 
     @property
     def default_source(self) -> str:
@@ -233,6 +262,83 @@ class ShepardOperator(LoggedOperation):
         Delay between cycling operations
         """
         return 10
+    
+    def _flock_quarantined(self, groupdir):
+        """
+        Determine if a given flock has a .shpignore file in its 
+        group directory."""
+
+        return os.path.isfile(os.path.join(groupdir,'.shpignore'))
+
+    def _find_flocks(self) -> list[str]:
+        """
+        Locate all directories with the proj_codes/main.txt file.
+        """
+        
+        if not os.path.isdir(self.flock_dir):
+            raise ValueError(
+                f'Flock Directory: {self.flock_dir} - inaccessible.'
+            )
+        
+        return [flock for flock in glob.glob(f'{self.flock_dir}/**/proj_codes/main.txt', recursive=True) if 'quarantine' not in flock]
+
+    def _load_config(self, conf: str) -> Union[dict,None]:
+        """
+        Load a conf.yaml file to a dictionary
+        """
+
+        if conf is None:
+            return None
+
+        if os.path.isfile(conf):
+            with open(conf) as f:
+                config = yaml.safe_load(f)
+            return config
+        else:
+            raise FileNotFoundError(f'Config file {conf} unreachable')
+  
+    def _write_summary(
+            self,
+            groupID: str,
+            summary: str
+        ) -> None:
+        """
+        Write the summary for a group out to some location.
+        """
+        with open(f'{self.complete_dir}/summaries/{groupID}_summary.txt','w') as f:
+            f.write(summary)
+
+    def _phase_specific_kwargs(
+            self,
+            phase: str,
+            task_kwargs: dict
+        ) -> dict:
+        """
+        Deliver phase-specific run kwargs.
+        """
+
+        ## Add task kwargs as run_kwargs
+
+        kwargs = task_kwargs or {}
+        match phase:
+            case 'validate':
+                if 'run_kwargs' not in kwargs:
+                    kwargs['run_kwargs'] = {}
+                kwargs['run_kwargs']['input_file'] = self.common_valid
+        
+            case 'scan':
+                kwargs['thorough'] = True
+        
+            case 'compute':
+                kwargs['thorough'] = False
+
+            case 'complete':
+                kwargs['thorough'] = True
+                kwargs['final_delete'] = False
+                kwargs['completion_dir'] = self.complete_dir
+                kwargs['version_separator'] = self.version_separator
+
+        return kwargs
     
     def summarise_flocks(self) -> None:
         """
@@ -268,99 +374,16 @@ class ShepardOperator(LoggedOperation):
                 info.append(format_str(msg, 12))
 
                 flock_err += errored
-            print(f'{format_str(flock.groupID,10)} -> {" |".join(info)}, ET: {flock_err}')
+            print(f'{format_str(flock.groupID,30)} -> {" |".join(info)}, ET: {flock_err}')
             total_errs += flock_err
         print(f'Errors: {total_errs}')
-
-    def scrub_errors(self) -> None:
-        """
-        Identify in each flock any projects that have produced an unexpected error.
-        
-        These projects are backtracked to the start. WARNING: This is an experimental
-        function used to reset the status of whole deployments. Use with great care.
-        """
-
-        for flock in self._init_all_flocks():
-            quarantine_codes = flock.determine_status_sets('!Pending&!Success')
-            self.logger.info(f"Scrub: {len(quarantine_codes)} from {flock.groupID}")
-            # Do this before removing any projects
-            proj_codes = [flock.proj_codes['main'][qc] for qc in quarantine_codes]
-
-            for proj in proj_codes:
-                project = flock[proj]
-                project.status_log.set(
-                    [project.status_log.get()[0]]
-                )
-                project.save_files()
-
-    def quarantine(self) -> None:
-        """
-        Identify in each flock any projects that have produced an unexpected error.
-        
-        These projects are transferred from their host flock to the quarantined flock.
-        """
-
-        quart = GroupOperation(
-            'shp_quarantine',
-            self.flock_dir,
-            label=f'shepard->Qrnt',
-            logid='shepard',
-            verbose=self._verbose,
-        )
-
-        reject_log = []
-        for flock in self._init_all_flocks():
-            quarantine_codes = flock.determine_status_sets('!Pending&!Success')
-            # For each, determine alternative processing step if available.
-            # New function per-project to return:
-            # compute,'V'
-            # compute,'K'
-            # None if no alternative processing step is available
-
-
-
-            self.logger.info(f"Quarantine: {len(quarantine_codes)} from {flock.groupID}")
-            # Do this before removing any projects
-            proj_codes = [flock.proj_codes['main'][qc] for qc in quarantine_codes]
-
-            if not self.obliterate_quarantine:
-                for pc in proj_codes:
-                    flock.transfer_project(
-                        pc,
-                        quart
-                    )
-                
-                quart.save_files()
-                flock.save_files()
-            else:
-                # Obliterating quarantine, save a log file only instead.
-                for pc in proj_codes:
-                    project = flock[pc]
-                    reject_msg = project.status_log.get()[-1]
-                    reject_log.append(f'{pc},{reject_msg}')
-
-                flock.remove_projects(
-                    ','.join(proj_codes),
-                    ask=False
-                )
-
-        if len(reject_log) > 0:
-            now = datetime.now()
-            with open(f"{self.flock_dir}/rejected/{datetime.strftime(now,'%H%M_%d%m%Y')}.csv",'w') as f:
-                f.write('\n'.join(reject_log))
-
-
-    def delete_logs(self) -> None:
-        """
-        Delete logs for all groups
-        """
-        for flock in self._init_all_flocks():
-            flock.delete_logs()
 
     def activate(self) -> None:
         """
         Main operation function to activate the deployment
         """
+
+        self._prepare_projects()
 
         mode = self.mode
 
@@ -400,7 +423,7 @@ class ShepardOperator(LoggedOperation):
 
         if len(task_list) == 0:
             self.logger.info(f'No processes identified: {current}')
-            self._complete_flocks(flocks)
+            self._check_delete_flocks(flocks)
             return
 
         self.logger.info(
@@ -415,7 +438,7 @@ class ShepardOperator(LoggedOperation):
             self.logger.info(
                 f' > Group: {task.groupID}, '
                 f'{label}: {task.old_phase} -> '
-                f'{task.new_phase} [{task.codeset}] ({task.time},{task.memory})'
+                f'{task.new_phase} {len(task.codeset)} datasets ({task.time},{task.memory})'
             )
 
         self.logger.info('Starting processing jobs')
@@ -424,226 +447,177 @@ class ShepardOperator(LoggedOperation):
             self._process_task(task, flocks[task.fid])
 
         self.logger.info('Finished processing jobs')
-        self._complete_flocks(flocks)
+        self._check_delete_flocks(flocks)
 
-    def _complete_flocks(self, flocks: list[GroupOperation]) -> None:
+    def scrub_errors(self) -> None:
         """
-        Run completion steps for candidate flocks.
+        Identify in each flock any projects that have produced an unexpected error.
         
-        Will only complete a whole group at a time, so that the group can be deleted.
+        These projects are backtracked to the start. WARNING: This is an experimental
+        function used to reset the status of whole deployments. Use with great care.
         """
 
-        for flock in flocks:
+        for flock in self._init_all_flocks():
+            quarantine_codes = flock.determine_status_sets('!Pending&!Success&!Warn')
+            self.logger.info(f"Scrub: {len(quarantine_codes)} from {flock.groupID}")
+            # Do this before removing any projects
+            proj_codes = [flock.proj_codes['main'][qc] for qc in quarantine_codes]
 
-            completes = flock.get_codes_by_status()['complete']
-
-            # Candidates for completeness have been validated (not Pending) and succeeded (not Fatal).
-            complete_candidates = flock.determine_status_sets(
-                '!Fatal&!Pending&!Failed&!ValidationError&!AggregationError', 'validate')
-
-            if len(complete_candidates) + len(completes) != len(flock):
-                self.logger.info(f'Flock {flock.groupID}: Not all flock components are in a ready state.')
-                continue
-            else:
-                self.logger.info(f'Flock {flock.groupID}: Accepted for Completion workflow')
-
-                # Summarise and save
-                summary = flock.summarise_data(func=None)
-                self._write_summary(flock.groupID, summary)
-
-                ## Pre-completion scripting
-                if self._pre_completion is not None:
-                    mod = importlib.import_module(self._pre_completion['module'])
-                    func = getattr(mod, self._pre_completion['function'])
-                    func(flock)
-
-                # Complete with thoroughness - complete as job.
-                flock.deploy_parallel(
-                    'complete',
-                    time_allowed='5:00',
-                    memory='1G',
-                    thorough=True,
+            for proj in proj_codes:
+                project = flock[proj]
+                project.status_log.set(
+                    [project.status_log.get()[0]]
                 )
+                project.save_files()
 
-        # Separate check for deletion
-        for flock in flocks:
+    def quarantine_codes(self, proj_codes: list, flock: GroupOperation, quart: Union[GroupOperation,None] = None) -> None:
+
+        if quart is None:
+            quart = GroupOperation(
+                'shp_quarantine',
+                self.flock_dir,
+                label=f'shepard->Qrnt',
+                logid='shepard',
+                verbose=self._verbose,
+            )
+
+        if not self.obliterate_quarantine:
                 
-            complete = flock.get_codes_by_status()['complete']
-            if len(complete) != len(flock):
-                self.logger.info(f'Flock {flock.groupID}: Not all projects ready for deletion.')
-                continue
-
-            # Delete group
-            self.logger.info(f'Flock {flock.groupID}: Accepted for deletion.')
-            flock.delete_group(ask=False)
+            if quart is None:
+                quart = GroupOperation(
+                    'shp_quarantine',
+                    self.flock_dir,
+                    label=f'shepard->Qrnt',
+                    logid='shepard',
+                    verbose=self._verbose,
+                )
+            for pc in proj_codes:
+                flock.transfer_project(
+                    pc,
+                    quart
+                )
             
-    def _write_summary(
-            self,
-            groupID: str,
-            summary: str
-        ) -> None:
-        """
-        Write the summary for a group out to some location.
-        """
-        with open(f'{self.complete_dir}/summaries/{groupID}_summary.txt','w') as f:
-            f.write(summary)
+            quart.save_files()
+            flock.save_files()
+        else:
+            reject_log = []
+            # Obliterating quarantine, save a log file only instead.
+            for pc in proj_codes:
+                project = flock[pc]
+                reject_msg = project.status_log.get()[-1]
+                reject_log.append(f'{project.proj_code},{reject_msg}')
 
-    def _process_task(
-            self, 
-            task: ShepardTask, 
-            flock: GroupOperation):
-        """
-        Process Individual Task Objects.
+            flock.remove_projects(
+                ','.join([str(p) for p in proj_codes]),
+                ask=False
+            )
+            if len(reject_log) > 0:
+                now = datetime.now()
+                with open(f"{self.flock_dir}/rejected/{datetime.strftime(now,'%H%M_%d%m%Y')}.csv",'w') as f:
+                    f.write('\n'.join(reject_log))
 
-        A Shepard Task can be processed to act on a specific group.
+    def quarantine_flocks(self) -> None:
+        """
+        Identify in each flock any projects that have produced an unexpected error.
+        
+        These projects are transferred from their host flock to the quarantined flock.
         """
 
-        if not task.allowed:
-            self.logger.error(f'Task {task.uid} not allowed - time or memory allocation exceeded.')
+        quart = GroupOperation(
+            'shp_quarantine',
+            self.flock_dir,
+            label=f'shepard->Qrnt',
+            logid='shepard',
+            verbose=self._verbose,
+        )
+
+        for flock in self._init_all_flocks():
+            quarantine_codes = flock.determine_status_sets('!Pending&!Success')
+            # For each, determine alternative processing step if available.
+            # New function per-project to return:
+            # compute,'V'
+            # compute,'K'
+            # None if no alternative processing step is available
+
+            self.logger.info(f"Quarantine: {len(quarantine_codes)} from {flock.groupID}")
+            # Do this before removing any projects
+            proj_codes = [flock.proj_codes['main'][qc] for qc in quarantine_codes]
+
+            self.quarantine_codes(proj_codes, flock, quart=quart)
+
+    def delete_logs(self) -> None:
+        """
+        Delete logs for all groups
+        """
+        for flock in self._init_all_flocks():
+            flock.delete_logs()
+
+    def _prepare_projects(self):
+        """
+        Run preparation tasks
+        """
+
+        # 0. Sweeper function
+        if self.sweep_dir:
+            # Transfer projects from sweep_dir to cache_dir
+            if not self.cache_dir:
+                raise ValueError('Cannot sweep where no cache area specified.')
+            
+            manifests = glob.glob(f'{self.sweep_dir}/*.txt')
+            for manifest in manifests:
+                os.system(f'mv {manifest} {self.cache_dir}/')
+
+        # Find manifests from cache dir
+        if self.cache_dir:
+            manifests = glob.glob(f'{self.cache_dir}/*.txt')
+
+        # 1. Initialise new groups
+        if not self.cache_dir or len(manifests) <= 0:
+            self.logger.info('No new manifests detected - skipping')
             return
 
-        new_repeat_id = 'main'
-        # If we are dealing with a subset.
-        if len(task.codeset) != len(flock):
-            new_repeat_id = f'progression_{task.new_phase}_{random_hash(6)}'
-            # Create the new repeat group
-            flock.add_repeat_by_id(
-                new_repeat_id,
-                task.codeset
-            )
+        space_for_flocks = self.flock_limit - len(self._find_flocks())
+        if space_for_flocks <= 0:
+            self.logger.info('No space available for new flocks')
 
-        # Non-parallel deployment.
-        if not self.parallel:
-            flock.run(
-                task.new_phase,
-                repeat_id=new_repeat_id,
-                bypass=self.bypass,
-                run_kwargs=self._phase_specific_kwargs(task.new_phase)
-            )
+        # Always add at least one flock if there's space and manifests pending
+        nflocks    = max(1, math.floor(len(manifests)/self.flock_size_limit))
 
-        # Parallel deployment
-        else:
-            self.logger.info(f'{flock.groupID}:{new_repeat_id} - parallel')
-            flock.deploy_parallel(
-                task.new_phase,
-                self.source_venv,
+        # Add flocks up to free space, or how many we want to add - whichever is smaller.
+        add_flocks = min(space_for_flocks, nflocks)
+        self.logger.info(f'Accommodating {add_flocks} new flock(s)')
+        
+        for fid in range(add_flocks):
+            # Flock name is hash of current datetime
+
+            dt = datetime.now()
+            groupname = f'{self.deployment_label}_{dt.day}_{dt.month}_{dt.year}_{dt.hour}{dt.minute}{dt.second}'
+
+            proj_codes = manifests[fid:fid+self.flock_size_limit]
+            datasets = []
+            for pc in proj_codes:
+                project = pc.split('/')[-1].replace('.txt','')
+                datasets.append(','.join([
+                    f'{project}', # Proj Code
+                    f'{self.cache_dir}/{project}.txt', # Filelist location
+                    '', # Updates
+                    '', # Removals
+                    '' # Variables
+                ]))
+
+            flock = GroupOperation(
+                groupname,
+                self.flock_dir,
+                label=f'shepard->{fid}',
+                logid='shepard',
                 verbose=self._verbose,
-                repeat_id=new_repeat_id,
-                joblabel='SHEPARD',
-                time_allowed=task.time,
-                memory=task.memory,
-                **self._phase_specific_kwargs(task.new_phase)
             )
 
-    def _phase_specific_kwargs(
-            self,
-            phase: str
-        ) -> dict:
-        """
-        Deliver phase-specific run kwargs.
-        """
+            flock.init_group(datasets)
 
-        if phase == 'validate':
-            return {'run_kwargs':{'input_file':self.common_valid}}
-        
-        if phase == 'scan':
-            return {'thorough': True}
-        
-        if phase == 'compute':
-            return {'thorough':False}
-
-        return {}
-
-    def _assemble_task_list(
-            self, 
-            flocks: list[GroupOperation], 
-            batch_limit: int) -> tuple:
-        """
-        Assemble the task list for the retrieved flocks.
-        """
-
-        task_list = []
-        processed_flocks = {}
-        proj_count = 0
-        while proj_count < batch_limit and len(processed_flocks.keys()) < len(flocks):
-
-            fid = random.randint(0, len(flocks)-1)
-            while fid in processed_flocks:
-                fid = random.randint(0, len(flocks)-1)
-
-            # Extract a random flock at a time.
-            flock = flocks[fid]
-
-            # Randomise the set of flocks so we're not missing out any particular flock.
-            status_dict = flock.get_codes_by_status(write=True)
-
-            self.logger.debug(f'Obtained status for flock {fid}')
-            num_datasets = 0
-            for phase in ['init','scan','compute','validate']:
-
-                if phase not in status_dict:
-                    continue
-
-                old_allocations = {}
-
-                if 'JobCancelled' in status_dict[phase]:
-                    # Need to know what was previously run for this phase for this flock.
-                    # Extract last_allocation from each project that can then be incremented.
-
-                    for proj_id in status_dict[phase]['JobCancelled']:
-                        project = flock[proj_id]
-
-                        old_allocation = project.base_cfg.get('last_allocation','')
-                        if old_allocation in old_allocations:
-                            old_allocations[old_allocation].append(proj_id)
-                        else:
-                            old_allocations[old_allocation] = [proj_id]
-
-                if 'Redo' in status_dict[phase]:
-                    task_list.append(
-                        ShepardTask(fid, flock.groupID, phase, status_dict[phase]['Redo'], redo=True)
-                    )
-                    num_datasets += len(status_dict[phase]['Redo'])
-
-                for alloc, codes in old_allocations.items():
-                    task_list.append(
-                        ShepardTask(fid, flock.groupID, phase, codes, old_allocation=alloc)
-                    )
-                    num_datasets += len(codes)
-
-                if phase == 'validate':
-                    # Cannot progress validation here.
-                    continue
-
-                if 'Success' not in status_dict[phase]:
-                    # Cannot progress if there are no successful datasets
-                    continue
-
-                num_codes = len(status_dict[phase]['Success'])
-                if num_codes == 0:
-                    continue
-                num_datasets += num_codes
-
-                task_list.append(
-                        ShepardTask(fid, flock.groupID, phase, status_dict[phase]['Success'])
-                    )
-
-            self.logger.debug(f'Obtained task list for flock {fid}')
-
-            processed_flocks[fid] = num_datasets
-            proj_count += num_datasets
-
-        if len(task_list) > 10000:
-            self.logger.warning(
-                'Group size of more than 10,000 is not recommended, '
-                'batch maximum limit is 10,000'
-            )
-            task_list = task_list[:10000]
-
-        for task in task_list:
-            self.logger.debug(f'{task.new_phase}: {task.codeset}')
-            
-        return task_list, proj_count
+        for manifest in manifests:
+            mfile = manifest.split('/')[-1]
+            os.system(f'rm {self.cache_dir}/{mfile}')
 
     def _init_all_flocks(self) -> list[GroupOperation]:
         """
@@ -651,7 +625,7 @@ class ShepardOperator(LoggedOperation):
         """
         group_proj_codes = self._find_flocks()
         shp_flock = []
-        self.logger.info(f'Discovering {len(group_proj_codes)} flocks')
+        self.logger.info(f'Checking {len(group_proj_codes)} flocks')
         for idx, flock_path in enumerate(group_proj_codes):
             # Flock path is the path to the main.txt proj_code 
             # document for each group.
@@ -675,46 +649,279 @@ class ShepardOperator(LoggedOperation):
                 verbose=self._verbose,
             )
 
-            # Delete all previous flock repeat_ids
-            flock.delete_all_repeat_ids()
-
             shp_flock.append(flock)
 
         return shp_flock
 
-    def _find_flocks(self) -> list[str]:
+    def _process_task(
+            self, 
+            task: ShepardTask, 
+            flock: GroupOperation):
         """
-        Locate all directories with the proj_codes/main.txt file.
-        """
-        
-        if not os.path.isdir(self.flock_dir):
-            raise ValueError(
-                f'Flock Directory: {self.flock_dir} - inaccessible.'
-            )
-        
-        return glob.glob(f'{self.flock_dir}/**/proj_codes/main.txt', recursive=True)
+        Process Individual Task Objects.
 
-    def _flock_quarantined(self, groupdir):
-        """
-        Determine if a given flock has a .shpignore file in its 
-        group directory."""
-
-        return os.path.isfile(os.path.join(groupdir,'.shpignore'))
-
-    def _load_config(self, conf: str) -> Union[dict,None]:
-        """
-        Load a conf.yaml file to a dictionary
+        A Shepard Task can be processed to act on a specific group.
         """
 
-        if conf is None:
-            return None
+        if not task.allowed:
+            self.logger.error(f'Task {task.uid} not allowed - time or memory allocation exceeded.')
+            return
 
-        if os.path.isfile(conf):
-            with open(conf) as f:
-                config = yaml.safe_load(f)
-            return config
+        new_repeat_id = 'main'
+        # If we are dealing with a subset.
+        if len(task.codeset) != len(flock):
+
+            label = 'progress'
+            if task.old_phase == task.new_phase:
+                label = "redo"
+
+            new_repeat_id = f'{label}_{task.new_phase}_{random_hash(6)}'
+            # Create the new repeat group
+            if self.dryrun:
+                self.logger.info(f'DRYRUN: Add new repeat ID {new_repeat_id} for {flock.groupID} with {len(task.codeset)} codes')
+            else:
+                flock.add_repeat_by_id(
+                    new_repeat_id,
+                    task.codeset
+                )
+
+        # Non-parallel deployment.
+        if not self.parallel:
+            if self.dryrun:
+                self.logger.info(f"DRYRUN: Run {task.new_phase} ({new_repeat_id}) for {flock.groupID} ({task.display_params()})")
+            else:
+                flock.run(
+                    task.new_phase,
+                    repeat_id=new_repeat_id,
+                    bypass=self.bypass,
+                    **self._phase_specific_kwargs(task.new_phase, task.kwargs),
+                )
+
+        # Parallel deployment
         else:
-            raise FileNotFoundError(f'Config file {conf} unreachable')
+            self.logger.info(f'{flock.groupID}:{new_repeat_id} - parallel')
+            if self.dryrun:
+                self.logger.info(f"DRYRUN: Deploy Parallel {task.new_phase} ({new_repeat_id}) for {flock.groupID} ({task.display_params()})")
+            else:
+                flock.deploy_parallel(
+                    task.new_phase,
+                    self.source_venv,
+                    verbose=self._verbose,
+                    repeat_id=new_repeat_id,
+                    joblabel='SHEPARD',
+                    time_allowed=task.time,
+                    memory=task.memory,
+                    **self._phase_specific_kwargs(task.new_phase, task.kwargs)
+                )
+
+    def _process_status_phase(
+            self, 
+            fid: str,
+            status: str, 
+            phase: str, 
+            codes: list, 
+            flock: GroupOperation
+        ) -> list[ShepardTask]:
+        """
+        Process progression/repeats for a given phase/status combination
+        """
+
+        old_allocations = {}
+        if len(codes) == 0:
+            return []
+
+        new_tasks = []
+
+        tasksets = {}
+
+        status_core = status.split(')')[-1].split('-')[0].split('_')[0]
+        
+        for proj_id in codes:
+            match status_core:
+                case 'JobCancelled':
+        
+                    # Need to know what was previously run for this phase for this flock.
+                    # Extract last_allocation from each project that can then be incremented.
+
+                    project = flock[proj_id]
+
+                    old_allocation = project.base_cfg.get('last_allocation','')
+
+                    if old_allocation not in old_allocations:
+                        old_allocations.append(old_allocation)
+
+                    aid = old_allocations.index(old_allocation)
+                    taskid = f'{phase}_a{aid}'
+                    
+                    if taskid not in tasksets:
+                        tasksets[taskid] = []
+                    tasksets[taskid].append(proj_id)
+
+                case 'Redo' | 'SubsetDeployed':
+                    taskid = phase
+                    
+                    if taskid not in tasksets:
+                        tasksets[taskid] = []
+                    tasksets[taskid].append(proj_id)
+
+                case 'Pending':
+                    return []
+                case 'Success' | 'Warn':
+                    
+                    nphase = phases[phases.index(phase) + 1]
+                    taskid = nphase
+
+                    if taskid not in tasksets:
+                        tasksets[taskid] = []
+                    tasksets[taskid].append(proj_id)
+
+                case _:
+                    for error in FATAL_ERRORS:
+                        if error in status_core: 
+                            self.logger.info(f'Quarantining {len(codes)} due to fatal error: {status_core}')
+                            self.quarantine_codes(codes, flock)
+                            return []
+
+                    project = flock[proj_id]
+                    # Match errors in a phase
+                    if phase == 'scan':
+                        # Rerun scan with next aggregator if available
+                        new_phase = 'scan'
+                    else:
+                        new_phase = 'compute'
+
+                    next_agg = project.get_next_agg()
+                    if next_agg is not None:
+                        taskid = f'{new_phase}_c{next_agg}'
+                    else:
+                        self.logger.info(f'Quarantining {len(codes)} due to error: {status_core} with no recourse')
+                        self.quarantine_codes(codes, flock)
+                        return []
+                    if taskid not in tasksets:
+                        tasksets[taskid] = []
+                    tasksets[taskid].append(proj_id)    
+
+        # Collect like allocations into the same tasks
+        for taskid, taskset in tasksets.items():
+
+            alloc = None
+            redo = False
+            kwargs = {}
+
+            if '_a' in taskid:
+                alloc = old_allocations[int(taskid.split('_a')[-1])]
+                phase = taskid.split('_')[0]
+                redo=True
+            elif '_r' in taskid:
+                redo = True
+                phase = taskid.split('_')[0]
+
+            elif '_c' in taskid:
+                kwargs = {
+                    'aggregator': taskid.split('_c')[-1],
+                }
+                redo=True
+                phase = taskid.split('_')[0]
+            
+            # If redo is true, label will be redo and phase will not advance
+            # Otherwise phase will advance and label will be `Progression`
+            new_tasks.append(
+                ShepardTask(fid, flock.groupID, phase, taskset, old_allocation=alloc, redo=redo, **kwargs)
+            )
+
+        return new_tasks
+
+    def _assemble_task_list(
+            self, 
+            flocks: list[GroupOperation], 
+            batch_limit: int) -> tuple:
+        """
+        Assemble the task list for the retrieved flocks.
+        """
+
+        task_list = []
+        processed_flocks = []
+        proj_count = 0
+        while proj_count < batch_limit and len(processed_flocks) < len(flocks):
+
+            fid = random.randint(0, len(flocks)-1)
+            while fid in processed_flocks:
+                fid = random.randint(0, len(flocks)-1)
+
+            # Extract a random flock at a time.
+            flock = flocks[fid]
+
+            # Randomise the set of flocks so we're not missing out any particular flock.
+            status_dict = flock.get_codes_by_status(write=True)
+
+            self.logger.debug(f'Obtained status for flock {fid}')
+            exit_loop = False
+            for phase in phases:
+
+                phase_tasks = []
+
+                if phase == 'complete':
+                    continue
+                else:
+                    codesets = status_dict.get(phase, {})
+
+                for status, codes in codesets.items():
+                    new_tasks = self._process_status_phase(fid, status, phase, codes, flock)
+                    for nt in new_tasks:
+                        proj_count += len(nt)
+                        phase_tasks.append(nt)
+
+                        if proj_count >= batch_limit:
+                            exit_loop = True
+                            break
+                    if exit_loop:
+                        break
+                if exit_loop:
+                    break
+
+                if phase == 'validate':
+                    taskset = []
+                    for p in phase_tasks:
+                        if p.new_phase == 'complete':
+                            taskset += p.codeset
+                        else:
+                            task_list.append(p)
+                    task_list.append(
+                        ShepardTask(fid, flock.groupID, 'validate', taskset)
+                    )
+                else:
+                    task_list += phase_tasks
+
+
+            processed_flocks.append(fid)
+
+        for task in task_list:
+            self.logger.debug(f'{task.new_phase}: {task.codeset}')
+            
+        return task_list, proj_count
+
+    def _check_delete_flocks(self, flocks: list[GroupOperation]) -> None:
+        """
+        Run completion steps for candidate flocks.
+        
+        Will only complete a whole group at a time, so that the group can be deleted.
+        """
+
+        # Separate check for deletion
+        for flock in flocks:
+                
+            complete = flock.get_codes_by_status()['complete']
+            if len(complete) != len(flock):
+                self.logger.info(f'Flock {flock.groupID}: Not all projects ready for deletion.')
+                continue
+
+            # Delete group
+            self.logger.info(f'Flock {flock.groupID}: Accepted for deletion.')
+            if self.dryrun:
+                self.logger.info(f"DRYRUN: Deleting {flock.groupID}")
+            else:
+                flock.delete_group(ask=False)
+       
 
 def _get_cmdline_args():
     """
@@ -727,6 +934,7 @@ def _get_cmdline_args():
     parser.add_argument('-v','--verbose', action='count', default=0, help='Set level of verbosity for logs')
     parser.add_argument('--parallel', dest='parallel',action='store_true',help='Add for parallel deployment with SLURM')
     parser.add_argument('--autolog', dest='autolog',action='store_true',help='Auto-generate logs (CRON)')
+    parser.add_argument('-d', '--dryrun', dest='dryrun', action='store_true', help='Run in dryrun mode (no writes)')
 
     args = parser.parse_args()
 
@@ -735,7 +943,8 @@ def _get_cmdline_args():
         'conf': args.conf,
         'verbose': args.verbose,
         'parallel': args.parallel,
-        'autolog': args.autolog
+        'autolog': args.autolog,
+        'dryrun': args.dryrun
     }
 
 def main():
@@ -746,7 +955,7 @@ def main():
     if shepherd.mode == 'delete':
         shepherd.delete_logs()
     elif shepherd.mode == 'quarantine':
-        shepherd.quarantine()
+        shepherd.quarantine_flocks()
     elif shepherd.mode == 'scrub':
         shepherd.scrub_errors()
     elif shepherd.mode == 'status':

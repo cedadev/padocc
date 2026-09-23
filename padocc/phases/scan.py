@@ -134,7 +134,7 @@ class ScanOperation(ProjectOperation):
             workdir   : str,
             groupID   : str = None, 
             label     : str = 'scan',
-            parallel  : bool = False,
+
             **kwargs,
         ) -> None:
 
@@ -144,9 +144,6 @@ class ScanOperation(ProjectOperation):
 
         super().__init__(
             proj_code, workdir, groupID=groupID, label=label,**kwargs)
-        
-        if parallel:
-            self.update_status(self.phase, 'Pending',jobid=self._logid)
 
     def help(self, fn=print):
         super().help(fn=fn)
@@ -159,9 +156,13 @@ class ScanOperation(ProjectOperation):
             mode: str = 'kerchunk', 
             ctype: Union[str,None] = None,
             mem_allowed: str = '100MB',
+            parallel  : bool = False,
             **kwargs
         ) -> None:
         """Main process handler for scanning phase"""
+
+        if parallel:
+            self.update_status(self.phase, 'Pending',jobid=self._logid)
 
         self.set_last_run(self.phase, timestamp())
         self.logger.info(f'Starting scan-{mode} operation for {self.proj_code}')
@@ -181,7 +182,7 @@ class ScanOperation(ProjectOperation):
         props = None
         if self.cfa_enabled or self._thorough:
             self.logger.info(f'Determined {limiter} files to scan (out of {nfiles})')
-            self.logger.info(f'Performing CFA Base Scan (Standard)')
+            self.logger.info('Performing CFA Base Scan (Standard)')
             _, props = self._scan_cfa(limiter=limiter)
 
         if props is not None:
@@ -264,7 +265,6 @@ class ScanOperation(ProjectOperation):
                     std_vars = vars
                 if vars != std_vars:
                     self.logger.warning(f'Variables differ between files - {vars} vs {std_vars}')
-                    is_varwarn = True
 
                 if not std_chunks:
                     std_chunks = varchunks
@@ -320,7 +320,7 @@ class ScanOperation(ProjectOperation):
             verbose=self._verbose
         )
 
-        status = comp._run(compute_subset=0, compute_total=limiter, subset=True, output=False)
+        status = comp._run(compute_subset=None, compute_total=limiter, subset=True, output=False)
 
         if status[0] == 'Success':
             self.logger.info('Determined data properties:')

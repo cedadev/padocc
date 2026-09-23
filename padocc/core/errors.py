@@ -8,6 +8,9 @@ import os
 import traceback
 from typing import Optional, Union
 
+FATAL_ERRORS = [
+    'ConcatFatalError'
+]
 
 def error_handler(
         err : Exception, 
