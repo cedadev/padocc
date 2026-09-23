@@ -5,14 +5,13 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 import json
 import logging
 import os
-import re
 import glob
 from datetime import datetime
 from typing import Iterator, Optional, Union, Any
 import netCDF4
 
-import fsspec
 import xarray as xr
+import numpy as np
 import yaml
 import pandas as pd
 
@@ -605,7 +604,7 @@ class KerchunkFile(JSONFileHandler):
 
         self._xarray_kwargs = xarray_kwargs or {}
 
-    def add_download_link(
+    def make_remote(
             self,
             sub: str = '/',
             replace: str = 'https://dap.ceda.ac.uk/',
@@ -1191,7 +1190,7 @@ class KerchunkStore(GenericStore):
             **default_parquet
         )
     
-    def add_download_link(
+    def make_remote(
             self,
             sub: str = '/',
             replace: str = 'https://dap.ceda.ac.uk/',
@@ -1347,7 +1346,8 @@ class CFADataset(LoggedOperation):
         # All filehandlers are logged operations
         super().__init__(**kwargs)
 
-        self._correct_existing_files()
+        # Not needed anymore
+        #self._correct_existing_files()
 
     def update_history(
             self,
@@ -1377,6 +1377,49 @@ class CFADataset(LoggedOperation):
         attrs['padocc_last_changed'] = now.strftime("%d%m%yT%H%M%S")
 
         self.set_meta(attrs)
+
+    def make_remote(
+            self,
+            sub: str = '/',
+            replace: str = 'https://dap.ceda.ac.uk/',
+            in_place: bool = True,
+            remote: bool = True,
+        ) -> Union[None,dict]:
+
+        if not in_place:
+            raise NotImplementedError('Feature not implemented')
+
+        def recursive_replace(item: str | list):
+            if isinstance(item, str):
+                if item[0:len(sub)] == sub:
+                    item = replace + item[len(sub):]
+                    return item
+            else:
+                return [
+                    recursive_replace(i)
+                    for i in item]
+
+        with netCDF4.Dataset(self.filepath,'r+') as ds:
+            uris = [u for u in list(ds.variables) if 'fragment_uris' in u]
+
+            for uriset in uris:
+                newv = recursive_replace(ds[uriset])
+                match len(ds[uriset].shape):
+                    case 1:
+                        ds[uriset][:] = np.array(newv)
+                    case 2:
+                        ds[uriset][:,:] = np.array(newv)
+                    case 3:
+                        ds[uriset][:,:,:] = np.array(newv)
+                    case 4:
+                        ds[uriset][:,:,:,:] = np.array(newv)
+                    case _:
+                        raise ValueError(
+                            'Too many dimensions to handle replacements in' \
+                            'fragment uri arrays.'
+                        )
+
+        # Close Dataset object with changes made.
 
     @property
     def filepath(self):
