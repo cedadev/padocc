@@ -436,6 +436,7 @@ class ProjectOperation(
             return
         
         self._kfile = None
+        self._cfa_dataset = None
         self.remote = False
         self.save_files()
 
@@ -448,41 +449,66 @@ class ProjectOperation(
 
         Kerchunk - create new remote version.
 
+        CFA - in-place change to remote version.
+
         Zarr - Ignore
         """
 
         if self.remote:
             self.logger.warning("Project has already been switched to remote")
             return
+
+        # Include revision change into the filehandlers for creating a new spawned copy
+        # Set the 'remote' property of the project
+        # Refresh the filehandlers 
+        # Make those filehandlers remote.
+
+        remotify_kerchunk = (self.cloud_format == 'kerchunk')
+        remotify_cfa = (self.cfa_enabled and bool(self.cfa_complete))
+
+        # 1a. Spawn Kerchunk Copy in pipeline
+        if remotify_kerchunk:
+            new_k = os.path.splitext(self.kfile.filepath)[0].replace(
+                'k' + self.version_no, 
+                'kr' + self.version_no)
+
+            if self._thorough and os.path.isfile(new_k):
+                os.system(f'rm {new_k}')
+
+            if not os.path.isfile(new_k):
+                self.kfile.spawn_copy(new_k)
+            self.logger.debug('Spawned copy of Kerchunk file')
+
+        # 1b. Spawn CFA copy in pipeline
+        if remotify_cfa:
+            new_c = f'{self.dir}/cr{self.version_no}'
+
+            # Remove existing versions (all extensions)
+            if self._thorough and glob.glob(new_c):
+                os.system(f'rm {new_c}*')
+
+            if not glob.glob(new_c):
+                self.cfa_dataset.spawn_copy(new_c)
+
+            self.logger.debug('Spawned copy of CFA NetCDF file')
         
-        ds = self.dataset
-        if not isinstance(ds, KerchunkFile):
-            return
-        
-        self.logger.debug('Switching to remote file version')
-
-        new_rev  = ''.join((self.cloud_format[0],'r',self.version_no))
-        new_path = os.path.splitext(ds.filepath)[0].replace(self.revision, new_rev) # No extension
-
-        if self._thorough and glob.glob(new_path):
-            os.system(f'rm {new_path}*')
-
+        # 2. Set remote property
         self.remote = True
-        if not glob.glob(f'{new_path}*'):
-            self.logger.debug('Creating new remote kerchunk file.')
-            self.dataset.spawn_copy(new_path)
 
-            # Need to refresh the kfile filehandler
+        # 3. Reset file handlers
+        if remotify_kerchunk:
             self._kfile = None
-            
+        if remotify_cfa:
+            self._cfa_dataset = None
+
+        # 4. Remotify files
+
+        if remotify_kerchunk:
             self.logger.debug('Applying remote criteria to kerchunk file.')
-            # Reinstantiate new filehandler + add download_link in place
-            self.dataset.add_download_link(**kwargs)
-        
-        else:
-            # Refresh kfile handler (different order to above.)
-            self._kfile = None
-            _ = self.dataset
+            self.kfile.make_remote(**kwargs)
+        if remotify_cfa:
+            self.logger.debug('Applying remote criteria to CFA file.')
+            self.cfa_dataset.make_remote(**kwargs)
 
         self.save_files()
 
@@ -550,7 +576,8 @@ class ProjectOperation(
 
         # Spawn copy of cfa dataset
         if self.cfa_enabled and self.cfa_complete and self.cloud_format != 'CFA':
-            complete_cfa = self.cfa_path.replace(self.dir, data_move) + version_separator + self.version_no
+            complete_cfa = f'{data_move}/{self.proj_code}{version_separator}c{self.revision}'
+
             self.cfa_dataset.spawn_copy(complete_cfa)
 
         if not self._dryrun:
