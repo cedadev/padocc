@@ -525,7 +525,11 @@ class ComputeOperation(ProjectOperation):
 
             set_verbose(self._verbose, 'cfapyx')
             cfa = CFANetCDF(files) # Add instance logger here.
-            cfa.create()
+
+            # Aggregation-specific updates here
+            cfa.create(updates={
+                'aggregation_date': datetime.strftime(datetime.now(),'%Y-%m-%dT%H:%M:%SZ')
+            })
 
             # Allow extensions to reset the native file order
             location = cfa.location
@@ -865,6 +869,8 @@ class ComputeOperation(ProjectOperation):
                     new_zattrs[key] = zattrs[key]
         else:
             new_zattrs = zattrs # No removals required
+
+        new_zattrs['aggregation_date'] = datetime.strftime(datetime.now(),'%Y-%m-%dT%H:%M:%SZ')
 
         self.logger.debug('Finished metadata corrections')
         if not new_zattrs:
@@ -1365,7 +1371,7 @@ class KerchunkDS(ComputeOperation):
 
     def _data_to_json(
             self, 
-            refs: dict, 
+            refs: list, 
             aggregator: Union[str,None] = None,
             b64vars: Union[list,None] = None,
         ) -> None:
@@ -1497,6 +1503,7 @@ class KerchunkDS(ComputeOperation):
                             agg_dims=self.combine_kwargs['concat_dims'],
                             data_vars=agg_vars,
                             nfiles=self.limiter,
+                            zattrs=self.temp_zattrs.get(),
                             logger=self.logger,
                             allfiles=self.allfiles.get())
                         break
