@@ -444,14 +444,14 @@ files = [
 
 [[package]]
 name = "cfapyx"
-version = "2026.9.16"
+version = "2026.9.25"
 description = "The pure-Python implementation of the CF Aggregation conventions, including the Xarray engine to enable reading CFA-netCDF files."
 optional = false
 python-versions = "<4.0,>=3.11"
 groups = ["main"]
 files = [
-    {file = "cfapyx-2026.9.16-py3-none-any.whl", hash = "sha256:bf4c00f875bd349ee0ffc31ad47147a24a812031e59109e2b3753563c0a306a9"},
-    {file = "cfapyx-2026.9.16.tar.gz", hash = "sha256:3dcb1bad6c5f3ac7efdce0ce999fa4b5b57807cac98e9ec2ee33bc4b8be11dbe"},
+    {file = "cfapyx-2026.9.25-py3-none-any.whl", hash = "sha256:466b25597dd2e86f17bef884fc3fce5108c4c7c908ca55912ee9fa2156d79146"},
+    {file = "cfapyx-2026.9.25.tar.gz", hash = "sha256:8530950f4d582684448d125da9d71519411c6d6faaf183ccfa4511ca7d8aabae"},
 ]
 
 [package.dependencies]
@@ -5814,4 +5814,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "1e01caa5213f8bdbbafb9824a2bfb4bb4984b147e46076ff32131f5e3c0dc704"
+content-hash = "2ef15bff71747b3c2c14d29218bf9ba179f8c2792939014b0f102d6778243313"

@@ -18,6 +18,9 @@ from padocc.core.utils import (
 import os
 os.umask(0o002)
 
+import tracemalloc
+tracemalloc.start(25)
+
 def listgroups(workdir: str, **kwargs):
     """
     List groups in a working directory"""
@@ -183,7 +186,7 @@ def complete_group(
             **complete_kwargs)
     else:
         try:
-            project = group[proj_code]
+            project = group.get_project(proj_code, repeat_id=repeat_id)
             project.complete_project(move_to=completion_dir, thorough=thorough,
                                      version_separator=version_separator,**complete_kwargs)
         except Exception as e:
