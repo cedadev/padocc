@@ -6,7 +6,7 @@ from datetime import datetime
 from collections.abc import Callable
 from typing import Optional, Union
 
-from padocc import ProjectOperation
+import numpy as np
 from padocc.core.utils import deformat_float, format_float, format_str
 
 
@@ -269,7 +269,6 @@ class EvaluationsMixin:
         concatenating results from the detail-cfg files from
         all projects.
         """
-        import numpy as np
 
         # Cloud Formats and File Types
         # Source Data [Avg,Total]
@@ -310,6 +309,9 @@ class EvaluationsMixin:
             else:
                 cloud_formats[op.cloud_format] = 1
 
+            if op.cfa_enabled:
+                cloud_formats['CFA'] = 1
+
             if op.source_format in source_formats:
                 source_formats[op.source_format] += 1
             else:
@@ -347,15 +349,28 @@ class EvaluationsMixin:
         ot.append(f'Project Codes Assessed: {proj_count}')
         ot.append('')
         if len(file_count) > 0:
-            ot.append(f'Source Files: {sum(file_count)} [Avg. {np.mean(file_count):.2f} per project]')
+            if self._verbose == 0:
+                ot.append(f'Source Files: {sum(file_count)} [Avg. {np.mean(file_count):.2f} per project]')
+            else:
+                ot.append(f'Source Files: {sum(file_count)} [Avg. {np.mean(file_count)} per project]')
         else:
             ot.append('Source Files: Unknown')
         if len(source_data) > 0:
-            ot.append(f'Source Data: {format_float(sum(source_data))} [Avg. {format_float(np.mean(source_data))} per project]')
+            if self._verbose == 0:
+                ot.append(
+                    f'Source Data: {format_float(sum(source_data))} [Avg. {format_float(np.mean(source_data))} per project]')
+            else:
+                ot.append(
+                    f'Source Data: {sum(source_data)} [Avg. {np.mean(source_data)} per project]')
         else:
             ot.append('Source Data: Unknown')
         if len(cloud_data) > 0:
-            ot.append(f'Cloud Data: {format_float(sum(cloud_data))} [Avg. {format_float(np.mean(cloud_data))} per project]')
+            if self._verbose == 0:
+                ot.append(
+                    f'Cloud Data: {format_float(sum(cloud_data))} [Avg. {format_float(np.mean(cloud_data))} per project]')
+            else:
+                ot.append(
+                    f'Cloud Data: {sum(cloud_data)} [Avg. {np.mean(cloud_data)} per project]')
         else:
             ot.append('Cloud Data: Unknown')
         ot.append('')
@@ -367,11 +382,19 @@ class EvaluationsMixin:
             ot.append(f'File Types: {list(set(file_types))}')
         ot.append('')
         if len(chunks_per_file) > 0:
-            ot.append(
-                f'Chunks per File: {sum(chunks_per_file):.2f} [Avg. {np.mean(chunks_per_file):.2f} per project]')
+            if self._verbose == 0:
+                ot.append(
+                    f'Chunks per File: {sum(chunks_per_file):.2f} [Avg. {np.mean(chunks_per_file):.2f} per project]')
+            else:
+                ot.append(
+                    f'Chunks per File: {sum(chunks_per_file)} [Avg. {np.mean(chunks_per_file)} per project]')
         if len(total_chunks) > 0:
-            ot.append(
-                f'Total Chunks: {sum(total_chunks):.2f} [Avg. {np.mean(total_chunks):.2f} per project]')
+            if self._verbose == 0:
+                ot.append(
+                    f'Total Chunks: {sum(total_chunks):.2f} [Avg. {np.mean(total_chunks):.2f} per project]')
+            else:
+                ot.append(
+                    f'Total Chunks: {sum(total_chunks)} [Avg. {np.mean(total_chunks)} per project]')
         
         if func is not None:
             func('\n'.join(ot))

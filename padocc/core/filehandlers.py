@@ -1413,6 +1413,8 @@ class CFADataset(LoggedOperation):
                         ds[uriset][:,:,:] = np.array(newv)
                     case 4:
                         ds[uriset][:,:,:,:] = np.array(newv)
+                    case 5:
+                        ds[uriset][:,:,:,:,:] = np.array(newv)
                     case _:
                         raise ValueError(
                             'Too many dimensions to handle replacements in' \

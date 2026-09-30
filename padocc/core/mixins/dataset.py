@@ -51,6 +51,19 @@ class DatasetHandlerMixin:
         self._zstore = None
         self._cfa_dataset = None
 
+    def delete_ds_filehandlers(self):
+
+        if self._kfile is not None:
+            os.system(f'rm {self._kfile.filepath}*')
+        if self._kstore is not None:
+            os.system(f'rm {self._kstore.filepath}*')
+        if self._zstore is not None:
+            os.system(f'rm {self._zstore.filepath}*')
+        if self._cfa_dataset is not None:
+            os.system(f'rm {self._cfa_dataset.filepath}*')
+
+        self._disconnect_ds_filehandlers()
+
     def save_ds_filehandlers(self):
         """
         Save all dataset files that already exist
@@ -159,7 +172,7 @@ class DatasetHandlerMixin:
         """
         Path to the CFA object for this project.
         """
-        if self.remote:
+        if self.remote and self.is_netcdf4_compatible:
             return f'{self.dir}/c{self.revision}'
         return f'{self.dir}/{self.proj_code}'
     

@@ -8,7 +8,7 @@ def pytest_collection_modifyitems(items):
         "TestScan",
         "TestCompute",
         "TestZarrCompute",
-        "TestZarrValidate"
+        "TestZarrValidate",
         "TestValidate",
         "TestGroup",
         #"TestProject"

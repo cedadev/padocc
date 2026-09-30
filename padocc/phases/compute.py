@@ -407,7 +407,7 @@ class ComputeOperation(ProjectOperation):
             
         subset = False
         # Errors for final part as lim1 is None
-        if lim1-lim0 != len(self.allfiles):
+        if lim1-lim0 != len(self.allfiles) and not self._is_trial:
             self.detail_cfg['compute_subsets'] = compute_total
             self.detail_cfg.save()
             subset = True
@@ -415,14 +415,8 @@ class ComputeOperation(ProjectOperation):
         self.logger.info(f'CFA Subset: {subset}')
 
         if parallel:
-            if not subset or lim0 == 0:
+            if not subset and lim0 == 0:
                 self.update_status(self.phase, 'Pending', jobid=self._logid)
-            else:
-                # Subset Deployed via Group Allocations
-                pass
-        elif subset:
-            # Running a subset in non-parallel (manual rerun)
-            self.update_status(self.phase, 'Pending', jobid=self._logid)
 
         if not self.cfa_enabled:
             if not self._thorough:
@@ -497,7 +491,7 @@ class ComputeOperation(ProjectOperation):
                 return {'skipped':True}, True
 
             extend = False
-            if not subset and not self._thorough and self.detail_cfg.get('compute_subsets'):
+            if self.detail_cfg.get('compute_subsets') and not (subset or self._thorough or self._is_trial):
                 # Combine aggregations instead
                 extend = True
                 subsets = self.detail_cfg.get('compute_subsets')
@@ -1084,7 +1078,8 @@ class KerchunkDS(ComputeOperation):
         if compute_subset is not None:
             subset = True
 
-            self.detail_cfg['compute_subsets'] = compute_total
+            if not self._is_trial:
+                self.detail_cfg['compute_subsets'] = compute_total
 
         lim0, lim1 = self._determine_limits(
             self.allfiles.get(),
@@ -1786,7 +1781,8 @@ class IcechunkDS(ComputeOperation):
         if compute_subset is not None:
             subset = True
 
-            self.detail_cfg['compute_subsets'] = compute_total
+            if not self._is_trial:
+                self.detail_cfg['compute_subsets'] = compute_total
 
         lim0, lim1 = self._determine_limits(
             self.allfiles.get(),

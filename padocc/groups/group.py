@@ -152,16 +152,20 @@ class GroupOperation(
         """
         Indexable group allows access to individual projects
         """
+        return self.get_project(index)
+
+    def get_project(self, index: int | str, repeat_id: str = 'main', **kwargs):
+
         if isinstance(index, int):
-            proj_code = self.proj_codes['main'][index]
+            proj_code = self.proj_codes[repeat_id][index]
         elif index.isnumeric():
-            proj_code = self.proj_codes['main'][int(index)]
+            proj_code = self.proj_codes[repeat_id][int(index)]
         else:
             proj_code = index
 
-        return self.get_project(proj_code)
+        return self._get_project(proj_code, **kwargs)
     
-    def get_project(self, proj_code: str,**kwargs):
+    def _get_project(self, proj_code: str, **kwargs):
         """
         Get a project operation from this group
 

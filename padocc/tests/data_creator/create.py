@@ -49,7 +49,6 @@ dims = {
         'dtype': int,
         'attrs':{
             'axis':'ABC',
-            'units':'None'
         },
         'array':None
     },
@@ -178,7 +177,7 @@ def main():
             create_dims(ds, dims, ignore_attrs)
             create_vars(ds, vars, ignore_attrs)
 
-            ds.save()
+            ds.close()
 
 if __name__ == '__main__':
     main()

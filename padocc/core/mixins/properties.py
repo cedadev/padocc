@@ -4,6 +4,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 
 from typing import Callable, Union
 import glob
+from padocc.core.utils import is_netcdf4
 
 
 class PropertiesMixin:
@@ -184,6 +185,25 @@ class PropertiesMixin:
         """
         self._remote = value
         self.base_cfg['remote'] = self._remote
+
+    @property
+    def is_netcdf4_compatible(self):
+        """
+        NetCDF4 Compatibility
+        """
+
+        compatible = self.base_cfg.get('netcdf4_compatible', None)
+
+        if self.detail_cfg.get('driver') == 'hdf5':
+            compatible = True
+        elif self.detail_cfg.get('driver') == 'ncf3':
+            compatible = False
+
+        if compatible is None:
+            compatible = is_netcdf4(self.allfiles.get())
+
+        self.base_cfg['netcdf4_compatible'] = compatible
+        return compatible
     
     @property
     def revision(self) -> str:

@@ -5,7 +5,7 @@ __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 import json
 from datetime import datetime
 from typing import Optional, Union
-import math
+from padocc.core.logs import set_verbose
 import random
 
 import numpy as np
@@ -785,12 +785,18 @@ class ValidateDatasets(LoggedOperation):
                     current = 2
 
             # Limit for max growbox memory usage.
-            max_size = testvar.size * 64
-            max_mem = 2e9 # 2GB
-            if len(testvar.dims) > 0:
-                box_size_limit = math.ceil(max(1, math.pow(max_size/max_mem, 1/len(testvar.dims))))
-            else:
-                box_size_limit = 1
+            max_mem = 1e9 # 2GB
+
+            box_size_limit = 1
+            for bs in range(98,0,-1):
+                mem_estm = 1
+                for d in testvar.dims:
+                    mem_estm = mem_estm * max(1, testvar[d].size/bs)
+                if mem_estm*64 > max_mem:
+                    box_size_limit = bs+1
+                    break
+
+            self.logger.debug(f'Minimum divisions for {var}: {box_size_limit}')
 
             self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid, current=current, box_size_limit=box_size_limit)
 
@@ -1133,6 +1139,8 @@ class ValidateOperation(ProjectOperation):
         if parallel:
             self.update_status(self.phase, 'Pending',jobid=self._logid)
 
+        set_verbose(self._verbose, 'cfapyx')
+
         self.set_last_run(self.phase, timestamp())
         self.logger.info("Starting validation")
 
@@ -1159,7 +1167,7 @@ class ValidateOperation(ProjectOperation):
         vd = ValidateDatasets(
             [test,sample],
             f'validator-padocc-{self.proj_code}',
-            dataset_labels=[self.cloud_format, self.source_format], 
+            dataset_labels=[self.cloud_format, 'source'], 
             filehandlers=[meta_fh, data_fh],
             logger=self.logger,
             validate_vars=self.validate_vars,
@@ -1176,7 +1184,7 @@ class ValidateOperation(ProjectOperation):
             # CFA now opens with decoded times (2025.8.4)
             try:
                 control = self._open_cfa()
-                vd.replace_dataset(control, label=self.source_format)
+                vd.replace_dataset(control, label='source')
             except:
                 # CFA has failed for some reason - file must be deleted.
                 self.cfa_enabled = False
@@ -1206,13 +1214,13 @@ class ValidateOperation(ProjectOperation):
     
     def _run_data_validation(self, test: xr.Dataset, rf: int, check: int, checks: int, vd: ValidateDatasets, dim_mid):
         """
-        Prepare and run for a single validation attempt.
+        Prepare and run for a single validation attempt - using individual netcdfs
         """
 
         ## 1. Time Decoding Check
          # Open a random file or as specified above to check time decoding
         sample, rfnum = self._open_sample(rf=rf)
-        vd.replace_dataset(sample, label=self.source_format)
+        vd.replace_dataset(sample, label='source')
 
         if check == 0:
             # Only check time decoding for the first file
@@ -1223,11 +1231,11 @@ class ValidateOperation(ProjectOperation):
         test   = self.dataset.open_dataset(decode_times=False)
         vd.replace_dataset(test, label=self.cloud_format)
         sample, rf = self._open_sample(rf=rf,decode_times=False)
-        vd.replace_dataset(sample, label=self.source_format)
+        vd.replace_dataset(sample, label='source')
 
         self.logger.info(f'Source-slice validation: {check+1}/{checks} using file {rfnum}')
 
-        preslice_vars = list(set(self.validate_vars) | set(self.detail_cfg['kwargs']['combine_kwargs']['concat_dims']))
+        preslice_vars = list(set(self.validate_vars) | set(self.detail_cfg['kwargs'].get('combine_kwargs',{}).get('concat_dims',{})))
 
         preslice = self._get_preslice(test, sample, preslice_vars, rf=rf)
         vd.replace_preslice(preslice, label=self.cloud_format)

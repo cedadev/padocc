@@ -15,27 +15,7 @@ class TestScan:
 
         results = process.run('scan', forceful=True)
 
-        assert results['Success'] == 3
-
-    def test_scan_0DAgg(self, workdir=WORKDIR, verbose=1):
-        groupID = 'padocc-test-suite'
-
-        process = ScanOperation(
-            '0DAgg',
-            workdir=workdir,
-            groupID=groupID,
-            label='test_scan_0DAgg',
-            verbose=verbose)
-
-        status = process.run(forceful=True, thorough=True)
-
-        print(f'Successful scan - results {process.proj_code}:')
-        print(f' > Chunks: {process.detail_cfg["chunk_info"]}')
-        print(f' > Format: {process.detail_cfg["type"]}')
-        print(f' > Driver: {process.detail_cfg["driver"]}')
-        print(f' > Data Properties: {process.base_cfg["data_properties"]}')
-
-        assert status == 'Success'
+        assert results['Success'] == 2
 
     def test_scan_1DAgg(self, workdir=WORKDIR, verbose=1):
         groupID = 'padocc-test-suite'
@@ -79,6 +59,5 @@ class TestScan:
 
 if __name__ == '__main__':
     TestScan().test_scan_basic(verbose=1)
-    TestScan().test_scan_0DAgg(verbose=1)
     TestScan().test_scan_1DAgg(verbose=1)
     TestScan().test_scan_3DAgg(verbose=0)

@@ -1,4 +1,4 @@
-from padocc import GroupOperation
+from padocc.phases import ComputeOperation
 
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 
@@ -6,15 +6,18 @@ class TestCompute:
     def test_compute_basic(self, workdir=WORKDIR):
         groupID = 'padocc-test-suite'
 
-        process = GroupOperation(
-            groupID,
+        process = ComputeOperation(
+            '1DAgg',
             workdir=workdir,
+            groupID=groupID,
             label='test_compute',
-            verbose=1)
+            verbose=1,
+            thorough=True,
+            forceful=True)
 
-        results = process.run('compute', forceful=True)
+        results = process.run()
 
-        assert results['Success'] == 3
+        assert results == ('Success',True)
 
 if __name__ == '__main__':
     #workdir = '/home/users/dwest77/cedadev/padocc/padocc/tests/auto_testdata_dir'

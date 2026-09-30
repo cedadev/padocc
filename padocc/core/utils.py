@@ -5,7 +5,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 import json
 import math
 import os
-import re
+import pyfive
 import glob
 from typing import Any, Union, Callable
 
@@ -92,6 +92,17 @@ FILE_DEFAULT = {
 }
 
 invalid = list('(){}[]<>:;')
+
+def is_netcdf4(files: list):
+
+    for f in files:
+        try:
+            ds = pyfive.File(f)
+            print(ds)
+        except AttributeError:
+            return False
+    return True
+
 
 def group_exists(group, workdir):
     return os.path.isdir(f'{workdir}/groups/{group}')

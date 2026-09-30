@@ -522,7 +522,7 @@ def padocc_combine(
             if zarrays != []:
                 identical_dim_zarrays[var] = zarrays
 
-    for v in agg_dims + agg_vars + identical_vars:
+    for v in tuple(agg_dims) + tuple(agg_vars) + tuple(identical_vars):
         if v in pure_dims.keys():
             continue
 

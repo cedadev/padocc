@@ -141,6 +141,10 @@ class ShepardOperator(LoggedOperation):
     """
     Operator class for Shepard deployments.
     """
+
+    sideline_groupID   = 'shp_sideline'
+    quarantine_groupID = 'shp_quarantine'
+
     def __init__(
             self, 
             mode: Union[str, None] = None, 
@@ -235,6 +239,11 @@ class ShepardOperator(LoggedOperation):
         self.deployment_label: str = self.conf.get('deployment_label', 'SHEPARD')
         self.version_separator: str = self.conf.get('version_separator','_')
 
+        self.remote_sub: str | None = self.conf.get('remote_sub',None)
+        self.remote_replace: str | None = self.conf.get('remote_replace',None)
+
+        self.sideline_codes = []
+
     @property
     def default_source(self) -> str:
         """
@@ -280,7 +289,9 @@ class ShepardOperator(LoggedOperation):
                 f'Flock Directory: {self.flock_dir} - inaccessible.'
             )
         
-        return [flock for flock in glob.glob(f'{self.flock_dir}/**/proj_codes/main.txt', recursive=True) if 'quarantine' not in flock]
+        return [flock for flock in 
+                glob.glob(f'{self.flock_dir}/groups/**/proj_codes/main.txt', recursive=True) 
+                if self.quarantine_groupID not in flock]
 
     def _load_config(self, conf: str) -> Union[dict,None]:
         """
@@ -337,6 +348,7 @@ class ShepardOperator(LoggedOperation):
                 kwargs['final_delete'] = False
                 kwargs['completion_dir'] = self.complete_dir
                 kwargs['version_separator'] = self.version_separator
+                kwargs['run_kwargs'] = kwargs.get('run_kwargs',{}) | {'sub':self.remote_sub, 'replace':self.remote_replace}
 
         return kwargs
     
@@ -447,6 +459,29 @@ class ShepardOperator(LoggedOperation):
             self._process_task(task, flocks[task.fid])
 
         self.logger.info('Finished processing jobs')
+
+        if self.sideline_codes:
+            self.logger.info(f'Transfering {len(self.sideline_codes)} projects to sideline area')
+
+            sideflock = GroupOperation(
+                self.sideline_groupID,
+                self.flock_dir,
+                label=f'shepard->side',
+                logid='shepard',
+                verbose=self._verbose,
+            )
+            for flock_id, pc in self.sideline_codes:
+                flocks[flock_id].transfer_project(
+                    pc,
+                    sideflock
+                )
+            
+            sideflock.save_files()
+            for flock in flocks:
+                flock.save_files()
+
+            self.sideline_codes = []
+
         self._check_delete_flocks(flocks)
 
     def scrub_errors(self) -> None:
@@ -474,7 +509,7 @@ class ShepardOperator(LoggedOperation):
 
         if quart is None:
             quart = GroupOperation(
-                'shp_quarantine',
+                self.quarantine_groupID,
                 self.flock_dir,
                 label=f'shepard->Qrnt',
                 logid='shepard',
@@ -483,14 +518,6 @@ class ShepardOperator(LoggedOperation):
 
         if not self.obliterate_quarantine:
                 
-            if quart is None:
-                quart = GroupOperation(
-                    'shp_quarantine',
-                    self.flock_dir,
-                    label=f'shepard->Qrnt',
-                    logid='shepard',
-                    verbose=self._verbose,
-                )
             for pc in proj_codes:
                 flock.transfer_project(
                     pc,
@@ -524,7 +551,7 @@ class ShepardOperator(LoggedOperation):
         """
 
         quart = GroupOperation(
-            'shp_quarantine',
+            self.quarantine_groupID, 
             self.flock_dir,
             label=f'shepard->Qrnt',
             logid='shepard',
@@ -570,18 +597,70 @@ class ShepardOperator(LoggedOperation):
         # Find manifests from cache dir
         if self.cache_dir:
             manifests = glob.glob(f'{self.cache_dir}/*.txt')
+            csv_processed = glob.glob(f'{self.cache_dir}/*.csv')
 
-        # 1. Initialise new groups
-        if not self.cache_dir or len(manifests) <= 0:
-            self.logger.info('No new manifests detected - skipping')
+        if manifests:
+            self.logger.info('Running with manifests')
+            self._ingest_manifests(manifests)
+        elif csv_processed:
+            self.logger.info('Ingesting from CSVs')
+            self._ingest_csvs(csv_processed)
+        else:
             return
+
+
+    def _ingest_csvs(self, csvs: list):
+        """
+        Ingest/create flocks from csvs
+        """
 
         space_for_flocks = self.flock_limit - len(self._find_flocks())
         if space_for_flocks <= 0:
             self.logger.info('No space available for new flocks')
+            return
+
+        add_flocks    = min(space_for_flocks, len(csvs))
+        self.logger.info(f'Accommodating {add_flocks} new flock(s)')
+
+        for fid in range(add_flocks):
+
+            with open(csvs[fid]) as g:
+                size = len(g.readlines())
+
+            # Rename to signify in-progress
+            os.system(f'mv {csvs[fid]} {csvs[fid]}_')
+            if size > self.flock_size_limit:
+                raise ValueError(
+                    f'Cannot add flock with size: {size}, ' \
+                    f'exceeds limit {self.flock_size_limit}'
+                )
+
+            groupname = csvs[fid].split('/')[-1].replace('.csv','')
+
+            flock = GroupOperation(
+                groupname,
+                self.flock_dir,
+                label=f'shepard->{fid}',
+                logid='shepard',
+                verbose=self._verbose,
+            )
+
+            flock.init_from_file(f'{csvs[fid]}_')
+
+            # Delete in-progress
+            os.system(f'rm {csvs[fid]}_')
+
+    def _ingest_manifests(self, manifests: list):
+        """
+        Ingest/create flocks from manifests
+        """
+        space_for_flocks = self.flock_limit - len(self._find_flocks())
+        if space_for_flocks <= 0:
+            self.logger.info('No space available for new flocks')
+            return
 
         # Always add at least one flock if there's space and manifests pending
-        nflocks    = max(1, math.floor(len(manifests)/self.flock_size_limit))
+        nflocks    = max(1, math.floor((len(manifests))/self.flock_size_limit))
 
         # Add flocks up to free space, or how many we want to add - whichever is smaller.
         add_flocks = min(space_for_flocks, nflocks)
@@ -689,6 +768,16 @@ class ShepardOperator(LoggedOperation):
         if not self.parallel:
             if self.dryrun:
                 self.logger.info(f"DRYRUN: Run {task.new_phase} ({new_repeat_id}) for {flock.groupID} ({task.display_params()})")
+            elif task.new_phase == 'complete':
+                flock.complete_group(
+                    move_to=self.complete_dir,
+                    thorough=self._thorough,
+                    version_separator=self.version_separator,
+                    final_delete=False,
+                    sub=self.remote_sub, 
+                    replace=self.remote_replace
+
+                )
             else:
                 flock.run(
                     task.new_phase,
@@ -726,7 +815,7 @@ class ShepardOperator(LoggedOperation):
         Process progression/repeats for a given phase/status combination
         """
 
-        old_allocations = {}
+        old_allocations = []
         if len(codes) == 0:
             return []
 
@@ -735,6 +824,8 @@ class ShepardOperator(LoggedOperation):
         tasksets = {}
 
         status_core = status.split(')')[-1].split('-')[0].split('_')[0]
+
+        sideline = []
         
         for proj_id in codes:
             match status_core:
@@ -776,6 +867,12 @@ class ShepardOperator(LoggedOperation):
                     tasksets[taskid].append(proj_id)
 
                 case _:
+
+                    if flock.groupID != self.sideline_groupID:
+                        sideline.append(proj_id)
+                        continue
+
+
                     for error in FATAL_ERRORS:
                         if error in status_core: 
                             self.logger.info(f'Quarantining {len(codes)} due to fatal error: {status_core}')
@@ -800,6 +897,11 @@ class ShepardOperator(LoggedOperation):
                     if taskid not in tasksets:
                         tasksets[taskid] = []
                     tasksets[taskid].append(proj_id)    
+
+        if sideline:
+
+            sideline = [(fid, flock.get_project(s).proj_code) for s in sideline]
+            self.sideline_codes += sideline
 
         # Collect like allocations into the same tasks
         for taskid, taskset in tasksets.items():
@@ -865,33 +967,36 @@ class ShepardOperator(LoggedOperation):
                 else:
                     codesets = status_dict.get(phase, {})
 
+                exit_loop = False
                 for status, codes in codesets.items():
-                    new_tasks = self._process_status_phase(fid, status, phase, codes, flock)
-                    for nt in new_tasks:
-                        proj_count += len(nt)
-                        phase_tasks.append(nt)
-
-                        if proj_count >= batch_limit:
-                            exit_loop = True
-                            break
                     if exit_loop:
                         break
-                if exit_loop:
-                    break
 
-                if phase == 'validate':
+                    new_tasks = self._process_status_phase(fid, status, phase, codes, flock)
+                    task_count = 0
+                    while task_count < len(new_tasks) and proj_count < batch_limit:
+                        nt = new_tasks[task_count]
+                        proj_count += len(nt)
+                        phase_tasks.append(nt)
+                        task_count += 1
+
+                    if proj_count >= batch_limit:
+                        exit_loop = False
+
+                # Special case for validate -> complete
+                if phase != 'validate':
+                    task_list += phase_tasks
+                else:
                     taskset = []
                     for p in phase_tasks:
                         if p.new_phase == 'complete':
                             taskset += p.codeset
                         else:
                             task_list.append(p)
-                    task_list.append(
-                        ShepardTask(fid, flock.groupID, 'validate', taskset)
-                    )
-                else:
-                    task_list += phase_tasks
-
+                    if len(taskset) > 0:
+                        task_list.append(
+                            ShepardTask(fid, flock.groupID, 'validate', taskset)
+                        )
 
             processed_flocks.append(fid)
 
@@ -912,7 +1017,7 @@ class ShepardOperator(LoggedOperation):
                 
             complete = flock.get_codes_by_status()['complete']
             if len(complete) != len(flock):
-                self.logger.info(f'Flock {flock.groupID}: Not all projects ready for deletion.')
+                self.logger.debug(f'Flock {flock.groupID}: Not all projects ready for deletion.')
                 continue
 
             # Delete group
@@ -920,6 +1025,16 @@ class ShepardOperator(LoggedOperation):
             if self.dryrun:
                 self.logger.info(f"DRYRUN: Deleting {flock.groupID}")
             else:
+                try:
+                    summary = flock.summarise_data(func=None)
+                    now = datetime.now()
+                    sfile = f'{self.complete_dir}/summaries/{flock.groupID}_'\
+                        f'{datetime.strftime(now,"%H%M_%d%m%Y")}.txt'
+                    with open(sfile,'w') as f:
+                        f.write(summary)
+                except Exception as e:
+                    self.logger.error(f'Unable to summarise flock: {e}')
+                    pass
                 flock.delete_group(ask=False)
        
 

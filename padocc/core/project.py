@@ -17,7 +17,7 @@ from .mixins import (DatasetHandlerMixin, DirectoryMixin, PropertiesMixin,
                      StatusMixin)
 from .utils import (source_opts, BypassSwitch, apply_substitutions,
                     extract_file, file_configs, phases, print_fmt_str,
-                    extract_json)
+                    extract_json, is_netcdf4)
 
 class ProjectOperation(
     DirectoryMixin, 
@@ -296,10 +296,11 @@ class ProjectOperation(
                 f'Switching cloud format to {mode}'
             )
             self.cloud_format = mode
-            self.save_files()
+            # Remove all current filehandler backed files
+            self.delete_ds_filehandlers()
             
         try:
-            status = self._run(mode=mode, **kwargs)
+            status = self._run(mode=mode, parallel=parallel, **kwargs)
             # Reset cloud format and save files
             self.cloud_format = mode
             self.save_files()
@@ -464,7 +465,8 @@ class ProjectOperation(
         # Make those filehandlers remote.
 
         remotify_kerchunk = (self.cloud_format == 'kerchunk')
-        remotify_cfa = (self.cfa_enabled and bool(self.cfa_complete))
+        remotify_cfa = (self.cfa_enabled and bool(self.cfa_complete) and self.is_netcdf4_compatible)
+
 
         # 1a. Spawn Kerchunk Copy in pipeline
         if remotify_kerchunk:
@@ -576,7 +578,11 @@ class ProjectOperation(
 
         # Spawn copy of cfa dataset
         if self.cfa_enabled and self.cfa_complete and self.cloud_format != 'CFA':
-            complete_cfa = f'{data_move}/{self.proj_code}{version_separator}c{self.revision}'
+
+            if self.is_netcdf4_compatible:
+                complete_cfa = f'{data_move}/{self.proj_code}{version_separator}c{self.revision}'
+            else:
+                complete_cfa = f'{data_move}/{self.proj_code}{version_separator}c{self.version_no}'
 
             self.cfa_dataset.spawn_copy(complete_cfa)
 
