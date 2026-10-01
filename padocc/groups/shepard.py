@@ -359,16 +359,22 @@ class ShepardOperator(LoggedOperation):
         Single line of information about each flock."""
 
         total_errs = 0
+
+        # Heading
+        print('| '.join([
+            format_str('Group ID:',22),
+            'By phase: error, pending, success'
+        ]))
+
         for flock in self._init_all_flocks():
 
             info = []
 
             flock_err = 0
-
-            status_dict = flock.get_codes_by_status()
+            status_dict = flock.get_codes_by_status(write=True)
             for phase in status_dict.keys():
                 if phase == 'complete':
-                    info.append('c:' + str(len(status_dict['complete'])))
+                    info.append('c:' + format_str(len(status_dict['complete']),5))
                     continue
 
                 errored, pending, successful = 0,0,0
@@ -380,13 +386,13 @@ class ShepardOperator(LoggedOperation):
                     else:
                         successful += len(status_dict[phase][status])
 
-                msg = f'{phase[0]}: {format_str(errored,3)}'
-                msg += format_str(pending,3)
-                msg += format_str(successful,3)
-                info.append(format_str(msg, 12))
+                msg = f'{phase[0]}: {format_str(errored,5)}'
+                msg += format_str(pending,5)
+                msg += format_str(successful,5)
+                info.append(msg)
 
                 flock_err += errored
-            print(f'{format_str(flock.groupID,30)} -> {" |".join(info)}, ET: {flock_err}')
+            print(f'{format_str(flock.groupID,20)} -> {" |".join(info)}, ET: {flock_err}')
             total_errs += flock_err
         print(f'Errors: {total_errs}')
 
