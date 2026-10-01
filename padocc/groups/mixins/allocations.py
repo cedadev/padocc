@@ -295,7 +295,7 @@ class AllocationsMixin:
 
 
             for proj in codepool:
-                project = self[proj]
+                project = self.get_project(proj)
 
                 nf = project.detail_cfg.get('num_files')
 
@@ -308,7 +308,7 @@ class AllocationsMixin:
                     # No files specified - probably skipped scan
                     continue
                 if nf < inter_parallel_limit or project.is_subset_complete(thorough=thorough):
-                    group_parallel.append(proj)
+                    group_parallel.append(project.proj_code)
                 else:
                     self.deploy_parallel_project(
                         proj,
