@@ -532,7 +532,9 @@ class EvaluationsMixin:
 
         complete = len(status_dict.get('complete',[]))
 
-        complete_percent = format_str(f'{complete*100/num_codes:.1f}',4)
+        complete_percent = None
+        if num_codes != 0:
+            complete_percent = format_str(f'{complete*100/num_codes:.1f}',4)
         ot.append(f'   complete  : {format_str(complete,5)} [{complete_percent}%]')
 
         for option, records in faultdict['faultlist'].items():
