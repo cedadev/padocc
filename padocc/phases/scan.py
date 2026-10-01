@@ -183,7 +183,16 @@ class ScanOperation(ProjectOperation):
         if self.cfa_enabled or self._thorough:
             self.logger.info(f'Determined {limiter} files to scan (out of {nfiles})')
             self.logger.info('Performing CFA Base Scan (Standard)')
-            _, props = self._scan_cfa(limiter=limiter)
+            try:
+                _, props = self._scan_cfa(limiter=limiter)
+            except Exception as e:
+                self.logger.error(
+                    f'CFA Scan Operation failed: {e}'
+                )
+                if self._diagnostic or mode == 'CFA':
+                    raise e
+
+                self.cfa_enabled = False
 
         if props is not None:
             self.base_cfg['data_properties'] = props
