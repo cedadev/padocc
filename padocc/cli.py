@@ -211,14 +211,39 @@ def report_group(group, proj_code: Union[str,None] = None, repeat_id: str = 'mai
     print(yaml.dump(report))
     print(proj.dataset.filepath)
     
-def repeat_subset(group, old_phase: str, old_status: str, new_repeat_id: str, old_repeat_id: str = 'main', **kwargs):
+def repeat_subset(
+        group, 
+        new_repeat_id: str, 
+        proj_code: Union[str,None] = None,
+        old_phase: Union[str,None] = None,
+        old_status: Union[str,None] = None, 
+        old_repeat_id: str = 'main', **kwargs):
     """Create group subset for repeat process."""
-    group.repeat_by_status(
-        status=old_status,
-        new_repeat_id=new_repeat_id,
-        phase=old_phase,
-        old_repeat_id=old_repeat_id,
-    )
+
+    if proj_code is not None:
+
+        codes = proj_code.split(',')
+        projects = []
+        for code in codes:
+            projects.append(group.get_project(code, repeat_id=old_repeat_id).proj_code)
+
+        group._add_proj_codeset(
+            new_repeat_id,
+            projects,
+            overwrite=True
+        )
+    elif old_phase is not None and old_status is not None:
+        group.repeat_by_status(
+            status=old_status,
+            new_repeat_id=new_repeat_id,
+            phase=old_phase,
+            old_repeat_id=old_repeat_id,
+        )
+    else:
+        raise ValueError(
+            'Must provide a mechanism for determining repeats - '
+            'either one or more project codes or a phase/status combination.'
+        )
     group.save_files()
 
 def update_project_status(group, old_phase: str, old_status: str, repeat_id: str = 'main', new_status: str = 'Redo', new_phase: Union[str,None] = None, **kwargs):
@@ -394,7 +419,7 @@ def parse_group(
             project.cfa_enabled = False
             project.save_files()
 
-    ## 4. Assemble 'run_kwargs'
+    ## 4. Assemble 'run_kwargs' 
     run_kwargs = {}
     if parallel_project is not None:
         run_kwargs = {
