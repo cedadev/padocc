@@ -55,3 +55,33 @@ Ignored Groups
 --------------
 
 SHEPARD will ignore any group with a ``.shpignore`` file present in the group directory. This takes the group out of consideration for any SHEPARD processing, without having to move the whole group. Manual/parallel processes can still be performed, but this group will no longer be automatically updated by SHEPARD.
+
+Status viewer
+-------------
+
+The SHEPARD command can be used with the ``status`` operation to get a high-level overview of all groups within the ``flock_dir`` that do not have a ``.shpignore`` file. This interface is a simplified view compared to the individual group ``status`` view, and shows only the total number of projects in each phase that have ``error``, ``pending`` or ``success`` status messages. The total ``complete`` projects is shown at the end of the line along with total ``errors (ET)``
+
+.. code::
+
+    $ shepard status --conf <config.yaml>
+
+    Group ID:             | By phase: error, pending, success
+    cmip6_3              -> i: 0    0    0     |s: 0    8    0     |c: 0    0    0     |v: 0    0    4     |c:974  , ET: 0
+    cmip6_4              -> i: 0    0    0     |s: 0    15   0     |c: 3    0    980   |v: 0    0    0     |c:0    , ET: 3
+    cmip6_5              -> i: 0    0    0     |s: 0    15   0     |c: 0    0    0     |v: 0    0    0     |c:977  , ET: 0
+    cmip6_7              -> i: 0    0    0     |s: 0    13   0     |c: 0    0    0     |v: 0    0    844   |c:132  , ET: 0
+    cmip6_10             -> i: 0    0    0     |s: 0    0    0     |c: 0    0    39    |v: 0    1    15    |c:913  , ET: 0
+    cmip6_11             -> i: 0    0    0     |s: 0    0    0     |c: 0    1    0     |v: 4    0    0     |c:976  , ET: 4
+    cmip6_13             -> i: 0    0    0     |s: 0    0    0     |c: 0    0    0     |v: 0    0    12    |c:924  , ET: 0
+    cmip6_14             -> i: 0    0    0     |s: 0    0    0     |c: 0    0    20    |v: 0    0    4     |c:887  , ET: 0
+    cmip6_15             -> i: 0    0    0     |s: 33   0    0     |c: 13   0    942   |v: 0    0    0     |c:0    , ET: 46
+    cmip6_16             -> i: 0    0    0     |s: 0    0    6     |c: 44   39   856   |v: 0    0    0     |c:0    , ET: 44
+    cmip6_17             -> i: 0    0    0     |s: 0    100  59    |c: 0    0    0     |v: 0    0    0     |c:839  , ET: 0
+    cmip6_20             -> i: 0    0    0     |s: 0    0    6     |c: 0    79   913   |v: 0    0    0     |c:0    , ET: 0
+    cmip6_21             -> i: 0    0    0     |s: 0    20   0     |c: 6    0    1     |v: 0    0    86    |c:885  , ET: 6
+    cmip6_22             -> i: 0    0    0     |s: 0    51   0     |c: 58   11   0     |v: 0    4    0     |c:713  , ET: 58
+    cmip6_24             -> i: 0    0    0     |s: 0    212  0     |c: 0    1    0     |v: 0    11   0     |c:769  , ET: 0
+    cmip6_26             -> i: 0    0    0     |s: 0    19   0     |c: 8    148  789   |v: 0    0    0     |c:0    , ET: 8
+    cmip6_27             -> i: 0    0    0     |s: 46   34   918   |c: 0    0    0     |v: 0    0    0     |c:0    , ET: 46
+    cmip6_28             -> i: 0    0    0     |s: 0    112  0     |c: 4    99   766   |v: 0    0    0     |c:0    , ET: 4
+    Errors: 219
