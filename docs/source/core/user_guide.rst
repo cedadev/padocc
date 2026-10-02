@@ -167,3 +167,24 @@ The error still registers in the final data report, but it will have a ``skip`` 
 .. note::
 
     See the above section in ``compute`` for rerunning when there are errors that may be aggregation method-specific.
+
+Completion of a group
+---------------------
+
+Once validation checks have been performed (usually resulting in warnings relating to minor differences in variable order or different values for specific attributes), the completion workflow can then be enacted. This creates a copy of the output files to a ``completion_dir`` area for upload or ingestion as a finished product. It is recommended to run this step with the ``-T`` flag as this will also trigger the ``remote-enabled`` workflow for transforming both Kerchunk and CFA products to be remotely readable. These products are distinguished in the aggregation version which is ``k|kr`` for local/remote kerchunk and ``c|cr`` for local/remote CFA. 
+
+The ``--delete`` flag can be used to delete projects that have been completed in a single step. This can be used in conjunction with a ``repeat_id`` to just complete/delete specific projects, but this has implications for if you'd also like to generate a ``summary`` of a group (See the Command Line Tool Examples). The ``--sub`` and ``--replace`` flags can be used to specify a non-standard remote replacement, where the usual replacement is for ``https://dap.ceda.ac.uk``.
+
+.. code-block:: console
+
+    $ padocc complete -G my-group -vT --completion_dir /my/final/files/ --delete
+    # See padocc validate -h for more info on possible flags
+
+.. code:: python
+
+    # Typical flags on the CLI can be passed here too.
+    mygroup.complete_group(
+        move_to='/my/final/files/',
+        thorough=True,
+        final_delete=True
+    )

@@ -338,7 +338,7 @@ Summarise
 
     $ padocc summarise -G <group>
 
-Generates a summary of the data analysed in any given project, including the number of datasets compatible with analysis (have passed the scan phase and were not skipped.)
+Generates a summary of the data analysed in any given project, including the number of datasets compatible with analysis (have passed the scan phase and were not skipped). If ``-v`` is added at any level, the formatting to number of bytes is disabled. This is useful for cross-group addition of total source/cloud data.
 
 The summary includes the total number of native files as well as an estimate of the total dataset size and the cloud products. A reminder that each ``project`` usually produces a single cloud product.
 
@@ -361,5 +361,5 @@ The summary includes the total number of native files as well as an estimate of 
 Next Steps
 ==========
 
-Cloud products that have been validated are moved to a ``complete`` directory with the project code as the name, plus the revision identifier `abX.X` - learn more about this in the Extra section.
+Cloud products that have been validated are moved to a ``complete`` directory with the project code as the name, plus the revision identifier `abX.X` - learn more about this in the Bespoke Features section.
 These can then be linked to a catalog or ingested into the CEDA archive where appropriate.
