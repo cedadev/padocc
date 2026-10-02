@@ -25,4 +25,4 @@ jobs:
         pip3 install poetry
         poetry install
     - name: Run tests
-      run: poetry run pytest padocc/tests
+      run: poetry run pytest padocc/tests --trace-config
