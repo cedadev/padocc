@@ -51,6 +51,19 @@ class DatasetHandlerMixin:
         self._zstore = None
         self._cfa_dataset = None
 
+    def delete_ds_filehandlers(self):
+
+        if self._kfile is not None:
+            os.system(f'rm {self._kfile.filepath}*')
+        if self._kstore is not None:
+            os.system(f'rm {self._kstore.filepath}*')
+        if self._zstore is not None:
+            os.system(f'rm {self._zstore.filepath}*')
+        if self._cfa_dataset is not None:
+            os.system(f'rm {self._cfa_dataset.filepath}*')
+
+        self._disconnect_ds_filehandlers()
+
     def save_ds_filehandlers(self):
         """
         Save all dataset files that already exist
@@ -159,6 +172,8 @@ class DatasetHandlerMixin:
         """
         Path to the CFA object for this project.
         """
+        if self.remote and self.is_netcdf4_compatible:
+            return f'{self.dir}/c{self.revision}'
         return f'{self.dir}/{self.proj_code}'
     
     @property
@@ -266,7 +281,7 @@ class DatasetHandlerMixin:
             )
 
         ds = getattr(self, dataset_type)
-        name_overwrite = name_overwrite or f'{self.proj_code}_{self.revision}'
+        name_overwrite = name_overwrite or f'{self.proj_code}_{self.cloud_format_id}{self.revision}'
 
         ds.write_to_s3(
             credentials,
@@ -307,7 +322,7 @@ class DatasetHandlerMixin:
         """
         return self.dataset.get_meta()
     
-    def add_download_link(
+    def make_remote(
             self,
             sub: str = '/',
             replace: str = 'https://dap.ceda.ac.uk/',
@@ -321,7 +336,7 @@ class DatasetHandlerMixin:
             )
         
         if self.file_type == 'parq':
-            self.kstore.add_download_link(sub=sub, replace=replace, in_place=in_place, remote=remote)
+            self.kstore.make_remote(sub=sub, replace=replace, in_place=in_place, remote=remote)
             self.kstore.save()
 
             if in_place:
@@ -334,7 +349,7 @@ class DatasetHandlerMixin:
                     # Trash old kfile that's no longer pointing at the correct object.
                     self._kstore = None
         else:
-            refs = self.kfile.add_download_link(sub=sub, replace=replace, in_place=in_place, remote=remote)
+            refs = self.kfile.make_remote(sub=sub, replace=replace, in_place=in_place, remote=remote)
             # Save the content now.
             self.kfile.save()
 

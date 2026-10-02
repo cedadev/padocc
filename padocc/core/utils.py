@@ -5,7 +5,7 @@ __copyright__ = "Copyright 2024 United Kingdom Research and Innovation"
 import json
 import math
 import os
-import re
+import pyfive
 import glob
 from typing import Any, Union, Callable
 
@@ -19,7 +19,8 @@ from .errors import MissingVariableError
 times = {
     'scan'    :'15:00',
     'compute' :'60:00',
-    'validate':'10:00'
+    'validate':'15:00',
+    'complete':'10:00'
 }
 
 phases = [
@@ -27,6 +28,7 @@ phases = [
     'scan',
     'compute',
     'validate',
+    'complete'
 ]
 
 # Which files acceptable to pull from Moles Tags file.
@@ -39,7 +41,8 @@ source_opts = [
 parallel_modes = [
     'scan',
     'compute',
-    'validate'
+    'validate',
+    'complete'
 ]
 
 BASE_CFG = {
@@ -63,7 +66,8 @@ BASE_CFG = {
     },
     'last_run': (None, None),
     'remote': False,
-    'disable_CFA':False
+    'disable_CFA':False,
+    'keep_vars':'all'
 }
 
 DETAIL_CFG = {
@@ -88,6 +92,17 @@ FILE_DEFAULT = {
 }
 
 invalid = list('(){}[]<>:;')
+
+def is_netcdf4(files: list):
+
+    for f in files:
+        try:
+            ds = pyfive.File(f)
+            print(ds)
+        except AttributeError:
+            return False
+    return True
+
 
 def group_exists(group, workdir):
     return os.path.isdir(f'{workdir}/groups/{group}')
@@ -212,7 +227,7 @@ def get_attribute(env: str, args, value: str) -> str:
                 f'Env : "{os.getenv(env)}"'
                 f'User: "{value}')
             value = os.getenv(env)
-        return value
+        return getattr(args,value)
 
 def format_str(
         string: Any, 

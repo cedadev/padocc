@@ -18,6 +18,9 @@ from padocc.core.utils import (
 import os
 os.umask(0o002)
 
+import tracemalloc
+tracemalloc.start(25)
+
 def listgroups(workdir: str, **kwargs):
     """
     List groups in a working directory"""
@@ -161,6 +164,8 @@ def complete_group(
         thorough: bool = True,
         remote_sub: Union[str,None] = None,
         remote_replace: Union[str,None] = None,
+        version_separator: Union[str,None] = None,
+        final_delete: bool = False,
         **kwargs
     ):
     """Complete projects in a group"""
@@ -176,14 +181,17 @@ def complete_group(
             completion_dir,
             repeat_id=repeat_id,
             thorough=thorough,
+            version_separator=version_separator,
+            final_delete=final_delete,
             **complete_kwargs)
     else:
         try:
-            project = group[proj_code]
-            project.complete_project(move_to=completion_dir, thorough=thorough,**complete_kwargs)
-        except:
-            print(f'ERROR: Unable to instantiate project {proj_code} from {group.groupID}')
-
+            project = group.get_project(proj_code, repeat_id=repeat_id)
+            project.complete_project(move_to=completion_dir, thorough=thorough,
+                                     version_separator=version_separator,**complete_kwargs)
+        except Exception as e:
+            raise e
+        
 def apply_pfunc(group, **kwargs):
     raise NotImplementedError
 
@@ -203,14 +211,39 @@ def report_group(group, proj_code: Union[str,None] = None, repeat_id: str = 'mai
     print(yaml.dump(report))
     print(proj.dataset.filepath)
     
-def repeat_subset(group, old_phase: str, old_status: str, new_repeat_id: str, old_repeat_id: str = 'main', **kwargs):
+def repeat_subset(
+        group, 
+        new_repeat_id: str, 
+        proj_code: Union[str,None] = None,
+        old_phase: Union[str,None] = None,
+        old_status: Union[str,None] = None, 
+        old_repeat_id: str = 'main', **kwargs):
     """Create group subset for repeat process."""
-    group.repeat_by_status(
-        status=old_status,
-        new_repeat_id=new_repeat_id,
-        phase=old_phase,
-        old_repeat_id=old_repeat_id,
-    )
+
+    if proj_code is not None:
+
+        codes = proj_code.split(',')
+        projects = []
+        for code in codes:
+            projects.append(group.get_project(code, repeat_id=old_repeat_id).proj_code)
+
+        group._add_proj_codeset(
+            new_repeat_id,
+            projects,
+            overwrite=True
+        )
+    elif old_phase is not None and old_status is not None:
+        group.repeat_by_status(
+            status=old_status,
+            new_repeat_id=new_repeat_id,
+            phase=old_phase,
+            old_repeat_id=old_repeat_id,
+        )
+    else:
+        raise ValueError(
+            'Must provide a mechanism for determining repeats - '
+            'either one or more project codes or a phase/status combination.'
+        )
     group.save_files()
 
 def update_project_status(group, old_phase: str, old_status: str, repeat_id: str = 'main', new_status: str = 'Redo', new_phase: Union[str,None] = None, **kwargs):
@@ -386,7 +419,7 @@ def parse_group(
             project.cfa_enabled = False
             project.save_files()
 
-    ## 4. Assemble 'run_kwargs'
+    ## 4. Assemble 'run_kwargs' 
     run_kwargs = {}
     if parallel_project is not None:
         run_kwargs = {
@@ -423,7 +456,8 @@ def parse_group(
             xarray_kwargs=xarray_kwargs_raw, # Unprocessed raw CLI value
             run_kwargs=run_kwargs,
             wait=wait_sbatch,
-            mode=mode
+            mode=mode,
+            **kwargs
         )
         return
     
@@ -488,6 +522,8 @@ def get_args():
     complete.add_argument('--completion_dir',help='Directory for completion - data and reports will be transferred.', required=True)
     complete.add_argument('--sub', dest='remote_sub',help='Substitution if not the default')
     complete.add_argument('--replace', dest='remote_replace',help='Replacement to substitution if not the default')
+    complete.add_argument('--version_separator', dest='version_separator',help='Separator for version ID')
+    complete.add_argument('--delete', dest='final_delete',action='store_true',help='Delete on confirmed completion')
     ## Compute
     compute = subparsers.add_parser('compute',help='Compute data aggregations for a project, group or subset of projects. (Pipeline phase 2)', 
                                 parents=[universal_parser, group_parser, phased_parser])

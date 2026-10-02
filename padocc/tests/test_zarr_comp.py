@@ -1,4 +1,4 @@
-from padocc import GroupOperation
+from padocc.groups import GroupOperation
 from padocc.core.utils import BypassSwitch
 
 WORKDIR = 'padocc/tests/auto_testdata_dir'
@@ -8,12 +8,13 @@ class TestZarrCompute:
         groupID = 'padocc-test-suite'
 
         process = GroupOperation(
-            groupID,
+            groupID=groupID,
             workdir=workdir,
             label='test_compute',
-            verbose=1)
+            verbose=1,
+            thorough=True)
 
-        results = process.run('compute', mode='zarr', forceful=True, bypass=BypassSwitch('D'), proj_code='1DAgg')
+        results = process.run('compute',mode='zarr',forceful=True, bypass=BypassSwitch('D'), proj_code='1DAgg_z')
 
         assert results['Success'] == 1
 

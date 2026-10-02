@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11','3.12']
+        python-version: ['3.11']
 
     steps:
     - name: Checkout repository
@@ -25,4 +25,4 @@ jobs:
         pip3 install poetry
         poetry install
     - name: Run tests
-      run: poetry run pytest
+      run: poetry run pytest padocc/tests

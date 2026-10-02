@@ -41,7 +41,15 @@ MAPPINGS = {
     '<i4':'<i'
 }
 
-def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list, nfiles: int, logger, allfiles: list) -> None:
+def virtualise(
+        cache_dir: str, 
+        output_file: str, 
+        agg_dims: list, 
+        data_vars: list, 
+        nfiles: int, 
+        logger,
+        zattrs: dict, 
+        allfiles: list) -> None:
 
     logger.info('VirtualiZarr: Starting Concatenation')
 
@@ -107,6 +115,14 @@ def virtualise(cache_dir: str, output_file: str, agg_dims: list, data_vars: list
         # combined_vds.virtualize.to_icechunk(session.store)
 
         combined_vds.virtualize.to_kerchunk(output_file, format='json')
+
+        if zattrs is not None:
+            with open(output_file) as f:
+                refs = json.load(f)
+            refs['refs']['.zattrs'] = zattrs
+            with open(output_file, 'w') as f:
+                f.write(json.dumps(refs))
+
     except:
         raise ValueError('Kerchunk serialisation failed.')
 
@@ -506,7 +522,7 @@ def padocc_combine(
             if zarrays != []:
                 identical_dim_zarrays[var] = zarrays
 
-    for v in agg_dims + agg_vars + identical_vars:
+    for v in tuple(agg_dims) + tuple(agg_vars) + tuple(identical_vars):
         if v in pure_dims.keys():
             continue
 

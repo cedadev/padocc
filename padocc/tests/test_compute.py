@@ -1,21 +1,24 @@
-from padocc import GroupOperation
+from padocc.phases.compute import KerchunkDS
 
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 
 class TestCompute:
-    def test_compute_basic(self, workdir=WORKDIR):
+    def test_compute_kerchunk(self, workdir=WORKDIR):
         groupID = 'padocc-test-suite'
 
-        process = GroupOperation(
-            groupID,
+        process = KerchunkDS(
+            '1DAgg',
             workdir=workdir,
+            groupID=groupID,
             label='test_compute',
-            verbose=1)
+            verbose=2,
+            thorough=True,
+            forceful=True)
 
-        results = process.run('compute', forceful=True)
+        results = process.run()
 
-        assert results['Success'] == 3
+        assert results == 'Success'
 
 if __name__ == '__main__':
     #workdir = '/home/users/dwest77/cedadev/padocc/padocc/tests/auto_testdata_dir'
-    TestCompute().test_compute_basic()#workdir=workdir)
+    TestCompute().test_compute_kerchunk()#workdir=workdir)

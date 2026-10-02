@@ -3,9 +3,10 @@ __contact__   = "daniel.westwood@stfc.ac.uk"
 __copyright__ = "Copyright 2023 United Kingdom Research and Innovation"
 
 import json
-import random
 from datetime import datetime
 from typing import Optional, Union
+from padocc.core.logs import set_verbose
+import random
 
 import numpy as np
 import xarray as xr
@@ -165,8 +166,8 @@ class PresliceSet:
                     squeeze_dims.append(dslice[1])
                     self._preslice_set[var][dim] = dslice[0]
 
-            self.logger.debug(self._preslice_set[var])
-            self.logger.debug(squeeze_dims)
+            self.logger.debug(f'preslice: {self._preslice_set[var]}')
+            self.logger.debug(f'squeeze dims: {squeeze_dims}')
             da = data_arr.isel(**self._preslice_set[var])
             if len(squeeze_dims) > 0:
                 da = da.squeeze(dim=squeeze_dims, drop=True)
@@ -782,8 +783,22 @@ class ValidateDatasets(LoggedOperation):
                     current = 100
                 if current < 2:
                     current = 2
-            
-            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid, current=current)
+
+            # Limit for max growbox memory usage.
+            max_mem = 1e9 # 2GB
+
+            box_size_limit = 1
+            for bs in range(98,0,-1):
+                mem_estm = 1
+                for d in testvar.dims:
+                    mem_estm = mem_estm * max(1, testvar[d].size/bs)
+                if mem_estm*64 > max_mem:
+                    box_size_limit = bs+1
+                    break
+
+            self.logger.debug(f'Minimum divisions for {var}: {box_size_limit}')
+
+            self._validate_selection(var, testvar, controlvar, dim_mid=dim_mid, current=current, box_size_limit=box_size_limit)
 
     def _validate_shapes(self, var: str, test, control, ignore=None):
         """
@@ -914,7 +929,7 @@ class ValidateDatasets(LoggedOperation):
             test: xr.DataArray,
             control: xr.DataArray,
             current : int = 100,
-            recursion_limit : int = 1, 
+            box_size_limit : int = 1, 
             dim_mid: Union[dict,None] = None,
         ) -> bool:
         """
@@ -935,8 +950,8 @@ class ValidateDatasets(LoggedOperation):
             )
             return
 
-        if current <= recursion_limit:
-            self.logger.debug('Maximum recursion depth reached')
+        if current <= box_size_limit:
+            self.logger.debug('Maximum box size reached')
             self.logger.info(f'Validation for {var} not performed')
 
             self._data_report[f'variables,growbox,{var}'] = 'all_nans'
@@ -948,7 +963,7 @@ class ValidateDatasets(LoggedOperation):
         cbox = control[slice_applied]
 
         if check_for_nan(cbox, BypassSwitch(), self.logger, label=var):
-            return self._validate_selection(var, test, control, current-1, recursion_limit=recursion_limit, dim_mid=dim_mid)
+            return self._validate_selection(var, test, control, current-1, box_size_limit=box_size_limit, dim_mid=dim_mid)
         else:
             return self._compare_data(var, slice_applied, tbox, cbox)
 
@@ -1099,7 +1114,6 @@ class ValidateOperation(ProjectOperation):
             self, 
             proj_code,
             workdir,
-            parallel: bool = False,
             **kwargs):
         """
         No current validate-specific parameters
@@ -1107,14 +1121,13 @@ class ValidateOperation(ProjectOperation):
 
         self.phase = 'validate'
         super().__init__(proj_code, workdir, **kwargs)
-        if parallel:
-            self.update_status(self.phase, 'Pending',jobid=self._logid)
 
     def _run(
             self,
             mode: str = 'kerchunk',
             dim_mid: Union[dict,None] = None,
             error_bypass: Union[dict,str,None] = None,
+            parallel: bool = False,
             **kwargs
         ) -> None:
         """
@@ -1123,6 +1136,11 @@ class ValidateOperation(ProjectOperation):
         :param mode:    (str) Cloud format to use, overriding the known cloud format from 
             previous steps.
         """
+        if parallel:
+            self.update_status(self.phase, 'Pending',jobid=self._logid)
+
+        set_verbose(self._verbose, 'cfapyx')
+
         self.set_last_run(self.phase, timestamp())
         self.logger.info("Starting validation")
 
@@ -1139,14 +1157,17 @@ class ValidateOperation(ProjectOperation):
         meta_fh = JSONFileHandler(self.dir, 'metadata_report',logger=self.logger, **self.fh_kwargs)
         data_fh = JSONFileHandler(self.dir, 'data_report',logger=self.logger, **self.fh_kwargs)
 
-        self.validate_vars = self.base_cfg.get('keep_vars') or [v for v in test.variables if v not in test.dims]
+        if self.base_cfg.get('keep_vars','all') == 'all':
+            self.validate_vars = [v for v in test.variables if v not in test.dims]
+        else:
+            self.validate_vars = self.base_cfg.get('keep_vars')
 
         concat_dims = self.detail_cfg.get('kwargs',{}).get('combine_kwargs',{}).get('concat_dims',None)
 
         vd = ValidateDatasets(
             [test,sample],
             f'validator-padocc-{self.proj_code}',
-            dataset_labels=[self.cloud_format, self.source_format], 
+            dataset_labels=[self.cloud_format, 'source'], 
             filehandlers=[meta_fh, data_fh],
             logger=self.logger,
             validate_vars=self.validate_vars,
@@ -1163,7 +1184,7 @@ class ValidateOperation(ProjectOperation):
             # CFA now opens with decoded times (2025.8.4)
             try:
                 control = self._open_cfa()
-                vd.replace_dataset(control, label=self.source_format)
+                vd.replace_dataset(control, label='source')
             except:
                 # CFA has failed for some reason - file must be deleted.
                 self.cfa_enabled = False
@@ -1193,26 +1214,28 @@ class ValidateOperation(ProjectOperation):
     
     def _run_data_validation(self, test: xr.Dataset, rf: int, check: int, checks: int, vd: ValidateDatasets, dim_mid):
         """
-        Prepare and run for a single validation attempt.
+        Prepare and run for a single validation attempt - using individual netcdfs
         """
 
         ## 1. Time Decoding Check
          # Open a random file or as specified above to check time decoding
         sample, rfnum = self._open_sample(rf=rf)
-        vd.replace_dataset(sample, label=self.source_format)
+        vd.replace_dataset(sample, label='source')
 
-        _ = vd.decode_times_ok()
+        if check == 0:
+            # Only check time decoding for the first file
+            _ = vd.decode_times_ok()
 
         ## 2. Data Check
         # Never decode times when running data validation.    
         test   = self.dataset.open_dataset(decode_times=False)
         vd.replace_dataset(test, label=self.cloud_format)
         sample, rf = self._open_sample(rf=rf,decode_times=False)
-        vd.replace_dataset(sample, label=self.source_format)
+        vd.replace_dataset(sample, label='source')
 
         self.logger.info(f'Source-slice validation: {check+1}/{checks} using file {rfnum}')
 
-        preslice_vars = list(set(self.validate_vars) | set(self.detail_cfg['kwargs']['combine_kwargs']['concat_dims']))
+        preslice_vars = list(set(self.validate_vars) | set(self.detail_cfg['kwargs'].get('combine_kwargs',{}).get('concat_dims',{})))
 
         preslice = self._get_preslice(test, sample, preslice_vars, rf=rf)
         vd.replace_preslice(preslice, label=self.cloud_format)
@@ -1251,7 +1274,7 @@ class ValidateOperation(ProjectOperation):
         
         :param test:     (obj) An xarray dataset representing the cloud product.
         
-        :param sample:   (obj) An xarray dataset representing the source file(s).
+        :param sample:   (obj) An xaxrray dataset representing the source file(s).
         
         :returns:   A slice object to apply to the test dataset to map directly
             to the sample dataset.
