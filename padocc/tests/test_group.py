@@ -5,7 +5,7 @@ from padocc import GroupOperation
 WORKDIR = 'padocc/tests/auto_testdata_dir'
 
 def get_groupA(workdir=WORKDIR):
-    return GroupOperation('groupA',workdir=workdir)
+    return GroupOperation('padocc-test-suite',workdir=workdir)
 
 class TestGroup:
     # General
@@ -15,7 +15,7 @@ class TestGroup:
     def test_info(self, wd=WORKDIR):
         groupA = get_groupA(workdir=wd)
         info = groupA.info()
-        assert info['groupA']['projects'] == 0
+        assert info['padocc-test-suite']['projects'] == 2
 
     # Allocations
     def test_allocations(self, wd=WORKDIR):

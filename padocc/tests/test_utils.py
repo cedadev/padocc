@@ -13,4 +13,4 @@ class TestCleanup:
         assert not os.path.isdir('padocc/tests/auto_testdata_dir')
 
 if __name__ == '__main__':
-    TestSetup().test_setup()
+    TestCleanup().test_cleanup()
