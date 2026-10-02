@@ -112,10 +112,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.apply_defaults"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.apply_defaults()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.cloud_format"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.cloud_format</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.complete_product"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.complete_product</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.complete_product"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.complete_product()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.file_type"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.file_type</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.get_stac_representation"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.get_stac_representation()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.help"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.help()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.is_netcdf4_compatible"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.is_netcdf4_compatible</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.outpath"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.outpath</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.outproduct"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.outproduct</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.core.mixins.properties.PropertiesMixin.remote"><code class="docutils literal notranslate"><span class="pre">PropertiesMixin.remote</span></code></a></li>
@@ -188,7 +189,7 @@ always inherit from this class (e.g. Scan, Compute, Validate)</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.project.ProjectOperation.complete_project">
-<span class="sig-name descname"><span class="pre">complete_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">move_to</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.project.ProjectOperation.complete_project" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">complete_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">move_to</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thorough</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version_separator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_delete</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.core.project.ProjectOperation.complete_project" title="Link to this definition"></a></dt>
 <dd><p>Move project to a completeness directory</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -344,6 +345,7 @@ from scratch, otherwise saved refs from previous runs will be loaded.</p></li>
 <span class="sig-name descname"><span class="pre">switch_remote</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.core.project.ProjectOperation.switch_remote" title="Link to this definition"></a></dt>
 <dd><p>Function to create remote copy of a dataset if relevant.</p>
 <p>Kerchunk - create new remote version.</p>
+<p>CFA - in-place change to remote version.</p>
 <p>Zarr - Ignore</p>
 </dd></dl>
 
@@ -559,9 +561,9 @@ configs to find the cloud format for this project.
 The default is to use kerchunk.</p>
 </dd></dl>
 
-<dl class="py property">
+<dl class="py method">
 <dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.complete_product">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">complete_product</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.complete_product" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">complete_product</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">version_separator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'.'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.complete_product" title="Link to this definition"></a></dt>
 <dd><p>Return the name of the actual dataset.</p>
 <p>Products are referred to by revision only
 within the project directory, but on completion
@@ -598,6 +600,12 @@ for extracting properties into a dictionary for STAC record-making.</p>
 for displaying help information.</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padocc.core.mixins.properties.PropertiesMixin.is_netcdf4_compatible">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_netcdf4_compatible</span></span><a class="headerlink" href="#padocc.core.mixins.properties.PropertiesMixin.is_netcdf4_compatible" title="Link to this definition"></a></dt>
+<dd><p>NetCDF4 Compatibility</p>
 </dd></dl>
 
 <dl class="py property">

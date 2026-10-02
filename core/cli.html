@@ -407,7 +407,7 @@ Note that attributes with a boolean value can be set using this mechanism, as <c
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>padocc<span class="w"> </span>summarise<span class="w"> </span>-G<span class="w"> </span>&lt;group&gt;
 </pre></div>
 </div>
-<p>Generates a summary of the data analysed in any given project, including the number of datasets compatible with analysis (have passed the scan phase and were not skipped.)</p>
+<p>Generates a summary of the data analysed in any given project, including the number of datasets compatible with analysis (have passed the scan phase and were not skipped). If <code class="docutils literal notranslate"><span class="pre">-v</span></code> is added at any level, the formatting to number of bytes is disabled. This is useful for cross-group addition of total source/cloud data.</p>
 <p>The summary includes the total number of native files as well as an estimate of the total dataset size and the cloud products. A reminder that each <code class="docutils literal notranslate"><span class="pre">project</span></code> usually produces a single cloud product.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Summary Report: cmip_1</span>
 <span class="go">Project Codes Assessed: 23</span>
@@ -428,7 +428,7 @@ Note that attributes with a boolean value can be set using this mechanism, as <c
 </section>
 <section id="next-steps">
 <h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
-<p>Cloud products that have been validated are moved to a <code class="docutils literal notranslate"><span class="pre">complete</span></code> directory with the project code as the name, plus the revision identifier <cite>abX.X</cite> - learn more about this in the Extra section.
+<p>Cloud products that have been validated are moved to a <code class="docutils literal notranslate"><span class="pre">complete</span></code> directory with the project code as the name, plus the revision identifier <cite>abX.X</cite> - learn more about this in the Bespoke Features section.
 These can then be linked to a catalog or ingested into the CEDA archive where appropriate.</p>
 </section>
 </section>

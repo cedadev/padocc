@@ -58,6 +58,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#scanning-a-project">Scanning a Project</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#running-a-computation">Running a Computation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#validate">Validate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#completion-of-a-group">Completion of a group</a></li>
 </ul>
 </li>
 </ul>
@@ -246,6 +247,23 @@ The error still registers in the final data report, but it will have a <code cla
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>See the above section in <code class="docutils literal notranslate"><span class="pre">compute</span></code> for rerunning when there are errors that may be aggregation method-specific.</p>
+</div>
+</section>
+<section id="completion-of-a-group">
+<h3>Completion of a group<a class="headerlink" href="#completion-of-a-group" title="Link to this heading"></a></h3>
+<p>Once validation checks have been performed (usually resulting in warnings relating to minor differences in variable order or different values for specific attributes), the completion workflow can then be enacted. This creates a copy of the output files to a <code class="docutils literal notranslate"><span class="pre">completion_dir</span></code> area for upload or ingestion as a finished product. It is recommended to run this step with the <code class="docutils literal notranslate"><span class="pre">-T</span></code> flag as this will also trigger the <code class="docutils literal notranslate"><span class="pre">remote-enabled</span></code> workflow for transforming both Kerchunk and CFA products to be remotely readable. These products are distinguished in the aggregation version which is <code class="docutils literal notranslate"><span class="pre">k|kr</span></code> for local/remote kerchunk and <code class="docutils literal notranslate"><span class="pre">c|cr</span></code> for local/remote CFA.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">--delete</span></code> flag can be used to delete projects that have been completed in a single step. This can be used in conjunction with a <code class="docutils literal notranslate"><span class="pre">repeat_id</span></code> to just complete/delete specific projects, but this has implications for if you’d also like to generate a <code class="docutils literal notranslate"><span class="pre">summary</span></code> of a group (See the Command Line Tool Examples). The <code class="docutils literal notranslate"><span class="pre">--sub</span></code> and <code class="docutils literal notranslate"><span class="pre">--replace</span></code> flags can be used to specify a non-standard remote replacement, where the usual replacement is for <code class="docutils literal notranslate"><span class="pre">https://dap.ceda.ac.uk</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>padocc<span class="w"> </span><span class="nb">complete</span><span class="w"> </span>-G<span class="w"> </span>my-group<span class="w"> </span>-vT<span class="w"> </span>--completion_dir<span class="w"> </span>/my/final/files/<span class="w"> </span>--delete
+<span class="gp"># </span>See<span class="w"> </span>padocc<span class="w"> </span>validate<span class="w"> </span>-h<span class="w"> </span><span class="k">for</span><span class="w"> </span>more<span class="w"> </span>info<span class="w"> </span>on<span class="w"> </span>possible<span class="w"> </span>flags
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Typical flags on the CLI can be passed here too.</span>
+<span class="n">mygroup</span><span class="o">.</span><span class="n">complete_group</span><span class="p">(</span>
+    <span class="n">move_to</span><span class="o">=</span><span class="s1">&#39;/my/final/files/&#39;</span><span class="p">,</span>
+    <span class="n">thorough</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">final_delete</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
 </div>
 </section>
 </section>
