@@ -674,8 +674,10 @@ class ComputeOperation(ProjectOperation):
 
             # Need to work on this for updating the dataset filepaths etc.
             # Minor version increments should be reflected in the dataset object.
-            if os.path.isfile(self.dataset.filepath) or os.path.isdir(self.dataset.filepath):
-                self.logger.info(f'Revision {self.revision} already exists - {self.dataset.filepath}')
+            if os.path.isfile(getattr(self.dataset,'filepath')) or os.path.isdir(getattr(self.dataset,'storepath')):
+                existing = getattr(self.dataset,'filepath') or getattr(self.dataset,'storepath')
+                
+                self.logger.info(f'Revision {self.revision} already exists - {existing}')
                 if self._allow_new_version and self.aggregation_method != 'unable':
 
                     internal_history = self.base_cfg.get('internal_history',[])

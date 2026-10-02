@@ -1005,7 +1005,7 @@ class ZarrStore(GenericStore):
         super().__init__(
             parent_dir, 
             store_name, 
-            metadata_name='.zattrs',
+            metadata_name='zarr',
             extension='zarr',
             **kwargs)
 
@@ -1020,8 +1020,9 @@ class ZarrStore(GenericStore):
 
         if self._remote_s3 is not None:
             raise NotImplementedError
-        
-        return super().get_meta()
+
+        # Zarr V3
+        return super().get_meta()['attributes']
 
     @property
     def store(self) -> Union[str,object]:
