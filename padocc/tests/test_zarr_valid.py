@@ -13,7 +13,7 @@ class TestZarrValidate:
             label='test_validate',
             verbose=1)
 
-        results = process.run('validate', mode='zarr', forceful=True, bypass=BypassSwitch('DS'),proj_code='1DAgg')
+        results = process.run('validate', mode='zarr', forceful=True, bypass=BypassSwitch('DS'),proj_code='1DAgg_z')
 
         print(results)
 

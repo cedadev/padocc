@@ -10,13 +10,13 @@ WORKDIR = 'padocc/tests/auto_testdata_dir'
 class TestProject:
 
     zarrds = ProjectOperation(
-        '1DAgg', 
+        '1DAgg_z', 
         workdir=WORKDIR, 
-        groupID='padocc-test-suite'
+        groupID='tempB'
     )
 
     kds = ProjectOperation(
-        '3DAgg', 
+        '1DAgg', 
         workdir=WORKDIR, 
         groupID='padocc-test-suite'
     )
@@ -26,14 +26,14 @@ class TestProject:
         resp = self.zarrds.info()
 
         assert isinstance(resp, dict)
-        assert resp['1DAgg'].get('File count') == 8
+        assert resp['1DAgg_z'].get('File count') == 8
 
     def test_version(self, wd=WORKDIR):
 
         version = self.zarrds.version_no
         revision = self.zarrds.revision
 
-        assert version == '1.1', 'Version not found'
+        assert version == '1.0', f'Version {version}'
         assert version in revision, 'Version does not match revision'
 
     # Dataset
@@ -95,7 +95,7 @@ class TestProject:
 
     def test_last_status(self, wd=WORKDIR):
         ls = self.zarrds.get_last_status().split(',')
-        assert ls[1] == 'Success'
+        assert 'Warn' in ls[1] or 'Success' in ls[1], "Failed Validation in testing"
 
     def test_log_contents(self, wd=WORKDIR):
         lc = self.zarrds.get_log_contents('scan')

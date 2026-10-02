@@ -37,14 +37,14 @@ class TestScan:
 
         assert status == 'Success'
 
-    def test_scan_3DAgg(self, workdir=WORKDIR, verbose=1):
+    def test_scan_1DAgg_z(self, workdir=WORKDIR, verbose=1):
         groupID = 'padocc-test-suite'
 
         process = ScanOperation(
-            '3DAgg',
+            '1DAgg_z',
             workdir=workdir,
             groupID=groupID,
-            label='test_scan_3DAgg',
+            label='test_scan_1DAgg_z',
             verbose=verbose)
 
         status = process.run(forceful=True, thorough=True)
@@ -60,4 +60,4 @@ class TestScan:
 if __name__ == '__main__':
     TestScan().test_scan_basic(verbose=1)
     TestScan().test_scan_1DAgg(verbose=1)
-    TestScan().test_scan_3DAgg(verbose=0)
+    TestScan().test_scan_1DAgg_z(verbose=0)

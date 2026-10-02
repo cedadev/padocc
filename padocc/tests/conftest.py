@@ -11,7 +11,7 @@ def pytest_collection_modifyitems(items):
         "TestZarrValidate",
         "TestValidate",
         "TestGroup",
-        #"TestProject"
+        "TestProject",
     ]
 
     sorted_items = items.copy()
