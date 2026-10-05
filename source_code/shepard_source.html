@@ -70,6 +70,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#padocc.groups.shepard.ShepardOperator"><code class="docutils literal notranslate"><span class="pre">ShepardOperator</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.groups.shepard.ShepardOperator.activate"><code class="docutils literal notranslate"><span class="pre">ShepardOperator.activate()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.groups.shepard.ShepardOperator.bypass"><code class="docutils literal notranslate"><span class="pre">ShepardOperator.bypass</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.shepard.ShepardOperator.clear_all_logs_repeats"><code class="docutils literal notranslate"><span class="pre">ShepardOperator.clear_all_logs_repeats()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.groups.shepard.ShepardOperator.cycle_delay"><code class="docutils literal notranslate"><span class="pre">ShepardOperator.cycle_delay</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.groups.shepard.ShepardOperator.cycle_limit"><code class="docutils literal notranslate"><span class="pre">ShepardOperator.cycle_limit</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.groups.shepard.ShepardOperator.default_source"><code class="docutils literal notranslate"><span class="pre">ShepardOperator.default_source</span></code></a></li>
@@ -81,6 +82,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#padocc.groups.shepard.ShepardTask"><code class="docutils literal notranslate"><span class="pre">ShepardTask</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#padocc.groups.shepard.ShepardTask.determine_quarantined"><code class="docutils literal notranslate"><span class="pre">ShepardTask.determine_quarantined()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.groups.shepard.ShepardTask.get_allocation"><code class="docutils literal notranslate"><span class="pre">ShepardTask.get_allocation()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#padocc.groups.shepard.ShepardTask.uid"><code class="docutils literal notranslate"><span class="pre">ShepardTask.uid</span></code></a></li>
 </ul>
@@ -133,6 +135,12 @@
 <dt class="sig sig-object py" id="padocc.groups.shepard.ShepardOperator.bypass">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bypass</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="misc_source.html#padocc.core.utils.BypassSwitch" title="padocc.core.utils.BypassSwitch"><span class="pre">BypassSwitch</span></a></em><a class="headerlink" href="#padocc.groups.shepard.ShepardOperator.bypass" title="Link to this definition"></a></dt>
 <dd><p>Standard bypass switch for shepard operations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.shepard.ShepardOperator.clear_all_logs_repeats">
+<span class="sig-name descname"><span class="pre">clear_all_logs_repeats</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#padocc.groups.shepard.ShepardOperator.clear_all_logs_repeats" title="Link to this definition"></a></dt>
+<dd><p>Clear repeat IDs and logs from all flocks</p>
 </dd></dl>
 
 <dl class="py property">
@@ -193,6 +201,13 @@ function used to reset the status of whole deployments. Use with great care.</p>
 <dt class="sig sig-object py" id="padocc.groups.shepard.ShepardTask">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padocc.groups.shepard.</span></span><span class="sig-name descname"><span class="pre">ShepardTask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codeset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_allocation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.shepard.ShepardTask" title="Link to this definition"></a></dt>
 <dd><p>Store task-specific features in a Task Object.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="padocc.groups.shepard.ShepardTask.determine_quarantined">
+<span class="sig-name descname"><span class="pre">determine_quarantined</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flock</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padocc.groups.shepard.ShepardTask.determine_quarantined" title="Link to this definition"></a></dt>
+<dd><p>Determine projects that should be quarantined, separate
+from main codeset.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="padocc.groups.shepard.ShepardTask.get_allocation">
 <span class="sig-name descname"><span class="pre">get_allocation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#padocc.groups.shepard.ShepardTask.get_allocation" title="Link to this definition"></a></dt>
