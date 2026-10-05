@@ -1,0 +1,189 @@
+## In a nutshell
+
+PR [#122](https://github.com/cedadev/padocc/pull/122) is a substantial v1.6 release covering remote CFA output, a major SHEPARD workflow redesign, expanded completion and cleanup controls, improved aggregation metadata handling, and partial Icechunk support. It also changes several CLI commands, defaults, output naming conventions, and configuration options that should be reflected in the user documentation and release notes.
+
+**Scope:** 44 files changed, approximately **+1,500 / −771 lines**. The PR is currently open.
+
+## Big-ticket changes
+
+1. **Remote CFA files are now supported**
+   - CFA NetCDF files can be converted to remote form in place by rewriting fragment URIs.
+   - Remote CFA files can be generated alongside remote Kerchunk products.
+   - Remote CFA-compatible output uses revised paths and naming conventions.
+   - The implementation detects whether source data is NetCDF4-compatible before applying the remote CFA workflow.
+
+2. **Remote output handling has been unified**
+   - The public operation has changed from `add_download_link()` to `make_remote()`.
+   - Remote conversion now supports both Kerchunk and CFA products through the project and file-handler APIs.
+   - Remote URI substitution can be controlled with configurable `sub` and `replace` values.
+
+3. **SHEPARD has been substantially redesigned**
+   - SHEPARD now has a clearer batch/cycle processing model.
+   - It can discover, initialise, process, summarise, quarantine, and remove flocks in a more coordinated workflow.
+   - Processing can now advance projects through the new `complete` phase automatically.
+   - SHEPARD supports both serial and SLURM-parallel execution for completion tasks.
+
+4. **The SHEPARD CLI command has changed**
+   - The console command is now:
+     ```bash
+     shepard
+     ```
+     instead of:
+     ```bash
+     shepard_deploy
+     ```
+   - Existing deployment scripts, cron jobs, and documentation using `shepard_deploy` will need updating.
+
+5. **SHEPARD now supports manifest and CSV ingestion**
+   - Projects can be picked up from a sweep directory and staged through a cache directory.
+   - Cached manifests can be used to create new flocks automatically.
+   - CSV inputs can also be ingested to create flocks.
+   - New limits control the maximum flock size and the maximum number of active flocks.
+
+6. **New SHEPARD configuration options**
+   - New configuration settings include:
+     - `sweep_dir`
+     - `cache_dir`
+     - `flock_size_limit`
+     - `flock_limit`
+     - `deployment_label`
+     - `version_separator`
+     - `remote_sub`
+     - `remote_replace`
+     - `obliterate_quarantine`
+   - These options affect how projects are discovered, named, processed, completed, and quarantined.
+
+7. **SHEPARD dry-run mode has been added**
+   - The new `-d` / `--dryrun` option reports the work that would be performed without modifying project state or deleting files.
+   - Dry-run output covers repeat creation, phase execution, parallel deployment, and flock deletion.
+
+8. **Quarantine and error recovery have been improved**
+   - Failed projects can be transferred to a dedicated quarantine flock.
+   - Fatal errors are handled separately from retryable errors.
+   - Projects may be retried with an alternative aggregation route where possible.
+   - Projects that cannot be retried are quarantined or removed according to `obliterate_quarantine`.
+   - Rejected projects can be logged to timestamped CSV files.
+
+9. **Completion is now a first-class pipeline phase**
+   - `complete` has been added to the recognised pipeline phases.
+   - Completion can export data and reports, update project status, and optionally delete the original project.
+   - Completion can be run serially or through SLURM.
+   - New CLI options include:
+     ```bash
+     --completion_dir
+     --version_separator
+     --delete
+     ```
+
+10. **Completion output naming has changed**
+    - Completed product names now include cloud-format information and a configurable separator.
+    - The default completion separator is `_`.
+    - CFA products receive format-aware names, including different handling for NetCDF4-compatible and non-compatible output.
+    - This may affect downstream consumers that rely on existing file names.
+
+11. **Explicit project-code repeats are supported**
+    - Repeat subsets can now be created from an explicit comma-separated list of project codes.
+    - The previous phase/status selection mechanism remains available.
+    - The command now requires one of these two mechanisms and raises an error otherwise.
+    - Repeat IDs and project lookup now work across non-main repeat sets.
+
+12. **Icechunk support has been added experimentally**
+    - `icechunk` is now recognised as a compute/cloud format.
+    - An `IcechunkDS` implementation has been added.
+    - The integration is described in the PR as partial, so it should probably be documented as experimental or limited rather than presented as fully supported.
+
+13. **Aggregation metadata and attribute handling have changed**
+    - Aggregated products now receive an `aggregation_date` attribute containing a UTC timestamp.
+    - Kerchunk metadata now preserves the generated attributes in the output reference file.
+    - Conflicting attributes are now collected into a list by default.
+    - A configurable `concat_msg` mapping can replace conflicting attributes with a common message.
+    - This changes the default representation of metadata compared with earlier releases.
+
+14. **Validation now applies a memory-aware grow-box limit**
+    - Validation estimates memory use and limits the size of validation selections accordingly.
+    - This is intended to prevent excessive memory consumption on large datasets.
+    - Validation variable selection now honours the `keep_vars` configuration more explicitly.
+
+15. **CFA and aggregation robustness has been improved**
+    - CFA aggregation is skipped when fewer than two files are available.
+    - CFA aggregation results can be marked as skipped rather than treated as successful.
+    - Fatal concatenation errors are identified explicitly.
+    - Scanning can fall back by disabling CFA when CFA scanning fails, unless diagnostic or CFA mode requires the error to be raised.
+    - Dependency updates include newer `cfapyx`, plus `pyfive`, `pint`, and related packages.
+
+## User-facing features that should be documented
+
+### High priority
+
+1. **Remote CFA output**
+   - Explain when CFA products can be made remote.
+   - Document the URI substitution behaviour.
+   - Show how to configure custom source and replacement prefixes.
+   - Describe the generated file names and the NetCDF4 compatibility requirement.
+
+2. **New `shepard` command**
+   - Document the command rename from `shepard_deploy`.
+   - Provide updated examples for batch, parallel, autologged, dry-run, quarantine, scrub, and delete modes.
+   - Call out migration requirements for cron jobs and operational scripts.
+
+3. **SHEPARD manifest/CSV ingestion**
+   - Document `sweep_dir` and `cache_dir`.
+   - Explain the expected manifest and CSV formats.
+   - Document flock creation behaviour, naming, size limits, and active-flock limits.
+
+4. **SHEPARD configuration**
+   - Add a complete configuration reference for:
+     `flock_size_limit`, `flock_limit`, `deployment_label`, `version_separator`, `remote_sub`, `remote_replace`, and `obliterate_quarantine`.
+
+5. **Completion phase**
+   - Explain that `complete` is now a pipeline phase.
+   - Document `--completion_dir`, `--version_separator`, and `--delete`.
+   - Include a warning that `--delete` removes the original project after completion.
+   - Document the new output naming scheme.
+
+6. **Dry-run mode**
+   - Document `shepard --dryrun`.
+   - Clarify what dry-run guarantees and which operations are suppressed.
+
+7. **Quarantine and retry behaviour**
+   - Explain the difference between retryable errors, fatal errors, sideline handling, quarantine, and obliteration.
+   - Document the generated rejected-project CSV logs.
+
+8. **Metadata changes**
+   - Document `aggregation_date`.
+   - Document the new default behaviour for conflicting attributes: values are collected into a list unless a `concat_msg` mapping is provided.
+   - Explain how this may affect consumers expecting a scalar attribute or the previous default message.
+
+### Medium priority
+
+9. **Icechunk support**
+   - Add an experimental-support section if Icechunk is intended for users in this release.
+   - Clearly state its current limitations and supported workflow.
+
+10. **Memory-aware validation**
+    - Document that validation now adapts its selection size to an estimated memory limit.
+    - Explain any cases where validation may be skipped or reported as `all_nans` because the calculated box size is too large.
+
+11. **Explicit project-code repeats**
+    - Document how to create a repeat subset from one or more project codes.
+    - Explain the updated validation of repeat-selection arguments.
+
+12. **Output naming and compatibility**
+    - Provide migration guidance for users or downstream systems that consume completed product names.
+    - Include examples showing the effect of the version separator and cloud-format identifier.
+
+## Release-note wording to consider
+
+> **Remote CFA support:** CFA aggregation files can now be converted to remote products by rewriting fragment URIs, alongside existing remote Kerchunk support.
+>
+> **SHEPARD workflow improvements:** SHEPARD now supports manifest/CSV ingestion, configurable flock limits, dry-run execution, improved quarantine and retry handling, and automatic completion processing. The command-line entry point is now `shepard`.
+>
+> **Completion controls:** Completion can be run as a pipeline phase and supports configurable output separators and optional deletion of successfully completed projects.
+>
+> **Aggregation metadata:** Aggregation products now include an `aggregation_date` attribute, and conflicting attributes are collected as lists by default.
+>
+> **Experimental Icechunk support:** Initial support for Icechunk-based aggregation has been added.
+>
+> **Validation memory limits:** Validation now adapts its selection size to the estimated memory requirements of the operation.
+
+The most important migration risks are the **`shepard_deploy` → `shepard` command rename**, **changed completed-product names**, **new default handling of conflicting attributes**, and the potentially destructive **`--delete`** completion option.

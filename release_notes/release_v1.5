@@ -1,0 +1,31 @@
+# Release Notes for version 1.5
+
+## Major changes
+
+### 1. CFA NetCDF Remote support
+ - CFA NetCDF files can be converted to remote form in place by rewriting fragment URIs.
+ - Remote CFA files can be generated alongside remote Kerchunk products.
+ - Remote CFA-compatible output uses revised paths and naming conventions.
+ - The implementation detects whether source data is NetCDF4-compatible before applying the remote CFA workflow.
+ - 'remote' and 'sub' CLI options now impact CFA remote files.
+
+### 2. SHEPARD Overhaul
+ - Discovery of new groups as CSVs or manifest files has been improved.
+ - Complete workflow of all pipeline phases, plus qurantining and deletion fully tested.
+ - Bug fixes when transferring and instantiating groups via SHEPARD.
+ - CLI command has been changed to `shepard`
+
+### 3. Completion workflow
+ - Now a central part of the SHEPARD workflow to complete projects and apply remote parameters.
+ - Configurable version separator can now be applied.
+
+### 4. New Features in general
+ - Added support for creating repeats from a set of project codes, as well as using phase/status selection.
+ - Added `aggregation_date` parameter as standard to all Kerchunk and CFA output products.
+
+### 5. Various bug fixes
+ - Memory leaks patched when running with validation, for both kerchunk and CFA
+ - Issues with CFA scan failures now allowed to proceed without CFA
+ - Fixed an issue with running subsets of specific project codes in parallel outside a repeat.
+ - Experimental Icechunk support - fully operational in future update.
+ 
