@@ -62,6 +62,7 @@ class ShepardTask:
         self.groupID = groupID
         self.old_phase = old_phase
         self.codeset = codeset
+        self.quarantine_codes = []
         self.old_allocation = old_allocation or None
         self._kwargs = kwargs
 
@@ -97,6 +98,27 @@ class ShepardTask:
         """
         return f'{self.fid}-{self.old_allocation}'
 
+    def determine_quarantined(self, flock):
+        """
+        Determine projects that should be quarantined, separate
+        from main codeset.
+        """
+
+        valids, invalids = [], []
+        for proj in self.codeset:
+            project = flock.get_project(proj)
+            status_log = project.status_log.get()
+            repeated = sum([1 for line in status_log if self.new_phase in line])
+
+            if repeated > 5:
+                invalids.append(proj)
+            else:
+                valids.append(proj)
+
+        self.codeset = valids
+        self.quarantine_codes = invalids
+
+
     def get_allocation(self) -> tuple:
         """
         Determine allocation values for time/memory for this task.
@@ -113,19 +135,19 @@ class ShepardTask:
                 new_t = old_time + 10
             else:
                 new_t = old_time + increment
-                if new_t > 12*60:
-                    # Report this as an issue - somehow.
+                if new_t > 4 * increment:
+                    # Quarantine sets of projects that reach this point.
                     time_up = False
-                    new_t = 12*60
+                    new_t = 4 * increment
             new_time = str(new_t) + ':00'
 
             # Establish new memory allocation
             old_mem = self.old_allocation.split(',')[1]
             new_mem = int(old_mem[0])*2
-            if new_mem > 16:
+            if new_mem > 8:
                 # Report this as an issue - somehow.
                 mem_up = False
-                new_mem = 16
+                new_mem = 8
             new_memory = str(new_mem) + 'G'
         else:
             new_time = times[self.new_phase]
@@ -461,8 +483,22 @@ class ShepardOperator(LoggedOperation):
 
         self.logger.info('Starting processing jobs')
 
+        single_qflock_task = {}
         for task in task_list:
-            self._process_task(task, flocks[task.fid])
+            # Only allow a single task from groups with quarantine codes.
+            # This ensures no cross-confusion with repeat IDs after quarantine transfer.
+            # The first task is allowed to progress because repeat IDs are created that
+            # are index-independent before the project transfers take place.
+
+            task.determine_quarantined(flocks[task.fid])
+
+            if task.groupID not in single_qflock_task:
+                self._process_task(task, flocks[task.fid])
+            else:
+                self.logger.info(f'Skipped {task.groupID} {task.new_phase} - {len(task.codeset)} projects')
+
+            if task.quarantine_codes:
+                single_qflock_task[task.groupID] = 1
 
         self.logger.info('Finished processing jobs')
 
@@ -489,6 +525,13 @@ class ShepardOperator(LoggedOperation):
             self.sideline_codes = []
 
         self._check_delete_flocks(flocks)
+
+    def clear_all_logs_repeats(self) -> None:
+        """
+        Clear repeat IDs and logs from all flocks
+        """
+        for flock in self._init_all_flocks():
+            flock.clear_logs_statuses()
 
     def scrub_errors(self) -> None:
         """
@@ -651,10 +694,14 @@ class ShepardOperator(LoggedOperation):
                 verbose=self._verbose,
             )
 
-            flock.init_from_file(f'{csvs[fid]}_')
+            try:
+                flock.init_from_file(f'{csvs[fid]}_')
 
-            # Delete in-progress
-            os.system(f'rm {csvs[fid]}_')
+                # Delete in-progress
+                os.system(f'rm {csvs[fid]}_')
+            except Exception as e:
+                self.logger.error(
+                    f'Abandoned project {groupname} due to error: {e}')
 
     def _ingest_manifests(self, manifests: list):
         """
@@ -749,7 +796,10 @@ class ShepardOperator(LoggedOperation):
         """
 
         if not task.allowed:
-            self.logger.error(f'Task {task.uid} not allowed - time or memory allocation exceeded.')
+
+            # Quarantine disallowed tasks
+            self.logger.info(f'Task {task.uid} exceeded max retries for time/memory allocation.')
+            self.quarantine_codes(task.codeset + task.quarantine_codes, flock)
             return
 
         new_repeat_id = 'main'
@@ -808,6 +858,10 @@ class ShepardOperator(LoggedOperation):
                     memory=task.memory,
                     **self._phase_specific_kwargs(task.new_phase, task.kwargs)
                 )
+
+        # Happens after individual repeat_ids are confirmed for this flock.
+        if task.quarantine_codes:
+            self.quarantine_codes(task.quarantine_codes, flock)
 
     def _process_status_phase(
             self, 
@@ -1079,6 +1133,8 @@ def main():
         shepherd.quarantine_flocks()
     elif shepherd.mode == 'scrub':
         shepherd.scrub_errors()
+    elif shepherd.mode == 'clear':
+        shepherd.clear_all_logs_repeats()
     elif shepherd.mode == 'status':
         shepherd.summarise_flocks()
     else:

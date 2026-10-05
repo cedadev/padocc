@@ -634,6 +634,10 @@ class GroupOperation(
         os.system(f'rm -rf {self.groupdir}/outs/*')
         os.system(f'rm -rf {self.groupdir}/sbatch/*')
 
+    def clear_logs_statuses(self):
+        self.delete_all_repeat_ids()
+        self.delete_logs()
+
     def add_repeat_by_id(self, repeat_id: str, idset: list[int]):
         """
         Add a new repeat ID by the IDs of the projects.

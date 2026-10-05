@@ -49,10 +49,20 @@ def delete_group(
     
     group.delete_group(ask=ask)
 
-def get_logs(group, proj_code: Union[str,None] = None, log_phase: Union[str,None] = None, **kwargs):
+def get_logs(
+        group, 
+        proj_code: Union[str,None] = None, 
+        log_phase: Union[str,None] = None, 
+        clear: bool = False, 
+        **kwargs):
     """
     Get the logs for a specific phase from a project in a group.
     """
+
+    if clear:
+        group.clear_logs_statuses()
+        return True
+
     if proj_code is not None:
         proj = group[proj_code]
         proj.show_log_contents(
@@ -64,6 +74,8 @@ def get_logs(group, proj_code: Union[str,None] = None, log_phase: Union[str,None
         project.show_log_contents(
             log_phase,
             halt=True)
+
+    return True
         
 def get_aggregations(group, repeat_id: str = 'main', **kwargs):
     """Get status of a group, with display parameters"""
@@ -535,6 +547,7 @@ def get_args():
     ## Logs
     logs = subparsers.add_parser('logs',help='Obtain logs from a given project or group.', 
                                 parents=[universal_parser, group_parser])
+    logs.add_argument('--clear', help='Clear logs and repeat subsets')
     logs.add_argument('--log_phase', help='Phase from which to retrieve the logs', required=True)
     # Filter flag
 
