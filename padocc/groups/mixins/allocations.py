@@ -286,13 +286,22 @@ class AllocationsMixin:
         if xarray_kwargs is not None:
             sbatch_kwargs['xarray_kwargs'] = xarray_kwargs
 
+        # Deploy specific project set (all phases should allow this)
+        codepool = self.proj_codes[repeat_id]
+        if proj_code:
+            codepool = proj_code.split(',')
+
+            self._add_proj_codeset(
+                repeat_id + '_grouped',
+                group_parallel,
+                overwrite=True
+            )
+
+            # Reset to use only grouped projects
+            repeat_id = repeat_id + '_grouped'
+
         if phase == 'compute':
             group_parallel = []
-
-            codepool = self.proj_codes[repeat_id]
-            if proj_code:
-                codepool = proj_code.split(',')
-
 
             for proj in codepool:
                 project = self.get_project(proj)
@@ -325,15 +334,6 @@ class AllocationsMixin:
             if len(group_parallel) == 0:
                 self.logger.info('All projects submitted for super-parallelism')
                 return
-        
-            self._add_proj_codeset(
-                repeat_id + '_grouped',
-                group_parallel,
-                overwrite=True
-            )
-
-            # Reset to use only grouped projects
-            repeat_id = repeat_id + '_grouped'
 
         # Perform allocation assignments here.
         if binpack:
